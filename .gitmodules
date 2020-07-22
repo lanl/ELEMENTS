@@ -1,0 +1,6 @@
+[submodule "Matar/Kokkify/MatarTest/Kokkos/kokkos"]
+	path = Matar/Kokkify/MatarTest/Kokkos/kokkos
+	url = git@github.com:kokkos/kokkos.git
+[submodule "Matar/Kokkify/MatarTest/Kokkos/kokkos-tools"]
+	path = Matar/Kokkify/MatarTest/Kokkos/kokkos-tools
+	url = git@github.com:kokkos/kokkos-tools.git

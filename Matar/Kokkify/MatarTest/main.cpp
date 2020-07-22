@@ -1,8 +1,6 @@
 #include <iostream>
 #include <chrono>         // To access timing calipers 
 #include "pseudo_mesh.hpp"
-//#include "pseudo_var.hpp" // To run timing tests on FMatrixKokkos
-                          // and CArrayKokkos
 
 int main() {
 

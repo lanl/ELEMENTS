@@ -4194,7 +4194,7 @@ private:
     size_t *start_index_;
     T * array_;
     
-    size_t dim1_;
+    size_t dim1_, length_;
     
 public:
     // Default constructor
@@ -4217,6 +4217,8 @@ public:
     // Overload operator() to access data as array(i,j)
     // where i=[0:N-1], j=[stride(i)]
     T& operator()(size_t i, size_t j) const;
+
+    RaggedRightArray& operator= (const RaggedRightArray &temp);
 
     // Destructor
     ~RaggedRightArray ( );
@@ -4308,6 +4310,22 @@ inline T& RaggedRightArray<T>::operator()(size_t i, size_t j) const {
     return array_[j + start];
 } // End operator()
 
+template <typename T>
+RaggedRightArray<T> & RaggedRightArray<T>::operator= (const RaggedRightArray &temp) {
+
+    if( this != &temp) {
+        dim1_ = temp.dim1_;
+        length_ = temp.length_;
+        start_index_ = new size_t[dim1_ + 1];
+        for (int j = 0; j < dim1_; j++) {
+            start_index_[j] = temp.start_index_[j];  
+        }
+        array_ = new T[length_];
+    }
+	
+    return *this;
+}
+
 // Destructor
 template <typename T>
 RaggedRightArray<T>::~RaggedRightArray () {
@@ -4321,7 +4339,7 @@ private:
     size_t *start_index_;
     T * array_;
     
-    size_t dim1_;
+    size_t dim1_, length_;
     
 public:
     // Default constructor
@@ -4350,6 +4368,9 @@ public:
     // where i=[0:N-1], j=[stride(i)]
     KOKKOS_FUNCTION
     T& operator()(size_t i, size_t j) const;
+
+    KOKKOS_FUNCTION
+    RaggedRightArrayKokkos& operator= (const RaggedRightArrayKokkos &temp);
 
     // Destructor
     KOKKOS_FUNCTION
@@ -4447,6 +4468,23 @@ T& RaggedRightArrayKokkos<T>::operator()(size_t i, size_t j) const {
     return array_[j + start];
 } // End operator()
 
+template <typename T>
+KOKKOS_FUNCTION
+RaggedRightArrayKokkos<T> & RaggedRightArrayKokkos<T>::operator= (const RaggedRightArrayKokkos &temp) {
+
+    if( this != &temp) {
+        dim1_ = temp.dim1_;
+        length_ = temp.length_;
+        start_index_ = new size_t[dim1_ + 1];
+        for (int j = 0; j < dim1_; j++) {
+            start_index_[j] = temp.start_index_[j];  
+        }
+        array_ = new T[length_];
+    }
+	
+    return *this;
+}
+
 // Destructor
 template <typename T>
 KOKKOS_FUNCTION
@@ -4454,6 +4492,608 @@ RaggedRightArrayKokkos<T>::~RaggedRightArrayKokkos () {
     delete[] array_;
     delete[] start_index_;
 }
+
+//~~~~~~~~~~~begin RaggedDownArray class declarations~~~~~~~~~~~~~~~~~~~`
+template <typename T>
+class RaggedDownArray { 
+private:
+    size_t *start_index_;
+	T * array_;
+
+	size_t dim2_;
+    size_t length_;
+
+public:
+    //default constructor
+    RaggedDownArray() ;
+
+    //~~~~2D`~~~~
+	//overload constructor with CArray
+	RaggedDownArray(CArray<size_t> &strides_array);
+
+	//overload with ViewCArray
+	RaggedDownArray(ViewCArray <size_t> &strides_array);
+
+	//overload with traditional array
+	RaggedDownArray(size_t *strides_array, size_t dome_dim1);
+
+	//method to return stride size
+	size_t stride(size_t j);
+
+	//overload () operator to access data as array (i,j)
+	T& operator()(size_t i, size_t j);
+
+    // method to return total size
+    size_t size();
+
+    RaggedDownArray& operator= (const RaggedDownArray &temp);
+
+    //destructor
+    ~RaggedDownArray();
+
+}; //~~~~~end of RaggedDownArray class declarations~~~~~~~~	
+
+//~~~~~~~~~~~~~~~begin RaggedDownArray class definitions~~~~~~~~~~~
+
+// Overload constructor with CArray for the strides array
+template <typename T>
+RaggedDownArray<T>::RaggedDownArray() {}
+
+
+template <typename T>
+RaggedDownArray<T>::RaggedDownArray( CArray <size_t> &strides_array) {
+    // Length of stride array
+    //dim2_ = strides_array.size();
+
+    // Create and initialize startding indices
+    start_index_ = new size_t[dim2_+1]; //theres a plus 1, because 
+    start_index_[0] = 0; //1D array starts at 0
+
+		
+	//length of strides
+	dim2_ = strides_array.size();
+
+    // Loop to find total length of 1D array
+    size_t count = 0;
+    for(size_t j = 0; j < dim2_ ; j++) { 
+        count += strides_array(j);
+        start_index_[j+1] = count;
+    } 
+    length_ = count;
+
+    array_ = new T[count];
+
+} // End constructor 
+
+// Overload constructor with ViewCArray
+template <typename T>
+RaggedDownArray<T>::RaggedDownArray( ViewCArray <size_t> &strides_array) {
+    // Length of strides
+    //dim2_ = strides_array.size();
+
+    //create array for holding start indices
+    start_index_ = new size_t[dim2_+1];
+    start_index_[0] = 0;
+
+    size_t count = 0;
+    // Loop over to get total length of 1D array
+    for(size_t j = 0; j < dim2_ ;j++ ) {
+        count += strides_array(j);
+        start_index_[j+1] = count;
+    }
+    length_ = count;	
+    array_ = new T[length_];
+
+} // End constructor 
+
+// Overload constructor with regualar array
+template <typename T>
+RaggedDownArray<T>::RaggedDownArray( size_t *strides_array, size_t dim2){
+    // Length of stride array
+    dim2_ = dim2;
+
+    // Create and initialize starting index of entries
+    start_index_ = new size_t[dim2_+1];
+    start_index_[0] = 0;
+
+    // Loop over to find length of 1D array
+    // Represent ragged down array and set 1D index
+    size_t count = 0;
+    for(size_t j = 0; j < dim2_; j++) {
+        count += strides_array[j];
+        start_index_[j+1] = count;
+	}
+
+    length_ = count;	
+    array_ = new T[length_];
+
+} //end construnctor
+
+// Check the stride size
+template <typename T>
+size_t RaggedDownArray<T>::stride(size_t j) {
+    return start_index_[j+1] - start_index_[j];
+}
+
+template <typename T>
+size_t RaggedDownArray<T>::size() {
+    return length_;
+}
+
+// overload operator () to access data as an array(i,j)
+// Note: i = 0:stride(j), j = 0:N-1
+template <typename T>
+T& RaggedDownArray<T>::operator()(size_t i, size_t j) {
+    // Where is the array starting?
+    // look at start index
+    size_t start = start_index_[j]; 
+
+    // Make sure we are within array bounds
+    assert(i < stride(j) && "i is out of bounds in RaggedDownArray");
+    assert(j < dim2_ && "j is out of dim2_ bounds in RaggedDownArray");
+		
+    return array_[i + start];
+
+} // End () operator
+
+template <typename T>
+RaggedDownArray<T> & RaggedDownArray<T>::operator= (const RaggedDownArray &temp) {
+
+    if( this != &temp) {
+        dim2_ = temp.dim2_;
+        length_ = temp.length_;
+        start_index_ = new size_t[dim2_ + 1];
+        for (int j = 0; j < dim2_; j++) {
+            start_index_[j] = temp.start_index_[j];  
+        }
+        array_ = new T[length_];
+    }
+	
+    return *this;
+}
+
+// Destructor
+template <typename T>
+RaggedDownArray<T>::~RaggedDownArray() {
+    delete[] array_;
+    delete[] start_index_;
+
+} // End destructor
+
+//~~~~~~~~~~~~~~~~~~~end RaggedDownArray class definitions~~~~~~~
+
+
+//~~~~~~~~~~~~~~~~~~~begin Complressed Sparse Column Kokkos Storage~~~~~
+// csc storage
+// array.value(i,j)
+// array.row_index(i,j)
+
+template <typename T>
+class sparseColumnArrayKokkos {
+private:
+    size_t *start_index_;
+    size_t *row_index_;
+    T * array_;
+
+    size_t dim2_;
+
+public:
+    // Default constructor
+    KOKKOS_FUNCTION
+    sparseColumnArrayKokkos(); 
+
+    //---2D array---
+		
+    // Overload constructor for CArray
+    KOKKOS_FUNCTION
+    sparseColumnArrayKokkos( CArrayKokkos <size_t> &strides_array);
+
+    // Overload constructor for a ViewCArray
+    KOKKOS_FUNCTION
+    sparseColumnArrayKokkos(ViewCArrayKokkos<size_t> &strides_array);
+
+    // Overload constructor for a regular cpp array
+    KOKKOS_FUNCTION
+    sparseColumnArrayKokkos(size_t *strides_array, size_t some_dim1);
+
+    // Method to return the strides size
+    KOKKOS_FUNCTION
+    size_t stride(size_t j) const;
+
+    // Method to return row index; array.row_index(i,j)
+    KOKKOS_FUNCTION
+    size_t& row_index(size_t i, size_t j) const;
+
+    // Method to access data as array.value(i,j),
+    // where i = 0:N-1, j = stride(i)
+    KOKKOS_FUNCTION
+    T& value(size_t i, size_t j) const;
+
+    // Destructor
+    KOKKOS_FUNCTION
+    ~sparseColumnArrayKokkos ();
+}; //~~~~~~~~~~end of sparseColumnArray class declaration~~~~~~~~~
+
+//~~~~~~~~~~~~~~~~begin sparseColumnArray class defitions
+
+// Overload constructor with CArray
+template <typename T>
+KOKKOS_FUNCTION
+sparseColumnArrayKokkos<T>::sparseColumnArrayKokkos(CArrayKokkos <size_t> &strides_array) {
+    // Length of stride array
+    // dim2_ = strides_array.size();
+
+    // Create and initialize startind index 
+    start_index_ = new size_t[dim2_+1];
+    start_index_[0] = 0;
+
+    // Loop over to get total length of 1D array
+    size_t count = 0;
+    for(size_t j = 0; j < dim2_ ; j++) {
+        count += strides_array(j);
+        start_index_[j+1] = count;
+    }
+
+    array_ = new T[count];
+    row_index_ = new T[count];
+} // End constructor with CArray
+
+// Overload constructor with view array
+template <typename T>
+KOKKOS_FUNCTION
+sparseColumnArrayKokkos<T>::sparseColumnArrayKokkos(ViewCArrayKokkos <size_t> &strides_array) {
+    // Length of stride array
+    //dim2_ = strides_array.size();
+
+    // Create and initialize start indices
+    start_index_ = new size_t[dim2_+1];
+    start_index_[0] = 0;
+
+    // Loop over total length of 1D array
+    size_t count = 0;
+    for( size_t j = 0; j < dim2_ ; j++) {
+        count += strides_array(j);
+        start_index_[j+1] = count;
+    }
+
+    array_ = new T[count];
+    row_index_ = new T[count];
+} // End constructor with ViewCArray
+
+//overload constructor with a regular cpp array
+template <typename T>
+KOKKOS_FUNCTION
+sparseColumnArrayKokkos<T>::sparseColumnArrayKokkos(size_t *strides_array, size_t dim2) {
+    // Length of  stride array
+    dim2_ = dim2;
+
+    // Create and initialize staring index array
+    start_index_ = new T[dim2_+1];
+    start_index_[0] = 0;
+
+    // Loop over total length of 1D
+    size_t count = 0;
+    for(size_t j = 0; j < dim2_; j++){
+        count += strides_array[j];
+        start_index_[j+1] = count;
+    }
+
+    array_ = new T[count];
+    row_index_ = new T[count];
+} // End constructor with regular array
+
+// Method to return stride size
+template <typename T>
+KOKKOS_FUNCTION
+size_t sparseColumnArrayKokkos<T>::stride(size_t j) const {
+    return start_index_[j+1] - start_index_[j];
+}
+
+// Access data as array.row_index(i,j)
+// i = stride(j), j = 0:N-1
+template <typename T>
+KOKKOS_FUNCTION
+size_t& sparseColumnArrayKokkos<T>::row_index(size_t i, size_t j) const {
+    // Get 1D array index
+    size_t start = start_index_[j];
+
+    // Assert
+    assert(i < stride(j) && "i is out stride bounds in sparseColumnArrayKokkos");
+    assert(j < dim2_ && "is out out of dim2 bounds in sparseColumnArrayKokkos");
+
+    return row_index_[i+start];
+} // End row index method
+
+// Access data as array.value(i,j)
+// where i = 0:stride(j), j = 0:N-1
+template <typename T>
+KOKKOS_FUNCTION
+T& sparseColumnArrayKokkos<T>::value(size_t i, size_t j) const {
+    // Get 1D array index
+    size_t start = start_index_[j];
+
+    // Assert indices are within bounds
+	assert(i < stride(j) && "i is out of stride bounds in sparseColumnArrayKokkos");
+    assert(j < dim2_ && "j is out of dim2 bounds in sparseColumnArrayKokkos");
+
+    return array_[i + start];
+} // End method
+
+// Destructor
+template <typename T>
+KOKKOS_FUNCTION
+sparseColumnArrayKokkos<T>::~sparseColumnArrayKokkos () {
+    delete[] array_;
+    delete[] start_index_;
+    delete[] row_index_;
+}
+
+//~~~~~~~~~~~~~~~~end of sparseColumnArrayKokkos class definitions ~~~~~~~~~~~~
+
+// A class to access the row indicies i of an Array(i,j), like CArray,
+// that is sparsely populated but has dense sections along i
+//     get i_global using (i_local, j_global)
+/*
+template <typename T>
+class SparseRowAccessors {
+private:
+    size_t *stride_;
+    T * dim1_index_;
+    
+    size_t dim1_;
+    size_t dim2_;
+    size_t length_;
+    
+public:
+    // Default constructor
+    SparseRowAccessors ();
+    
+    //--- 2D array access of a ragged right array ---
+    
+    // Overloaded constructor
+    SparseRowAccessors (size_t dim1, size_t dim2);
+    
+    // A method to return or set the stride size
+    size_t& stride(size_t j) const;
+    
+    // A method to increase the stride size
+    void push_back(size_t j) const;
+    
+    // Overload operator() to access data as array(i,j),
+    // where i=[0:N-1], j=[stride(i)]
+    T& operator()(size_t i, size_t j) const;
+    
+    // Destructor
+    ~SparseRowAccessors ();
+}; 
+
+// Overloaded constructor
+SparseRowAccessors::SparseRowAccessors (size_t dim1, size_t dim2) {
+    // The dimensions of the array;
+    dim1_  = dim1;
+    dim2_  = dim2;
+    length_ = dim1 * dim2;
+    
+    // Create memory on the heap for the values
+    dim1_index_ = new T[length_];
+    
+    // Create memory for the stride size in each column
+    stride_ = new size_t[dim2];
+    
+    // Initialize the stride to a dense array so stride_ = 0
+    for (int j=0; j<dim2_; j++){
+        stride_[j] = 0;
+    }
+    
+    // Start index is always = i + j*dim1
+} 
+
+// A method to set the stride size for column j
+size_t& SparseRowAccessors::stride(size_t j) const {
+    return stride_[j];
+}
+
+// A method to increase the stride size for row i
+void SparseRowAccessors::push_back(size_t j) const {
+    stride_[j]++;
+}
+
+// Overload operator() to access data as array(i,j),
+// where i=[0:N-1], j=[0:stride(i)]
+inline T& SparseRowAccessors::operator()(size_t i, size_t j) const {
+    // Asserts
+    assert(i < dim1_ && "i is out of dim1 bounds in SparseRowAccessors");  // die if >= dim1
+    assert(j < dim2_ && "j is out of dim2 bounds in SparseRowAccessors");  // die if >= dim2
+    assert(i < stride_[j] && "j is out of stride bounds in sparaseRowAccessors");  // die if >= stride
+    
+    return dim1_index_[i + j*dim1_];
+} 
+
+// Destructor
+SparseRowAccessors::~SparseRowAccessors () {
+    delete[] dim1_index_;
+    delete[] stride_;
+}
+*/
+
+// The DynamicRaggedRightArray is designed to include a buffer
+template <typename T>
+class DynamicRaggedRightArray {
+private:
+    size_t *stride_;
+    T * array_;
+    
+    size_t dim1_;
+    size_t dim2_;
+    size_t length_;
+    
+public:
+    // Default constructor
+    DynamicRaggedRightArray ();
+    
+    //--- 2D array access of a ragged right array ---
+    
+    // Overload constructor
+    DynamicRaggedRightArray (size_t dim1, size_t dim2);
+    
+    // A method to return or set the stride size
+    size_t& stride(size_t i) const;
+    
+    // A method to increase the stride size
+    void push_back(size_t i) const;
+    
+    // Overload operator() to access data as array(i,j),
+    // where i=[0:N-1], j=[stride(i)]
+    T& operator()(size_t i, size_t j) const;
+    
+    // Destructor
+    ~DynamicRaggedRightArray ();
+}; 
+
+// Overloaded constructor
+template <typename T>
+DynamicRaggedRightArray<T>::DynamicRaggedRightArray (size_t dim1, size_t dim2) {
+    // The dimensions of the array;
+    dim1_  = dim1;
+    dim2_  = dim2;
+    length_ = dim1*dim2;
+    
+    // Create memory on the heap for the values
+    array_ = new T[dim1*dim2];
+    
+    // Create memory for the stride size in each row
+    stride_ = new size_t[dim1];
+    
+    // Initialize the stride
+    for (int i=0; i<dim1_; i++){
+        stride_[i] = 0;
+    }
+    
+    // Start index is always = j + i*dim2
+} 
+
+// A method to set the stride size for row i
+template <typename T>
+size_t& DynamicRaggedRightArray<T>::stride(size_t i) const {
+    return stride_[i];
+}
+
+
+// A method to increase the stride size for row i
+template <typename T>
+void DynamicRaggedRightArray<T>::push_back(size_t i) const {
+    stride_[i]++;
+}
+
+// Overload operator() to access data as array(i,j),
+// where i=[0:N-1], j=[0:stride(i)]
+template <typename T>
+inline T& DynamicRaggedRightArray<T>::operator()(size_t i, size_t j) const {
+    // Asserts
+    assert(i < dim1_ && "i is out of dim1 bounds in DynamicRaggedRight");  // die if >= dim1
+    assert(j < dim2_ && "j is out of dim2 bounds in DynamicRaggedRight");  // die if >= dim2
+    assert(j < stride_[i] && "j is out of stride bounds in DynamicRaggedRight");  // die if >= stride
+    
+    return array_[j + i*dim2_];
+}
+
+// Destructor
+template <typename T>
+DynamicRaggedRightArray<T>::~DynamicRaggedRightArray() {
+    delete[] array_;
+    delete[] stride_;
+}
+
+// The DynamicRaggedRightArray is designed to include a buffer
+/*
+template <typename T>
+class DynamicRaggedRightArrayKokkos {
+private:
+    size_t *stride_;
+    T * array_;
+    
+    size_t dim1_;
+    size_t dim2_;
+    size_t length_;
+    
+public:
+    // Default constructor
+    DynamicRaggedRightArray ();
+    
+    //--- 2D array access of a ragged right array ---
+    
+    // overload constructor
+    DynamicRaggedRightArray (size_t dim1, size_t dim2);
+    
+    // A method to return or set the stride size
+    size_t& stride(size_t i) const;
+    
+    // A method to increase the stride size
+    void push_back(size_t i) const;
+    
+    // Overload operator() to access data as array(i,j),
+    // where i=[0:N-1], j=[stride(i)]
+    T& operator()(size_t i, size_t j) const;
+    
+    // Destructor
+    ~DynamicRaggedRightArray ();
+}; 
+
+// Overloaded constructor
+template <typename T>
+DynamicRaggedRightArray<T>::DynamicRaggedRightArray (size_t dim1, size_t dim2) {
+    // The dimensions of the array;
+    dim1_  = dim1;
+    dim2_  = dim2;
+    length_ = dim1*dim2;
+    
+    // Create memory on the heap for the values
+    array_ = new T[dim1*dim2];
+    
+    // Create memory for the stride size in each row
+    stride_ = new size_t[dim1];
+    
+    // Initialize the stride
+    for (int i=0; i<dim1_; i++){
+        stride_[i] = 0;
+    }
+    
+    // Start index is always = j + i*dim2
+} 
+
+// A method to set the stride size for row i
+template <typename T>
+size_t& DynamicRaggedRightArray<T>::stride(size_t i) const {
+    return stride_[i];
+}
+
+
+// A method to increase the stride size for row i
+template <typename T>
+void DynamicRaggedRightArray<T>::push_back(size_t i) const {
+    stride_[i]++;
+}
+
+// Overload operator() to access data as array(i,j),
+// where i=[0:N-1], j=[0:stride(i)]
+template <typename T>
+inline T& DynamicRaggedRightArray<T>::operator()(size_t i, size_t j) const {
+    // Asserts
+    assert(i < dim1_ && "i is out of dim1 bounds in DynamicRaggedRight");  // die if >= dim1
+    assert(j < dim2_ && "j is out of dim2 bounds in DynamicRaggedRight");  // die if >= dim2
+    assert(j < stride_[i] && "j is out of stride bounds in DynamicRaggedRight");  // die if >= stride
+    
+    return array_[j + i*dim2_];
+}
+
+// Destructor
+template <typename T>
+DynamicRaggedRightArray<T>::~DynamicRaggedRightArray() {
+    delete[] array_;
+    delete[] stride_;
+}
+*/
+
 
 template <typename T>
 class SparseRowArray {
@@ -4988,440 +5628,6 @@ RaggedDownArrayKokkos<T>::~RaggedDownArrayKokkos() {
     delete[] start_index_;
 
 } // End destructor
-
-//~~~~~~~~~~~~~~~~~~~end RaggedDownArrayKokkos class definitions~~~~~~~
-
-
-//~~~~~~~~~~~~~~~~~~~begin Complressed Sparse Column Kokkos Storage~~~~~
-// csc storage
-// array.value(i,j)
-// array.row_index(i,j)
-
-template <typename T>
-class sparseColumnArrayKokkos {
-private:
-    size_t *start_index_;
-    size_t *row_index_;
-    T * array_;
-
-    size_t dim2_;
-
-public:
-    // Default constructor
-    KOKKOS_FUNCTION
-    sparseColumnArrayKokkos(); 
-
-    //---2D array---
-		
-    // Overload constructor for CArray
-    KOKKOS_FUNCTION
-    sparseColumnArrayKokkos( CArrayKokkos <size_t> &strides_array);
-
-    // Overload constructor for a ViewCArray
-    KOKKOS_FUNCTION
-    sparseColumnArrayKokkos(ViewCArrayKokkos<size_t> &strides_array);
-
-    // Overload constructor for a regular cpp array
-    KOKKOS_FUNCTION
-    sparseColumnArrayKokkos(size_t *strides_array, size_t some_dim1);
-
-    // Method to return the strides size
-    KOKKOS_FUNCTION
-    size_t stride(size_t j) const;
-
-    // Method to return row index; array.row_index(i,j)
-    KOKKOS_FUNCTION
-    size_t& row_index(size_t i, size_t j) const;
-
-    // Method to access data as array.value(i,j),
-    // where i = 0:N-1, j = stride(i)
-    KOKKOS_FUNCTION
-    T& value(size_t i, size_t j) const;
-
-    // Destructor
-    KOKKOS_FUNCTION
-    ~sparseColumnArrayKokkos ();
-}; //~~~~~~~~~~end of sparseColumnArray class declaration~~~~~~~~~
-
-//~~~~~~~~~~~~~~~~begin sparseColumnArray class defitions
-
-// Overload constructor with CArray
-template <typename T>
-KOKKOS_FUNCTION
-sparseColumnArrayKokkos<T>::sparseColumnArrayKokkos(CArrayKokkos <size_t> &strides_array) {
-    // Length of stride array
-    // dim2_ = strides_array.size();
-
-    // Create and initialize startind index 
-    start_index_ = new size_t[dim2_+1];
-    start_index_[0] = 0;
-
-    // Loop over to get total length of 1D array
-    size_t count = 0;
-    for(size_t j = 0; j < dim2_ ; j++) {
-        count += strides_array(j);
-        start_index_[j+1] = count;
-    }
-
-    array_ = new T[count];
-    row_index_ = new T[count];
-} // End constructor with CArray
-
-// Overload constructor with view array
-template <typename T>
-KOKKOS_FUNCTION
-sparseColumnArrayKokkos<T>::sparseColumnArrayKokkos(ViewCArrayKokkos <size_t> &strides_array) {
-    // Length of stride array
-    //dim2_ = strides_array.size();
-
-    // Create and initialize start indices
-    start_index_ = new size_t[dim2_+1];
-    start_index_[0] = 0;
-
-    // Loop over total length of 1D array
-    size_t count = 0;
-    for( size_t j = 0; j < dim2_ ; j++) {
-        count += strides_array(j);
-        start_index_[j+1] = count;
-    }
-
-    array_ = new T[count];
-    row_index_ = new T[count];
-} // End constructor with ViewCArray
-
-//overload constructor with a regular cpp array
-template <typename T>
-KOKKOS_FUNCTION
-sparseColumnArrayKokkos<T>::sparseColumnArrayKokkos(size_t *strides_array, size_t dim2) {
-    // Length of  stride array
-    dim2_ = dim2;
-
-    // Create and initialize staring index array
-    start_index_ = new T[dim2_+1];
-    start_index_[0] = 0;
-
-    // Loop over total length of 1D
-    size_t count = 0;
-    for(size_t j = 0; j < dim2_; j++){
-        count += strides_array[j];
-        start_index_[j+1] = count;
-    }
-
-    array_ = new T[count];
-    row_index_ = new T[count];
-} // End constructor with regular array
-
-// Method to return stride size
-template <typename T>
-KOKKOS_FUNCTION
-size_t sparseColumnArrayKokkos<T>::stride(size_t j) const {
-    return start_index_[j+1] - start_index_[j];
-}
-
-// Access data as array.row_index(i,j)
-// i = stride(j), j = 0:N-1
-template <typename T>
-KOKKOS_FUNCTION
-size_t& sparseColumnArrayKokkos<T>::row_index(size_t i, size_t j) const {
-    // Get 1D array index
-    size_t start = start_index_[j];
-
-    // Assert
-    assert(i < stride(j) && "i is out stride bounds in sparseColumnArrayKokkos");
-    assert(j < dim2_ && "is out out of dim2 bounds in sparseColumnArrayKokkos");
-
-    return row_index_[i+start];
-} // End row index method
-
-// Access data as array.value(i,j)
-// where i = 0:stride(j), j = 0:N-1
-template <typename T>
-KOKKOS_FUNCTION
-T& sparseColumnArrayKokkos<T>::value(size_t i, size_t j) const {
-    // Get 1D array index
-    size_t start = start_index_[j];
-
-    // Assert indices are within bounds
-	assert(i < stride(j) && "i is out of stride bounds in sparseColumnArrayKokkos");
-    assert(j < dim2_ && "j is out of dim2 bounds in sparseColumnArrayKokkos");
-
-    return array_[i + start];
-} // End method
-
-// Destructor
-template <typename T>
-KOKKOS_FUNCTION
-sparseColumnArrayKokkos<T>::~sparseColumnArrayKokkos () {
-    delete[] array_;
-    delete[] start_index_;
-    delete[] row_index_;
-}
-
-//~~~~~~~~~~~~~~~~end of sparseColumnArrayKokkos class definitions ~~~~~~~~~~~~
-
-// A class to access the row indicies i of an Array(i,j), like CArray,
-// that is sparsely populated but has dense sections along i
-//     get i_global using (i_local, j_global)
-/*
-template <typename T>
-class SparseRowAccessors {
-private:
-    size_t *stride_;
-    T * dim1_index_;
-    
-    size_t dim1_;
-    size_t dim2_;
-    size_t length_;
-    
-public:
-    // Default constructor
-    SparseRowAccessors ();
-    
-    //--- 2D array access of a ragged right array ---
-    
-    // Overloaded constructor
-    SparseRowAccessors (size_t dim1, size_t dim2);
-    
-    // A method to return or set the stride size
-    size_t& stride(size_t j) const;
-    
-    // A method to increase the stride size
-    void push_back(size_t j) const;
-    
-    // Overload operator() to access data as array(i,j),
-    // where i=[0:N-1], j=[stride(i)]
-    T& operator()(size_t i, size_t j) const;
-    
-    // Destructor
-    ~SparseRowAccessors ();
-}; 
-
-// Overloaded constructor
-SparseRowAccessors::SparseRowAccessors (size_t dim1, size_t dim2) {
-    // The dimensions of the array;
-    dim1_  = dim1;
-    dim2_  = dim2;
-    length_ = dim1 * dim2;
-    
-    // Create memory on the heap for the values
-    dim1_index_ = new T[length_];
-    
-    // Create memory for the stride size in each column
-    stride_ = new size_t[dim2];
-    
-    // Initialize the stride to a dense array so stride_ = 0
-    for (int j=0; j<dim2_; j++){
-        stride_[j] = 0;
-    }
-    
-    // Start index is always = i + j*dim1
-} 
-
-// A method to set the stride size for column j
-size_t& SparseRowAccessors::stride(size_t j) const {
-    return stride_[j];
-}
-
-// A method to increase the stride size for row i
-void SparseRowAccessors::push_back(size_t j) const {
-    stride_[j]++;
-}
-
-// Overload operator() to access data as array(i,j),
-// where i=[0:N-1], j=[0:stride(i)]
-inline T& SparseRowAccessors::operator()(size_t i, size_t j) const {
-    // Asserts
-    assert(i < dim1_ && "i is out of dim1 bounds in SparseRowAccessors");  // die if >= dim1
-    assert(j < dim2_ && "j is out of dim2 bounds in SparseRowAccessors");  // die if >= dim2
-    assert(i < stride_[j] && "j is out of stride bounds in sparaseRowAccessors");  // die if >= stride
-    
-    return dim1_index_[i + j*dim1_];
-} 
-
-// Destructor
-SparseRowAccessors::~SparseRowAccessors () {
-    delete[] dim1_index_;
-    delete[] stride_;
-}
-*/
-
-// The DynamicRaggedRightArray is designed to include a buffer
-template <typename T>
-class DynamicRaggedRightArray {
-private:
-    size_t *stride_;
-    T * array_;
-    
-    size_t dim1_;
-    size_t dim2_;
-    size_t length_;
-    
-public:
-    // Default constructor
-    DynamicRaggedRightArray ();
-    
-    //--- 2D array access of a ragged right array ---
-    
-    // Overload constructor
-    DynamicRaggedRightArray (size_t dim1, size_t dim2);
-    
-    // A method to return or set the stride size
-    size_t& stride(size_t i) const;
-    
-    // A method to increase the stride size
-    void push_back(size_t i) const;
-    
-    // Overload operator() to access data as array(i,j),
-    // where i=[0:N-1], j=[stride(i)]
-    T& operator()(size_t i, size_t j) const;
-    
-    // Destructor
-    ~DynamicRaggedRightArray ();
-}; 
-
-// Overloaded constructor
-template <typename T>
-DynamicRaggedRightArray<T>::DynamicRaggedRightArray (size_t dim1, size_t dim2) {
-    // The dimensions of the array;
-    dim1_  = dim1;
-    dim2_  = dim2;
-    length_ = dim1*dim2;
-    
-    // Create memory on the heap for the values
-    array_ = new T[dim1*dim2];
-    
-    // Create memory for the stride size in each row
-    stride_ = new size_t[dim1];
-    
-    // Initialize the stride
-    for (int i=0; i<dim1_; i++){
-        stride_[i] = 0;
-    }
-    
-    // Start index is always = j + i*dim2
-} 
-
-// A method to set the stride size for row i
-template <typename T>
-size_t& DynamicRaggedRightArray<T>::stride(size_t i) const {
-    return stride_[i];
-}
-
-
-// A method to increase the stride size for row i
-template <typename T>
-void DynamicRaggedRightArray<T>::push_back(size_t i) const {
-    stride_[i]++;
-}
-
-// Overload operator() to access data as array(i,j),
-// where i=[0:N-1], j=[0:stride(i)]
-template <typename T>
-inline T& DynamicRaggedRightArray<T>::operator()(size_t i, size_t j) const {
-    // Asserts
-    assert(i < dim1_ && "i is out of dim1 bounds in DynamicRaggedRight");  // die if >= dim1
-    assert(j < dim2_ && "j is out of dim2 bounds in DynamicRaggedRight");  // die if >= dim2
-    assert(j < stride_[i] && "j is out of stride bounds in DynamicRaggedRight");  // die if >= stride
-    
-    return array_[j + i*dim2_];
-}
-
-// Destructor
-template <typename T>
-DynamicRaggedRightArray<T>::~DynamicRaggedRightArray() {
-    delete[] array_;
-    delete[] stride_;
-}
-
-// The DynamicRaggedRightArray is designed to include a buffer
-/*
-template <typename T>
-class DynamicRaggedRightArrayKokkos {
-private:
-    size_t *stride_;
-    T * array_;
-    
-    size_t dim1_;
-    size_t dim2_;
-    size_t length_;
-    
-public:
-    // Default constructor
-    DynamicRaggedRightArray ();
-    
-    //--- 2D array access of a ragged right array ---
-    
-    // overload constructor
-    DynamicRaggedRightArray (size_t dim1, size_t dim2);
-    
-    // A method to return or set the stride size
-    size_t& stride(size_t i) const;
-    
-    // A method to increase the stride size
-    void push_back(size_t i) const;
-    
-    // Overload operator() to access data as array(i,j),
-    // where i=[0:N-1], j=[stride(i)]
-    T& operator()(size_t i, size_t j) const;
-    
-    // Destructor
-    ~DynamicRaggedRightArray ();
-}; 
-
-// Overloaded constructor
-template <typename T>
-DynamicRaggedRightArray<T>::DynamicRaggedRightArray (size_t dim1, size_t dim2) {
-    // The dimensions of the array;
-    dim1_  = dim1;
-    dim2_  = dim2;
-    length_ = dim1*dim2;
-    
-    // Create memory on the heap for the values
-    array_ = new T[dim1*dim2];
-    
-    // Create memory for the stride size in each row
-    stride_ = new size_t[dim1];
-    
-    // Initialize the stride
-    for (int i=0; i<dim1_; i++){
-        stride_[i] = 0;
-    }
-    
-    // Start index is always = j + i*dim2
-} 
-
-// A method to set the stride size for row i
-template <typename T>
-size_t& DynamicRaggedRightArray<T>::stride(size_t i) const {
-    return stride_[i];
-}
-
-
-// A method to increase the stride size for row i
-template <typename T>
-void DynamicRaggedRightArray<T>::push_back(size_t i) const {
-    stride_[i]++;
-}
-
-// Overload operator() to access data as array(i,j),
-// where i=[0:N-1], j=[0:stride(i)]
-template <typename T>
-inline T& DynamicRaggedRightArray<T>::operator()(size_t i, size_t j) const {
-    // Asserts
-    assert(i < dim1_ && "i is out of dim1 bounds in DynamicRaggedRight");  // die if >= dim1
-    assert(j < dim2_ && "j is out of dim2 bounds in DynamicRaggedRight");  // die if >= dim2
-    assert(j < stride_[i] && "j is out of stride bounds in DynamicRaggedRight");  // die if >= stride
-    
-    return array_[j + i*dim2_];
-}
-
-// Destructor
-template <typename T>
-DynamicRaggedRightArray<T>::~DynamicRaggedRightArray() {
-    delete[] array_;
-    delete[] stride_;
-}
-*/
 
 
 template <typename T>

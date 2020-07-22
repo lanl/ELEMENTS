@@ -18,7 +18,7 @@ add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp matar.h kokkos_ali
 
 include_directories(./)
 
-add_subdirectory(kokkos)
+add_subdirectory(Kokkos/kokkos)
 
 target_link_libraries(mtest Kokkos::kokkos)
 #target_link_libraries(dummy Kokkos::kokkos)

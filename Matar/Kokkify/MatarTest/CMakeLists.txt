@@ -7,6 +7,7 @@ project(mtest CXX C)
 # set(CMAKE_C_FLAGS "-g -G") # VERBOSE=1")
 # set(CMAKE_CXX_FLAGS "-g -G") # VERBOSE=1")
 
+# adds -g and -02
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif(NOT CMAKE_BUILD_TYPE)
@@ -29,6 +30,7 @@ set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${VECTOR_Fortran
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${VECTOR_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 
+#add Likwid module path here
 
 add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp matar.h kokkos_alias.h)
 #add_executable(dummy dummy.cpp matar_test.h kokkos_alias.h)

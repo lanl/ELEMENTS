@@ -1,4 +1,4 @@
-/*********************************************************************************************
+/*****************************************************************************
 © 2020. Triad National Security, LLC. All rights reserved.
 This program was produced under U.S. Government contract 89233218CNA000001 for Los Alamos
 National Laboratory (LANL), which is operated by Triad National Security, LLC for the U.S.
@@ -36,12 +36,6 @@ OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-**********************************************************************************************/
-
-/*********************************************************************************************
-
-
 
 **********************************************************************************************/
 
@@ -182,35 +176,44 @@ private:
 
     int rk_storage_;
 
+    int indx_; //useful for returning from internal function
+
+
+// ---- ELEMENT POLYNOMIAL ORDER ---- //
+    int   elem_order_;
+
+
+// ---- CCH RECONSTRUCTION POLYNOMIAL ORDER ---- //
+    int   recon_order_;
 
 // ---- INDEX SPACES AND MAPS ---- //
-    
+
     // ---- ELEMENT ---- //
-    int   poly_order_;
     int   num_elem_;
     int   num_g_pts_in_elem_;
     int   num_cells_in_elem_;
-    int   elems_in_elem_list_size_;
+    int   num_nodes_in_elem_;
 
     int * cells_in_elem_ = NULL;
-    int * elems_in_elem_ = NULL;
 
-
-    // add these_elems_in_elem
+    int * num_elems_in_elem_ = NULL;
+    int * elems_in_elem_list_start_ = NULL;
+    int * elems_in_elem_list_ = NULL;
+    int * nodes_in_elem_list_ = NULL;
 
 
     // ---- CELLS ---- //
     int   num_cells_;
     
-    int * cell_nodes_list_ = NULL;         // size of num_cells*8
+    int * nodes_in_cell_list_ = NULL;      // size of num_cells*8
     int * num_cells_in_cell_ = NULL;       // size of num_cells
-    int * cell_in_cell_list_start_ = NULL; // size of num_cells+1
-    int * cell_in_cell_list_ = NULL;       // size depends on mesh connectivity
+    int * cells_in_cell_list_start_ = NULL; // size of num_cells+1
+    int * cells_in_cell_list_ = NULL;       // size depends on mesh connectivity
     int * elems_in_cell_list_ = NULL;       // size depends on mesh connectivity
 
 
     // ---- VERTICES ---- //
-    int * num_verts_;
+
 
 
     // ---- NODES ---- //
@@ -220,6 +223,9 @@ private:
     int * cells_in_node_list_start_ = NULL; // size of num_nodes+1
     int * cells_in_node_list_ = NULL;       // size depends on mesh connectivity
     
+    int * num_elems_in_node_ = NULL;
+    int * elems_in_node_list_start_ = NULL;
+    int * elems_in_node_list_ = NULL;
 
     // ---- GAUSS POINTS ---- //
     int   num_g_pts_;
@@ -232,7 +238,6 @@ private:
 
     int * num_corners_in_node_ = NULL;
 
-    // int * corners_in_cell_list_start;
     int * corners_in_cell_list_ = NULL;
 
     int * corners_in_node_list_start_ = NULL;
@@ -263,6 +268,8 @@ private:
     // ---- ELEMENT ---- //
     real_t * elem_vol_ = NULL;  // size of num_elem
 
+    
+
 
     // ---- CELLS ---- //
     real_t * cell_vol_ = NULL;      // size of num_cells
@@ -282,25 +289,39 @@ private:
 public:
 
 
-// ==== INDEX SPACE FUNCTIONS ==== // 
+// ==== MESH CONSTANTS ==== // 
     
-    // returns the number of rk_stages
+    // returns the number of rk_storage bins
     inline int num_rk () const
     {
         return rk_storage_;
     }
 
-    // returns the number of dimensions
+    // returns the number of dimensions in the mesh
     inline int num_dim () const
     {
         return num_dim_;
     }
 
+    // returns the polynomial order of the element
+    inline int elem_order () const
+    {
+        return elem_order_;
+    }
+
+    // returns the polynomial order of the CCH reconstruction
+    inline int recon_order () const
+    {
+        return recon_order_;
+    }
+
+
+// ==== INDEX SPACE INITIALIZATIONS ==== //
 
     // ---- ELEMENT ---- //
     void init_element (int p_order, int dim, int num_elem, int num_rk){
         
-        poly_order_ = p_order;
+        elem_order_ = p_order;
 
         rk_storage_ = num_rk;
         
@@ -326,63 +347,29 @@ public:
         num_elem_ = num_elem;
 
         num_g_pts_in_elem_ = num_g_pts;
+
+
         num_cells_in_elem_ = num_subcells_per_elem;
 
         num_cells_ = num_elem * num_subcells_per_elem;
 
         cells_in_elem_ = new int[num_elem * num_subcells_per_elem];
 
-        elem_vol_ = new real_t[num_rk*num_elem];
+        elem_vol_ = new real_t[rk_storage_*num_elem];
 
+        // WARNING: FOLLOWING CODE ASSUMES LOBATTO 
+        num_nodes_in_elem_ = num_g_pts;
+
+        nodes_in_elem_list_ = new int[num_elem_ * num_g_pts_in_elem_];
+
+        num_elems_in_elem_ = new int[num_elem_ ];
+
+        elems_in_elem_list_start_ = new int[num_elem_ + 1];
     }
 
-    // returns the number of elements
-    inline int num_elements () const
-    {
-        return num_elem_;
-    }
-
-    // returns the number of elements
-    inline int num_cells_in_element () const
-    {
-        return num_cells_in_elem_;
-    }
-
-
-    // returns the polynomial order of the element
-    inline int poly_order () const
-    {
-        return poly_order_;
-    }
-
-    // return element geometric center coords
-
-
-    // return number of elements connected to element
-
-    // return array of element id's connected to element
-
-    // return the the global cell id from local element cell id
-    inline int& cells_in_element(int elem_gid, int cell_lid) 
-    {
-        return cells_in_elem_[cell_lid + num_cells_in_elem_*(elem_gid)];
-    }
-
-    inline int& num_gauss_in_element() 
-    {
-        return num_g_pts_in_elem_;
-    }
-
-    inline int& num_mat_pt_in_element() 
-    {
-        return num_g_pts_in_elem_;
-    }
 
     // ---- CELLS ---- //
-
-    // initialize basic cell data structures
-    void init_cells (int ncells, int num_rk)
-    {
+    void init_cells (int ncells, int num_rk){
 
         rk_storage_ = num_rk;
         
@@ -392,64 +379,185 @@ public:
         cell_coords_ = new real_t[num_cells_*num_dim_];
 
 
-        cell_nodes_list_ = new int[num_cells_*num_nodes_hex_];
-
-        cell_nodes_list_      = new int[num_cells_*num_nodes_hex_];
+        nodes_in_cell_list_   = new int[num_cells_*num_nodes_hex_];
         corners_in_cell_list_ = new int[num_cells_*num_nodes_hex_];
         
         num_cells_in_cell_       = new int[num_cells_]; 
-        cell_in_cell_list_start_ = new int[num_cells_+1];
+        cells_in_cell_list_start_ = new int[num_cells_+1];
 
         elems_in_cell_list_ = new int[num_cells_];
+    }
 
+
+    // ---- VERTICES ---- //
+
+
+
+    // ---- NODES ---- //
+    void init_nodes (int num_nodes, int num_rk) {
+
+        rk_storage_ = num_rk;
+        
+        num_nodes_ = num_nodes;
+        node_coords_   = new real_t[rk_storage_*num_nodes_*num_dim_];
+
+        num_cells_in_node_        = new int[num_nodes_];
+        cells_in_node_list_start_ = new int[num_nodes_+1];
+
+        num_corners_in_node_      = new int[num_nodes_];
+
+        num_elems_in_node_        = new int[num_nodes_];
+        elems_in_node_list_start_ = new int[num_nodes_+1];
+    }
+
+
+    // ---- GAUSS LOBATTO POINTS ---- //
+    void init_gauss_pts (){
+
+        // Index maps
+        num_g_pts_ = num_elem_ * num_g_pts_in_elem_;
+        node_in_gauss_list_ = new int[num_g_pts_];
+
+        // geometric state
+        jacobians_ = new real_t[rk_storage_*num_g_pts_*num_dim_*num_dim_];
+        jacobian_determinant_ = new real_t[rk_storage_*num_g_pts_];
+    }
+
+
+    // ---- CORNERS ---- //
+
+
+    // ---- FACES ---- //
+
+
+    // ---- BOUNDARY ---- //
+
+    // initializes the number of bdy sets
+    void init_bdy_sets (int num_sets){
+        
+        // A check
+        if(num_sets == 0){
+            std::cout << " ERROR: number of boundary sets = 0, setting it = 1";
+            num_sets = 1;
+        }
+        num_bdy_sets_ = num_sets;
+        num_bdy_faces_set_ = new int [num_sets];
+        start_index_bdy_set_ = new int [num_sets+1];
+        bdy_set_list_   = new int [num_sets*num_bdy_faces_]; // largest size possible
     }
     
+
+
+
+// ==== INDEX SPACE ACCESSORS ==== //
+
+    // ---- ELEMENT ---- //
+
+    // returns the number of elements
+    inline int num_elems () const
+    {
+        return num_elem_;
+    }
+
+    // returns the number of elements
+    inline int num_elems_in_elem (int elem_gid) const
+    {
+        return num_elems_in_elem_[elem_gid];
+    }
+
+    // returns the number of elements (WARNING: currently assumes constant size)
+    inline int num_cells_in_elem () const
+    {
+        return num_cells_in_elem_;
+    }
+
+    // returns the nodes in an element
+    inline int& nodes_in_elem (int elem_gid, int node_lid)
+    {
+        return nodes_in_elem_list_[elem_gid * num_g_pts_in_elem_ + node_lid];
+    } 
+
+    // return array of elements connected to element (corners+faces)
+    inline int& elems_in_elem (int elem_gid, int elem_lid) 
+    {
+        // shift index by 1 so that it is consistent with matrix syntax
+        int start_indx = elems_in_elem_list_start_[elem_gid];
+        
+        // get the index in the global 1D array
+        int index = start_indx + elem_lid;
+        
+        return elems_in_elem_list_[index];
+    }
+
+    // return the the global cell id from local element cell id
+    inline int& cells_in_elem (int elem_gid, int cell_lid) 
+    {
+        return cells_in_elem_[cell_lid + num_cells_in_elem_*(elem_gid)];
+    }
+
+    // return number of gauss points in an element (currently assumes Gauss-Lobatto)
+    inline int& num_gauss_in_elem () 
+    {
+        return num_g_pts_in_elem_;
+    }
+
+    // return number of material points in an element
+    inline int& num_mat_pt_in_elem () 
+    {
+        return num_g_pts_in_elem_;
+    }
+
+
+
+
+    // ---- CELLS ---- //
+
     // returns the number of cells
     inline int num_cells () const
     {
         return num_cells_;
     }
 
-
     // return the node ids local to the cell
-    inline int& cell_nodes_id(int cell_gid, int node_lid) const
+    inline int& nodes_in_cell (int cell_gid, int node_lid) const
     {
-        return cell_nodes_list_[node_lid + cell_gid*num_nodes_hex_];
+        return nodes_in_cell_list_[node_lid + cell_gid*num_nodes_hex_];
     }
 
-
-    inline auto cell_nodes_ids(int cell_gid)
+    /* Testing returning slice of array
+    inline auto nodes_in_cell(int cell_gid)
     {
-        auto give = view_c_array <int> (&cell_nodes_list_[cell_gid*num_nodes_hex_], num_nodes_hex_);
+        auto give = view_c_array <int> (&nodes_in_cell_list_[cell_gid*num_nodes_hex_], num_nodes_hex_);
         return give;
     }
-    
-
+    */
 
     // return the number of cells around the cell
-    inline int& num_cells_in_cell(int cell_gid) const
+    inline int& num_cells_in_cell (int cell_gid) const
     {
         return num_cells_in_cell_[cell_gid];
     }
 
     // return the the cells around a cell
-    inline int& cell_in_cell(int cell_gid, int cell_lid) const
+    inline int& cells_in_cell (int cell_gid, int cell_lid) const
     {
         // shift index by 1 so that it is consistent with matrix syntax
-        int start_indx = cell_in_cell_list_start_[cell_gid];
+        int start_indx = cells_in_cell_list_start_[cell_gid];
         
         // get the index in the global 1D array
         int index = start_indx + cell_lid;
         
-        return cell_in_cell_list_[index];
+        return cells_in_cell_list_[index];
     }
 
-    inline int& cell_corners(int cell_gid, int corner_lid) const
+    // return corners connected to a cell
+    inline int& corners_in_cell (int cell_gid, int corner_lid) const
     {
         return corners_in_cell_list_[corner_lid + cell_gid*num_nodes_hex_];
     }
 
-    inline int& elems_in_cell(int cell_gid) const
+
+    inline int& elems_in_cell (int cell_gid) const
     {
         return elems_in_cell_list_[cell_gid];
     }
@@ -457,42 +565,30 @@ public:
         
 
     // ---- VERTICES ---- //
-    // returns the number of vertices in mesh
-    // inline int& num_verts () const
-    // {
-    //     return num_verts_;
-    // }
+
+
 
     // ---- NODES ---- //
 
-    // initialize the nodes
-    void init_nodes (int num_nodes, int num_rk) {
-
-        rk_storage_ = num_rk;
-        
-        num_nodes_ = num_nodes;
-        node_coords_   = new real_t[num_rk*num_nodes_*num_dim_];
-        // node_coords__rk = new real_t[num_rk*num_nodes_*num_dim_];
-        
-        num_cells_in_node_        = new int[num_nodes_];
-        cells_in_node_list_start_ = new int[num_nodes_+1];
-
-        num_corners_in_node_      = new int[num_nodes_];
-
-    }
-
-    // returns the number of vertices
+    // returns the number of nodes
     inline int num_nodes ()
     {
         return num_nodes_;
     }
 
     // returns number of cells around a node
-    inline int& num_cells_in_node(int node_gid) const
+    inline int& num_cells_in_node (int node_gid) const
     {
         return num_cells_in_node_[node_gid];
     }
     
+    // returns number of elements around a node
+    inline int& num_elems_in_node (int node_gid) const
+    {
+        return num_elems_in_node_[node_gid];
+    }
+
+
     // return the cells around a node
     inline int& cells_in_node (int node_gid, int cell_lid) const
     {
@@ -504,22 +600,22 @@ public:
         
         return cells_in_node_list_[index];
     }
+
+    // return the elements around a node
+    inline int& elems_in_node (int node_gid, int elem_lid) const
+    {
+        // shift index by 1 so that it is consistent with matrix syntax
+        int start_indx = elems_in_node_list_start_[node_gid];
+        
+        // get the index in the global 1D array
+        int index = start_indx + elem_lid;
+        
+        return elems_in_node_list_[index];
+    }
         
 
     // ---- GAUSS POINTS ---- //
-
-    // Initialize gauss point data
-    void init_gauss_pts (){
-
-        // Index maps
-        num_g_pts_ = num_elem_ * num_g_pts_in_elem_;
-        node_in_gauss_list_ = new int[num_g_pts_];
-
-        // geometric state
-        jacobians_ = new real_t[rk_storage_*num_g_pts_*num_dim_*num_dim_];
-        jacobian_determinant_ = new real_t[rk_storage_*num_g_pts_];
-
-    }
+ 
 
     // return number of gauss points in mesh
     inline int num_gauss () const
@@ -533,23 +629,28 @@ public:
         return node_in_gauss_list_[gauss_gid];
     }
 
+    // return gauss in element map (internal structured grid)
+    inline int& gauss_in_elem (int elem_gid, int gauss_lid) 
+    {   
+        indx_ = elem_gid*num_g_pts_in_elem_ + gauss_lid;
+        
+        return indx_;
+    }
+
 
     // ---- CORNERS ---- //
-
-    // initialize corner data
-
     
-    // returns the number of ccorners
+    // returns the number of corners
     inline int num_corners () const
     {
         return num_corners_;
     }
 
-    // return corner to cell map
 
-    inline int corners_in_cell (int cell_gid, int corner_lid) const
-    {  
-        return corners_in_cell_list_[cell_gid*num_nodes_hex_ + corner_lid];
+    // return number of corners connected to a node
+    inline int num_corners_in_node (int node_gid) const
+    {
+        return num_corners_in_node_[node_gid];
     }
 
     // return corner to node map
@@ -565,13 +666,6 @@ public:
         return corners_in_node_list_[index];
     }
 
-        // return corner to node map
-    inline int num_corners_in_node (int node_gid) const
-    {
-
-        return num_corners_in_node_[node_gid];
-    }
-
 
     // inline int corner_bdy_count(int corner_gid) const
     // {
@@ -580,7 +674,6 @@ public:
 
 
     // ---- FACES ---- //
-
 
     // returns the number of elements
     inline int num_faces () const
@@ -595,7 +688,7 @@ public:
         int this_node = this_node_in_face_in_cell_[facenode_lid + this_face*num_nodes_face_];
         
         // return the global id for the local node index
-        return cell_nodes_id(cell_id, this_node);
+        return nodes_in_cell(cell_id, this_node);
     } // end of method
     
     
@@ -605,17 +698,13 @@ public:
         // get the 1D index
         int this_index = face_gid*2 + this_cell;  // this_cell = 0 or 1
 
-        // std::cout <<"cells in face index = " << this_index << std::endl;
-        
         // return the global id for the cell
         return cells_in_face_list_[this_index];
-
     }
           
     // returns the nodes in the face
     inline int node_in_face(int face_gid, int facenode_lid) const
     {
-        
         // get the 1D index
         int this_index = face_gid*4;
         
@@ -624,39 +713,22 @@ public:
     }
 
 
-
-
     // ---- Boundary ---- //
-    // initializes the number of bdy sets
-    void init_bdy_sets (int num_sets){
-        
-        // A check
-        if(num_sets == 0){
-            std::cout << " ERROR: number of boundary sets = 0, setting it = 1";
-            num_sets = 1;
-        }
-        num_bdy_sets_ = num_sets;
-        num_bdy_faces_set_ = new int [num_sets];
-        start_index_bdy_set_ = new int [num_sets+1];
-        bdy_set_list_   = new int [num_sets*num_bdy_faces_]; // largest size possible
-    }
     
     inline int num_bdy_sets() const
     {
         return num_bdy_sets_;
+    }
+ 
+    inline int num_bdy_faces() const
+    {
+        return num_bdy_faces_;
     }
 
     inline int bdy_faces(int this_bdy_face) const
     {
         return bdy_faces_[this_bdy_face];
     }
-    
-    
-    inline int num_bdy_faces() const
-    {
-        return num_bdy_faces_;
-    }
-
 
     // returns the number per bdy-faces in a particular set
     int num_bdy_faces_in_set (int bdy_set){
@@ -677,9 +749,9 @@ public:
 // ==== MESH STATE FUNCTIONS ==== // 
 
     // ---- ELEMENTS ---- //
-    inline real_t& elem_vol(int rk_stage, int elem_gid) const
+    inline real_t& elem_vol(int rk_bin, int elem_gid) const
     {
-        return elem_vol_[rk_stage*num_elem_ + elem_gid];
+        return elem_vol_[rk_bin*num_elem_ + elem_gid];
     }
     
 
@@ -692,7 +764,7 @@ public:
     }
     
     // return the cell coordinate position
-    inline real_t& cell_coords(int rk_stage, int cell_gid, int this_dim)
+    inline real_t& cell_coords(int rk_bin, int cell_gid, int this_dim)
     {
         
         cell_coords_[this_dim + cell_gid*num_dim_] = 0;
@@ -700,9 +772,9 @@ public:
         // #pragma omp simd
         for (int node_lid = 0; node_lid < num_nodes_hex_; node_lid++){
             
-            int node_gid = cell_nodes_id(cell_gid, node_lid); // get the global_id
+            int node_gid = nodes_in_cell(cell_gid, node_lid); // get the global_id
             
-            cell_coords_[this_dim + cell_gid*num_dim_] += node_coords(rk_stage, node_gid, this_dim);
+            cell_coords_[this_dim + cell_gid*num_dim_] += node_coords(rk_bin, node_gid, this_dim);
             
         } // end for loop over vertices in the cell
         
@@ -713,25 +785,50 @@ public:
     }
 
 
+    // ---- VERTICES ---- //
+
+
 
     // ---- NODES ---- //
     // return the node coordinates
-    inline real_t& node_coords(int rk_stage, int node_gid, int this_dim) const
+    inline real_t& node_coords(int rk_bin, int node_gid, int this_dim) const
     {
-        return node_coords_[rk_stage*num_nodes_*num_dim_ + node_gid*num_dim_ + this_dim];
+        return node_coords_[rk_bin*num_nodes_*num_dim_ + node_gid*num_dim_ + this_dim];
     }
 
 
-    // // return the node coordinates at t=n
-    // inline real_t& node_coords_rk(int rk_step, int node_gid, int this_dim) const
-    // {
-    //     return node_coords__rk[rk_step*num_nodes_*num_dim_ + node_gid*num_dim_ + this_dim];
-    // }
+    // ---- QUADRATURE POINTS ---- //
+
+    // return jacobian at quadrature point
+    inline real_t& jacobian(int rk_bin, int elem_gid, int gauss_lid, int i, int j) const
+    {
+        int index = rk_bin*num_elem_*num_g_pts_in_elem_*num_dim_*num_dim_
+                    + elem_gid*num_g_pts_in_elem_*num_dim_*num_dim_
+                    + gauss_lid*num_dim_*num_dim_
+                    + i*num_dim_
+                    + j;
+        
+        return jacobians_[index];
+    }
+
+
+    // return determinant of jacobian at quadrature point
+    inline real_t& det_j(int rk_bin, int elem_gid, int gauss_lid) const
+    {
+        int index = rk_bin*num_elem_*num_g_pts_in_elem_
+                    + elem_gid*num_g_pts_in_elem_
+                    + gauss_lid;
+        
+        return jacobian_determinant_[index];
+    }
+
+
+    // ---- CORNERS ---- //
 
 
     // ---- FACES ---- //
     // geometric average face coordinate
-    inline real_t face_coords(int rk_stage, int face_id, int this_dim) const
+    inline real_t face_coords(int rk_bin, int face_id, int this_dim) const
     {
         
         real_t this_face_coord = 0.0;
@@ -743,7 +840,7 @@ public:
             int vert_gid = node_in_face(face_id, this_facevert);
             
             // calc the coord
-            this_face_coord += node_coords(rk_stage, vert_gid, this_dim)/((real_t)num_nodes_face_);
+            this_face_coord += node_coords(rk_bin, vert_gid, this_dim)/((real_t)num_nodes_face_);
 
         } // end for this_facevert
         
@@ -751,32 +848,9 @@ public:
         
     } // end of face_coords
 
-    // ---- QUADRATURE POINTS ---- //
-
-    // return jacobian at quadrature point
-    inline real_t& jacobian(int rk_stage, int elem_gid, int gauss_lid, int i, int j) const
-    {
-        int index = rk_stage*num_elem_*num_g_pts_in_elem_*num_dim_*num_dim_
-                    + elem_gid*num_g_pts_in_elem_*num_dim_*num_dim_
-                    + gauss_lid*num_dim_*num_dim_
-                    + i*num_dim_
-                    + j;
-        
-        return jacobians_[index];
-    }
 
 
-    // return determinant of jacobian at quadrature point
-    inline real_t& det_j(int rk_stage, int elem_gid, int gauss_lid) const
-    {
-        int index = rk_stage*num_elem_*num_g_pts_in_elem_
-                    + elem_gid*num_g_pts_in_elem_
-                    + gauss_lid;
-        
-        return jacobian_determinant_[index];
-    }
-
-
+    // ---- BOUNDARY ---- //
 
 
 
@@ -784,7 +858,6 @@ public:
     
     // initialize array for mesh connectivity: all cells around a node
     void build_connectity(){
-        
         
         // -- NODE TO CELL CONNECTIVITY -- //
         build_node_cell_connectivity(); 
@@ -797,6 +870,9 @@ public:
 
         // -- FACES -- //
         build_face_connectivity(); 
+
+        // -- ELEMENTS -- //
+        build_element_connectivity();
     
     } // end of build connectivity
 
@@ -814,19 +890,19 @@ public:
         
         // count the number of corners (cell-node pair) in the mesh and in each node
         int num_corners = 0;
-        for (int cell_id = 0; cell_id < num_cells_; cell_id++){
+        for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
             for (int node_lid = 0; node_lid < num_nodes_hex_; node_lid++){
                 
                 // each point-cell pair makes a corner
                 num_corners ++;  // total number of corners in the entire mesh
                 
                 // increment the number of corners attached to this point
-                int node_gid = cell_nodes_id(cell_id, node_lid); // get the global_id
+                int node_gid = nodes_in_cell(cell_gid, node_lid); // get the global_id
                 
                 num_cells_in_node_[node_gid] ++;
                 
             }  // end for this_point
-        } // end for cell_id
+        } // end for cell_gid
         
         // Save number of corners in mesh
         num_corners_ = num_corners;
@@ -834,13 +910,15 @@ public:
         // create memory for a list for all cell-node pairs
         cells_in_node_list_ = new int [num_corners];
         
+
+        // Loop over nodes to set the start point of the ragged right array indices
+        
         cells_in_node_list_start_[0] = 0;
-        for (int node_gid = 1; node_gid < num_nodes_; node_gid++){
-            // note, for loops starts at 1 becuase we just saved the point 0
-            
+        for (int node_gid = 0; node_gid < num_nodes_; node_gid++){
+
             // This is the start of the indices for the corners connected to this node
-            cells_in_node_list_start_[node_gid] = cells_in_node_list_start_[node_gid-1]
-                                                    + num_cells_in_node_[node_gid-1];
+            cells_in_node_list_start_[node_gid+1] = cells_in_node_list_start_[node_gid]
+                                                    + num_cells_in_node_[node_gid];
         }
         
         
@@ -851,10 +929,10 @@ public:
             for (int node_lid = 0; node_lid < num_nodes_hex_; node_lid++){
                 
                 // increment the number of corners attached to this point
-                int node_gid = cell_nodes_id(cell_gid, node_lid); // get the global_id of the node
+                int node_gid = nodes_in_cell(cell_gid, node_lid); // get the global_id of the node
 
-                // Assign global index values to cell_nodes_list_
-                cell_nodes_list_[node_lid + cell_gid*num_nodes_hex_] = node_gid;
+                // Assign global index values to nodes_in_cell_list_
+                nodes_in_cell_list_[node_lid + cell_gid*num_nodes_hex_] = node_gid;
                 
                 // the global index in the cells_in_node_list_
                 int index = cells_in_node_list_start_[node_gid] + num_corners_saved[node_gid];
@@ -875,7 +953,6 @@ public:
         // initializing the number of corners (node-cell pair) to be zero
         int num_corners_saved[num_nodes_]; // local variable
         for (int node_gid = 0; node_gid < num_nodes_; node_gid++){
-
             num_corners_saved[node_gid] = 0;
         }
 
@@ -886,6 +963,7 @@ public:
                 
                 // each point-cell pair makes a corner
                 num_corners ++;  // total number of corners in the entire mesh
+
             }  // end for this_point
         } // end for cell_gid
         
@@ -902,12 +980,11 @@ public:
             for (int node_lid = 0; node_lid < num_nodes_hex_; node_lid++){
                 
                 // increment the number of corners attached to this point
-                int node_gid = cell_nodes_id(cell_gid, node_lid); // get the global_id of the node
+                int node_gid = nodes_in_cell(cell_gid, node_lid); // get the global_id of the node
                 
                 // the global index in the cells_in_node_list_
                 int index = cells_in_node_list_start_[node_gid] + num_corners_saved[node_gid];
 
-                
                 // each point-cell pair makes a corner
                 num_corners_saved[node_gid] ++;  //number of corners saved to this node
 
@@ -915,7 +992,7 @@ public:
                 corners_in_node_list_[index] = corner_gid;
 
                 int corner_lid = node_lid;
-                cell_corners(cell_gid, corner_lid) = corner_gid;
+                corners_in_cell(cell_gid, corner_lid) = corner_gid;
 
                 corner_gid ++;
                 
@@ -924,12 +1001,149 @@ public:
 
         for (int node_gid = 0; node_gid < num_nodes_; node_gid++ ){
 
-            num_corners_in_node_[node_gid] = num_corners_saved[node_gid];
-        
+            num_corners_in_node_[node_gid] = num_corners_saved[node_gid]; 
         }
-
     } // end of build_corner_connectivity
 
+
+    void build_cell_cell_connectivity(){
+        
+        // initializing the number of cell-cell pairs to be zero
+        
+        int num_cell_cell_saved[num_cells_]; // local variable
+        for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
+            num_cells_in_cell_[cell_gid] = 0;
+            num_cell_cell_saved[cell_gid] = 0;
+        }
+        
+        int num_c_c_pairs = 0;
+        for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
+            for (int node_lid = 0; node_lid < num_nodes_hex_; node_lid++){
+                
+                // get the global node id
+                int node_gid = nodes_in_cell(cell_gid, node_lid);
+                
+                // loop over all cells connected to node_gid
+                for (int cell_lid = 0; cell_lid < num_cells_in_node_[node_gid]; cell_lid++){
+                    
+                    int neighbor_cell_id = cells_in_node(node_gid, cell_lid);
+                    
+                    // a true neighbor_cell_id is not equal to cell_gid
+                    if (neighbor_cell_id != cell_gid){
+                        
+                        // increment the number of cell-cell pairs in the mesh
+                        num_c_c_pairs ++;
+                        
+                        // increment the number of cell-cell pairs for this cell
+                        num_cells_in_cell_[cell_gid] ++;
+                        
+                    } // end if neighbor_cell_id
+                } // end for cell_lid
+                
+            }  // end for node_lid
+        } // end for cell_gid
+        
+        
+        // create memory for the list of cells around a cell (num_c_c_pairs is ~2x larger than needed)
+        int * temp_cell_in_cell_list = new int [num_c_c_pairs];
+
+        cells_in_cell_list_start_[0] = 0;
+        for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
+
+            // This is the start of the indices for the corners connected to this node
+            cells_in_cell_list_start_[cell_gid+1] = cells_in_cell_list_start_[cell_gid]
+                                                   + num_cells_in_cell_[cell_gid];
+        }
+
+
+        int actual_size = 0; // the actual size of array of cell-neighbors
+        for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
+            for (int node_lid = 0; node_lid < num_nodes_hex_; node_lid++){
+                
+                // get the global_id node id
+                int node_id = nodes_in_cell(cell_gid, node_lid);
+                
+                // loop over all cells connected to node_id
+                for (int cell_lid = 0; cell_lid < num_cells_in_node_[node_id]; cell_lid++){
+                    
+                    // get the global id for the neighboring cell
+                    int neighbor_cell_id = cells_in_node(node_id, cell_lid);
+                    
+                    // the global index in the cells_in_cell_list_
+                    int index = cells_in_cell_list_start_[cell_gid] + num_cell_cell_saved[cell_gid];
+                    
+                    int save = 1; // a flag to save (=1) or not (=0)
+                    
+                    // a true neighbor_cell_id is not equal to cell_gid
+                    if (neighbor_cell_id == cell_gid ){
+                        save = 0;  // don't save
+                    } // end if neighbor_cell_id
+                    
+                    // check to see if neighbor_id has been saved already
+                    for (int i=cells_in_cell_list_start_[cell_gid]; i<index; i++){
+                        
+                        if (neighbor_cell_id == temp_cell_in_cell_list[i]){
+                            save=0;   // don't save, it has been saved already
+                        } // end if
+                        
+                    } // end for i
+                    
+                    
+                    if (save==1){
+                        // save the neighboring cell_id
+                        temp_cell_in_cell_list[index] = neighbor_cell_id;
+                        
+                        // increment the number of neighboring cells saved
+                        num_cell_cell_saved[cell_gid]++;
+                        
+                        // increment the actual number of neighboring cells saved
+                        actual_size++;
+                    } // end if save
+                } // end for cell_lid
+
+            }  // end for node_lid
+        } // end for cell_gid
+        
+        
+        // create memory for the list of cells around a cell
+        cells_in_cell_list_ = new int [actual_size];
+        
+        // update the number of cells around a cell (because the estimate had duplicates)
+        int index = 0;
+        cells_in_cell_list_[0] = 0;
+        
+        for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
+            
+            num_cells_in_cell_[cell_gid] = num_cell_cell_saved[cell_gid];
+            
+            // note: there is a buffer in the temp_cell_in_cell_list that is not
+            // in num_cells_in_cell_ (it is smaller) so I will copying the
+            // values from the temp to the actual array and resetting the start
+            // array to use num_cell_cell_saved[cell_gid]
+            
+            // the global index range in the temp_cell_in_cell_list
+            int start_cell = cells_in_cell_list_start_[cell_gid];
+            int stop_cell  = start_cell + num_cell_cell_saved[cell_gid];
+            
+            cells_in_cell_list_start_[cell_gid] = index; // update the index
+            
+            // save the neighbors to the list
+            for (int i = start_cell; i < stop_cell; i++){
+                
+                // save neighboring cell_gid to the final list
+                cells_in_cell_list_[index] = temp_cell_in_cell_list[i];
+                
+                // increment the global index
+                index++;
+                
+            } // end for i
+        }// end for cell_gid
+        
+        // delete the temporary list of cells around a cell
+        delete[] temp_cell_in_cell_list;
+
+    } // end of build_cell_cell_connectivity
+    
 
     void build_face_connectivity(){
         
@@ -940,23 +1154,23 @@ public:
         real_t coord_max[num_dim_];
 
         // initialize to large values
-        for (int this_dim = 0; this_dim < num_dim_; this_dim++){
+        for (int dim = 0; dim < num_dim_; dim++){
             
-            coord_min[this_dim] = 1.0e64;
-            coord_max[this_dim] = -1.0e64;
+            coord_min[dim] = 1.0e64;
+            coord_max[dim] = -1.0e64;
 
         } // end for dim
 
 
         // Get min and max points in the mesh
         real_t coords[num_dim_];
-        for(int point = 0; point < num_nodes_; point++){
-            for (int this_dim = 0; this_dim < num_dim_; this_dim++){
+        for(int node_gid = 0; node_gid < num_nodes_; node_gid++){
+            for (int dim = 0; dim < num_dim_; dim++){
 
-                coords[this_dim] = node_coords(0, point, this_dim);
+                coords[dim] = node_coords(0, node_gid, dim);
 
-                coord_max[this_dim] = fmax(coord_max[this_dim], coords[this_dim]);
-                coord_min[this_dim] = fmin(coord_min[this_dim], coords[this_dim]);
+                coord_max[dim] = fmax(coord_max[dim], coords[dim]);
+                coord_min[dim] = fmin(coord_min[dim], coords[dim]);
 
             }
         }
@@ -971,12 +1185,12 @@ public:
         real_t distance[28]; 
         auto dist = view_c_array <real_t> (distance, 28);
 
-        for (int cell_id=0; cell_id<num_cells_; cell_id++){
+        for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
             
             // Getting the coordinates of the element
             for(int node = 0; node < num_nodes_hex_; node++){
                 for (int dim = 0; dim < 3; dim++)
-                    vert1(node, dim) = node_coords(0, cell_nodes_id(cell_id, node), dim);
+                    vert1(node, dim) = node_coords(0, nodes_in_cell(cell_gid, node), dim);
             }
 
             // loop conditions needed for distance calculation
@@ -988,7 +1202,7 @@ public:
             
             
             // Solving for the magnitude of distance between each node
-            for (int i=0; i<28; i++){
+            for (int i = 0; i < 28; i++){
                 
                 a = countA;
                 b = countB;
@@ -1011,28 +1225,28 @@ public:
 
             dist_min = dist(0);
             dist_max = 0.0;
+            
             for(int i = 0; i < 28; ++i){
                 dist_min = fmin(dist(i),dist_min);
                 dist_max = fmax(dist(i),dist_max);
             }
         }
 
-        node_hash_delta = fmin(node_hash_delta, dist_min); // 0.9 used to offset face centers from nodes
+        node_hash_delta = fmin(node_hash_delta, dist_min);
         node_hash_delta = node_hash_delta/2.0;
 
         // calculate the 1d array length of the hash table for nodes
         real_t num_bins[num_dim_];
         
-        for (int this_dim = 0; this_dim < num_dim_; this_dim++){
-            num_bins[this_dim] = (coord_max[this_dim] - coord_min[this_dim]  + 1.e-12)/node_hash_delta;
+        for (int dim = 0; dim < num_dim_; dim++){
+            num_bins[dim] = (coord_max[dim] - coord_min[dim]  + 1.e-12)/node_hash_delta;
         }
 
-
+        // Set size of hash key array
         int hash_keys[num_cells_*num_faces_hex_];
 
         real_t face_hash_idx_real[num_dim_];
 
-        
         // Calculate the hash keys and find max key
         int hash_count = 0;
         int max_key = 0;
@@ -1043,8 +1257,9 @@ public:
                 // the face coordinates
                 real_t face_coords[num_dim_];
                 
-                for (int this_dim=0; this_dim<num_dim_; this_dim++){
-                    face_coords[this_dim] = 0.0;
+                // initialize to zero
+                for (int dim = 0; dim < num_dim_; dim++){
+                    face_coords[dim] = 0.0;
                 } // end for dim
                 
                 
@@ -1054,15 +1269,15 @@ public:
                     // get the global node id
                     int node_gid = node_in_face_in_cell(cell_gid, face_lid, facenode_lid);
                     
-                    for (int this_dim = 0; this_dim < num_dim_; this_dim++){
-                        face_coords[this_dim] += node_coords(0, node_gid, this_dim)/num_nodes_face_;
+                    for (int dim = 0; dim < num_dim_; dim++){
+                        face_coords[dim] += node_coords(0, node_gid, dim)/num_nodes_face_;
                     } // end for dim
                         
                 } // end for facenode_lid
                 
                 // calculate the face hash index for these face_coordinates
-                for (int this_dim = 0; this_dim < num_dim_; this_dim++){
-                    face_hash_idx_real[this_dim] = fmax(1e-16, (face_coords[this_dim]-coord_min[this_dim] + 1e-12)/node_hash_delta);
+                for (int dim = 0; dim < num_dim_; dim++){
+                    face_hash_idx_real[dim] = fmax(1e-16, (face_coords[dim]-coord_min[dim] + 1e-12)/node_hash_delta);
                 } // end for dim
 
                 // the 1D index
@@ -1099,6 +1314,7 @@ public:
         // count the number of cells around each face
         face_gid = 0;
         hash_count = 0;
+        
         for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
             for (int face_lid = 0; face_lid < num_faces_hex_; face_lid++){
                 
@@ -1131,6 +1347,7 @@ public:
 
 
         hash_count = 0;
+        
         // save the cell_gid to the cells_in_face_list
         for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
             for (int face_lid = 0; face_lid < num_faces_hex_; face_lid++){
@@ -1181,93 +1398,164 @@ public:
             } // end for face_lid
         } // end for cell_gid
 
-
+        // Delete memeory for the hash table
         delete[] hash_table;
+
     } // end of build faces
 
 
-    void build_cell_cell_connectivity(){
+    void build_element_connectivity(){
+
+        // Initialize list to count number of times a node has been 
+        // touched through the node_in_gauss list
+
+        int times_hit[num_nodes_];
         
-        // initializing the number of cell-cell pairs to be zero
-        int num_cell_cell_saved[num_cells_]; // local variable
-        for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
+        for(int node_gid = 0; node_gid < num_nodes_; node_gid++){
+            num_elems_in_node_[node_gid] = 0;
+            times_hit[node_gid] = 0;
+        }
+
+        for(int elem_gid = 0; elem_gid < num_elem_; elem_gid++){
+            for(int gauss_lid = 0; gauss_lid < num_g_pts_in_elem_; gauss_lid++){
+
+                // get gauss global id and use to get node global id
+                int gauss_gid = gauss_in_elem(elem_gid, gauss_lid);
+                int node_gid  = node_in_gauss(gauss_gid);
+
+                // every time the node gid is hit add one to the hit count
+                num_elems_in_node_[node_gid] += 1;
+
+                // add nodes in element here
+                nodes_in_elem(elem_gid, gauss_lid) = node_gid;
+            }
+        }
+
+
+        // Walk over each node, if the node was touched more than once throught the node_in_gauss list add 
+        // the number of times to the elem_in_node array size
+
+        // base size is the number of nodes, one is added for each double counted one
+        int elem_in_node_size = 0;
+        for(int node_gid = 0; node_gid < num_nodes_; node_gid++){
+            elem_in_node_size += num_elems_in_node_[node_gid];
+        }
+
+        // get access pattern and total size of ragged right for elems_in_node
+        
+        elems_in_node_list_start_[0] = 0;
+        // starts at one because zero index has been saved
+        for(int node_gid = 0; node_gid < num_nodes_; node_gid++){
+            elems_in_node_list_start_[node_gid+1] = elems_in_node_list_start_[node_gid] + num_elems_in_node_[node_gid];
+        }
+
+        // std::cout<<"Before getting size of elems in node list"<<std::endl;
+
+        // create memory for elems_in_node_list_
+        elems_in_node_list_ = new int [elem_in_node_size];
+
+        for(int elem_gid = 0; elem_gid < num_elem_; elem_gid++){
+            for(int node_lid = 0; node_lid < num_g_pts_in_elem_; node_lid++){
+
+                // get gauss global id and use to get node global id
+                int gauss_gid = gauss_in_elem(elem_gid, node_lid);
+                int node_gid  = node_in_gauss(gauss_gid);
+
+                int indx = elems_in_node_list_start_[node_gid] + times_hit[node_gid];
+
+                elems_in_node_list_[indx] = elem_gid;
+
+                times_hit[node_gid]++;
+            }
+        }
+
+        // verify that things makes sense
+        // for(int node_gid = 0; node_gid < num_nodes_; node_gid++){
+
+        //     int test = num_elems_in_node_[node_gid] - times_hit[node_gid];
+
+        //     if (test != 0){
+        //         std::cout<<"ERROR IN ELEMENTS IN NODE"<<std::endl;
+        //     }
+        // }
+
+        // Find all elements connected to an element (same coding as cells_in_cell)
+
+        // initializing the number of element-element pairs to be zero
+        int num_elem_elem_saved[num_cells_]; // local variable
+        for (int elem_gid = 0; elem_gid < num_elem_; elem_gid++){
             
-            num_cells_in_cell_[cell_gid] = 0;
-            num_cell_cell_saved[cell_gid] = 0;
+            num_elems_in_elem_[elem_gid] = 0;
+            num_elem_elem_saved[elem_gid] = 0;
         }
         
-        int num_c_c_pairs = 0;
-        for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
-            for (int node_lid = 0; node_lid < num_nodes_hex_; node_lid++){
+        int num_e_e_pairs = 0;
+        
+        for (int elem_gid = 0; elem_gid < num_elem_; elem_gid++){
+            for (int node_lid = 0; node_lid < num_nodes_in_elem_; node_lid++){
                 
                 // get the global node id
-                int node_gid = cell_nodes_id(cell_gid, node_lid);
+                int node_gid = nodes_in_elem(elem_gid, node_lid);
                 
                 // loop over all cells connected to node_gid
-                for (int cell_lid = 0; cell_lid < num_cells_in_node_[node_gid]; cell_lid++){
+                for (int elem_lid = 0; elem_lid < num_elems_in_node_[node_gid]; elem_lid++){
                     
-                    int neighbor_cell_id = cells_in_node(node_gid, cell_lid);
-                    
-                    // a true neighbor_cell_id is not equal to cell_gid
-                    if (neighbor_cell_id != cell_gid){
+                    int neighbor_elem_gid = elems_in_node(node_gid, elem_lid);
+
+                    // a true neighbor_elem_gid is not equal to elem_gid
+                    if (neighbor_elem_gid != elem_gid){
                         
-                        // increment the number of cell-cell pairs in the mesh
-                        num_c_c_pairs ++;
+                        // increment the number of elem_elem pairs in the mesh
+                        num_e_e_pairs ++;
                         
-                        // increment the number of cell-cell pairs for this cell
-                        num_cells_in_cell_[cell_gid] ++;
+                        // increment the number of elem_elem pairs for this element
+                        num_elems_in_elem_[elem_gid] ++;
                         
                     } // end if neighbor_cell_id
                 } // end for cell_lid
-                
                 
             }  // end for node_lid
         } // end for cell_gid
         
         
-        // create memory for the list of cells around a cell (num_c_c_pairs is 2x larger than needed)
-        int * temp_cell_in_cell_list = new int [num_c_c_pairs];
-
+        // create memory for the list of cells around a cell (num_e_e_pairs is 2x larger than needed)
+        int * temp_elems_in_elem_list = new int [num_e_e_pairs];
         
-        cell_in_cell_list_start_[0] = 0;
-        for (int cell_gid = 1; cell_gid < num_cells_; cell_gid++){
-            // note, for loops starts at 1 becuase we just saved the cell 0
-            
+        elems_in_elem_list_start_[0] = 0;
+        for (int elem_gid = 0; elem_gid < num_elem_; elem_gid++){
+
             // This is the start of the indices for the corners connected to this node
-            cell_in_cell_list_start_[cell_gid] = cell_in_cell_list_start_[cell_gid-1]
-                                                   + num_cells_in_cell_[cell_gid-1];
+            elems_in_elem_list_start_[elem_gid+1] = elems_in_elem_list_start_[elem_gid]
+                                                   + num_elems_in_elem_[elem_gid];
         }
         
-        
-        
-        
+
         int actual_size = 0; // the actual size of array of cell-neighbors
-        for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
-            for (int this_node = 0; this_node < num_nodes_hex_; this_node++){
+        for (int elem_gid = 0; elem_gid < num_elem_; elem_gid++){
+            for (int node_lid = 0; node_lid < num_nodes_in_elem_; node_lid++){
                 
-                // get the global_id node id
-                int node_id = cell_nodes_id(cell_gid, this_node);
+                // get the global node id
+                int node_gid = nodes_in_elem(elem_gid, node_lid);
                 
-                // loop over all cells connected to node_id
-                for (int this_cell = 0; this_cell < num_cells_in_node_[node_id]; this_cell++){
+                // loop over all cells connected to node_gid
+                for (int elem_lid = 0; elem_lid < num_elems_in_node_[node_gid]; elem_lid++){
                     
-                    // get the global id for the neighboring cell
-                    int neighbor_cell_id = cells_in_node(node_id, this_cell);
+                    int neighbor_elem_gid = elems_in_node(node_gid, elem_lid);
                     
-                    // the global index in the cell_in_cell_list_
-                    int index = cell_in_cell_list_start_[cell_gid] + num_cell_cell_saved[cell_gid];
+                    // the global index in the cells_in_cell_list_
+                    int index = elems_in_elem_list_start_[elem_gid] + num_elem_elem_saved[elem_gid];
                     
                     int save = 1; // a flag to save (=1) or not (=0)
                     
-                    // a true neighbor_cell_id is not equal to cell_gid
-                    if (neighbor_cell_id == cell_gid ){
+                    // a true neighbor_elem_gid is not equal to elem_gid
+                    if (neighbor_elem_gid == elem_gid ){
                         save = 0;  // don't save
-                    } // end if neighbor_cell_id
+                    } // end if neighbor_elem_gid
                     
                     // check to see if neighbor_id has been saved already
-                    for (int i=cell_in_cell_list_start_[cell_gid]; i<index; i++){
+                    for (int i = elems_in_elem_list_start_[elem_gid]; i < index; i++){
                         
-                        if (neighbor_cell_id == temp_cell_in_cell_list[i]){
+                        if (neighbor_elem_gid == temp_elems_in_elem_list[i]){
                             save=0;   // don't save, it has been saved already
                         } // end if
                         
@@ -1276,65 +1564,61 @@ public:
                     
                     if (save==1){
                         // save the neighboring cell_id
-                        temp_cell_in_cell_list[index] = neighbor_cell_id;
+                        temp_elems_in_elem_list[index] = neighbor_elem_gid;
                         
                         // increment the number of neighboring cells saved
-                        num_cell_cell_saved[cell_gid]++;
+                        num_elem_elem_saved[elem_gid]++;
                         
                         // increment the actual number of neighboring cells saved
                         actual_size++;
                     } // end if save
                     
-                } // end for this_cell
-                
-                
-            }  // end for this_node
-        } // end for cell_gid
+                } // end for elem_lid
+
+            }  // end for node_lid
+        } // end for elem_gid
         
         
         // create memory for the list of cells around a cell
-        cell_in_cell_list_ = new int [actual_size];
+        elems_in_elem_list_ = new int [actual_size];
 
-        elems_in_elem_list_size_ = actual_size;
-        
         // update the number of cells around a cell (because the estimate had duplicates)
-        int index=0;
-        cell_in_cell_list_[0] = 0;
+        int index = 0;
+        elems_in_elem_list_[0] = 0;
         
-        for (int cell_id=0; cell_id<num_cells_; cell_id++){
+        for (int elem_gid = 0; elem_gid < num_elem_; elem_gid++){
             
-            num_cells_in_cell_[cell_id] = num_cell_cell_saved[cell_id];
+            num_elems_in_elem_[elem_gid] = num_elem_elem_saved[elem_gid];
             
             // note: there is a buffer in the temp_cell_in_cell_list that is not
-            // in num_cells_in_cell_ (it is smaller) so I will copying the
+            // in num_elems_in_elem_ (it is smaller) so I will copying the
             // values from the temp to the actual array and resetting the start
-            // array to use num_cell_cell_saved[cell_id]
+            // array to use num_elem_elem_saved[elem_gid]
             
             // the global index range in the temp_cell_in_cell_list
-            int list_start = cell_in_cell_list_start_[cell_id];
-            int list_stop  = list_start + num_cell_cell_saved[cell_id];
+            int list_start = elems_in_elem_list_start_[elem_gid];
+            int list_stop  = list_start + num_elem_elem_saved[elem_gid];
             
-            cell_in_cell_list_start_[cell_id] = index; // update the index
+            elems_in_elem_list_start_[elem_gid] = index; // update the index
             
             // save the neighbors to the list
             for (int i = list_start; i < list_stop; i++){
                 
-                // save neighboring cell_id to the final list
-                cell_in_cell_list_[index] = temp_cell_in_cell_list[i];
+                // save neighboring elem_gid to the final list
+                elems_in_elem_list_[index] = temp_elems_in_elem_list[i];
                 
                 // increment the global index
                 index++;
                 
             } // end for i
-            
-            
-        }// end for cell_id
+        }// end for elem_gid
         
         
         // delete the temporary list of cells around a cell
-        delete[] temp_cell_in_cell_list;
-    } // end of build_cell_cell_connectivity
-    
+        delete[] temp_elems_in_elem_list;
+
+    } // end build element connectivity
+
 
     // identify the boundary faces
     void build_bdy_faces (){
@@ -1347,14 +1631,14 @@ public:
         for(int face_gid = 0; face_gid < num_faces_; face_gid++){
             
             // loop over the two cells on this face
-            for (int this_cell = 0; this_cell < 2; this_cell++){
+            for (int cell_lid = 0; cell_lid < 2; cell_lid++){
                 
                 // check to see if a cell has index of -1
-                if (cells_in_face(face_gid, this_cell) == -1){
+                if (cells_in_face(face_gid, cell_lid) == -1){
                    bdy_face_gid ++;
                 } // end if
                     
-            } // end for this_cell
+            } // end for cell_lid
         } // end for face_gid
         
         
@@ -1373,10 +1657,10 @@ public:
         for(int face_gid = 0; face_gid < num_faces_; face_gid++){
             
             // loop over the two cells on this face
-            for (int this_cell = 0; this_cell < 2; this_cell++){
+            for (int cell_lid = 0; cell_lid < 2; cell_lid++){
                 
                 // check to see if a cell has index of -1
-                if (cells_in_face(face_gid, this_cell) == -1){
+                if (cells_in_face(face_gid, cell_lid) == -1){
                     
                     // save the face index
                     bdy_faces_[bdy_face_gid] = face_gid;
@@ -1385,30 +1669,20 @@ public:
                     bdy_face_gid++;
                     
                 } // end if  
-            } // end for this_cell
+            } // end for cell_lid
         } // end for face_gid
     } // end of function
 
 
 
-
-
-
-
-
-
-
-
-
-
- // ---- bdy sets ----
+    // ---- bdy sets ----
     
     // returns a subset of the boundary faces
-    int set_bdy_faces (int bdy_set, int this_face){
+    int set_bdy_faces (int bdy_set, int face_lid){
         
         int start = start_index_bdy_set_[bdy_set];
         
-        return bdy_set_list_[start+this_face];
+        return bdy_set_list_[start+face_lid];
     }
     
     
@@ -1443,9 +1717,7 @@ public:
                 bdy_set_list_[start+counter] = bdy_face_gid;
                 counter ++;
             }
-            
         } // end for bdy_face
-        
         
         // save the number of bdy faces in the set
         num_bdy_faces_set_[bdy_set] = counter;
@@ -1459,11 +1731,9 @@ public:
             compress_bdy_set();
         }
         
-        std::cout << " tag boundary faces " << std::endl;
+        std::cout << " tagged boundary faces " << std::endl;
         
     } // end of method
-    
-    
     
     
     // compress the bdy_set_list to reduce the memory
@@ -1476,25 +1746,25 @@ public:
         int * temp_bdy_list = new int [length];
         
         // save the values to the temp array
-        for (int i=0; i<length; i++){
+        for (int i = 0; i < length; i++){
             temp_bdy_list[i] = bdy_set_list_[i];
         }
         
         // delete original array and make a new one of correct size
         delete[] bdy_set_list_;
+
         bdy_set_list_ = new int [length];
         
         // save the values to the bdy_set_list
-        for (int i=0; i<length; i++){
+        for (int i = 0; i < length; i++){
             bdy_set_list_[i] = temp_bdy_list[i];
         }
         
         // delete the temp array
         delete[] temp_bdy_list;
         
-    } // end of method
+    } // end of compress_bdy_set
     
-
     // routine for checking to see if a vertix is on a boundary
     // bc_tag = 0 xplane, 1 yplane, 3 zplane, 4 cylinder, 5 is shell
     // val = plane value, radius, radius
@@ -1503,12 +1773,11 @@ public:
         // default bool is not on the boundary
         int is_on_bdy = 0;
         
-        
         // the face coordinates
         real_t these_face_coords[num_dim_];
         
-        for (int this_dim = 0; this_dim < num_dim_; this_dim++){
-            these_face_coords[this_dim] = face_coords(0, face_gid, this_dim);
+        for (int dim = 0; dim < num_dim_; dim++){
+            these_face_coords[dim] = face_coords(0, face_gid, dim);
         } // end for dim
         
         
@@ -1566,29 +1835,23 @@ public:
 
 
 
-
-
-
-
-
-
-
-
-
-
     // deconstructor
     ~mesh_t ( ) {
         
         // ---- ELEMENTS ---- //
         delete[] cells_in_elem_;
+        delete[] num_elems_in_elem_;
+        delete[] elems_in_elem_list_start_;
+        delete[] elems_in_elem_list_;
+        delete[] nodes_in_elem_list_;
 
 
         // ---- CELLS ---- //
-
-        delete[] cell_nodes_list_;
+        delete[] nodes_in_cell_list_;
         delete[] num_cells_in_cell_;
-        delete[] cell_in_cell_list_start_;
-        delete[] cell_in_cell_list_;
+        delete[] cells_in_cell_list_start_;
+        delete[] cells_in_cell_list_;
+        delete[] elems_in_cell_list_;
 
 
         // ---- VERTICES ---- //
@@ -1599,16 +1862,19 @@ public:
         delete[] cells_in_node_list_start_;
         delete[] cells_in_node_list_;
 
+        delete[] num_elems_in_node_;
+        delete[] elems_in_node_list_start_;
+        delete[] elems_in_node_list_;
 
         // ---- GAUSS POINTS ---- //
         delete[] node_in_gauss_list_;
 
 
         // ---- CORNERS ---- //
+        delete[] num_corners_in_node_;
         delete[] corners_in_cell_list_;
         delete[] corners_in_node_list_start_;
         delete[] corners_in_node_list_;
-        // delete[] corner_bdy_count_;
 
 
         // ---- FACES ---- //
@@ -1624,7 +1890,7 @@ public:
     // ---- MESH STATE ---- //
         // ---- ELEMENT ---- //
         delete[] elem_vol_; 
-
+        
 
         // ---- CELLS ---- //
         delete[] cell_vol_;
@@ -1649,7 +1915,7 @@ void refine_mesh(
     mesh_t& init_mesh, 
     mesh_t& mesh, 
     const int p_order, 
-    const int rk_num_stages,
+    const int rk_num_bins,
     const int dim);
 
 
@@ -1658,8 +1924,10 @@ namespace swage{
 
     // Used by Gauss2/3D to set quadrature points
     void line_gauss_info(
-        real_t &x, real_t &w, 
-        int &m,  int &p);
+        real_t &x, 
+        real_t &w, 
+        int &m,  
+        int &p);
 
     // Used by Lovatto 1D/2D to set Lobatto quadrature points
     void line_lobatto_info(
@@ -1679,36 +1947,36 @@ namespace swage{
     void gauss_3d(
         view_c_array <real_t> &these_g_pts,   // gauss points
         view_c_array <real_t> &these_weights, // gauss weights
-        view_c_array <real_t> &tot_g_weight,            // 3D product of gauss weights
-        int &quad_order);                        // quadrature order (n)
+        view_c_array <real_t> &tot_g_weight,  // 3D product of gauss weights
+        int &quad_order);                     // quadrature order (n)
 
     // setting gauss quadrature points for 4D elements
     void gauss_4d(
-        view_c_array <real_t> &these_g_pts, // gauss points
-        view_c_array <real_t> &these_weights, // gauss weights
-        int &quad_order, // quadrature order (n)
+        view_c_array <real_t> &these_g_pts,     // gauss points
+        view_c_array <real_t> &these_weights,   // gauss weights
+        int &quad_order,                        // quadrature order (n)
         const int &dim);
 
     // setting Gauss-Lobatto quadrature points for 2D elements
     void lobatto_2d(
-        view_c_array <real_t> &these_L_pts, // gauss points
-        view_c_array <real_t> &these_weights, // gauss weights
-        int &quad_order); // quadrature order (n)
+        view_c_array <real_t> &these_L_pts,     // gauss points
+        view_c_array <real_t> &these_weights,   // gauss weights
+        int &quad_order);                       // quadrature order (n)
 
     // setting Gauss-Lobatto quadrature points for 3D elements
     void lobatto_3d(
-        view_c_array <real_t> &these_L_pts, // gauss points
-        view_c_array <real_t> &these_weights, // gauss weights
+        view_c_array <real_t> &these_L_pts,     // gauss points
+        view_c_array <real_t> &these_weights,   // gauss weights
         int &quad_order); 
 
     // setting gauss quadrature points for 4D elements
     void lobatto_4d(
-        view_c_array <real_t> &these_L_pts, // gauss points
-        view_c_array <real_t> &these_weights, // gauss weights
-        int &quad_order, // quadrature order (n)
+        view_c_array <real_t> &these_L_pts,     // gauss points
+        view_c_array <real_t> &these_weights,   // gauss weights
+        int &quad_order,                        // quadrature order (n)
         const int &dim);
 
-    //defining the jacobian for 2d elements
+    //defining the jacobian for 2D elements
     void jacobian_2d(
         view_c_array <real_t> &J_matrix, 
         real_t &det_J,
@@ -1716,7 +1984,7 @@ namespace swage{
         const view_c_array <real_t> &this_partial,
         const int &num_nodes);
 
-
+    //defining the jacobian for 3D elements
     void jacobian_3d(
         view_c_array <real_t> &J_matrix, 
         real_t &det_J,
@@ -1883,22 +2151,22 @@ namespace swage{
     ===========================
 
 
-     The finite element local point numbering for a 4 node Hexahedral is
-     as follows
+    The finite element local point numbering for a 4 node Hexahedral is
+    as follows
 
-            Eta
-             ^
-             |
-      3------+-----2
-      |      |     |
-      |      |     |
-      |      |     |
-      |      ------+------> Xi
-      |            |
-      |            |
-      0------------1
-
+          Eta
+           ^
+           |
+    3------+-----2
+    |      |     |
+    |      |     |
+    |      |     |
+    |      ------+------> Xi
+    |            |
+    |            |
+    0------------1
     */
+
     class Quad4: public Element2D {
         public:
             const static int num_verts = 4;
@@ -1944,23 +2212,22 @@ namespace swage{
     ===========================
 
 
-     The finite element local point numbering for a 8 node Hexahedral is
-     as follows
+    The finite element local point numbering for a 8 node Hexahedral is
+    as follows
 
-             Eta
-              ^
-              |
-      3-------6------2
-      |       |      |
-      |       |      |
-      |       |      |
-      |       |      |
-      7       +------5-----> Xi   
-      |              |
-      |              |
-      |              |
-      0------4-------1
-
+           Eta
+            ^
+            |
+    3-------6------2
+    |       |      |
+    |       |      |
+    |       |      |
+    |       |      |
+    7       +------5-----> Xi   
+    |              |
+    |              |
+    |              |
+    0------4-------1
     */
 
     class Quad8: public Element2D {
@@ -2075,7 +2342,7 @@ namespace swage{
     | |__| | |_| | (_| | (_| | |\  |
      \___\_\\__,_|\__,_|\__,_|_| \_| 
 
-    representative linear element for visualization
+    Representative linear element for visualization
      
            Eta (j)
             ^
@@ -2154,23 +2421,23 @@ namespace swage{
       Hex 8
     ==========================
 
-     The finite element local point numbering for a 8 node Hexahedral is
-     as follows
+    The finite element local point numbering for a 8 node Hexahedral is
+    as follows
 
-             Mu (k)
-             |     Eta (j)    
-             |    /
-             |   /
-         7---+----6
-        /|   |   /|
-       / |   |  / |
-      4--------5  |
-      |  |    -|--+---> Xi (i)
-      |  |     |  |
-      |  3-----|--2
-      | /      | /       
-      |/       |/
-      0--------1
+           Mu (k)
+           |     Eta (j)    
+           |    /
+           |   /
+       7---+----6
+      /|   |   /|
+     / |   |  / |
+    4--------5  |
+    |  |    -|--+---> Xi (i)
+    |  |     |  |
+    |  3-----|--2
+    | /      | /       
+    |/       |/
+    0--------1
      
     */
 
@@ -2228,24 +2495,22 @@ namespace swage{
     The finite element local point numbering for a 20 node Hexahedral is 
     as follows
 
-               Mu (k)
-               |     Eta (j)
-               |    /
-               |   /
-
-          7----14----6
-         /|         /|
-       15 |       13 |
-       / 19       /  18
-      4----12----5   |
-      |   |      |   |  --> Xi (i)
-      |   |      |   |
-      |   3---10-|---2
-     16  /      17  /
-      | 11       | 9         
-      |/         |/
-      0-----8----1
-
+         Mu (k)
+             |     Eta (j)
+             |    /
+             |   /
+        7----14----6
+       /|         /|
+     15 |       13 |
+     / 19       /  18
+    4----12----5   |
+    |   |      |   |  --> Xi (i)
+    |   |      |   |
+    |   3---10-|---2
+    16 /      17  /
+    | 11       | 9         
+    |/         |/
+    0-----8----1
     */
 
     class Hex20: public Element3D {
@@ -2300,29 +2565,29 @@ namespace swage{
     shown below
 
 
-                   Mu (k)
-                    ^         Eta (j)
-                    |        /
-                    |       /
-                           /
-            7----23------22----6
-           /|                 /|
-         15 |               14 |
-         /  |               /  |
-       12  31             13   30 
-       /    |             /    |
-      4-----20-----21----5     |
-      |     |            |     |   ----> Xi (i)
-      |    27            |     26  
-      |     |            |     |
-     28     |           29     |
-      |     3----19------|18---2
-      |    /             |    /
-      |  11              |   10
-     24  /              25  /
-      | 8                | 9         
-      |/                 |/
-      0----16------17----1
+                 Mu (k)
+                  ^         Eta (j)
+                  |        /
+                  |       /
+                         /
+          7----23------22----6
+         /|                 /|
+       15 |               14 |
+       /  |               /  |
+     12  31             13   30 
+     /    |             /    |
+    4-----20-----21----5     |
+    |     |            |     |   ----> Xi (i)
+    |    27            |     26  
+    |     |            |     |
+    28    |           29     |
+    |     3----19------|18---2
+    |    /             |    /
+    |  11              |   10
+    24 /              25  /
+    | 8                | 9         
+    |/                 |/
+    0----16------17----1
     */
 
     class Hex32: public Element3D {
@@ -2369,33 +2634,31 @@ namespace swage{
     }; // end of hex32 class
 
     /*
-     ==========================
-      Arbitrary Order Elements
-     ==========================
-      _   _           _   _ 
-     | | | | _____  _| \ | |
-     | |_| |/ _ \ \/ /  \| |
-     |  _  |  __/>  <| |\  |
-     |_| |_|\___/_/\_\_| \_|
+    ==========================
+     Arbitrary Order Elements
+    ==========================
+     _   _           _   _ 
+    | | | | _____  _| \ | |
+    | |_| |/ _ \ \/ /  \| |
+    |  _  |  __/>  <| |\  |
+    |_| |_|\___/_/\_\_| \_|
                             
-    representative linear element for visualization
+    Representative linear element for visualization
        
-                k
-                |     j    
-                |    /
-                |   /
-            6---+----7
-           /|   |   /|
-          / |   |  / |
-         2--------3  |
-         |  |    -|--+---> i
-         |  |     |  |
-         |  4-----|--5
-         | /      | /       
-         |/       |/
-         0--------1
-        
-       Note: left hand coordinate coordinates
+           k
+           |     j    
+           |    /
+           |   /
+       6---+----7
+      /|   |   /|
+     / |   |  / |
+    2--------3  |
+    |  |    -|--+---> i
+    |  |     |  |
+    |  4-----|--5
+    | /      | /       
+    |/       |/
+    0--------1
     */
 
 
@@ -2496,8 +2759,6 @@ namespace swage{
        k = Mu
        t = Tau 
 
-
-    Note: left hand coordinate coordinates
     */
 
     class Tess16: public Element4D {
@@ -2559,5 +2820,3 @@ namespace swage{
 
 
 #endif //ELEMENTS_H
-
-

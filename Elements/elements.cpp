@@ -1,4 +1,4 @@
-/*********************************************************************************************
+/*****************************************************************************
 © 2020. Triad National Security, LLC. All rights reserved.
 This program was produced under U.S. Government contract 89233218CNA000001 for Los Alamos
 National Laboratory (LANL), which is operated by Triad National Security, LLC for the U.S.
@@ -39,12 +39,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 **********************************************************************************************/
 
-/*********************************************************************************************
-
-elements.cpp contains 
-
-
-**********************************************************************************************/
 
 
 #include <iostream>  // std::cout etc.
@@ -70,39 +64,37 @@ namespace elements{
 Representative Local Cell 
 ==========================
 
-                K
-                ^         J
-                |        /
-                |       /
-                       /
-        6------------------7
-       /|                 /|
-      / |                / |
-     /  |               /  |
-    /   |              /   | 
-   /    |             /    |
-  4------------------5     |
-  |     |            |     | ----> I
-  |     |            |     |  
-  |     |            |     |
-  |     |            |     |
-  |     2------------|-----3
-  |    /             |    /
-  |   /              |   /
-  |  /               |  /
-  | /                | /         
-  |/                 |/
-  0------------------1
+              K
+              ^         J
+              |        /
+              |       /
+                     /
+      6------------------7
+     /|                 /|
+    / |                / |
+   /  |               /  |
+  /   |              /   | 
+ /    |             /    |
+4------------------5     |
+|     |            |     | ----> I
+|     |            |     |  
+|     |            |     |
+|     |            |     |
+|     2------------|-----3
+|    /             |    /
+|   /              |   /
+|  /               |  /
+| /                | /         
+|/                 |/
+0------------------1
 
 
-   face 0: [0,1,3,2]
-   face 1: [4,5,7,6]
-   face 2: [0,1,5,4]
-   face 3: [2,3,7,6]
-   face 4: [0,2,6,4]
-   face 6; [1,3,7,5]
-    
-
+face 0: [0,1,3,2]
+face 1: [4,5,7,6]
+face 2: [0,1,5,4]
+face 3: [2,3,7,6]
+face 4: [0,2,6,4]
+face 6; [1,3,7,5]
 
 */
 
@@ -641,6 +633,7 @@ void labatto_weights_1D(
     } // end if
 } // end of labatto_weights_1D function
 
+// Create set of quadrature weights for a line through the subcells
 void length_weights(
     c_array_t <real_t> &len_weights_1D,  // Labbatto weights
     c_array_t <real_t> &lab_weights_1D,  // Labbatto weights
@@ -678,6 +671,7 @@ void length_weights(
     }
 }
 
+// Create set of quadrature weights for the subcells
 void sub_weights(
     c_array_t <real_t> &sub_weights_1D,  // Labbatto weights
     c_array_t <real_t> &lab_weights_1D,  // Labbatto weights
@@ -727,6 +721,7 @@ void sub_weights(
     }
 }
 
+// Some linear algebra snippets
 void mat_inverse(
     c_array_t <real_t> &mat_inv,
     c_array_t <real_t> &matrix){
@@ -825,7 +820,7 @@ void refine_mesh(
     mesh_t& init_mesh, 
     mesh_t& mesh, 
     const int p_order, 
-    const int rk_num_stages,
+    const int rk_num_bins,
     const int dim){
 
     // High order mesh parameters
@@ -859,12 +854,12 @@ void refine_mesh(
     //  Initailize Element and cell information in on high order mesh
     //  ---------------------------------------------------------------------------
 
-    mesh.init_element(p_order, dim, num_elem, rk_num_stages);
-    mesh.init_cells(num_elem*num_subcells_per_elem, rk_num_stages);
+    mesh.init_element(p_order, dim, num_elem, rk_num_bins);
+    mesh.init_cells(num_elem*num_subcells_per_elem, rk_num_bins);
     mesh.init_gauss_pts();
 
     //  ---------------------------------------------------------------------------
-    //  Generate point positiont to map onto initial mesh
+    //  Generate point positiont in reference space to map onto initial mesh
     //  ---------------------------------------------------------------------------
 
     auto temp_pts = c_array_t<real_t> (num_g_pts_1d, num_g_pts_1d, num_g_pts_1d, 3);
@@ -914,20 +909,24 @@ void refine_mesh(
 
 
     // Inital mesh node positions
-    auto x_init = c_array_t <real_t> (8);
-    auto y_init = c_array_t <real_t> (8);
-    auto z_init = c_array_t <real_t> (8);
+    real_t x_init_a[8];
+    real_t y_init_a[8];
+    real_t z_init_a[8];
+
+    auto x_init = view_c_array <real_t> (x_init_a, 8);
+    auto y_init = view_c_array <real_t> (y_init_a, 8);
+    auto z_init = view_c_array <real_t> (z_init_a, 8);
 
     int g_point_count = 0; 
 
     // mapping points using the basis functions
-    for(int elem_id = 0; elem_id<num_elem; elem_id++){
+    for(int elem_gid = 0; elem_gid < num_elem; elem_gid++){
 
         // Assign initial positions from initial mesh
-        for(int i = 0; i < 8; i++){
-            x_init(i) = init_mesh.node_coords(0, init_mesh.cell_nodes_id(elem_id, i), 0);
-            y_init(i) = init_mesh.node_coords(0, init_mesh.cell_nodes_id(elem_id, i), 1);
-            z_init(i) = init_mesh.node_coords(0, init_mesh.cell_nodes_id(elem_id, i), 2);
+        for(int node_lid = 0; node_lid < 8; node_lid++){
+            x_init(node_lid) = init_mesh.node_coords(0, init_mesh.nodes_in_cell(elem_gid, node_lid), 0);
+            y_init(node_lid) = init_mesh.node_coords(0, init_mesh.nodes_in_cell(elem_gid, node_lid), 1);
+            z_init(node_lid) = init_mesh.node_coords(0, init_mesh.nodes_in_cell(elem_gid, node_lid), 2);
         }
 
         // Walk over gauss points as i,j,k mesh to calculate basis 
@@ -935,11 +934,11 @@ void refine_mesh(
             for(int j = 0; j < num_g_pts_1d; j++){
                 for(int i = 0; i < num_g_pts_1d; i++){
                     
-                    for (int this_vert = 0; this_vert < 8; this_vert++ ){
-                        basis[this_vert] = 1.0/8.0
-                                         * (1.0 + temp_pts(i, j, k, 0)*ref_vert[this_vert][0])
-                                         * (1.0 + temp_pts(i, j, k, 1)*ref_vert[this_vert][1])
-                                         * (1.0 + temp_pts(i, j, k, 2)*ref_vert[this_vert][2]);
+                    for (int vert_lid = 0; vert_lid < 8; vert_lid++ ){
+                        basis[vert_lid] = 1.0/8.0
+                                        * (1.0 + temp_pts(i, j, k, 0)*ref_vert[vert_lid][0])
+                                        * (1.0 + temp_pts(i, j, k, 1)*ref_vert[vert_lid][1])
+                                        * (1.0 + temp_pts(i, j, k, 2)*ref_vert[vert_lid][2]);
                     }
 
                     g_points_in_mesh(g_point_count, 0) = 0.0;
@@ -947,11 +946,11 @@ void refine_mesh(
                     g_points_in_mesh(g_point_count, 2) = 0.0;
 
                     // Walk over vertices to map new points onto mesh
-                    for (int this_vert = 0; this_vert < 8; this_vert++ ){
-                        g_points_in_mesh(g_point_count, 0) += basis[this_vert]*x_init(this_vert);
-                        g_points_in_mesh(g_point_count, 1) += basis[this_vert]*y_init(this_vert);
-                        g_points_in_mesh(g_point_count, 2) += basis[this_vert]*z_init(this_vert);
-                    } // end for this_vert
+                    for (int vert_lid = 0; vert_lid < 8; vert_lid++ ){
+                        g_points_in_mesh(g_point_count, 0) += basis[vert_lid]*x_init(vert_lid);
+                        g_points_in_mesh(g_point_count, 1) += basis[vert_lid]*y_init(vert_lid);
+                        g_points_in_mesh(g_point_count, 2) += basis[vert_lid]*z_init(vert_lid);
+                    } // end for vert_lid
 
                     g_point_count++;  
                 }
@@ -995,12 +994,12 @@ void refine_mesh(
     real_t distance[28]; 
     auto dist = view_c_array <real_t> (distance, 28);
 
-    for (int cell_id=0; cell_id<init_mesh.num_cells(); cell_id++){
+    for (int cell_gid = 0; cell_gid < init_mesh.num_cells(); cell_gid++){
         
         // Getting the coordinates of the element
         for(int node = 0; node < 8; node++){
             for (int dim = 0; dim < 3; dim++)
-                vert1(node, dim) = init_mesh.node_coords(0, init_mesh.cell_nodes_id(cell_id, node), dim);
+                vert1(node, dim) = init_mesh.node_coords(0, init_mesh.nodes_in_cell(cell_gid, node), dim);
         }
 
         // loop conditions needed for distance calculation
@@ -1044,7 +1043,9 @@ void refine_mesh(
 
     std::cout<<"Min_dist = "<<dist_min<<std::endl;
 
+    // Number of subcells per dimension to be created
     real_t sub;
+    
     if (p_order == 0) sub = 1.0;
     else sub = p_order;
 
@@ -1111,17 +1112,16 @@ void refine_mesh(
     // Temporary array for gauss->node map and node->gauss map
 
     int * node_to_gauss_map;
-    // int * gauss_node_map;
 
     node_to_gauss_map = new int[num_g_pts*num_elem];
     // gauss_node_map    = new int[num_g_pts*num_elem];
 
     // counters
     int num_nodes = 0;
-    int node_id = 0;
+    int node_gid = 0;
 
     // walk over all gauss points 
-    for(int g_pt=0; g_pt<num_g_pts*num_elem; g_pt++){
+    for(int g_pt = 0; g_pt < num_g_pts*num_elem; g_pt++){
         
         // Subtract 1 every time the index is touched
         if(hash[h_keys[g_pt]] <= 0){
@@ -1141,13 +1141,12 @@ void refine_mesh(
         // node id
         if(hash[h_keys[g_pt]] <= -1){
             
-            hash[h_keys[g_pt]] = node_id;
+            hash[h_keys[g_pt]] = node_gid;
             
-            // gauss_node_map[g_pt] = node_id;
-            mesh.node_in_gauss(g_pt) = node_id;
+            // gauss_node_map[g_pt] = node_gid;
+            mesh.node_in_gauss(g_pt) = node_gid;
 
-            node_id++;
-
+            node_gid++;
         }
 
         // If hash value is positive, then the value is the index
@@ -1162,16 +1161,16 @@ void refine_mesh(
     delete[] hash;
 
     // Initialize nodes on sub_mesh
-    mesh.init_nodes(num_nodes, rk_num_stages);
+    mesh.init_nodes(num_nodes, rk_num_bins);
 
     //  ---------------------------------------------------------------------------
     //  Write position to nodes 
     //  ---------------------------------------------------------------------------
     
-    for(int node_id=0; node_id<num_nodes; node_id++){
+    for(int node_gid=0; node_gid<num_nodes; node_gid++){
         for(int i = 0; i < dim; i++){
 
-            mesh.node_coords(0, node_id, i) = g_points_in_mesh(node_to_gauss_map[node_id], i);
+            mesh.node_coords(0, node_gid, i) = g_points_in_mesh(node_to_gauss_map[node_gid], i);
         }
     }
 
@@ -1200,7 +1199,7 @@ void refine_mesh(
     int cell_index = 0;
     int cell_mesh_index = 0;
 
-    for(int elem = 0; elem < num_elem; elem++){
+    for(int elem_gid = 0; elem_gid < num_elem; elem_gid++){
         for(int k = 0; k < num_sub_1d; k++){
             for(int j = 0; j < num_sub_1d; j++){
                 for(int i = 0; i < num_sub_1d; i++){
@@ -1215,31 +1214,33 @@ void refine_mesh(
                     p6 = (i)     + (j+1)*num_1d + (k+1)*num_1d*num_1d;
                     p7 = (i+1)   + (j+1)*num_1d + (k+1)*num_1d*num_1d;
 
-                    p0 += num_1d*num_1d*num_1d*(elem); 
-                    p1 += num_1d*num_1d*num_1d*(elem); 
-                    p2 += num_1d*num_1d*num_1d*(elem); 
-                    p3 += num_1d*num_1d*num_1d*(elem); 
-                    p4 += num_1d*num_1d*num_1d*(elem); 
-                    p5 += num_1d*num_1d*num_1d*(elem); 
-                    p6 += num_1d*num_1d*num_1d*(elem); 
-                    p7 += num_1d*num_1d*num_1d*(elem); 
+                    p0 += num_1d*num_1d*num_1d*(elem_gid); 
+                    p1 += num_1d*num_1d*num_1d*(elem_gid); 
+                    p2 += num_1d*num_1d*num_1d*(elem_gid); 
+                    p3 += num_1d*num_1d*num_1d*(elem_gid); 
+                    p4 += num_1d*num_1d*num_1d*(elem_gid); 
+                    p5 += num_1d*num_1d*num_1d*(elem_gid); 
+                    p6 += num_1d*num_1d*num_1d*(elem_gid); 
+                    p7 += num_1d*num_1d*num_1d*(elem_gid); 
 
                     cell_index = i + j*num_sub_1d + k*num_sub_1d*num_sub_1d;
 
-                    cell_mesh_index = cell_index + num_sub_1d*num_sub_1d*num_sub_1d*(elem);
+                    cell_mesh_index = cell_index + num_sub_1d*num_sub_1d*num_sub_1d*(elem_gid);
 
-                    gauss_in_cell(elem, cell_index, 0) = p0;
-                    gauss_in_cell(elem, cell_index, 1) = p1;
-                    gauss_in_cell(elem, cell_index, 2) = p2;
-                    gauss_in_cell(elem, cell_index, 3) = p3;
-                    gauss_in_cell(elem, cell_index, 4) = p4;
-                    gauss_in_cell(elem, cell_index, 5) = p5;
-                    gauss_in_cell(elem, cell_index, 6) = p6;
-                    gauss_in_cell(elem, cell_index, 7) = p7;
-                    
-                    mesh.cells_in_element(elem, cell_index) = cell_mesh_index;
+                    // if(cell_mesh_index != elem_gid) std::cout<<"ERROR IN REFINE MESH"<<std::endl;
 
-                    mesh.elems_in_cell(cell_mesh_index) = elem;
+                    gauss_in_cell(elem_gid, cell_index, 0) = p0;
+                    gauss_in_cell(elem_gid, cell_index, 1) = p1;
+                    gauss_in_cell(elem_gid, cell_index, 2) = p2;
+                    gauss_in_cell(elem_gid, cell_index, 3) = p3;
+                    gauss_in_cell(elem_gid, cell_index, 4) = p4;
+                    gauss_in_cell(elem_gid, cell_index, 5) = p5;
+                    gauss_in_cell(elem_gid, cell_index, 6) = p6;
+                    gauss_in_cell(elem_gid, cell_index, 7) = p7;
+
+                    mesh.cells_in_elem(elem_gid, cell_index) = cell_mesh_index;
+
+                    mesh.elems_in_cell(cell_mesh_index) = elem_gid;
 
                 }
             }
@@ -1247,9 +1248,8 @@ void refine_mesh(
     }
 
 
-    int cell_index_global=0;
-    int cell_index_elem=0;
 
+    int cell_gid = 0;
     int p[8];
     // for each cell read the list of associated nodes
     for(int elem = 0; elem < num_elem; elem++){
@@ -1272,15 +1272,12 @@ void refine_mesh(
                     for (int idx = 0; idx < 8; idx++){
                         p[idx] += num_1d*num_1d*num_1d*(elem); 
                     }
-                    
-                    // Local cell index in element
-                    cell_index_elem = i + j*num_sub_1d + k*num_sub_1d*num_sub_1d;
-                    for (int node=0; node<8; node++){
-                        // mesh.cell_nodes_id(cell_index_global, node) = gauss_node_map[p[node]];
-                        mesh.cell_nodes_id(cell_index_global, node) = mesh.node_in_gauss(p[node]);
+
+                    for (int node_lid = 0; node_lid < 8; node_lid++){
+                        mesh.nodes_in_cell(cell_gid, node_lid) = mesh.node_in_gauss(p[node_lid]);
                     }
                     // incriment global index for cell
-                    cell_index_global++;
+                    cell_gid++;
                 }
             }
         }
@@ -3040,50 +3037,6 @@ void QuadN::basis_partials (
  '------------------------------' 
 */
 
-/*
-==============================
-        Mesh Class
-==============================
-
-==========================
-  Representative Cell
-==========================
-
-
-
-                J
-                ^         K
-                |        /
-                |       /
-                       /
-        6------------------7
-       /|                 /|
-      / |                / |
-     /  |               /  |
-    /   |              /   | 
-   /    |             /    |
-  2------------------3     |
-  |     |            |     | ----> I
-  |     |            |     |  
-  |     |            |     |
-  |     |            |     |
-  |     4------------|-----5
-  |    /             |    /
-  |   /              |   /
-  |  /               |  /
-  | /                | /         
-  |/                 |/
-  0------------------1
-
-
-   face 0: [0,1,5,4]
-   face 1: [2,3,6,7]
-   face 2: [0,1,3,2]
-   face 3: [4,5,7,6]
-   face 4: [0,4,6,2]
-   face 6; [1,5,7,3]
-
-*/
 
 
 /*

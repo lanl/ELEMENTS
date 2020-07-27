@@ -13,8 +13,8 @@ class pseudo_mesh {
         // Simple Matar
         CArrayKokkos  <real_t>  carray;
         CMatrixKokkos <real_t>  cmatrix;
-        //FArrayKokkos  <real_t>  farray;
-        //FMatrixKokkos <real_t>  fmatrix;
+        FArrayKokkos  <real_t>  farray;
+        FMatrixKokkos <real_t>  fmatrix;
         // Ragged (Static)
         //CArrayKokkos           <size_t> mystride;
         //RaggedDownArrayKokkos  <real_t> raggeddown;

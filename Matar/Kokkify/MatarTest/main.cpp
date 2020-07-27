@@ -50,6 +50,18 @@ printf("Pseudo Mesh Kokkos\n");
             printf("(%d, %d) %lf\n", i, j, pmesh.cmatrix(i, j));
         });
     Kokkos::fence();
+    printf("FArray\n");
+    Kokkos::parallel_for("FArrayValues", array_type, KOKKOS_LAMBDA(const int i, const int j) {
+            pmesh.farray(i, j) = (real_t) i + j * size_i;
+            printf("(%d, %d) %lf\n", i, j, pmesh.farray(i, j));
+        });
+    Kokkos::fence();
+    printf("FMatrix\n");
+    Kokkos::parallel_for("FMatrixValues", matrix_type, KOKKOS_LAMBDA(const int i, const int j) {
+            pmesh.fmatrix(i, j) = (real_t) (i - 1) + (j - 1) * size_i;
+            printf("(%d, %d) %lf\n", i, j, pmesh.fmatrix(i, j));
+        });
+    Kokkos::fence();
    /*
     Kokkos::parallel_for ("RaggedDownTeam", TeamPolicy(size_j, Kokkos::AUTO), KOKKOS_LAMBDA (const TeamPolicy::member_type &teamMember) {
             const int j = teamMember.league_rank();

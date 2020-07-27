@@ -14,8 +14,8 @@ void pseudo_mesh::init(int pnts1, int pnts2) {
 
     carray  = CArrayKokkos  <real_t> (size1,size2);
     cmatrix = CMatrixKokkos <real_t> (size1,size2);
-    //farray  = FArrayKokkos  <real_t> (size1,size2);
-    //fmatrix = FMatrixKokkos <real_t> (size1,size2);
+    farray  = FArrayKokkos  <real_t> (size1,size2);
+    fmatrix = FMatrixKokkos <real_t> (size1,size2);
 
     //mystride = CArrayKokkos <size_t> (size2);
     //for (int i = 0; i < size2; i++) {

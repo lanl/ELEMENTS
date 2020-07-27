@@ -3,24 +3,27 @@
 
 
 
-KOKKOS_FUNCTION
+//KOKKOS_FUNCTION
 pseudo_mesh::pseudo_mesh() {};
 
-KOKKOS_FUNCTION
+//KOKKOS_FUNCTION
 void pseudo_mesh::init(int pnts1, int pnts2) {
 
     size1 = pnts1;
     size2 = pnts2;
-    // Change this name
-    mystride = CArrayKokkos <size_t> (size2);
-    for (int i = 0; i < size2; i++) {
-        mystride(i) = i+1;
-    }
-    var = RaggedDownArrayKokkos <double> (&mystride(0), size2);
-    var1 = FMatrixKokkos<int>(size1,size2);
+
+    carray  = CArrayKokkos  <real_t> (size1,size2);
+    cmatrix = CMatrixKokkos <real_t> (size1,size2);
+    //farray  = FArrayKokkos  <real_t> (size1,size2);
+    //fmatrix = FMatrixKokkos <real_t> (size1,size2);
+
+    //mystride = CArrayKokkos <size_t> (size2);
+    //for (int i = 0; i < size2; i++) {
+    //    mystride(i) = i+1;
+    //}
 }
 
-KOKKOS_FUNCTION
+/*
 void pseudo_mesh::init(int pnts1, int pnts2, TeamPolicy::member_type teamMember) {
 
     size1 = pnts1;
@@ -35,6 +38,7 @@ void pseudo_mesh::init(int pnts1, int pnts2, TeamPolicy::member_type teamMember)
     var = RaggedDownArrayKokkos <double> (&mystride(0), size2);
     var1 = FMatrixKokkos<int>(size1,size2);
 }
+*/
 
 /*
 //3D

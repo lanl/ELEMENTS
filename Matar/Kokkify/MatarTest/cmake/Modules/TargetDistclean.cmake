@@ -31,6 +31,7 @@ IF (UNIX)
    */*/cmake_install.cmake
    install_manifest.txt
    */install_manifest.txt
+   Kokkos
    kokkos
    mtest
   )

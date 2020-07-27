@@ -9,23 +9,27 @@ using TeamPolicy = Kokkos::TeamPolicy<Kokkos::Cuda>;
 class pseudo_mesh {
 
     public:
-        int size1, size2, size3;
-	    //int size4, size5, size6;
-        //Change this name
-        CArrayKokkos <size_t> mystride;
-        RaggedDownArrayKokkos <double> var;
-	    FMatrixKokkos <int> var1;
+        int size1, size2, size3, size4, size5, size6;
+        // Simple Matar
+        CArrayKokkos  <real_t>  carray;
+        CMatrixKokkos <real_t>  cmatrix;
+        //FArrayKokkos  <real_t>  farray;
+        //FMatrixKokkos <real_t>  fmatrix;
+        // Ragged (Static)
+        //CArrayKokkos           <size_t> mystride;
+        //RaggedDownArrayKokkos  <real_t> raggeddown;
+        //RaggedRightArrayKokkos <real_t> raggedright;
 
         // default constructor
-        KOKKOS_FUNCTION
+        //KOKKOS_FUNCTION
         pseudo_mesh();
 
         // init function
-        KOKKOS_FUNCTION
+        //KOKKOS_FUNCTION
         void init(int pnts1, int pnts2);
 
-        KOKKOS_FUNCTION
-        void init(int pnts1, int pnts2, TeamPolicy::member_type teamMember);
+        //KOKKOS_FUNCTION
+        //void init(int pnts1, int pnts2, TeamPolicy::member_type teamMember);
 
 	    //~~~adding different init functions to test dimensions of FArray
 	

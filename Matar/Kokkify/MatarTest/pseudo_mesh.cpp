@@ -17,7 +17,18 @@ void pseudo_mesh::init(int pnts1, int pnts2) {
     farray  = FArrayKokkos  <real_t> (size1,size2);
     fmatrix = FMatrixKokkos <real_t> (size1,size2);
 
-    //mystride = CArrayKokkos <size_t> (size2);
+    mystride = CArrayKokkos <size_t> (size1);
+    Kokkos::parallel_for("StrideValues", size1, KOKKOS_CLASS_LAMBDA(const int i) {
+              //mytest(i) = 5;
+              //printf("%d\n", mytest(i));
+            mystride(i) = i + 1;
+            printf("(%d) %ld\n", i, mystride(i));
+        });
+    Kokkos::fence();
+    //raggedright = RaggedRightArrayKokkos <real_t> (mystride);
+    //raggedright.initialize(mystride.pointer(), size1);
+    raggedright.initialize(mystride);
+
     //for (int i = 0; i < size2; i++) {
     //    mystride(i) = i+1;
     //}

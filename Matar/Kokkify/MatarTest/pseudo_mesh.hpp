@@ -16,9 +16,9 @@ class pseudo_mesh {
         FArrayKokkos  <real_t>  farray;
         FMatrixKokkos <real_t>  fmatrix;
         // Ragged (Static)
-        //CArrayKokkos           <size_t> mystride;
+        CArrayKokkos           <size_t> mystride;
+        RaggedRightArrayKokkos <real_t> raggedright;
         //RaggedDownArrayKokkos  <real_t> raggeddown;
-        //RaggedRightArrayKokkos <real_t> raggedright;
 
         // default constructor
         //KOKKOS_FUNCTION

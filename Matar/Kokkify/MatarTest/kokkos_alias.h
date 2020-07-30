@@ -35,6 +35,14 @@ using IMatrix2D    = Kokkos::View<int **,Layout,ExecSpace>;
 using IMatrix3D    = Kokkos::View<int ***,Layout,ExecSpace>;
 using IMatrix4D    = Kokkos::View<int ****,Layout,ExecSpace>;
 using IMatrix5D    = Kokkos::View<int *****,Layout,ExecSpace>;
+using SVar         = Kokkos::View<size_t,Layout,ExecSpace>;
+using SArray1D     = Kokkos::View<size_t *,Layout,ExecSpace>;
+using SArray2D     = Kokkos::View<size_t **,Layout,ExecSpace>;
+using SArray3D     = Kokkos::View<size_t ***,Layout,ExecSpace>;
+using SArray4D     = Kokkos::View<size_t ****,Layout,ExecSpace>;
+using SArray5D     = Kokkos::View<size_t *****,Layout,ExecSpace>;
+
+using SHArray1D     = Kokkos::View<size_t *,Layout,Kokkos::HostSpace>;
 
 
 #endif

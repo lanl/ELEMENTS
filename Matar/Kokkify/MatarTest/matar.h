@@ -3539,10 +3539,16 @@ public:
     // Overload copy assignment operator
     CArrayKokkos& operator= (const CArrayKokkos& temp);
 
+    // GPU Method
     // Method that returns size
     KOKKOS_FUNCTION
     size_t size() const;
 
+    // Host Method
+    // Method that returns size
+    size_t extent() const;
+
+    // Methods returns the raw pointer (most likely GPU) of the Kokkos View
     T* pointer();
 
     // Deconstructor
@@ -3757,6 +3763,11 @@ CArrayKokkos<T>& CArrayKokkos<T>::operator= (const CArrayKokkos& temp)
 template <typename T>
 KOKKOS_FUNCTION
 size_t CArrayKokkos<T>::size() const {
+	return length_;
+}
+
+template <typename T>
+size_t CArrayKokkos<T>::extent() const {
 	return length_;
 }
 
@@ -4372,6 +4383,8 @@ private:
     TArray1D array_; 
     
     size_t dim1_, length_;
+    // THIS WILL BE A GPU POINTER!
+    size_t *mystrides_;
     
 public:
     // Default constructor
@@ -4421,110 +4434,27 @@ RaggedRightArrayKokkos<T>::RaggedRightArrayKokkos () {}
 // Overloaded constructor
 template <typename T>
 RaggedRightArrayKokkos<T>::RaggedRightArrayKokkos (CArrayKokkos<size_t> &strides_array) {
-    /*
-    // The length of the stride array is some_dim1;
-
-    Kokkos::parallel_for("StrideDim", 1, KOKKOS_LAMBDA(const int&) {
-            dim1_  = strides_array.size();
-        });
-    Kokkos::fence();
-    
-    // Create and initialize the starting index of the entries in the 1D array
-    start_index_ = SArray1D("start_index_", dim1_ + 1);
-    //start_index_(0) = 0; // the 1D array starts at 0
-    Kokkos::parallel_for("StartFirst", 1, KOKKOS_LAMBDA(const int&) {
-            start_index_(0) = 0;
-        });
-    Kokkos::fence();
-    
-    
-    // Loop over to find the total length of the 1D array to
-    // represent the ragged-right array and set the starting 1D index
-    //size_t count = 0;
-    Kokkos::parallel_scan("StartValues", dim1_, KOKKOS_LAMBDA(const int i, double& update, const bool final) {
-            // Load old value in case we update it before accumulating
-            const size_t count = strides_array(i);
-            if (final) {
-                start_index_((i + 1)) = update;
-            }       
-
-            update += count;
-        });
-    Kokkos::fence();
-
-    //for (size_t i = 0; i < dim1_; i++){
-    //    count += strides_array(i);
-    //    start_index_((i + 1)) = count;
-    //} // end for i
-
-    Kokkos::parallel_for("ArrayLength", 1, KOKKOS_LAMBDA(const int&) {
-            length_ = start_index_(dim1_);
-        });
-    Kokkos::fence();
-
-    printf("Length %d\n", length_);
-
-    Kokkos::parallel_for("StartCheck", dim1_, KOKKOS_LAMBDA(const int i) {
-            printf("%d) Start %d\n", i, start_index_(i));
-        });
-    Kokkos::fence();
-    
-    array_ = TArray1D("array_", length_);
-    */
+    mystrides_ = strides_array.pointer();
+    dim1_ = strides_array.extent();
 } // End constructor
 
 // Overloaded constructor
 template <typename T>
 RaggedRightArrayKokkos<T>::RaggedRightArrayKokkos (ViewCArray<size_t> &strides_array) {
-    /*
-    // The length of the stride array is some_dim1;
-    dim1_  = strides_array.size();
-    
-    // Create and initialize the starting index of the entries in the 1D array
-    start_index_ = SArray1D("start_index_", dim1_ + 1);
-    start_index_(0) = 0; // the 1D array starts at 0
-    
-    // Loop over to find the total length of the 1D array to
-    // represent the ragged-right array and set the starting 1D index
-    size_t count = 0;
-    for (size_t i = 0; i < dim1_; i++){
-        count += strides_array(i);
-        start_index_((i + 1)) = count;
-    } // end for i
-    length_ = count;
-    
-    array_ = TArray1D("array_", length_);
-    */
 } // End constructor
 
 // Overloaded constructor
 template <typename T>
 RaggedRightArrayKokkos<T>::RaggedRightArrayKokkos (size_t *strides_array, size_t some_dim1) {
-    /*
-    // The length of the stride array is some_dim1;
+    mystrides_ = strides_array;
     dim1_ = some_dim1;
-    
-    // Create and initialize the starting index of the entries in the 1D array
-    start_index_ = SArray1D("start_index_", dim1_ + 1);
-    start_index_(0) = 0; // the 1D array starts at 0
-    
-    // Loop over to find the total length of the 1D array to
-    // represent the ragged-right array and set the starting 1D index
-    size_t count = 0;
-    for (size_t i = 0; i < dim1_; i++){
-        count += strides_array[i];
-        start_index_((i + 1)) = count;
-    } // end for i
-    length_ = count;
-    
-    array_ = TArray1D("array_", length_);
-    */
 } // End constructor
 
 template <typename T>
 void RaggedRightArrayKokkos<T>::initialize (CArrayKokkos<size_t> &strides_array) {
     // The length of the stride array is some_dim1;
 
+    /*
     SArray1D tempdim = SArray1D("tempdim", 1);
     auto h_tempdim = HostMirror(tempdim);
     Kokkos::parallel_for("StrideDim", 1, KOKKOS_CLASS_LAMBDA(const int&) {
@@ -4534,6 +4464,7 @@ void RaggedRightArrayKokkos<T>::initialize (CArrayKokkos<size_t> &strides_array)
     Kokkos::fence();
     deep_copy(h_tempdim, tempdim);
     dim1_ = h_tempdim(0);
+    */
     
     // Create and initialize the starting index of the entries in the 1D array
     start_index_ = SArray1D("start_index_", dim1_ + 1);
@@ -4751,7 +4682,75 @@ T& RaggedRightArrayKokkos<T>::operator()(size_t i, size_t j) const {
 template <typename T>
 RaggedRightArrayKokkos<T> & RaggedRightArrayKokkos<T>::operator= (const RaggedRightArrayKokkos &temp) {
 
-    if( this != &temp) {
+  if( this != &temp) {
+      /*
+    SArray1D tempdim = SArray1D("tempdim", 1);
+    auto h_tempdim = HostMirror(tempdim);
+    Kokkos::parallel_for("StrideDim", 1, KOKKOS_CLASS_LAMBDA(const int&) {
+            tempdim(0)  = strides_array.size();
+            //dim1_  = strides_array.size();
+        });
+    Kokkos::fence();
+    deep_copy(h_tempdim, tempdim);
+    dim1_ = h_tempdim(0);
+    */
+    dim1_ = temp.dim1_;
+    
+    // Create and initialize the starting index of the entries in the 1D array
+    start_index_ = SArray1D("start_index_", dim1_ + 1);
+    //start_index_(0) = 0; // the 1D array starts at 0
+    Kokkos::parallel_for("StartFirst", 1, KOKKOS_CLASS_LAMBDA(const int&) {
+            start_index_(0) = 0;
+        });
+    Kokkos::fence();
+    
+    // Loop over to find the total length of the 1D array to
+    // represent the ragged-right array and set the starting 1D index
+    Kokkos::parallel_scan("StartValues", dim1_, KOKKOS_CLASS_LAMBDA(const int i, double& update, const bool final) {
+            // Load old value in case we update it before accumulating
+            const size_t count = temp.mystrides_[i];
+            update += count;
+            if (final) {
+                start_index_((i+1)) = update;
+            }       
+
+        });
+    Kokkos::fence();
+
+    /*
+    size_t * h_start_index = new size_t [dim1_+1];
+    h_start_index[0] = 0;
+    size_t * herenow = new size_t [2];
+    herenow[0] = 1;
+    herenow[1] = 2;
+    size_t count = 0;
+    for (size_t i = 0; i < dim1_; i++){
+        count += herenow[i];
+        h_start_index[(i + 1)] = count;
+        printf("%d) Start check %ld\n", i, h_start_index[i]);
+    } // end for i
+    */
+
+    SArray1D templen = SArray1D("templen", 1);
+    auto h_templen = HostMirror(templen);
+    Kokkos::parallel_for("ArrayLength", 1, KOKKOS_CLASS_LAMBDA(const int&) {
+            templen(0) = start_index_(dim1_);
+            //length_ = start_index_(dim1_);
+        });
+    Kokkos::fence();
+    deep_copy(h_templen, templen);
+    length_ = h_templen(0);
+
+    printf("Length %ld\n", length_);
+
+    Kokkos::parallel_for("StartCheck", dim1_+1, KOKKOS_CLASS_LAMBDA(const int i) {
+            printf("%d) Start %ld\n", i, start_index_(i));
+        });
+    Kokkos::fence();
+    
+    array_ = TArray1D("array_", length_);
+
+    /*
         dim1_ = temp.dim1_;
         length_ = temp.length_;
         start_index_ = SArray1D("start_index_", dim1_ + 1);
@@ -4762,7 +4761,8 @@ RaggedRightArrayKokkos<T> & RaggedRightArrayKokkos<T>::operator= (const RaggedRi
         //    start_index_(j) = temp.start_index_(j);  
         //}
         array_ = TArray1D("array_", length_);
-    }
+    */
+  }
 	
     return *this;
 }

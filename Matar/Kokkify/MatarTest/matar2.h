@@ -2738,23 +2738,545 @@ SparseColArray<T>::~SparseColArray() {
 
 //----end SparseColArray----
 
-
-
-
-
 //=======================================================================
 //	end of standard MATAR data-types
 //========================================================================
 
+/*! \brief Kokkos version of the serial FArray class.
+ *
+ *  This is the Kokkos version of the serial FArray class. 
+ *  Its usage is analagous to that of the serial FArray class, and it is to be
+ *  used in Kokkos-specific code.
+ */
+template <typename T>
+class FArrayKokkos {
 
+    using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
+    
+private:
 
+    /*!
+     * Private variable that specifies the length of the first dimension
+     * of the FArrayKokkos object.
+     */
+    size_t dim1_;
+    /*!
+     * Private variable that specifies the length of the second dimension
+     * of the FArrayKokkos object.
+     */
+    size_t dim2_;
+    size_t dim3_;
+    size_t dim4_;
+    size_t dim5_;
+    size_t dim6_;
+    size_t length_;
+    TArray1D this_array_; 
 
+public:
 
+    /*!
+     * \brief Default constructor
+     */
+    KOKKOS_FUNCTION
+    FArrayKokkos();
 
+    /*!
+     * \brief An overloaded constructor used to construct an 1D FArrayKokkos
+              object.
 
+        \param some_dim1 the length of the first dimension
+     */
+    KOKKOS_FUNCTION
+    FArrayKokkos(size_t some_dim1);
 
+    /*!
+     * \brief An overloaded constructor used to construct a 2D FArrayKokkos
+              object.
 
+        \param some_dim1 the length of the first dimension
+        \param some_dim2 the length of the second dimension
+     */
+    KOKKOS_FUNCTION
+    FArrayKokkos(size_t some_dim1, size_t some_dim2);
 
+    /*!
+     * \brief An overloaded constructor used to construct a 3D FArrayKokkos
+              object.
 
+        \param some_dim1 the length of the first dimension
+        \param some_dim2 the length of the second dimension
+        \param some_dim3 the length of the third dimension
+     */
+    KOKKOS_FUNCTION
+    FArrayKokkos(size_t some_dim1, size_t some_dim2, size_t some_dim3);
 
+    KOKKOS_FUNCTION
+    FArrayKokkos(size_t some_dim1, size_t some_dim2, size_t some_dim3, 
+                 size_t some_dim4);
 
+    KOKKOS_FUNCTION
+    FArrayKokkos(size_t some_dim1, size_t some_dim2, size_t some_dim3, 
+                 size_t some_dim4, size_t some_dim5); 
+
+    KOKKOS_FUNCTION
+    FArrayKokkos(size_t some_dim1, size_t sone_dim2, size_t some_dim3, 
+                 size_t some_dim4, size_t some_dim5, size_t some_dim6);
+
+    // Overload operator() to acces data
+    // from 1D to 6D
+    
+    KOKKOS_FUNCTION
+    T& operator()(size_t i) const;
+    
+    KOKKOS_FUNCTION
+    T& operator()(size_t i, size_t j) const;
+
+    KOKKOS_FUNCTION
+    T& operator() (size_t i, size_t j, size_t k) const;
+
+    KOKKOS_FUNCTION
+    T& operator() (size_t i, size_t j, size_t k, size_t l) const;
+
+    KOKKOS_FUNCTION
+    T& operator() (size_t i, size_t j, size_t k, size_t l, size_t m) const;
+
+    KOKKOS_FUNCTION
+    T& operator() (size_t i, size_t j, size_t k, size_t l, size_t m, size_t n) const;
+
+    //overload = operator
+    KOKKOS_FUNCTION
+    FArrayKokkos& operator= (const FArrayKokkos &temp);
+
+    //destructor
+    KOKKOS_FUNCTION
+    ~FArrayKokkos();    
+
+}; //end of FArrayKokkos declarations
+
+// Default constructor
+template <typename T>
+KOKKOS_FUNCTION
+FArrayKokkos<T>::FArrayKokkos() {}
+
+// Overloaded 1D constructor
+template <typename T>
+KOKKOS_FUNCTION
+FArrayKokkos<T>::FArrayKokkos(size_t some_dim1){
+    using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
+    
+    dim1_ = some_dim1;
+    length_ = dim1_;
+    this_array_ = TArray1D("this_array_", length_);
+}
+
+// Overloaded 2D constructor
+template <typename T>
+KOKKOS_FUNCTION
+FArrayKokkos<T>::FArrayKokkos(size_t some_dim1, size_t some_dim2) {
+
+    using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
+    
+    dim1_ = some_dim1;
+    dim2_ = some_dim2;
+    length_ = (dim1_ * dim2_);
+    this_array_ = TArray1D("this_array_", length_);
+}
+
+// Overloaded 3D constructor
+template <typename T>
+KOKKOS_FUNCTION
+FArrayKokkos<T>::FArrayKokkos(size_t some_dim1, size_t some_dim2, 
+                              size_t some_dim3) {
+
+    using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
+    
+    dim1_ = some_dim1;
+    dim2_ = some_dim2;
+    dim3_ = some_dim3;
+    length_ = (dim1_ * dim2_ * dim3_);
+    this_array_ = TArray1D("this_array_", length_);
+}
+
+// Overloaded 4D constructor
+template <typename T>
+KOKKOS_FUNCTION
+FArrayKokkos<T>::FArrayKokkos(size_t some_dim1, size_t some_dim2, 
+                              size_t some_dim3, size_t some_dim4) {
+
+    using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
+    
+    dim1_ = some_dim1;
+    dim2_ = some_dim2;
+    dim3_ = some_dim3;
+    dim4_ = some_dim4;
+    length_ = (dim1_ * dim2_ * dim3_ * dim4_);
+    this_array_ = TArray1D("this_array_", length_);
+}
+
+// Overloaded 5D constructor
+template <typename T>
+KOKKOS_FUNCTION
+FArrayKokkos<T>::FArrayKokkos(size_t some_dim1, size_t some_dim2, 
+                              size_t some_dim3, size_t some_dim4, 
+                              size_t some_dim5) {
+
+    using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
+    
+    dim1_ = some_dim1;
+    dim2_ = some_dim2;
+    dim3_ = some_dim3;
+    dim4_ = some_dim4;
+    dim5_ = some_dim5;
+    length_ = (dim1_ * dim2_ * dim3_ * dim4_ * dim5_);
+    this_array_ = TArray1D("this_array_", length_);
+}
+
+// Overloaded 6D constructor
+template <typename T>
+KOKKOS_FUNCTION
+FArrayKokkos<T>::FArrayKokkos(size_t some_dim1, size_t some_dim2, 
+                              size_t some_dim3, size_t some_dim4, 
+                              size_t some_dim5, size_t some_dim6) {
+
+    using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
+    
+    dim1_ = some_dim1;
+    dim2_ = some_dim2;
+    dim3_ = some_dim3;
+    dim4_ = some_dim4;
+    dim5_ = some_dim5;
+    dim6_ = some_dim6;
+    length_ = (dim1_ * dim2_ * dim3_ * dim4_ * dim5_ * dim6_);
+    this_array_ = TArray1D("this_array_", length_);
+}
+
+// Definitions of overload operator()
+// for 1D to 6D
+// Note: the indices for array all start at 0
+
+// 1D
+template<typename T>
+KOKKOS_FUNCTION
+T& FArrayKokkos<T>::operator()( size_t i) const {
+    assert( i < dim1_ && "i is out of bounds in FArrayKokkos 1D!");
+    return this_array_(i);
+}
+
+// 2D
+template <typename T>
+KOKKOS_FUNCTION
+T& FArrayKokkos<T>::operator()(size_t i, size_t j) const {
+    assert( i < dim1_ && "i is out of bounds in FArrayKokkos 2D!");
+    assert( j < dim2_ && "j is out of bounds in FArrayKokkos 2D!");
+    return this_array_(i + (j * dim1_));
+}
+
+// 3D
+template <typename T>
+KOKKOS_FUNCTION
+T& FArrayKokkos<T>::operator()(size_t i, size_t j, size_t k) const {
+    assert( i < dim1_ && "i is out of bounds in FArrayKokkos 3D!");
+    assert( j < dim2_ && "j is out of bounds in FArrayKokkos 3D!");
+    assert( k < dim3_ && "k is out of bounds in FArrayKokkos 3D!");
+    return this_array_(i + (j * dim1_) 
+                         + (k * dim1_ * dim2_));
+}
+
+// 4D
+template <typename T>
+KOKKOS_FUNCTION
+T& FArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, size_t l) const {
+    assert( i < dim1_ && "i is out of bounds in FArrayKokkos 4D!");
+    assert( j < dim2_ && "j is out of bounds in FArrayKokkos 4D!");
+    assert( k < dim3_ && "k is out of bounds in FArrayKokkos 4D!");
+    assert( l < dim4_ && "l is out of bounds in FArrayKokkos 4D!");
+    return this_array_(i + (j * dim1_) 
+                         + (k * dim1_ * dim2_) 
+                         + (l * dim1_ * dim2_ * dim3_));
+}
+
+// 5D
+template <typename T>
+KOKKOS_FUNCTION
+T& FArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, size_t l, 
+                               size_t m) const {
+    assert( i < dim1_ && "i is out of bounds in FArrayKokkos 5D!");
+    assert( j < dim2_ && "j is out of bounds in FArrayKokkos 5D!");
+    assert( k < dim3_ && "k is out of bounds in FArrayKokkos 5D!");
+    assert( l < dim4_ && "l is out of bounds in FArrayKokkos 5D!");
+    assert( m < dim5_ && "m is out of bounds in FArrayKokkos 5D!");
+    return this_array_(i + (j * dim1_) 
+                         + (k * dim1_ * dim2_) 
+                         + (l * dim1_ * dim2_ * dim3_) 
+                         + (m * dim1_ * dim2_ * dim3_ * dim4_));
+}
+
+// 6D
+template <typename T>
+KOKKOS_FUNCTION
+T& FArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, size_t l, 
+                               size_t m, size_t n) const {
+    assert( i < dim1_ && "i is out of bounds in FArrayKokkos 6D!");
+    assert( j < dim2_ && "j is out of bounds in FArrayKokkos 6D!");
+    assert( k < dim3_ && "k is out of bounds in FArrayKokkos 6D!");
+    assert( l < dim4_ && "l is out of bounds in FArrayKokkos 6D!");
+    assert( m < dim5_ && "m is out of bounds in FArrayKokkos 6D!");
+    assert( n < dim6_ && "n is out of bounds in FArrayKokkos 6D!");
+    return this_array_(i + (j * dim1_) 
+                         + (k * dim1_ * dim2_) 
+                         + (l * dim1_ * dim2_ * dim3_) 
+                         + (m * dim1_ * dim2_ * dim3_ * dim4_) 
+                         + (n * dim1_ * dim2_ * dim3_ * dim4_ * dim5_));
+}
+
+// Overload = operator
+// for object assingment THIS = FArrayKokkos<> TEMP(n,m,,,,)
+template <typename T>
+KOKKOS_FUNCTION
+FArrayKokkos<T>& FArrayKokkos<T>::operator= (const FArrayKokkos& temp) {
+    using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
+    
+    if (this != &temp) {
+      dim1_ = temp.dim1_;
+      dim2_ = temp.dim2_;
+      dim3_ = temp.dim3_;
+      dim4_ = temp.dim4_;
+      dim5_ = temp.dim5_;
+      dim6_ = temp.dim6_;
+      length_ = temp.length_;
+      this_array_ = TArray1D("this_array_", length_);
+    }
+    return *this;
+}
+
+// Destructor
+template <typename T>
+KOKKOS_FUNCTION
+FArrayKokkos<T>::~FArrayKokkos() {}
+
+////////////////////////////////////////////////////////////////////////////////
+// End of FArrayKokkos
+////////////////////////////////////////////////////////////////////////////////
+
+/*! \brief Kokkos version of the serial ViewFArray class.
+ *
+ */
+template <typename T>
+class ViewFArrayKokkos {
+
+private: 
+    size_t dim1_;
+    size_t dim2_;
+    size_t dim3_;
+    size_t dim4_;
+    size_t dim5_;
+    size_t dim6_;
+    size_t length_;
+    T* this_array_;
+
+public:
+
+    KOKKOS_FUNCTION
+    ViewFArrayKokkos();
+
+    KOKKOS_FUNCTION
+    ViewFArrayKokkos(T* some_array, size_t dim1);
+    
+    KOKKOS_FUNCTION
+    ViewFArrayKokkos(T* some_array, size_t dim1, size_t dim2);
+    
+    KOKKOS_FUNCTION
+    ViewFArrayKokkos(T* some_array, size_t dim1, size_t dim2, size_t dim3);
+    
+    KOKKOS_FUNCTION
+    ViewFArrayKokkos(T* some_array, size_t dim1, size_t dim2, size_t dim3, 
+                     size_t dim4);
+    
+    KOKKOS_FUNCTION
+    ViewFArrayKokkos(T* some_array, size_t dim1, size_t dim2, size_t dim3, 
+                     size_t dim4, size_t dim5);
+    
+    KOKKOS_FUNCTION
+    ViewFArrayKokkos(T* some_array, size_t dim1, size_t dim2, size_t dim3, 
+                     size_t dim4, size_t dim5, size_t dim6);
+
+    KOKKOS_FUNCTION
+    T& operator()(size_t i); 
+
+    KOKKOS_FUNCTION
+    T& operator()(size_t i, size_t j);
+
+    KOKKOS_FUNCTION
+    T& operator()(size_t i, size_t j, size_t k);
+
+    KOKKOS_FUNCTION
+    T& operator()(size_t i, size_t j, size_t k, size_t l);
+
+    KOKKOS_FUNCTION
+    T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m);
+
+    KOKKOS_FUNCTION
+    T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m, size_t n); 
+
+}; // End of ViewFArrayKokkos declarations
+
+// Default constructor
+template <typename T>
+KOKKOS_FUNCTION
+ViewFArrayKokkos<T>::ViewFArrayKokkos() {}
+
+// Overloaded 1D constructor
+template <typename T>
+KOKKOS_FUNCTION
+ViewFArrayKokkos<T>::ViewFArrayKokkos(T *some_array, size_t dim1) {
+    dim1_ = dim1;
+    length_ = dim1_;
+    this_array_ = some_array;
+}
+
+// Overloaded 2D constructor
+template <typename T>
+KOKKOS_FUNCTION
+ViewFArrayKokkos<T>::ViewFArrayKokkos(T *some_array, size_t dim1, size_t dim2) {
+    dim1_ = dim1;
+    dim2_ = dim2;
+    length_ = (dim1_ * dim2_);
+    this_array_ = some_array;
+}
+
+// Overloaded 3D constructor
+template <typename T>
+KOKKOS_FUNCTION
+ViewFArrayKokkos<T>::ViewFArrayKokkos(T *some_array, size_t dim1, size_t dim2, 
+                                      size_t dim3) {
+    dim1_ = dim1;
+    dim2_ = dim2;
+    dim3_ = dim3;
+    length_ = (dim1_ * dim2_ * dim3_);
+    this_array_ = some_array;
+}
+
+// Overloaded 4D constructor
+template <typename T>
+KOKKOS_FUNCTION
+ViewFArrayKokkos<T>::ViewFArrayKokkos(T *some_array, size_t dim1, size_t dim2, 
+                                      size_t dim3, size_t dim4) {
+    dim1_ = dim1;
+    dim2_ = dim2;
+    dim3_ = dim3;
+    dim4_ = dim4;
+    length_ = (dim1_ * dim2_ * dim3_ * dim4_);
+    this_array_ = some_array;
+}
+
+// Overloaded 5D constructor
+template <typename T>
+KOKKOS_FUNCTION
+ViewFArrayKokkos<T>::ViewFArrayKokkos(T *some_array, size_t dim1, size_t dim2, 
+                                      size_t dim3, size_t dim4, size_t dim5) {
+    dim1_ = dim1;
+    dim2_ = dim2;
+    dim3_ = dim3;
+    dim4_ = dim4;
+    dim5_ = dim5;
+    length_ = (dim1_ * dim2_ * dim3_ * dim4_ * dim5_);
+    this_array_ = some_array;
+}
+
+// Overloaded 6D constructor
+template <typename T>
+KOKKOS_FUNCTION
+ViewFArrayKokkos<T>::ViewFArrayKokkos(T *some_array, size_t dim1, size_t dim2, 
+                                      size_t dim3, size_t dim4, size_t dim5, 
+                                      size_t dim6) {
+    dim1_ = dim1;
+    dim2_ = dim2;
+    dim3_ = dim3;
+    dim4_ = dim4;
+    dim5_ = dim5;
+    dim6_ = dim6;
+    length_ = (dim1_ * dim2_ * dim3_ * dim4_ * dim5_ * dim6_);
+    this_array_ = some_array;
+}
+
+// Overloaded operator() for 1D array access
+template <typename T>
+KOKKOS_FUNCTION
+T& ViewFArrayKokkos<T>::operator()(size_t i) const {
+    assert( i < dim1_ && "i is out of bounds in ViewFArrayKokkos 1D!");
+    return this_array_(i);
+}
+
+//2D
+template <typename T>
+KOKKOS_FUNCTION
+T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j) const {
+    assert(i < dim1_ && "i is out of bounds in ViewFArrayKokkos 2D!");
+    assert(j < dim2_ && "j is out of bounds in ViewFArrayKokkos 2D!");
+    return this_array_(i + (j * dim1_));
+}
+
+//3D
+template <typename T>
+KOKKOS_FUNCTION
+T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j, size_t k) const {
+    assert(i < dim1_ && "i is out of bounds in ViewFArrayKokkos 3D!");
+    assert(j < dim2_ && "j is out of bounds in ViewFArrayKokkos 3D!");
+    assert(k < dim3_ && "k is out of bounds in ViewFArrayKokkos 3D!");
+    return this_array_(i + (j * dim1_) 
+                         + (k * dim1_ * dim2_));
+}
+
+//4D
+template <typename T>
+KOKKOS_FUNCTION
+T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, 
+                                   size_t l) const {
+    assert(i < dim1_ && "i is out of bounds in ViewFArrayKokkos 4D!");
+    assert(j < dim2_ && "j is out of bounds in ViewFArrayKokkos 4D!");
+    assert(k < dim3_ && "k is out of bounds in ViewFArrayKokkos 4D!");
+    assert(l < dim4_ && "l is out of bounds in VIewFArraykokkos 4D!");
+    return this_array_(i + (j * dim1_) 
+                         + (k * dim1_ * dim2_) 
+                         + (l * dim1_ * dim2_ *dim3_));
+}
+
+//5D
+template <typename T>
+KOKKOS_FUNCTION
+T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, 
+                                   size_t l, size_t m) const {
+    assert(i < dim1_ && "i is out of bounds in ViewFArrayKokkos 5D!");
+    assert(j < dim2_ && "j is out of bounds in ViewFArrayKokkos 5D!");
+    assert(k < dim3_ && "k is out of bounds in ViewFArrayKokkos 5D!");
+    assert(l < dim4_ && "l is out of bounds in ViewFArrayKokkos 5D!");
+    assert(m < dim5_ && "m is out of bounds in ViewFArrayKokkos 5D!");
+    return this_array_(i + (j * dim1_) 
+                         + (k * dim1_ * dim2_) 
+                         + (l * dim1_ * dim2_ * dim3_) 
+                         + (m * dim1_ * dim2_ * dim3_ * dim4_));
+}
+
+//6D
+template <typename T>
+KOKKOS_FUNCTION
+T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, 
+                                   size_t l, size_t m, size_t n) const {
+    assert(i < dim1_ && "i is out of bounds in ViewFArrayKokkos 6D!");
+    assert(j < dim2_ && "j is out of bounds in ViewFArrayKokkos 6D!");
+    assert(k < dim3_ && "k is out of bounds in ViewFArrayKokkos 6D!");
+    assert(l < dim4_ && "l is out of bounds in ViewFArrayKokkos 6D!");
+    assert(m < dim5_ && "m is out of bounds in ViewFArrayKokkos 6D!");
+    assert(n < dim6_ && "n is out of bounds in ViewFArrayKokkos 6D!");
+    return this_array_(i + (j * dim1_) 
+                         + (k * dim1_ * dim2_) 
+                         + (l * dim1_ * dim2_ * dim3_) 
+                         + (m * dim1_ * dim2_ * dim3_ * dim4_)
+                         + (n * dim1_ * dim2_ * dim3_ * dim4_ * dim5_));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// End of ViewFArrayKokkos
+////////////////////////////////////////////////////////////////////////////////
+
+#endif MATAR_H

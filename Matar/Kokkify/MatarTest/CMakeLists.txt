@@ -34,10 +34,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 
 #add Likwid module path here
 
-add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp matar.h kokkos_alias.h)
-#add_executable(dummy dummy.cpp matar_test.h kokkos_alias.h)
-#add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp pseudo_var.hpp pseudo_var.cpp matar.h)
-#add_executable(unittest_esn main_unittest_esn.cpp pseudo_var.hpp pseudo_var.cpp matar.h)
+set(mtest_CXX_SRCS main.cpp pseudo_mesh.cpp child.cpp inherited_inits.cpp)
+set(mtest_H_SRCS pseudo_mesh.hpp matar.h kokkos_alias.h child.hpp parents.h inherited_inits.hpp)
+set(mtest_SRCS ${mtest_CXX_SRCS} ${mtest_H_SRCS})
+add_executable(mtest ${mtest_SRCS})
+#add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp matar.h kokkos_alias.h child.hpp child.cpp parents.h inherited_inits.hpp inherited_inits.cpp)
 
 # Executable that runs CPU stream benchmark on MATAR's Kokkos-specific classes
 add_executable(main_pmcb main_pmcb.cpp pseudo_mesh_cpu_benchmark.hpp pseudo_mesh_cpu_benchmark.cpp matar.h kokkos_alias_pmcb.h)

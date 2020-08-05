@@ -6,6 +6,17 @@
 //KOKKOS_FUNCTION
 pseudo_mesh::pseudo_mesh() {};
 
+void pseudo_mesh::init(int pnts1) {
+
+    size1 = pnts1;
+
+    // Benchmarks
+    arr1 = CArrayKokkos <real_t> (size1);
+    arr2 = CArrayKokkos <real_t> (size1);
+    arr3 = CArrayKokkos <real_t> (size1);
+
+}
+
 //KOKKOS_FUNCTION
 void pseudo_mesh::init(int pnts1, int pnts2) {
 
@@ -26,12 +37,10 @@ void pseudo_mesh::init(int pnts1, int pnts2) {
         });
     Kokkos::fence();
     raggedright = RaggedRightArrayKokkos <real_t> (mystride);
+    raggeddown = RaggedDownArrayKokkos <real_t> (mystride);
     //raggedright.initialize(mystride.pointer(), size1);
     //raggedright.initialize(mystride);
 
-    //for (int i = 0; i < size2; i++) {
-    //    mystride(i) = i+1;
-    //}
 }
 
 /*

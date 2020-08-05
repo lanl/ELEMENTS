@@ -1,0 +1,9 @@
+cmake -DKokkos_ENABLE_SERIAL=1 \
+-DKokkos_ENABLE_OPENMP=1 \
+-DKokkos_ARCH_SKX=1 \
+-DKokkos_ENABLE_CUDA=1 \
+-DKokkos_ENABLE_CUDA_LAMBDA=1 \
+-DKokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=1 \
+-DKokkos_ARCH_KEPLER35=1 \
+-DCMAKE_CXX_COMPILER=/home/esn/ELEMENTS/Matar/Kokkify/MatarTest/Kokkos/kokkos/bin/nvcc_wrapper \
+-DCMAKE_CXX_STANDARD=17 ..

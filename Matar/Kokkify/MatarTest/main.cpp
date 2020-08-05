@@ -1,13 +1,13 @@
 #include <iostream>
 #include <chrono>         // To access timing calipers 
 #include "pseudo_mesh.hpp"
+#include "kokkos_simple.hpp"
 
 int main() {
 
     int size_i = 5, size_j = 4, size_k = 3;
     int big_i = 5000, big_j = 2000, big_k = 3000;
 
-    printf("~~~~~~~~~~~~~~~~~GPU TEST~~~~~~~~~~~~~~~\n"); 
 
     // Kokkos GPU test
    
@@ -23,7 +23,44 @@ int main() {
     policy3D matrix_type3 = policy3D({1,1,1}, {size_i+1, size_j+1, size_k+1});
     
 
-printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+    printf("~~~~~~~~~~~~~~~~~GPU TEST~~~~~~~~~~~~~~~\n"); 
+
+
+    int num_mats = 2; // number of materials
+    Material1D mats("mats", num_mats); // Initialize Kokkos View on the GPU of type material, size num_mats
+    auto h_mats = HostMirror(mats); // Create a host view of the Kokkos View
+
+
+    AllocateHost(h_mats, 0, SESAME_SIZE); // Function performed on Host to do raw Kokkos allocation of sesame GPU space inside of Host data structure
+    AllocateHost(h_mats, 1, GAMMA_LAW_SIZE); // Function performed on Host to do raw Kokkos allocation of gamma_law GPU space inside of Host data structure
+
+    Kokkos::deep_copy(mats, h_mats); // deep copy Host data (allocated above) to the GPU Kokkos View. GPU View now has the class space allocated
+
+    InitEOSModels(mats, 0, sesame{}); // Kokkos Function to create new instances of the sesame model on the GPU
+    InitEOSModels(mats, 1, gamma_law{1.4,1.0}); // Kokkos Function to create new instances of the gamma_law models on the GPU
+
+    // Model test, also shows a Kokkos reduction
+    double value_1;
+    Kokkos::parallel_reduce(
+        "CheckValues",                             
+        num_mats,                   
+        KOKKOS_LAMBDA(const int idx, real_t &lsum)
+        {
+             lsum += mats(idx).eos->pres_from_den_sie(2.0, 4.0);
+        }
+        , value_1);                                
+
+    printf("value %f\n", value_1);
+
+
+
+    ClearDeviceModels(mats); // Kokkos Function to call deconstructors of objects on the GPU
+
+    FreeHost(h_mats); // Function performed on Host to free the allocated GPU classes inside of the Host mirror
+
+    
+
+
 printf("Pseudo Mesh Kokkos\n");
     pseudo_mesh pmesh;
     pmesh.init(size_i, size_j);

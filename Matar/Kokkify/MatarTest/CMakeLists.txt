@@ -34,7 +34,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 
 #add Likwid module path here
 
-add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp matar.h kokkos_alias.h)
+add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp matar.h kokkos_alias.h eos.hpp eos.cpp materials.h kokkos_simple.hpp kokkos_simple.cpp)
 #add_executable(dummy dummy.cpp matar_test.h kokkos_alias.h)
 #add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp pseudo_var.hpp pseudo_var.cpp matar.h)
 #add_executable(unittest_esn main_unittest_esn.cpp pseudo_var.hpp pseudo_var.cpp matar.h)

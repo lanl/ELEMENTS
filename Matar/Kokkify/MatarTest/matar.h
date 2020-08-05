@@ -5154,4 +5154,122 @@ RaggedDownArrayKokkos<T>::~RaggedDownArrayKokkos() { }
 ////////////////////////////////////////////////////////////////////////////////
 // End of RaggedDownArrayKokkos
 ////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////
+// Inherited Class Array
+//////////////////////////
+
+#ifdef INHERITED
+template <typename T>
+class InheritedArray2L {
+
+    using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
+    
+private:
+    size_t dim1_;
+    size_t length_;
+    TArray1D this_array_; 
+    typename Kokkos::View<T*, Layout, ExecSpace>::HostMirror  h_this_array_; 
+
+public:
+    InheritedArray2L();
+    
+    InheritedArray2L(size_t some_dim1);
+
+    KOKKOS_FUNCTION
+    T& operator()(size_t i) const;
+
+    InheritedArray2L& operator=(const InheritedArray2L& temp);
+
+    // GPU Method
+    // Method that returns size
+    KOKKOS_FUNCTION
+    size_t size();
+
+    // Host Method
+    // Method that returns size
+    size_t extent();
+
+    // Methods returns the raw pointer (most likely GPU) of the Kokkos View
+    T* pointer();
+
+    // Deconstructor
+    KOKKOS_FUNCTION
+    ~InheritedArray2L ();
+}; // End of InheritedArray2L
+
+// Default constructor
+template <typename T>
+InheritedArray2L<T>::InheritedArray2L() {}
+
+// Overloaded 1D constructor
+template <typename T>
+InheritedArray2L<T>::InheritedArray2L(size_t some_dim1) {
+    using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
+    
+    dim1_ = some_dim1;
+    length_ = dim1_;
+    this_array_ = TArray1D("this_array_", length_);
+    h_this_array_ = Kokkos::create_mirror_view(this_array_);
+}
+
+template <typename T>
+KOKKOS_FUNCTION
+T& InheritedArray2L<T>::operator()(size_t i) const {
+    assert(i < dim1_ && "i is out of bounds in InheritedArray2L 1D!");
+    return this_array_(i);
+}
+
+template <typename T>
+InheritedArray2L<T>& InheritedArray2L<T>::operator= (const InheritedArray2L& temp) {
+    using TArray1D = Kokkos::View<T *,Layout,ExecSpace>;
+    
+    // Do nothing if the assignment is of the form x = x
+    if (this != &temp) {
+        dim1_ = temp.dim1_;
+        dim2_ = temp.dim2_;
+        dim3_ = temp.dim3_;
+        dim4_ = temp.dim4_;
+        dim5_ = temp.dim5_;
+        dim6_ = temp.dim6_;
+        length_ = temp.length_;
+        this_array_ = TArray1D("this_array_", length_);
+    }
+    
+    return *this;
+}
+
+// Return size
+template <typename T>
+KOKKOS_FUNCTION
+size_t InheritedArray2L<T>::size() {
+    return length_;
+}
+
+template <typename T>
+size_t InheritedArray2L<T>::extent() {
+    return length_;
+}
+
+template <typename T>
+T* InheritedArray2L<T>::pointer() {
+    return this_array_.data();
+}
+
+template <typename T>
+KOKKOS_FUNCTION
+InheritedArray2L<T>::~InheritedArray2L() {}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+// End of InheritedArray2L
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
 #endif // MATAR_H

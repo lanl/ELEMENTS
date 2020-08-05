@@ -39,6 +39,9 @@ add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp matar.h kokkos_ali
 #add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp pseudo_var.hpp pseudo_var.cpp matar.h)
 #add_executable(unittest_esn main_unittest_esn.cpp pseudo_var.hpp pseudo_var.cpp matar.h)
 
+# Executable that runs CPU stream benchmark on MATAR's Kokkos-specific classes
+add_executable(main_pmcb main_pmcb.cpp pseudo_mesh_cpu_benchmark.hpp pseudo_mesh_cpu_benchmark.cpp matar.h kokkos_alias_pmcb.h)
+
 include_directories(./)
 
 add_subdirectory(Kokkos/kokkos)
@@ -46,3 +49,4 @@ add_subdirectory(Kokkos/kokkos)
 target_link_libraries(mtest Kokkos::kokkos)
 #target_link_libraries(dummy Kokkos::kokkos)
 #target_link_libraries(unittest_esn Kokkos::kokkos)
+target_link_libraries(main_pmcb Kokkos::kokkos)

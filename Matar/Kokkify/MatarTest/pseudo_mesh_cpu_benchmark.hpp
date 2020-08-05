@@ -1,9 +1,7 @@
 #ifndef PSEUDO_MESH_CPU_BENCHMARK
 #define PSEUDO_MESH_CPU_BENCHMARK
 
-#include "matar2.h"
-
-using TeamPolicy = Kokkos::TeamPolicy<Kokkos::Cuda>;
+#include "matar.h"
 
 class pmcb {
     public:
@@ -44,7 +42,6 @@ class pmcb {
 
         // Destructor
         ~pmcb();
-
 };
 
 #endif

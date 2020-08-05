@@ -5169,7 +5169,7 @@ private:
     size_t dim1_;
     size_t length_;
     TArray1D this_array_; 
-    typename Kokkos::View<T*, Layout, ExecSpace>::HostMirror  h_this_array_; 
+    TArray1D::HostMirror  h_this_array_; 
 
 public:
     InheritedArray2L();

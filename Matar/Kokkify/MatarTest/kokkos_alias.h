@@ -2,7 +2,7 @@
 #define KOKKOS_ALIAS_H
 
 #include <stdlib.h> 
-#include "materials.h"
+#include "parents.h"
 #include <Kokkos_Core.hpp>
 
 //MACROS to make the code less scary
@@ -45,7 +45,7 @@ using SArray5D     = Kokkos::View<size_t *****,Layout,ExecSpace>;
 
 using SHArray1D     = Kokkos::View<size_t *,Layout,Kokkos::HostSpace>;
 
-using Material1D     = Kokkos::View<material_models*,Layout,ExecSpace>;
-using MaterialHost1D = Kokkos::View<material_models*,Layout,Kokkos::HostSpace>;
+using Parent1D     = Kokkos::View<parent_models*,Layout,ExecSpace>;
+using ParentHost1D = Kokkos::View<parent_models*,Layout,Kokkos::HostSpace>;
 
 #endif

@@ -37,6 +37,7 @@ void pseudo_mesh::init(int pnts1, int pnts2) {
         });
     Kokkos::fence();
     raggedright = RaggedRightArrayKokkos <real_t> (mystride);
+    raggeddown = RaggedDownArrayKokkos <real_t> (mystride);
     //raggedright.initialize(mystride.pointer(), size1);
     //raggedright.initialize(mystride);
 

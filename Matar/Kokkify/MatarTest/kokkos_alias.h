@@ -2,14 +2,15 @@
 #define KOKKOS_ALIAS_H
 
 #include <stdlib.h> 
+#include "materials.h"
 #include <Kokkos_Core.hpp>
 
 //MACROS to make the code less scary
 #define kmalloc(size) ( Kokkos::kokkos_malloc<CudaMemSpace>(size) )
 #define kfree(pnt)        (  Kokkos::kokkos_free(pnt) ) 
 //#define parallel_for      ( Kokkos::parallel_for )
-#define parallel_reduce      ( Kokkos::parallel_reduce )
-#define deep_copy           ( Kokkos::deep_copy )
+//#define parallel_reduce      ( Kokkos::parallel_reduce )
+//#define deep_copy           ( Kokkos::deep_copy )
 #define ProfileRegionStart  ( Kokkos::Profiling::pushRegion )
 #define ProfileRegionEnd  ( Kokkos::Profiling::popRegion )
 #define HostMirror        ( Kokkos::create_mirror_view )
@@ -44,5 +45,7 @@ using SArray5D     = Kokkos::View<size_t *****,Layout,ExecSpace>;
 
 using SHArray1D     = Kokkos::View<size_t *,Layout,Kokkos::HostSpace>;
 
+using Material1D     = Kokkos::View<material_models*,Layout,ExecSpace>;
+using MaterialHost1D = Kokkos::View<material_models*,Layout,Kokkos::HostSpace>;
 
 #endif

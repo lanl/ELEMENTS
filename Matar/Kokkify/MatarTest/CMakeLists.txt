@@ -7,6 +7,8 @@ project(mtest CXX C)
 # set(CMAKE_C_FLAGS "-g -G") # VERBOSE=1")
 # set(CMAKE_CXX_FLAGS "-g -G") # VERBOSE=1")
 
+set (CMAKE_CXX_STANDARD 17)
+
 # adds -g and -02
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)

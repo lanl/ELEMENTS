@@ -4,7 +4,7 @@
 
 int main() {
 
-    int size_i = 5, size_j = 2, size_k = 3;
+    int size_i = 5, size_j = 4, size_k = 3;
     int big_i = 5000, big_j = 2000, big_k = 3000;
 
     printf("~~~~~~~~~~~~~~~~~GPU TEST~~~~~~~~~~~~~~~\n"); 
@@ -70,6 +70,17 @@ printf("Pseudo Mesh Kokkos\n");
             Kokkos::parallel_for (Kokkos::TeamThreadRange (teamMember, i_stride), [=] (const int j) {
                 pmesh.raggedright(i, j) = (double) i + j * i_stride; // not the exact placement, needs start index
                 printf("%d %d %lf\n", i, j, pmesh.raggedright(i, j));
+            });
+        });
+    Kokkos::fence();
+    
+    printf("\nRaggedDown\n");
+    Kokkos::parallel_for ("RaggedDownTeam", TeamPolicy(size_j, Kokkos::AUTO), KOKKOS_LAMBDA (const TeamPolicy::member_type &teamMember) {
+            const int j = teamMember.league_rank();
+            const int j_stride = pmesh.raggeddown.stride(j);
+            Kokkos::parallel_for (Kokkos::TeamThreadRange (teamMember, j_stride), [=] (const int i) {
+                pmesh.raggeddown(i, j) = (double) j + i * j_stride; // not the exact placement, needs start index
+                printf("%d %d %lf\n", i, j, pmesh.raggeddown(i, j));
             });
         });
     Kokkos::fence();

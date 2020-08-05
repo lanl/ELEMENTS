@@ -18,7 +18,7 @@ class pseudo_mesh {
         // Ragged (Static)
         CArrayKokkos           <size_t> mystride;
         RaggedRightArrayKokkos <real_t> raggedright;
-        //RaggedDownArrayKokkos  <real_t> raggeddown;
+        RaggedDownArrayKokkos  <real_t> raggeddown;
 
         // default constructor
         //KOKKOS_FUNCTION

@@ -62,51 +62,35 @@ printf("Pseudo Mesh Kokkos\n");
             printf("(%d, %d) %lf\n", i, j, pmesh.fmatrix(i, j));
         });
     Kokkos::fence();
-   /*
-    Kokkos::parallel_for ("RaggedDownTeam", TeamPolicy(size_j, Kokkos::AUTO), KOKKOS_LAMBDA (const TeamPolicy::member_type &teamMember) {
-            const int j = teamMember.league_rank();
-            const int j_stride = pmesh->var.stride(j);
-            Kokkos::parallel_for (Kokkos::TeamThreadRange (teamMember, j_stride), [=] (const int i) {
-                pmesh->var(i, j) = (double) j + i * j_stride; // not the exact placement, needs start index
-                printf("%d %d %lf\n", i, j, pmesh->var(i, j));
-            });
-        });
-    Kokkos::fence();
-    */
 
 
     /*------------------------- Stream Benchmarks ----------------------------------------*/
 
-#ifdef PSEUDOVAR
     // Kokkos stream benchmark test (for FMatrixKokkos and CArrayKokkos objects)
     printf("\n Kokkos stream benchmark (FMatrixKokkos and CArrayKokkos)\n");
     
     double scalar = 3.0;
-    size_t nsize = 10000000;
-    pseudo_var* pvar = (pseudo_var*) Kokkos::kokkos_malloc<Kokkos::CudaSpace> 
-                                             (sizeof(pseudo_var));
-
-    // Initialize three 1D FMatrixKokkos and CArrayKokkos objects,
-    // respectively
-    Kokkos::parallel_for("StreamTriadInit", 1, KOKKOS_LAMBDA(const int&) {
-            pvar->init(nsize);
-            });
+    size_t nsize = 90000000;
+    pseudo_mesh bench;
+    bench.init(nsize);
 
     printf("Stream benchmark with %d elements.\n", nsize);
-    /*
+    
     Kokkos::parallel_for("Initialize", nsize, KOKKOS_LAMBDA(const int i) {
-            pvar->c_arr_var1(i) = 1.0;
-            pvar->c_arr_var2(i) = 2.0;
-            pvar->c_arr_var3(i) = 0.0;
+            bench.arr1(i) = 1.0;
+            bench.arr2(i) = 2.0;
+            bench.arr3(i) = 0.0;
             });
-    */
+    Kokkos::fence();
+   
     // Perform copy benchmark
     auto begin = std::chrono::high_resolution_clock::now();
-    /* 
+     
     Kokkos::parallel_for("Copy", nsize, KOKKOS_LAMBDA(const int i) {
-            pvar->c_arr_var3(i) = pvar->c_arr_var1(i);
+            bench.arr3(i) = bench.arr1(i);
             });
-    */
+    Kokkos::fence();
+    
 
     std::chrono::duration<double> copy_time = std::chrono::high_resolution_clock::now() - begin;
 
@@ -114,34 +98,37 @@ printf("Pseudo Mesh Kokkos\n");
 
     // Perform scaling benchmark
     begin = std::chrono::high_resolution_clock::now();
-    /*
+    
     Kokkos::parallel_for("Scale", nsize, KOKKOS_LAMBDA(const int i) {
-            pvar->c_arr_var2(i) = scalar * pvar->c_arr_var3(i);
+            bench.arr2(i) = scalar * bench.arr3(i);
             });
-    */
+    Kokkos::fence();
+    
     std::chrono::duration<double> scale_time = std::chrono::high_resolution_clock::now() - begin;
 
     std::cout << "Scale time: " << scale_time.count() << " s." << std::endl;
 
     // Perform sum benchmark
     begin = std::chrono::high_resolution_clock::now();
-    /*
+    
     Kokkos::parallel_for("Sum", nsize, KOKKOS_LAMBDA(const int i) {
-            pvar->c_arr_var3(i) = pvar->c_arr_var1(i) + pvar->c_arr_var2(i);
+            bench.arr3(i) = bench.arr1(i) + bench.arr2(i);
             });
-    */
+    Kokkos::fence();
+    
     std::chrono::duration<double> sum_time = std::chrono::high_resolution_clock::now() - begin; 
 
     std::cout << "Sum time: " << sum_time.count() << " s." << std::endl;
 
     // Perform triad benchmark
     begin = std::chrono::high_resolution_clock::now();
-    /*
+    
     Kokkos::parallel_for("Triad", nsize, KOKKOS_LAMBDA(const int i) {
-            pvar->c_arr_var1(i) = pvar->c_arr_var2(i) + 
-                                  (scalar * pvar->c_arr_var3(i));
+            bench.arr1(i) = bench.arr2(i) + 
+                                  (scalar * bench.arr3(i));
             });
-    */
+    Kokkos::fence();
+    
     std::chrono::duration<double> triad_time = std::chrono::high_resolution_clock::now() - begin;
 
     std::cout << "Triad time: " << triad_time.count() << " s." << std::endl;
@@ -221,7 +208,6 @@ printf("Pseudo Mesh Kokkos\n");
         }
     }
     */
-#endif
     }
     Kokkos::finalize();
 

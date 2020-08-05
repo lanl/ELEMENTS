@@ -20,9 +20,16 @@ class pseudo_mesh {
         RaggedRightArrayKokkos <real_t> raggedright;
         //RaggedDownArrayKokkos  <real_t> raggeddown;
 
+        // Benchmarks
+        CArrayKokkos  <real_t>  arr1;
+        CArrayKokkos  <real_t>  arr2;
+        CArrayKokkos  <real_t>  arr3;
+
         // default constructor
         //KOKKOS_FUNCTION
         pseudo_mesh();
+
+        void init(int pnts1);
 
         // init function
         //KOKKOS_FUNCTION

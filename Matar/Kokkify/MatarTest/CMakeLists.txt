@@ -54,11 +54,11 @@ set(mtest_SRCS ${mtest_CXX_SRCS} ${mtest_H_SRCS})
 add_executable(mtest ${mtest_SRCS})
 
 # Executable that runs CPU stream benchmark on MATAR's Kokkos-specific classes
-#add_executable(mbench main_benchmark.cpp matar.h kokkos_alias.h)
+add_executable(mbench main_benchmark.cpp matar.h kokkos_alias.h)
 
 include_directories(./)
 
 add_subdirectory(Kokkos/kokkos)
 
 target_link_libraries(mtest Kokkos::kokkos)
-#target_link_libraries(main_pmcb Kokkos::kokkos)
+target_link_libraries(mbench Kokkos::kokkos)

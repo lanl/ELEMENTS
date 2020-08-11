@@ -28,7 +28,7 @@ int main() {
 
     int num_parent = 2; // number of materials
     Parent1D parent("parent", num_parent); // Initialize Kokkos View on the GPU of type material, size num_parent
-    auto h_parent = HostMirror(parent); // Create a host view of the Kokkos View
+    auto h_parent = Kokkos::create_mirror_view(parent); // Create a host view of the Kokkos View
 
 
     AllocateHost(h_parent, 0, BABY2_SIZE); // Function performed on Host to do raw Kokkos allocation of baby2 GPU space inside of Host data structure
@@ -58,7 +58,20 @@ int main() {
 
     FreeHost(h_parent); // Function performed on Host to free the allocated GPU classes inside of the Host mirror
 
-    
+
+    /*
+    auto partest = InheritedArray2L <parent_models> (num_parent);
+    partest.AllocateHost<child_models>(BABY2_SIZE, partest(0, 0).child);
+    partest.AllocateHost<child_models>(BABY1_SIZE, partest(1, 0).child);
+    partest.AllocateGPU();
+    partest.InitModels(partest(0, 1).child, baby2{});
+    partest.InitModels(partest(1, 1).child, baby1{1.4,1.0});
+
+
+    Kokkos::parallel_for("Initialize", num_parent, KOKKOS_LAMBDA(const int i) {
+            });
+    Kokkos::fence();
+    */   
 
 
 printf("Pseudo Mesh Kokkos\n");
@@ -128,7 +141,8 @@ printf("Pseudo Mesh Kokkos\n");
     printf("\n Kokkos stream benchmark (FMatrixKokkos and CArrayKokkos)\n");
     
     double scalar = 3.0;
-    size_t nsize = 90000000;
+    size_t nsize = 16 * 16 * 16 * 16;
+    //size_t nsize = 90000000;
     pseudo_mesh bench;
     bench.init(nsize);
 

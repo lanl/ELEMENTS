@@ -4915,7 +4915,7 @@ RaggedRightArrayKokkos<T> & RaggedRightArrayKokkos<T>::operator= (const RaggedRi
     */
 
     SArray1D templen = SArray1D("templen", 1);
-    auto h_templen = HostMirror(templen);
+    auto h_templen = Kokkos::create_mirror_view(templen);
     Kokkos::parallel_for("ArrayLength", 1, KOKKOS_CLASS_LAMBDA(const int&) {
             templen(0) = start_index_(dim1_);
             //length_ = start_index_(dim1_);
@@ -5111,7 +5111,7 @@ RaggedDownArrayKokkos<T> & RaggedDownArrayKokkos<T>::operator= (const RaggedDown
     */
 
     SArray1D templen = SArray1D("templen", 1);
-    auto h_templen = HostMirror(templen);
+    auto h_templen = Kokkos::create_mirror_view(templen);
     Kokkos::parallel_for("ArrayLength", 1, KOKKOS_CLASS_LAMBDA(const int&) {
             templen(0) = start_index_(dim2_);
             //length_ = start_index_(dim2_);
@@ -5159,25 +5159,36 @@ RaggedDownArrayKokkos<T>::~RaggedDownArrayKokkos() { }
 // Inherited Class Array
 //////////////////////////
 
-#ifdef INHERITED
-template <typename T>
+//template<class T, class Layout, class ExecSpace>
+template<typename T>
 class InheritedArray2L {
 
     using TArray1D = Kokkos::View<T*, Layout, ExecSpace>;
-    
+
 private:
-    size_t dim1_;
-    size_t length_;
-    TArray1D this_array_; 
-    TArray1D::HostMirror  h_this_array_; 
+    size_t dim1_, length_;
 
 public:
+    TArray1D this_array_;
+    typename Kokkos::View<T*, Layout, ExecSpace>::HostMirror  h_this_array_;
+
     InheritedArray2L();
     
     InheritedArray2L(size_t some_dim1);
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i) const;
+    T& operator()(size_t i, size_t dest) const;
+
+    template <typename U>
+    void AllocateHost(size_t size, U *obj);
+
+    void AllocateGPU();
+
+    template <typename U, typename V>
+    void InitModels(U *obj, V input);
+
+    template <typename U>
+    void ClearModels(U obj);
 
     InheritedArray2L& operator=(const InheritedArray2L& temp);
 
@@ -5215,9 +5226,43 @@ InheritedArray2L<T>::InheritedArray2L(size_t some_dim1) {
 
 template <typename T>
 KOKKOS_FUNCTION
-T& InheritedArray2L<T>::operator()(size_t i) const {
+T& InheritedArray2L<T>::operator()(size_t i, size_t dest) const {
     assert(i < dim1_ && "i is out of bounds in InheritedArray2L 1D!");
-    return this_array_(i);
+    assert(dest < 2 && "dest is out of bounds in InheritedArray2L 1D!");
+    if (dest == 0)
+        return h_this_array_(i);
+    else
+        return this_array_(i);
+}
+
+template <typename T>
+template <typename U>
+void InheritedArray2L<T>::AllocateHost(size_t size, U *obj) {
+    obj = (U *) kmalloc(size);
+}
+
+template <typename T>
+void InheritedArray2L<T>::AllocateGPU() {
+    Kokkos::deep_copy(this_array_, h_this_array_);
+}
+
+template <typename T>
+template <typename U, typename V>
+void InheritedArray2L<T>::InitModels(U *obj, V input) {
+    Kokkos::parallel_for(
+            "CreateObjects", 1, KOKKOS_CLASS_LAMBDA(const int&) {
+                new ((V *)obj) V{input};
+            });
+}
+
+template <typename T>
+template <typename U>
+void InheritedArray2L<T>::ClearModels(U obj) {
+    Kokkos::parallel_for(
+            "DestroyObjects", 1, KOKKOS_LAMBDA(const int&) {
+              this_array_(0).obj->~U();
+              this_array_(1).obj->~U();
+            });
 }
 
 template <typename T>
@@ -5227,11 +5272,6 @@ InheritedArray2L<T>& InheritedArray2L<T>::operator= (const InheritedArray2L& tem
     // Do nothing if the assignment is of the form x = x
     if (this != &temp) {
         dim1_ = temp.dim1_;
-        dim2_ = temp.dim2_;
-        dim3_ = temp.dim3_;
-        dim4_ = temp.dim4_;
-        dim5_ = temp.dim5_;
-        dim6_ = temp.dim6_;
         length_ = temp.length_;
         this_array_ = TArray1D("this_array_", length_);
     }
@@ -5259,7 +5299,6 @@ T* InheritedArray2L<T>::pointer() {
 template <typename T>
 KOKKOS_FUNCTION
 InheritedArray2L<T>::~InheritedArray2L() {}
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // End of InheritedArray2L

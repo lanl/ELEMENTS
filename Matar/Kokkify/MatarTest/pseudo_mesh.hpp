@@ -3,9 +3,6 @@
 
 #include "matar.h"
 
-using TeamPolicy = Kokkos::TeamPolicy<Kokkos::Cuda>;
-
-
 class pseudo_mesh {
 
     public:

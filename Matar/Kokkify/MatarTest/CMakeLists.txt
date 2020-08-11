@@ -9,6 +9,20 @@ project(mtest CXX C)
 
 set (CMAKE_CXX_STANDARD 17)
 
+if (KOKKOS)
+  if (CUDA)
+    add_definitions(-DHAVE_CUDA=1)
+    set(Kokkos_ENABLE_CUDA ON CACHE BOOL "")
+    set(Kokkos_ENABLE_CUDA_LAMBDA ON CACHE BOOL "")
+    set(Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE ON CACHE BOOL "")
+  elseif (OPENMP)
+    add_definitions(-DHAVE_OPENMP=1)
+    set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "")
+  endif ()
+  set(Kokkos_ENABLE_SERIAL ON CACHE BOOL "")
+endif ()
+
+
 # adds -g and -02
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
@@ -38,16 +52,13 @@ set(mtest_CXX_SRCS main.cpp pseudo_mesh.cpp child.cpp inherited_inits.cpp)
 set(mtest_H_SRCS pseudo_mesh.hpp matar.h kokkos_alias.h child.hpp parents.h inherited_inits.hpp)
 set(mtest_SRCS ${mtest_CXX_SRCS} ${mtest_H_SRCS})
 add_executable(mtest ${mtest_SRCS})
-#add_executable(mtest main.cpp pseudo_mesh.hpp pseudo_mesh.cpp matar.h kokkos_alias.h child.hpp child.cpp parents.h inherited_inits.hpp inherited_inits.cpp)
 
 # Executable that runs CPU stream benchmark on MATAR's Kokkos-specific classes
-add_executable(main_pmcb main_pmcb.cpp pseudo_mesh_cpu_benchmark.hpp pseudo_mesh_cpu_benchmark.cpp matar.h kokkos_alias_pmcb.h)
+#add_executable(mbench main_benchmark.cpp matar.h kokkos_alias.h)
 
 include_directories(./)
 
 add_subdirectory(Kokkos/kokkos)
 
 target_link_libraries(mtest Kokkos::kokkos)
-#target_link_libraries(dummy Kokkos::kokkos)
-#target_link_libraries(unittest_esn Kokkos::kokkos)
-target_link_libraries(main_pmcb Kokkos::kokkos)
+#target_link_libraries(main_pmcb Kokkos::kokkos)

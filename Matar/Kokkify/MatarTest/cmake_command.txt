@@ -1,2 +1,8 @@
-cmake -DKokkos_ENABLE_SERIAL=1 -DKokkos_ENABLE_CUDA=1 -DKokkos_ENABLE_CUDA_LAMBDA=1 -DKokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE=1 -DKokkos_ARCH_PASCAL61=1 -DCMAKE_CXX_COMPILER={Path-to-src-files}/Kokkos/kokkos/bin/nvcc_wrapper -DCMAKE_CXX_STANDARD=14 ..
+# For OpenMP
+cmake -DKOKKOS=1 \
+-DOPENMP=1 \
+-DKokkos_ARCH_SKX=1  ..
+
+# For Cuda
+# cmake -DKOKKOS=1 -DCUDA=1 -DKokkos_ARCH_PASCAL61=1 -DCMAKE_CXX_COMPILER={Path-to-src-files}/Kokkos/kokkos/bin/nvcc_wrapper ..
 

@@ -2,8 +2,27 @@
 #include <chrono>         // To access timing calipers 
 #include "matar.h"
 
-int main() {
+// For LIKWID
+// #ifdef LIKWID_PERFMON
+// #include "likwid.h"
+// #else
+// #define LIKWID_PERFMON 1
+// #define LIKWID_MARKER_INIT
+// #define LIKWID_MARKER_THREADINIT
+// #define LIKWID_MARKER_REGISTER(regionTag)
+// #define LIKWID_MARKER_START(regionTag)
+// #define LIKWID_MARKER_STOP(regionTag)
+// #define LIKWID_MARKER_CLOSE
+// #endif
 
+// If we are compiling with LIKWID support and if we want to conditionally
+// enable LIKWID markers, use the following macros
+// #define PERF_INIT       if (LIKWID_PERFMON && LIKWID_ENABLED) LIKWID_MARKER_INIT;
+// #define PERF_START(tag) if (LIKWID_PERFMON && LIKWID_ENABLED) LIKWID_MARKER_START(tag);
+// #define PERF_STOP(tag)  if (LIKWID_PERFMON && LIKWID_ENABLED) LIKWID_MARKER_STOP(tag);
+// #define PERF_CLOSE      if (LIKWID_PERFMON && LIKWID_ENABLED) LIKWID_MARKER_CLOSE;
+
+int main() {
     int size_i = 5, size_j = 4, size_k = 3;
 	const int size1 = 12000000;
 	const int size3 = 256;
@@ -353,7 +372,79 @@ int main() {
 	//	CArrays
 	//=============================	
 
-	std::cout<<"~~~~~~~~~~~~~~~~~~~~~~~~GPU  TESTS~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+    ///////////////////////////////////////////////////////////////////////////
+    // The following code runs the STREAM benchmark suite on the following
+    // data types:
+    //      1. "Conventionally" allocated multi-dimensional arrays
+    //      2. Kokkos Views
+    //      3. MATAR's Kokkos-specific classes
+    //         (in particular, the CArrayKokkos classes)
+    //
+    // In (1)-(3), the STREAM benchmark suite is run on one-dimensional (1D) 
+    // and three-dimensional (3D) instances of the types, i.e., the STREAM
+    // benchmark suite is run on:
+    //      1. 1D and 3D "conventionally" allocated multi-dimensional arrays
+    //      2. 1D and 3D Kokkos Views
+    //      3. 1D and 3D CArrayKokkos objects
+    //
+    // In addition, the code also runs the dot product kernel, adapted from the
+    // BabelStream project (https://github.com/UoB-HPC/BabelStream)
+    ///////////////////////////////////////////////////////////////////////////
+
+	// std::cout<<"~~~~~~~~~~~~~~~~~~~~~~~~GPU  TESTS~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
+
+    std::cout << "---------------------------------------------------------------------------" << std::endl;
+    std::cout << "Kokkos test" << std::endl;
+    std::cout << "---------------------------------------------------------------------------" << std::endl;
+    std::cout << std::endl;
+
+    // Number of entries for 1D types (by default, it is 2e25)
+    size_t ARRAY_SIZE_1D = 33554432;
+    double scalar = 3.0;
+    size_t nsize = 64 * 64 * 64 * 64;
+
+    std::streamsize ss = std::cout.precision();
+
+    std::cout << "Running kernels " << repeat << " times" << std::endl;
+    std::cout << "Precision: double" << std::endl;
+    std::cout << std::endl;
+
+    // Conversion factor between megabytes (MB) and bytes: 1 byte = 10^(-6) MB
+    // Conversion factor between bytes and gigabytes (GB): 1 byte = 10^(-9) GB
+    std::cout << std::setprecision(1) << std::fixed
+              << "Array size: " << (nsize * sizeof(double) * 1.0E-6) << "MB"
+              << " (=" << (nsize * sizeof(double) * 1.0E-9) << " GB)"
+              << std::endl;
+
+    std::cout << "Total size: " << (3.0 * nsize * sizeof(double) * 1.0E-6) << "MB"
+              << " (=" << (3.0 * nsize * sizeof(double) * 1.0E-9) << "GB)"
+              << std::endl;
+
+    std::cout.precision(ss);
+
+    // Create array that will store timings for kernel runs
+    // Rows correspond to kernels:
+    //      1. Copy kernel
+    //      2. Scale kernel
+    //      3. Sum kernel
+    //      4. Triad kernel
+    //      5. Dot product kernel
+    
+    int num_kernels = 5;
+
+    // auto matar_kokkos_timings = CArray<double> (5, repeat);
+    std::vector<std::vector<double>> matar_kokkos_timings(num_kernels);
+    std::vector<std::vector<double>> kokkos_views_timings(num_kernels);
+
+    std::string labels[num_kernels] = {"Copy", "Mul", "Add", "Triad", "Dot"};
+
+    size_t sizes[num_kernels] = {
+        2 * sizeof(real_t) * nsize,
+        2 * sizeof(real_t) * nsize,
+        3 * sizeof(real_t) * nsize,
+        3 * sizeof(real_t) * nsize,
+        2 * sizeof(real_t) * nsize
+    };
 
     // Kokkos GPU test
    
@@ -371,74 +462,148 @@ int main() {
     /*------------------------- Stream Benchmarks ----------------------------------------*/
 
     // Kokkos stream benchmark test (for FMatrixKokkos and CArrayKokkos objects)
-    printf("\n Kokkos stream benchmark CArrayKokkos\n");
-    
-    double scalar = 3.0;
-    size_t nsize = 64 * 64 * 64 * 64;
+    // printf("\n Kokkos stream benchmark CArrayKokkos\n");
 
     auto arr1 = CArrayKokkos <real_t> (nsize);
     auto arr2 = CArrayKokkos <real_t> (nsize);
     auto arr3 = CArrayKokkos <real_t> (nsize);
 
-    printf("Stream benchmark with %d elements.\n", nsize);
-    
+    // printf("Stream benchmark with %d elements.\n", nsize);
+
     Kokkos::parallel_for("Initialize", nsize, KOKKOS_LAMBDA(const int i) {
-            arr1(i) = 1.0;
-            arr2(i) = 2.0;
-            arr3(i) = 0.0;
-            });
+                arr1(i) = 1.0;
+                arr2(i) = 2.0;
+                arr3(i) = 0.0;
+                });
     Kokkos::fence();
-   
-    // Perform copy benchmark
-    auto begin = std::chrono::high_resolution_clock::now();
-     
-    Kokkos::parallel_for("Copy", nsize, KOKKOS_LAMBDA(const int i) {
-            arr3(i) = arr1(i);
-            });
-    Kokkos::fence();
+
+    // Perform copy kernel 
+    for (int iter = 0; iter < repeat; iter++) {
+        auto begin = std::chrono::high_resolution_clock::now();
+         
+        Kokkos::parallel_for("Copy", nsize, KOKKOS_LAMBDA(const int i) {
+                arr3(i) = arr1(i);
+                });
+        Kokkos::fence();
+        
+
+        std::chrono::duration<double> copy_time = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record copy kernel timing
+        // matar_kokkos_timings(0, iter) = copy_time.count();
+        matar_kokkos_timings[0].push_back(copy_time.count());
+
+        // std::cout << "Copy time: " << copy_time.count() << " s." << std::endl;
+    }
+
+    // Perform scaling kernel
+    for (int iter = 0; iter < repeat; iter++) {
+        begin = std::chrono::high_resolution_clock::now();
+        
+        Kokkos::parallel_for("Scale", nsize, KOKKOS_LAMBDA(const int i) {
+                arr2(i) = scalar * arr3(i);
+                });
+        Kokkos::fence();
+        
+        std::chrono::duration<double> scale_time = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record scale kernel timing
+        // matar_kokkos_timings(1, iter) = scale_time.count();
+        matar_kokkos_timings[1].push_back(scale_time.count());
+
+        // std::cout << "Scale time: " << scale_time.count() << " s." << std::endl;
+    }
+
+    // Perform sum kernel
+    PERF_START(tag) // tag is a string, e.g., "copy"
+    for (int iter = 0; iter < repeat; iter++) {
+        begin = std::chrono::high_resolution_clock::now();
+        
+        Kokkos::parallel_for("Sum", nsize, KOKKOS_LAMBDA(const int i) {
+                arr3(i) = arr1(i) + arr2(i);
+                });
+        Kokkos::fence();
+        
+        std::chrono::duration<double> sum_time = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record sum kernel timing
+        // matar_kokkos_timings(2, iter) = sum_time.count();
+        matar_kokkos_timings[2].push_back(sum_time.count()); 
+
+        // std::cout << "Sum time: " << sum_time.count() << " s." << std::endl;
+    }
+
+    // Perform triad kernel
+    for (int iter = 0; iter < repeat; iter++) {
+        begin = std::chrono::high_resolution_clock::now();
+        
+        Kokkos::parallel_for("Triad", nsize, KOKKOS_LAMBDA(const int i) {
+                arr1(i) = arr2(i) + 
+                                      (scalar * arr3(i));
+                });
+        Kokkos::fence();
+        
+        std::chrono::duration<double> triad_time = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record triad kernel timing
+        // matar_kokkos_timings(3, iter) = triad_time.count();
+        matar_kokkos_timings[3].push_back(triad_time.count());
+
+        // std::cout << "Triad time: " << triad_time.count() << " s." << std::endl;
+    }
+
+    // Perform dot product kernel
+    for (int iter = 0; iter < repeat; iter++) {
+        real_t sum = 0;
+
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_reduce("Dot product", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+                tmp += arr3(i) * arr3(i);
+        }, sum);
+        Kokkos::fence();
+
+        std::chrono::duration<double> dot_time = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record dot product kernel timing
+        // matar_kokkos_timings(4, iter) = dot_time.count();
+        matar_kokkos_timings[4].push_back(dot_time.count());
+    }
+
+    // Print kernel computation memory bandwidth table header
+    std::cout << std::left << std::setw(12) << "Kernel"
+              << std::left << std::setw(12) << "MBytes/sec"
+              << std::left << std::setw(12) << "Min (sec)"
+              << std::left << std::setw(12) << "Max (sec"
+              << std::left << std::setw(12) << "Average (sec)"
+              << std::endl
+              << std::fixed;
+
+    // Calculate kernel memory bandwidths
+    for (int ker = 0; ker < num_kernels; ker++) {
+        // Get min/max times taken on kernel computation
+        // (ignore the first result)
+        auto minmax = std::minmax_element(matar_kokkos_timings[i].begin() + 1,
+                                          matar_kokkos_timings[i].end());
+
+        // Calculate average time taken on kernel computation
+        // (ignore the first result)
+        double average = std::accumulate(matar_kokkos_timings[i].begin() + 1,
+                                         matar_kokkos_timings[i].end(),
+                                         0.0) / (double) (repeat - 1);
+
+        // Print kernel computation memory bandwidth statistics
+        std::cout << std::left << std::setw(12) << labels[i]
+                  << std::left << ((1.0E-6 * sizes[i]) / (*minmax.first))
+                  << std::left << std::setw(12) << std::setprecision(5) 
+                                                << *minmax.first
+                  << std::left << std::setw(12) << *minmax.second
+                  << std::left << std::setw(12) << std::setprecision(5)
+                                                << average
+                  << std::endl;
+    }
     
-
-    std::chrono::duration<double> copy_time = std::chrono::high_resolution_clock::now() - begin;
-
-    std::cout << "Copy time: " << copy_time.count() << " s." << std::endl;
-
-    // Perform scaling benchmark
-    begin = std::chrono::high_resolution_clock::now();
-    
-    Kokkos::parallel_for("Scale", nsize, KOKKOS_LAMBDA(const int i) {
-            arr2(i) = scalar * arr3(i);
-            });
-    Kokkos::fence();
-    
-    std::chrono::duration<double> scale_time = std::chrono::high_resolution_clock::now() - begin;
-
-    std::cout << "Scale time: " << scale_time.count() << " s." << std::endl;
-
-    // Perform sum benchmark
-    begin = std::chrono::high_resolution_clock::now();
-    
-    Kokkos::parallel_for("Sum", nsize, KOKKOS_LAMBDA(const int i) {
-            arr3(i) = arr1(i) + arr2(i);
-            });
-    Kokkos::fence();
-    
-    std::chrono::duration<double> sum_time = std::chrono::high_resolution_clock::now() - begin; 
-
-    std::cout << "Sum time: " << sum_time.count() << " s." << std::endl;
-
-    // Perform triad benchmark
-    begin = std::chrono::high_resolution_clock::now();
-    
-    Kokkos::parallel_for("Triad", nsize, KOKKOS_LAMBDA(const int i) {
-            arr1(i) = arr2(i) + 
-                                  (scalar * arr3(i));
-            });
-    Kokkos::fence();
-    
-    std::chrono::duration<double> triad_time = std::chrono::high_resolution_clock::now() - begin;
-
-    std::cout << "Triad time: " << triad_time.count() << " s." << std::endl;
-
+    std::cout << std::endl;
 
     // Perform matrix matrix multiply benchmark
 

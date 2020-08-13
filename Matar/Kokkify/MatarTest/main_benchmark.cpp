@@ -1,4 +1,7 @@
 #include <iostream>
+#include <iomanip>
+#include <numeric>
+#include <vector>
 #include <chrono>         // To access timing calipers 
 #include "matar.h"
 
@@ -392,37 +395,45 @@ int main() {
     ///////////////////////////////////////////////////////////////////////////
 
 	// std::cout<<"~~~~~~~~~~~~~~~~~~~~~~~~GPU  TESTS~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
-
+    
+    std::cout << std::endl;
     std::cout << "---------------------------------------------------------------------------" << std::endl;
     std::cout << "Kokkos test" << std::endl;
     std::cout << "---------------------------------------------------------------------------" << std::endl;
     std::cout << std::endl;
 
     // Number of entries for 1D types (by default, it is 2e25)
-    size_t ARRAY_SIZE_1D = 33554432;
+    // size_t ARRAY_SIZE_1D = 33554432;
     double scalar = 3.0;
     size_t nsize = 64 * 64 * 64 * 64;
+    size_t nsize_3D = 512;
+    size_t ARRAY_SIZE_3D = (nsize_3D * nsize_3D * nsize_3D); 
 
     std::streamsize ss = std::cout.precision();
 
     std::cout << "Running kernels " << repeat << " times" << std::endl;
     std::cout << "Precision: double" << std::endl;
+    std::cout << "Number of 1D array elements: " << nsize << std::endl;
     std::cout << std::endl;
 
     // Conversion factor between megabytes (MB) and bytes: 1 byte = 10^(-6) MB
     // Conversion factor between bytes and gigabytes (GB): 1 byte = 10^(-9) GB
+    std::cout << "1D information" << std::endl;
+    std::cout << "--------------" << std::endl;
     std::cout << std::setprecision(1) << std::fixed
-              << "Array size: " << (nsize * sizeof(double) * 1.0E-6) << "MB"
-              << " (=" << (nsize * sizeof(double) * 1.0E-9) << " GB)"
+              << "1D array size: " << (nsize * sizeof(double) * 1.0E-6) << "MB"
+              << " (" << (nsize * sizeof(double) * 1.0E-9) << " GB)"
               << std::endl;
 
-    std::cout << "Total size: " << (3.0 * nsize * sizeof(double) * 1.0E-6) << "MB"
-              << " (=" << (3.0 * nsize * sizeof(double) * 1.0E-9) << "GB)"
+    std::cout << "Total size (1D): " << (3.0 * nsize * sizeof(double) * 1.0E-6) << "MB"
+              << " (" << (3.0 * nsize * sizeof(double) * 1.0E-9) << "GB)"
               << std::endl;
+
+    std::cout << std::endl;
 
     std::cout.precision(ss);
 
-    // Create array that will store timings for kernel runs
+    // Create vector of vectors that will store timings for kernel runs
     // Rows correspond to kernels:
     //      1. Copy kernel
     //      2. Scale kernel
@@ -432,9 +443,15 @@ int main() {
     
     int num_kernels = 5;
 
-    // auto matar_kokkos_timings = CArray<double> (5, repeat);
     std::vector<std::vector<double>> matar_kokkos_timings(num_kernels);
     std::vector<std::vector<double>> kokkos_views_timings(num_kernels);
+
+    std::vector<std::vector<double>> matar_kokkos_timings_3D(num_kernels);
+    std::vector<std::vector<double>> kokkos_views_timings_3D(num_kernels);
+
+    // Declare timers
+    // std::chrono::high_resolution_clock::time_point begin;
+    auto begin = std::chrono::high_resolution_clock::now();
 
     std::string labels[num_kernels] = {"Copy", "Mul", "Add", "Triad", "Dot"};
 
@@ -444,6 +461,14 @@ int main() {
         3 * sizeof(real_t) * nsize,
         3 * sizeof(real_t) * nsize,
         2 * sizeof(real_t) * nsize
+    };
+
+    size_t sizes_3D[num_kernels] = {
+        2 * sizeof(real_t) * ARRAY_SIZE_3D,
+        2 * sizeof(real_t) * ARRAY_SIZE_3D,
+        3 * sizeof(real_t) * ARRAY_SIZE_3D,
+        3 * sizeof(real_t) * ARRAY_SIZE_3D,
+        2 * sizeof(real_t) * ARRAY_SIZE_3D
     };
 
     // Kokkos GPU test
@@ -464,43 +489,125 @@ int main() {
     // Kokkos stream benchmark test (for FMatrixKokkos and CArrayKokkos objects)
     // printf("\n Kokkos stream benchmark CArrayKokkos\n");
 
+    // Create 1D CArrayKokkos objects
     auto arr1 = CArrayKokkos <real_t> (nsize);
     auto arr2 = CArrayKokkos <real_t> (nsize);
     auto arr3 = CArrayKokkos <real_t> (nsize);
 
+    // Create 1D Kokkos View objects
+    RMatrix1D kv_arr1("kv_arr1", nsize);
+    RMatrix1D kv_arr2("kv_arr2", nsize);
+    RMatrix1D kv_arr3("kv_arr3", nsize);
+
+    // Create 3D CArrayKokkos objects
+    auto arr1_3D = CArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
+    auto arr2_3D = CArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
+    auto arr3_3D = CArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
+
+    // Create 3D Kokkos View objects
+    RMatrix3D kv_arr1_3D("kv_arr1_3D", nsize_3D, nsize_3D, nsize_3D);
+    RMatrix3D kv_arr2_3D("kv_arr2_3D", nsize_3D, nsize_3D, nsize_3D);
+    RMatrix3D kv_arr3_3D("kv_arr3_3D", nsize_3D, nsize_3D, nsize_3D);
+
     // printf("Stream benchmark with %d elements.\n", nsize);
 
+    // Initialize 1D CArrayKokkos and 1D Kokkos View objects
     Kokkos::parallel_for("Initialize", nsize, KOKKOS_LAMBDA(const int i) {
                 arr1(i) = 1.0;
                 arr2(i) = 2.0;
                 arr3(i) = 0.0;
+
+                // Initialize 1D Kokkos View objects
+                kv_arr1(i) = 1.0;
+                kv_arr2(i) = 2.0;
+                kv_arr3(i) = 0.0;
                 });
     Kokkos::fence();
 
-    // Perform copy kernel 
+    // Initialize 3D CArrayKokkos and 3D Kokkos View objects
+    policy3D array_type_STREAM = policy3D({0, 0, 0},
+                                          {nsize_3D, nsize_3D, nsize_3D});
+
+    Kokkos::parallel_for("Initialize (3D)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                arr1_3D(i, j, k) = 1.0;
+                arr2_3D(i, j, k) = 2.0;
+                arr3_3D(i, j, k) = 0.0;
+
+                kv_arr1_3D(i, j, k) = 1.0;
+                kv_arr2_3D(i, j, k) = 2.0;
+                kv_arr3_3D(i, j, k) = 0.0;
+                });
+    Kokkos::fence();
+
+    // Perform 1D copy kernel 
     for (int iter = 0; iter < repeat; iter++) {
-        auto begin = std::chrono::high_resolution_clock::now();
+        // 1D CArrayKokkos copy kernel
+        begin = std::chrono::high_resolution_clock::now();
          
-        Kokkos::parallel_for("Copy", nsize, KOKKOS_LAMBDA(const int i) {
+        Kokkos::parallel_for("Copy (1D)", nsize, KOKKOS_LAMBDA(const int i) {
                 arr3(i) = arr1(i);
                 });
         Kokkos::fence();
         
-
         std::chrono::duration<double> copy_time = std::chrono::high_resolution_clock::now() - begin;
 
         // Record copy kernel timing
-        // matar_kokkos_timings(0, iter) = copy_time.count();
         matar_kokkos_timings[0].push_back(copy_time.count());
 
         // std::cout << "Copy time: " << copy_time.count() << " s." << std::endl;
+       
+        // 1D Kokkos View copy kernel
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_for("Copy (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
+                kv_arr3(i) = kv_arr1(i);
+                });
+        Kokkos::fence();
+
+        std::chrono::duration<double> copy_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 1D Kokkos View copy kernel timing
+        kokkos_views_timings[0].push_back(copy_time_kv_1D.count());
     }
 
-    // Perform scaling kernel
+    // Perform 3D copy kernel 
     for (int iter = 0; iter < repeat; iter++) {
+        // 3D CArrayKokkos copy kernel
+        begin = std::chrono::high_resolution_clock::now();
+         
+        Kokkos::parallel_for("Copy (3D)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                arr3_3D(i, j, k) = arr1_3D(i, j, k);
+                });
+        Kokkos::fence();
+        
+        std::chrono::duration<double> copy_time_3D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 3D CArrayKokkos copy kernel timing
+        matar_kokkos_timings_3D[0].push_back(copy_time_3D.count());
+
+        // 3D Kokkos View copy kernel
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_for("Copy (3D KV)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                kv_arr3_3D(i, j, k) = kv_arr1_3D(i, j, k);
+                });
+        Kokkos::fence();
+
+        std::chrono::duration<double> copy_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 3D Kokkos View copy kernel timing
+        kokkos_views_timings_3D[0].push_back(copy_time_kv_3D.count());
+    }
+
+    // Perform 1D scaling kernel
+    for (int iter = 0; iter < repeat; iter++) {
+        // 1D CArrayKokkos scale kernel
         begin = std::chrono::high_resolution_clock::now();
         
-        Kokkos::parallel_for("Scale", nsize, KOKKOS_LAMBDA(const int i) {
+        Kokkos::parallel_for("Scale (1D)", nsize, KOKKOS_LAMBDA(const int i) {
                 arr2(i) = scalar * arr3(i);
                 });
         Kokkos::fence();
@@ -508,18 +615,62 @@ int main() {
         std::chrono::duration<double> scale_time = std::chrono::high_resolution_clock::now() - begin;
 
         // Record scale kernel timing
-        // matar_kokkos_timings(1, iter) = scale_time.count();
         matar_kokkos_timings[1].push_back(scale_time.count());
 
         // std::cout << "Scale time: " << scale_time.count() << " s." << std::endl;
+       
+        // 1D Kokkos View scale kernel 
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_for("Scale (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
+                kv_arr2(i) = scalar * kv_arr3(i);
+                });
+        Kokkos::fence();
+
+        std::chrono::duration<double> scale_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 1D Kokkos View scale kernel timing
+        kokkos_views_timings[1].push_back(scale_time_kv_1D.count());   
     }
 
-    // Perform sum kernel
-    PERF_START(tag) // tag is a string, e.g., "copy"
+    // Perform 3D scale kernel 
     for (int iter = 0; iter < repeat; iter++) {
+        // 3D CArrayKokkos scale kernel
+        begin = std::chrono::high_resolution_clock::now();
+         
+        Kokkos::parallel_for("Scale (3D)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                arr2_3D(i, j, k) = scalar * arr3_3D(i, j, k);
+                });
+        Kokkos::fence();
+        
+        std::chrono::duration<double> scale_time_3D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 3D CArrayKokkos scale kernel timing
+        matar_kokkos_timings_3D[1].push_back(scale_time_3D.count());
+
+        // 3D Kokkos View scale kernel
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_for("Scale (3D KV)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                kv_arr2_3D(i, j, k) = scalar * kv_arr3_3D(i, j, k);
+                });
+        Kokkos::fence();
+
+        std::chrono::duration<double> scale_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 3D Kokkos View scale kernel timing
+        kokkos_views_timings_3D[1].push_back(scale_time_kv_3D.count());
+    }
+
+    // Perform 1D sum kernel
+    // PERF_START(tag) // tag is a string, e.g., "copy"
+    for (int iter = 0; iter < repeat; iter++) {
+        // 1D CArrayKokkos sum kernel
         begin = std::chrono::high_resolution_clock::now();
         
-        Kokkos::parallel_for("Sum", nsize, KOKKOS_LAMBDA(const int i) {
+        Kokkos::parallel_for("Sum (1D)", nsize, KOKKOS_LAMBDA(const int i) {
                 arr3(i) = arr1(i) + arr2(i);
                 });
         Kokkos::fence();
@@ -531,10 +682,55 @@ int main() {
         matar_kokkos_timings[2].push_back(sum_time.count()); 
 
         // std::cout << "Sum time: " << sum_time.count() << " s." << std::endl;
+
+        // 1D Kokkos View sum kernel
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_for("Sum (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
+                kv_arr3(i) = kv_arr1(i) + kv_arr2(i);
+                });
+        Kokkos::fence();
+
+        std::chrono::duration<double> sum_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 1D Kokkos View sum kernel timing
+        kokkos_views_timings[2].push_back(sum_time_kv_1D.count());   
+    }
+
+    // Perform 3D sum kernel 
+    for (int iter = 0; iter < repeat; iter++) {
+        // 3D CArrayKokkos sum kernel
+        begin = std::chrono::high_resolution_clock::now();
+         
+        Kokkos::parallel_for("Sum (3D)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                arr3_3D(i, j, k) = arr1_3D(i, j, k) + arr2_3D(i, j, k);
+                });
+        Kokkos::fence();
+        
+        std::chrono::duration<double> sum_time_3D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 3D CArrayKokkos sum kernel timing
+        matar_kokkos_timings_3D[2].push_back(sum_time_3D.count());
+
+        // 3D Kokkos View sum kernel
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_for("Sum (3D KV)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                kv_arr3_3D(i, j, k) = kv_arr1_3D(i, j, k) + kv_arr2_3D(i, j, k);
+                });
+        Kokkos::fence();
+
+        std::chrono::duration<double> sum_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 3D Kokkos View sum kernel timing
+        kokkos_views_timings_3D[2].push_back(sum_time_kv_3D.count());
     }
 
     // Perform triad kernel
     for (int iter = 0; iter < repeat; iter++) {
+        // 1D CArrayKokkos triad kernel
         begin = std::chrono::high_resolution_clock::now();
         
         Kokkos::parallel_for("Triad", nsize, KOKKOS_LAMBDA(const int i) {
@@ -546,14 +742,58 @@ int main() {
         std::chrono::duration<double> triad_time = std::chrono::high_resolution_clock::now() - begin;
 
         // Record triad kernel timing
-        // matar_kokkos_timings(3, iter) = triad_time.count();
         matar_kokkos_timings[3].push_back(triad_time.count());
 
         // std::cout << "Triad time: " << triad_time.count() << " s." << std::endl;
+        
+        // 1D Kokkos View triad kernel
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_for("Triad (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
+                kv_arr1(i) = kv_arr2(i) + (scalar * kv_arr3(i));
+                });
+        Kokkos::fence();
+
+        std::chrono::duration<double> triad_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 1D Kokkos View sum kernel timing
+        kokkos_views_timings[3].push_back(triad_time_kv_1D.count());
     }
 
-    // Perform dot product kernel
+    // Perform 3D triad kernel 
     for (int iter = 0; iter < repeat; iter++) {
+        // 3D CArrayKokkos triad kernel
+        begin = std::chrono::high_resolution_clock::now();
+         
+        Kokkos::parallel_for("Triad (3D)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                arr1_3D(i, j, k) = arr2_3D(i, j, k) + (scalar * arr3_3D(i, j, k));
+                });
+        Kokkos::fence();
+        
+        std::chrono::duration<double> triad_time_3D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 3D CArrayKokkos triad kernel timing
+        matar_kokkos_timings_3D[3].push_back(triad_time_3D.count());
+
+        // 3D Kokkos View triad kernel
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_for("Triad (3D KV)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                kv_arr1_3D(i, j, k) = kv_arr2_3D(i, j, k) + (scalar * kv_arr3_3D(i, j, k));
+                });
+        Kokkos::fence();
+
+        std::chrono::duration<double> triad_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record 3D Kokkos View triad kernel timing
+        kokkos_views_timings_3D[3].push_back(triad_time_kv_3D.count());
+    }
+
+    // Perform 1D dot product kernel
+    for (int iter = 0; iter < repeat; iter++) {
+        // 1D CArrayKokkos dot product kernel
         real_t sum = 0;
 
         begin = std::chrono::high_resolution_clock::now();
@@ -566,15 +806,67 @@ int main() {
         std::chrono::duration<double> dot_time = std::chrono::high_resolution_clock::now() - begin;
 
         // Record dot product kernel timing
-        // matar_kokkos_timings(4, iter) = dot_time.count();
         matar_kokkos_timings[4].push_back(dot_time.count());
+
+        // 1D Kokkos View dot product kernel
+        sum = 0;
+
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_reduce("Dot product (1D KV)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+                tmp += kv_arr3(i) * kv_arr3(i);
+        }, sum);
+        Kokkos::fence();
+
+        std::chrono::duration<double> dot_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
+
+        kokkos_views_timings[4].push_back(dot_time_kv_1D.count());
+    }
+
+    // Perform 3D dot product kernel
+    for (int iter = 0; iter < repeat; iter++) {
+        // 3D CArrayKokkos dot product kernel
+        real_t sum = 0;
+
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_reduce("Dot product (3D)", array_type_STREAM, 
+                                KOKKOS_LAMBDA(const int i, const int j, 
+                                              const int k, real_t& tmp) {
+                tmp += (arr3_3D(i, j, k) * arr3_3D(i, j, k));
+        }, sum);
+        Kokkos::fence();
+
+        std::chrono::duration<double> dot_time_3D = std::chrono::high_resolution_clock::now() - begin;
+
+        // Record dot product kernel timing
+        matar_kokkos_timings_3D[4].push_back(dot_time_3D.count());
+
+        // 3D Kokkos View dot product kernel
+        sum = 0;
+
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_reduce("Dot product (3D KV)", array_type_STREAM, 
+                               KOKKOS_LAMBDA(const int i, const int j,
+                                             const int k, real_t& tmp) {
+                tmp += (kv_arr3_3D(i, j, k) * kv_arr3_3D(i, j, k));
+        }, sum);
+        Kokkos::fence();
+
+        std::chrono::duration<double> dot_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
+
+        kokkos_views_timings_3D[4].push_back(dot_time_kv_3D.count());
     }
 
     // Print kernel computation memory bandwidth table header
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << "1D CArrayKokkos STREAM benchmark results" << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
     std::cout << std::left << std::setw(12) << "Kernel"
               << std::left << std::setw(12) << "MBytes/sec"
               << std::left << std::setw(12) << "Min (sec)"
-              << std::left << std::setw(12) << "Max (sec"
+              << std::left << std::setw(12) << "Max (sec)"
               << std::left << std::setw(12) << "Average (sec)"
               << std::endl
               << std::fixed;
@@ -583,69 +875,309 @@ int main() {
     for (int ker = 0; ker < num_kernels; ker++) {
         // Get min/max times taken on kernel computation
         // (ignore the first result)
-        auto minmax = std::minmax_element(matar_kokkos_timings[i].begin() + 1,
-                                          matar_kokkos_timings[i].end());
+        auto minmax = std::minmax_element(matar_kokkos_timings[ker].begin() + 1,
+                                          matar_kokkos_timings[ker].end());
 
         // Calculate average time taken on kernel computation
         // (ignore the first result)
-        double average = std::accumulate(matar_kokkos_timings[i].begin() + 1,
-                                         matar_kokkos_timings[i].end(),
+        double average = std::accumulate(matar_kokkos_timings[ker].begin() + 1,
+                                         matar_kokkos_timings[ker].end(),
                                          0.0) / (double) (repeat - 1);
 
         // Print kernel computation memory bandwidth statistics
-        std::cout << std::left << std::setw(12) << labels[i]
-                  << std::left << ((1.0E-6 * sizes[i]) / (*minmax.first))
-                  << std::left << std::setw(12) << std::setprecision(5) 
-                                                << *minmax.first
-                  << std::left << std::setw(12) << *minmax.second
-                  << std::left << std::setw(12) << std::setprecision(5)
-                                                << average
+        std::cout << std::left << std::setw(12) << labels[ker]
+                  << std::left << std::setw(12) << std::setprecision(3) <<
+                  ((1.0E-6 * sizes[ker]) / (*minmax.first))
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
+                  << std::left << std::setw(12) << std::setprecision(5) << average
+                  << std::endl;
+    }
+    
+    std::cout << std::endl;
+
+    // Print kernel computation memory bandwidth table header
+    std::cout << "---------------------------------------" << std::endl;
+    std::cout << "1D Kokkos View STREAM benchmark results" << std::endl;
+    std::cout << "---------------------------------------" << std::endl;
+    std::cout << std::left << std::setw(12) << "Kernel"
+              << std::left << std::setw(12) << "MBytes/sec"
+              << std::left << std::setw(12) << "Min (sec)"
+              << std::left << std::setw(12) << "Max (sec)"
+              << std::left << std::setw(12) << "Average (sec)"
+              << std::endl
+              << std::fixed;
+
+    // Calculate kernel memory bandwidths
+    for (int ker = 0; ker < num_kernels; ker++) {
+        // Get min/max times taken on kernel computation
+        // (ignore the first result)
+        auto minmax = std::minmax_element(kokkos_views_timings[ker].begin() + 1,
+                                          kokkos_views_timings[ker].end());
+
+        // Calculate average time taken on kernel computation
+        // (ignore the first result)
+        double average = std::accumulate(kokkos_views_timings[ker].begin() + 1,
+                                         kokkos_views_timings[ker].end(),
+                                         0.0) / (double) (repeat - 1);
+
+        // Print kernel computation memory bandwidth statistics
+        std::cout << std::left << std::setw(12) << labels[ker]
+                  << std::left << std::setw(12) << std::setprecision(3) <<
+                  ((1.0E-6 * sizes[ker]) / (*minmax.first))
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
+                  << std::left << std::setw(12) << std::setprecision(5) << average
+                  << std::endl;
+    }
+    
+    std::cout << std::endl;
+
+    std::cout << "Running kernels " << repeat << " times" << std::endl;
+    std::cout << "Precision: double" << std::endl;
+    std::cout << "Number of 3D array elements: " << ARRAY_SIZE_3D 
+              << " (" << nsize_3D << " elements in each dimension)" 
+              << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "3D information" << std::endl;
+    std::cout << "--------------" << std::endl;
+    std::cout << std::setprecision(1) << std::fixed
+              << "3D array size: " << (ARRAY_SIZE_3D * sizeof(double) * 1.0E-6) << "MB"
+              << " (" << (ARRAY_SIZE_3D * sizeof(double) * 1.0E-9) << " GB)"
+              << std::endl;
+
+    std::cout << "Total size (3D): " << (3.0 * ARRAY_SIZE_3D * sizeof(double) * 1.0E-6) << "MB"
+              << " (" << (3.0 * ARRAY_SIZE_3D * sizeof(double) * 1.0E-9) << "GB)"
+              << std::endl;
+
+    std::cout << std::endl;
+
+    std::cout.precision(ss);
+
+    // Print kernel computation memory bandwidth table header
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << "3D CArrayKokkos STREAM benchmark results" << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::left << std::setw(12) << "Kernel"
+              << std::left << std::setw(12) << "MBytes/sec"
+              << std::left << std::setw(12) << "Min (sec)"
+              << std::left << std::setw(12) << "Max (sec)"
+              << std::left << std::setw(12) << "Average (sec)"
+              << std::endl
+              << std::fixed;
+
+    // Calculate kernel memory bandwidths
+    for (int ker = 0; ker < num_kernels; ker++) {
+        // Get min/max times taken on kernel computation
+        // (ignore the first result)
+        auto minmax = std::minmax_element(matar_kokkos_timings_3D[ker].begin() + 1,
+                                          matar_kokkos_timings_3D[ker].end());
+
+        // Calculate average time taken on kernel computation
+        // (ignore the first result)
+        double average = std::accumulate(matar_kokkos_timings_3D[ker].begin() + 1,
+                                         matar_kokkos_timings_3D[ker].end(),
+                                         0.0) / (double) (repeat - 1);
+
+        // Print kernel computation memory bandwidth statistics
+        std::cout << std::left << std::setw(12) << labels[ker]
+                  << std::left << std::setw(12) << std::setprecision(3) <<
+                  ((1.0E-6 * sizes_3D[ker]) / (*minmax.first))
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
+                  << std::left << std::setw(12) << std::setprecision(5) << average
+                  << std::endl;
+    }
+    
+    std::cout << std::endl;
+
+    // Print kernel computation memory bandwidth table header
+    std::cout << "---------------------------------------" << std::endl;
+    std::cout << "3D Kokkos View STREAM benchmark results" << std::endl;
+    std::cout << "---------------------------------------" << std::endl;
+    std::cout << std::left << std::setw(12) << "Kernel"
+              << std::left << std::setw(12) << "MBytes/sec"
+              << std::left << std::setw(12) << "Min (sec)"
+              << std::left << std::setw(12) << "Max (sec)"
+              << std::left << std::setw(12) << "Average (sec)"
+              << std::endl
+              << std::fixed;
+
+    std::cout << std::endl;
+
+    // Calculate kernel memory bandwidths
+    for (int ker = 0; ker < num_kernels; ker++) {
+        // Get min/max times taken on kernel computation
+        // (ignore the first result)
+        auto minmax = std::minmax_element(kokkos_views_timings_3D[ker].begin() + 1,
+                                          kokkos_views_timings_3D[ker].end());
+
+        // Calculate average time taken on kernel computation
+        // (ignore the first result)
+        double average = std::accumulate(kokkos_views_timings_3D[ker].begin() + 1,
+                                         kokkos_views_timings_3D[ker].end(),
+                                         0.0) / (double) (repeat - 1);
+
+        // Print kernel computation memory bandwidth statistics
+        std::cout << std::left << std::setw(12) << labels[ker]
+                  << std::left << std::setw(12) << std::setprecision(3) <<
+                  ((1.0E-6 * sizes_3D[ker]) / (*minmax.first))
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
+                  << std::left << std::setw(12) << std::setprecision(5) << average
                   << std::endl;
     }
     
     std::cout << std::endl;
 
     // Perform matrix matrix multiply benchmark
-
     int matrix_size = 64 * 64;
+    int matrix_total_size = (matrix_size * matrix_size);
     auto mat1 = CArrayKokkos <real_t> (matrix_size, matrix_size);
     auto mat2 = CArrayKokkos <real_t> (matrix_size, matrix_size);
     auto mat3 = CArrayKokkos <real_t> (matrix_size, matrix_size);
+
+    RMatrix2D kv_mat1("kv_mat1", matrix_size, matrix_size); 
+    RMatrix2D kv_mat2("kv_mat2", matrix_size, matrix_size);
+    RMatrix2D kv_mat3("kv_mat3", matrix_size, matrix_size);
+
+    std::cout << std::endl; 
+    std::cout << "Running 2D matrix-matrix multiplication (MMM) benchmark: " 
+              << repeat << " times"
+              << std::endl;
+    std::cout << "Precision: double" << std::endl;
+    std::cout << "Number of 2D array elements: " << matrix_total_size 
+              << " (" << matrix_size << " elements in each dimension)"
+              << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "2D information" << std::endl;
+    std::cout << "--------------" << std::endl;
+    std::cout << std::setprecision(1) << std::fixed
+              << "2D array size: " << (matrix_total_size* sizeof(double) * 1.0E-6) << "MB"
+              << " (" << (matrix_total_size * sizeof(double) * 1.0E-9) << " GB)"
+              << std::endl;
+
+    std::cout << "Total size (2D): " << (3.0 * matrix_total_size * sizeof(double) * 1.0E-6) << "MB"
+              << " (" << (3.0 * matrix_total_size * sizeof(double) * 1.0E-9) << "GB)"
+              << std::endl;
+
+    std::cout << std::endl;
+
+    std::cout.precision(ss);
 
     policy2D mmm_type = policy2D({0,0}, {matrix_size,matrix_size});
     Kokkos::parallel_for("MatrixInit", mmm_type, KOKKOS_LAMBDA(const int i, const int j) {
             mat1(i, j) = (real_t) (i + 1) * (j + 1);
             mat2(i, j) = (real_t) (i + 2) * (j + 2);
+
+            // Initialize matrices
+            kv_mat1(i, j) = (real_t) (i + 1) * (j + 1);
+            kv_mat2(i, j) = (real_t) (i + 2) * (j + 2);
+
             //printf("Mat1 (%d, %d) %lf\n", i, j, mat1(i, j));
             //printf("Mat2 (%d, %d) %lf\n", i, j, mat2(i, j));
         });
     Kokkos::fence();
 
-    begin = std::chrono::high_resolution_clock::now();
+    std::vector<double> mmm_timings;
 
-    Kokkos::parallel_for ("RaggedDownTeam", TeamPolicy(matrix_size, Kokkos::AUTO), KOKKOS_LAMBDA (const TeamPolicy::member_type &teamMember) {
-            const int i = teamMember.league_rank();
+    for (int iter = 0; iter < repeat; iter++) {
+        begin = std::chrono::high_resolution_clock::now();
 
-            Kokkos::parallel_for (Kokkos::TeamThreadRange (teamMember, matrix_size), [=] (const int j) {
-                double temp_var = 0.0;
+        Kokkos::parallel_for ("RaggedDownTeam", TeamPolicy(matrix_size, Kokkos::AUTO), KOKKOS_LAMBDA (const TeamPolicy::member_type &teamMember) {
+                const int i = teamMember.league_rank();
 
-                Kokkos::parallel_reduce (Kokkos::ThreadVectorRange (teamMember, matrix_size), [=] (const int k, double &mat_val) {
-                    mat_val += mat1(i, k) * mat2(k, j);
-                }, temp_var);
+                Kokkos::parallel_for (Kokkos::TeamThreadRange (teamMember, matrix_size), [=] (const int j) {
+                    double temp_var = 0.0;
 
-                mat3(i, j) = temp_var;
-                //printf("Mat3 (%d, %d) %lf\n", i, j, mat3(i, j));
+                    Kokkos::parallel_reduce (Kokkos::ThreadVectorRange (teamMember, matrix_size), [=] (const int k, double &mat_val) {
+                        mat_val += mat1(i, k) * mat2(k, j);
+                    }, temp_var);
+
+                    mat3(i, j) = temp_var;
+                    //printf("Mat3 (%d, %d) %lf\n", i, j, mat3(i, j));
+                });
             });
-        });
     
-    Kokkos::fence();
+        Kokkos::fence();
     
-    std::chrono::duration<double> mmm_time = std::chrono::high_resolution_clock::now() - begin;
+        std::chrono::duration<double> mmm_time = std::chrono::high_resolution_clock::now() - begin;
 
-    std::cout << "MMM time: " << mmm_time.count() << " s." << std::endl;
+        mmm_timings.push_back(mmm_time.count());
+    }
 
+    // Calculate minimum and maximum times taken on matrix-matrix
+    // multiplication
+    // (ignore the first result)
+    auto minmax_mmm = std::minmax_element(mmm_timings.begin() + 1,
+                                          mmm_timings.end());
 
+    // Calculate average time taken on matrix matrix multiplication
+    // (ignore the first result)
+    double average_mmm = std::accumulate(mmm_timings.begin() + 1,
+                                         mmm_timings.end(),
+                                         0.0) / (double) (repeat - 1);
 
+    // std::cout << "MMM time: " << mmm_time.count() << " s." << std::endl;
+    
+    std::cout << "-------------------------------------" << std::endl;
+    std::cout << "2D CArrayKokkos MMM benchmark results" << std::endl;
+    std::cout << "-------------------------------------" << std::endl;
+    std::cout << "MMM min time: " << *minmax_mmm.first << " sec" << std::endl;
+    std::cout << "MMM max time: " << *minmax_mmm.second << " sec" << std::endl;
+    std::cout << "MMM avg time: " << average_mmm << " sec" << std::endl;
+    std::cout << std::endl;
+
+    // Kokkos View matrix-matrix multiplication benchmark
+    std::vector<double> mmm_kv_timings;
+
+    for (int iter = 0; iter < repeat; iter++) {
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_for ("MMM (KV)", TeamPolicy(matrix_size, Kokkos::AUTO), KOKKOS_LAMBDA (const TeamPolicy::member_type &teamMember) {
+                const int i = teamMember.league_rank();
+
+                Kokkos::parallel_for (Kokkos::TeamThreadRange (teamMember, matrix_size), [=] (const int j) {
+                    double temp_var = 0.0;
+
+                    Kokkos::parallel_reduce (Kokkos::ThreadVectorRange (teamMember, matrix_size), [=] (const int k, double &mat_val) {
+                        mat_val += kv_mat1(i, k) * kv_mat2(k, j);
+                    }, temp_var);
+
+                    kv_mat3(i, j) = temp_var;
+                    //printf("Mat3 (%d, %d) %lf\n", i, j, mat3(i, j));
+                });
+            });
+    
+        Kokkos::fence();
+    
+        std::chrono::duration<double> mmm_time_kv = std::chrono::high_resolution_clock::now() - begin;
+
+        mmm_kv_timings.push_back(mmm_time_kv.count());
+    }
+
+    // Calculate minimum and maximum times taken on matrix-matrix
+    // multiplication
+    // (ignore the first result)
+    auto minmax_mmm_kv = std::minmax_element(mmm_kv_timings.begin() + 1,
+                                             mmm_kv_timings.end());
+
+    // Calculate average time taken on matrix matrix multiplication
+    // (ignore the first result)
+    double average_mmm_kv = std::accumulate(mmm_kv_timings.begin() + 1,
+                                            mmm_kv_timings.end(),
+                                            0.0) / (double) (repeat - 1);
+
+    // std::cout << "MMM (KV) time: " << mmm_time_kv.count() << " s." << std::endl;
+    std::cout << "------------------------------------" << std::endl;
+    std::cout << "2D Kokkos View MMM benchmark results" << std::endl;
+    std::cout << "------------------------------------" << std::endl;
+    std::cout << "MMM min time: " << *minmax_mmm_kv.first << " sec" << std::endl;
+    std::cout << "MMM max time: " << *minmax_mmm_kv.second << " sec" << std::endl;
+    std::cout << "MMM avg time: " << average_mmm_kv << " sec" << std::endl;
+    std::cout << std::endl;
     
     }
     Kokkos::finalize();

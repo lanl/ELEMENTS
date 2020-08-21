@@ -3079,22 +3079,22 @@ public:
                      size_t dim4, size_t dim5, size_t dim6);
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i); 
+    T& operator()(size_t i) const; 
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i, size_t j);
+    T& operator()(size_t i, size_t j) const;
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i, size_t j, size_t k);
+    T& operator()(size_t i, size_t j, size_t k) const;
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i, size_t j, size_t k, size_t l);
+    T& operator()(size_t i, size_t j, size_t k, size_t l) const;
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m);
+    T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m) const;
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m, size_t n); 
+    T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m, size_t n) const; 
 
     KOKKOS_FUNCTION
     size_t size();
@@ -3181,77 +3181,77 @@ ViewFArrayKokkos<T>::ViewFArrayKokkos(T *some_array, size_t dim1, size_t dim2,
 // Overloaded operator() for 1D array access
 template <typename T>
 KOKKOS_FUNCTION
-T& ViewFArrayKokkos<T>::operator()(size_t i) {
+T& ViewFArrayKokkos<T>::operator()(size_t i) const {
     assert( i < dim1_ && "i is out of bounds in ViewFArrayKokkos 1D!");
-    return this_array_(i);
+    return this_array_[i];
 }
 
 //2D
 template <typename T>
 KOKKOS_FUNCTION
-T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j) {
+T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j) const {
     assert(i < dim1_ && "i is out of bounds in ViewFArrayKokkos 2D!");
     assert(j < dim2_ && "j is out of bounds in ViewFArrayKokkos 2D!");
-    return this_array_(i + (j * dim1_));
+    return this_array_[i + (j * dim1_)];
 }
 
 //3D
 template <typename T>
 KOKKOS_FUNCTION
-T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j, size_t k) {
+T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j, size_t k) const {
     assert(i < dim1_ && "i is out of bounds in ViewFArrayKokkos 3D!");
     assert(j < dim2_ && "j is out of bounds in ViewFArrayKokkos 3D!");
     assert(k < dim3_ && "k is out of bounds in ViewFArrayKokkos 3D!");
-    return this_array_(i + (j * dim1_) 
-                         + (k * dim1_ * dim2_));
+    return this_array_[i + (j * dim1_) 
+                         + (k * dim1_ * dim2_)];
 }
 
 //4D
 template <typename T>
 KOKKOS_FUNCTION
 T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, 
-                                   size_t l) {
+                                   size_t l) const {
     assert(i < dim1_ && "i is out of bounds in ViewFArrayKokkos 4D!");
     assert(j < dim2_ && "j is out of bounds in ViewFArrayKokkos 4D!");
     assert(k < dim3_ && "k is out of bounds in ViewFArrayKokkos 4D!");
     assert(l < dim4_ && "l is out of bounds in ViewFArrayKokkos 4D!");
-    return this_array_(i + (j * dim1_) 
+    return this_array_[i + (j * dim1_) 
                          + (k * dim1_ * dim2_) 
-                         + (l * dim1_ * dim2_ *dim3_));
+                         + (l * dim1_ * dim2_ *dim3_)];
 }
 
 //5D
 template <typename T>
 KOKKOS_FUNCTION
 T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, 
-                                   size_t l, size_t m) {
+                                   size_t l, size_t m) const {
     assert(i < dim1_ && "i is out of bounds in ViewFArrayKokkos 5D!");
     assert(j < dim2_ && "j is out of bounds in ViewFArrayKokkos 5D!");
     assert(k < dim3_ && "k is out of bounds in ViewFArrayKokkos 5D!");
     assert(l < dim4_ && "l is out of bounds in ViewFArrayKokkos 5D!");
     assert(m < dim5_ && "m is out of bounds in ViewFArrayKokkos 5D!");
-    return this_array_(i + (j * dim1_) 
+    return this_array_[i + (j * dim1_) 
                          + (k * dim1_ * dim2_) 
                          + (l * dim1_ * dim2_ * dim3_) 
-                         + (m * dim1_ * dim2_ * dim3_ * dim4_));
+                         + (m * dim1_ * dim2_ * dim3_ * dim4_)];
 }
 
 //6D
 template <typename T>
 KOKKOS_FUNCTION
 T& ViewFArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, 
-                                   size_t l, size_t m, size_t n) {
+                                   size_t l, size_t m, size_t n) const {
     assert(i < dim1_ && "i is out of bounds in ViewFArrayKokkos 6D!");
     assert(j < dim2_ && "j is out of bounds in ViewFArrayKokkos 6D!");
     assert(k < dim3_ && "k is out of bounds in ViewFArrayKokkos 6D!");
     assert(l < dim4_ && "l is out of bounds in ViewFArrayKokkos 6D!");
     assert(m < dim5_ && "m is out of bounds in ViewFArrayKokkos 6D!");
     assert(n < dim6_ && "n is out of bounds in ViewFArrayKokkos 6D!");
-    return this_array_(i + (j * dim1_) 
+    return this_array_[i + (j * dim1_) 
                          + (k * dim1_ * dim2_) 
                          + (l * dim1_ * dim2_ * dim3_) 
                          + (m * dim1_ * dim2_ * dim3_ * dim4_)
-                         + (n * dim1_ * dim2_ * dim3_ * dim4_ * dim5_));
+                         + (n * dim1_ * dim2_ * dim3_ * dim4_ * dim5_)];
 }
 
 template <typename T>
@@ -3684,7 +3684,7 @@ template <typename T>
 KOKKOS_FUNCTION
 T& ViewFMatrixKokkos<T>::operator()(size_t i) const {
     assert(i >= 1 && i <= dim1_ && "i is out of bounds in ViewFMatrixKokkos 1D!"); 
-    return this_matrix_((i - 1));
+    return this_matrix_[(i - 1)];
 }
 
 template <typename T>
@@ -3692,7 +3692,7 @@ KOKKOS_FUNCTION
 T& ViewFMatrixKokkos<T>::operator()(size_t i, size_t j) const {
     assert(i >= 1 && i <= dim1_ && "i is out of bounds in ViewFMatrixKokkos 2D!");
     assert(j >= 1 && j <= dim2_ && "j is out of bounds in ViewFMatrixKokkos 2D!");  
-    return this_matrix_((i - 1) + ((j - 1) * dim1_));
+    return this_matrix_[(i - 1) + ((j - 1) * dim1_)];
 }
 
 template <typename T>
@@ -3703,8 +3703,8 @@ T& ViewFMatrixKokkos<T>::operator()(size_t i, size_t j, size_t k) const
     assert(j >= 1 && j <= dim2_ && "j is out of bounds in ViewFMatrixKokkos 3D!");  
     assert(k >= 1 && k <= dim3_ && "k is out of bounds in ViewFMatrixKokkos 3D!"); 
     
-    return this_matrix_((i - 1) + ((j - 1) * dim1_) 
-                                + ((k - 1) * dim1_ * dim2_));
+    return this_matrix_[(i - 1) + ((j - 1) * dim1_) 
+                                + ((k - 1) * dim1_ * dim2_)];
 }
 
 template <typename T>
@@ -3715,9 +3715,9 @@ T& ViewFMatrixKokkos<T>::operator()(size_t i, size_t j, size_t k,
     assert(j >= 1 && j <= dim2_ && "j is out of bounds in ViewFMatrixKokkos 4D!");
     assert(k >= 1 && k <= dim3_ && "k is out of bounds in ViewFMatrixKokkos 4D!");
     assert(l >= 1 && l <= dim4_ && "l is out of bounds in ViewFMatrixKokkos 4D!");
-    return this_matrix_((i - 1) + ((j - 1) * dim1_) 
-                                + ((k - 1) * dim1_ * dim2_) 
-                                + ((l - 1) * dim1_ * dim2_ * dim3_));
+    return this_matrix_[(i - 1) + ((j - 1) * dim1_) 
+                                + ((k - 1) * dim1_ * dim2_)
+                                + ((l - 1) * dim1_ * dim2_ * dim3_)];
 }
 
 template <typename T>
@@ -3729,10 +3729,10 @@ T& ViewFMatrixKokkos<T>::operator()(size_t i, size_t j, size_t k, size_t l,
     assert(k >= 1 && k <= dim3_ && "k is out of bounds in ViewFMatrixKokkos 5D!");
     assert(l >= 1 && l <= dim4_ && "l is out of bounds in ViewFMatrixKokkos 5D!");
     assert(m >= 1 && m <= dim5_ && "m is out of bounds in ViewFMatrixKokkos 5D!");
-    return this_matrix_((i - 1) + ((j - 1) * dim1_) 
+    return this_matrix_[(i - 1) + ((j - 1) * dim1_) 
                                 + ((k - 1) * dim1_ * dim2_) 
                                 + ((l - 1) * dim1_ * dim2_ * dim3_)
-                                + ((m - 1) * dim1_ * dim2_ * dim3_ * dim4_));
+                                + ((m - 1) * dim1_ * dim2_ * dim3_ * dim4_)];
 }
 
 template <typename T>
@@ -3746,11 +3746,11 @@ T& ViewFMatrixKokkos<T>::operator()(size_t i, size_t j, size_t k, size_t l,
     assert(l >= 1 && l <= dim4_ && "l is out of bounds in ViewFMatrixKokkos 6D!");
     assert(m >= 1 && m <= dim5_ && "m is out of bounds in ViewFMatrixKokkos 6D!");
     assert(n >= 1 && n <= dim6_ && "n is out of bounds in ViewFMatrixKokkos 6D!");
-    return this_matrix_((i - 1) + ((j - 1) * dim1_) 
+    return this_matrix_[(i - 1) + ((j - 1) * dim1_) 
                                 + ((k - 1) * dim1_ * dim2_) 
                                 + ((l - 1) * dim1_ * dim2_ * dim3_)
                                 + ((m - 1) * dim1_ * dim2_ * dim3_ * dim4_)
-                                + ((n - 1) * dim1_ * dim2_ * dim3_ * dim4_ * dim5_));
+                                + ((n - 1) * dim1_ * dim2_ * dim3_ * dim4_ * dim5_)];
 }
 
 template <typename T>
@@ -4186,7 +4186,7 @@ template <typename T>
 KOKKOS_FUNCTION
 T& ViewCArrayKokkos<T>::operator()(size_t i) const {
     assert(i < dim1_ && "i is out of bounds in ViewCArrayKokkos 1D!");
-    return this_array_(i);
+    return this_array_[i];
 }
 
 template <typename T>
@@ -4194,7 +4194,7 @@ KOKKOS_FUNCTION
 T& ViewCArrayKokkos<T>::operator()(size_t i, size_t j) const {
     assert(i < dim1_ && "i is out of bounds in ViewCArrayKokkos 2D!");
     assert(j < dim2_ && "j is out of bounds in ViewCArrayKokkos 2D!");  
-    return this_array_(j + (i * dim2_));
+    return this_array_[j + (i * dim2_)];
 }
 
 template <typename T>
@@ -4203,8 +4203,8 @@ T& ViewCArrayKokkos<T>::operator()(size_t i, size_t j, size_t k) const {
     assert(i < dim1_ && "i is out of bounds in ViewCArrayKokkos 3D!");
     assert(j < dim2_ && "j is out of bounds in ViewCArrayKokkos 3D!");
     assert(k < dim3_ && "k is out of bounds in ViewCArrayKokkos 3D!");
-    return this_array_(k + (j * dim3_) 
-                         + (i * dim3_ * dim2_));
+    return this_array_[k + (j * dim3_) 
+                         + (i * dim3_ * dim2_)];
 }
 
 template <typename T>
@@ -4215,9 +4215,9 @@ T& ViewCArrayKokkos<T>::operator()(size_t i, size_t j, size_t k,
     assert(j < dim2_ && "j is out of bounds in ViewCArrayKokkos 4D!");
     assert(k < dim3_ && "k is out of bounds in ViewCArrayKokkos 4D!");
     assert(l < dim4_ && "l is out of bounds in ViewCArrayKokkos 4D!");
-    return this_array_(l + (k * dim4_) 
+    return this_array_[l + (k * dim4_) 
                          + (j * dim4_ * dim3_) 
-                         + (i * dim4_ * dim3_ * dim2_));
+                         + (i * dim4_ * dim3_ * dim2_)];
 }
 
 template <typename T>
@@ -4229,10 +4229,10 @@ T& ViewCArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, size_t l,
     assert(k < dim3_ && "k is out of bounds in ViewCArrayKokkos 5D!");
     assert(l < dim4_ && "l is out of bounds in ViewCArrayKokkos 5D!");
     assert(m < dim5_ && "m is out of bounds in ViewCArrayKokkos 5D!");
-    return this_array_(m + (l * dim5_) 
+    return this_array_[m + (l * dim5_) 
                          + (k * dim5_ * dim4_) 
                          + (j * dim5_ * dim4_ * dim3_)
-                         + (i * dim5_ * dim4_ * dim3_ * dim2_));
+                         + (i * dim5_ * dim4_ * dim3_ * dim2_)];
 }
 
 template <typename T>
@@ -4245,11 +4245,11 @@ T& ViewCArrayKokkos<T>::operator()(size_t i, size_t j, size_t k, size_t l,
     assert(l < dim4_ && "l is out of bounds in ViewCArrayKokkos 6D!");
     assert(m < dim5_ && "m is out of bounds in ViewCArrayKokkos 6D!");
     assert(n < dim6_ && "n is out of bounds in ViewCArrayKokkos 6D!");
-    return this_array_(n + (m * dim6_) 
+    return this_array_[n + (m * dim6_) 
                          + (l * dim6_ * dim5_) 
                          + (k * dim6_ * dim5_ * dim4_)
                          + (j * dim6_ * dim5_ * dim4_ * dim3_) 
-                         + (i * dim6_ * dim5_ * dim4_ * dim3_ * dim2_));
+                         + (i * dim6_ * dim5_ * dim4_ * dim3_ * dim2_)];
 }
 
 template <typename T>
@@ -4575,22 +4575,22 @@ public:
                       size_t dim4, size_t dim5, size_t dim6);
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i);
+    T& operator()(size_t i) const;
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i, size_t j);
+    T& operator()(size_t i, size_t j) const;
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i, size_t j , size_t k);
+    T& operator()(size_t i, size_t j , size_t k) const;
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i, size_t j, size_t k , size_t l);
+    T& operator()(size_t i, size_t j, size_t k , size_t l) const;
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m);
+    T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m) const;
 
     KOKKOS_FUNCTION
-    T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m, size_t n);
+    T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m, size_t n) const;
 
     KOKKOS_FUNCTION
     size_t size();
@@ -4677,71 +4677,71 @@ ViewCMatrixKokkos<T>::ViewCMatrixKokkos(T* some_matrix, size_t dim1, size_t dim2
 
 template <typename T>
 KOKKOS_FUNCTION
-T& ViewCMatrixKokkos<T>::operator()(size_t i) {
+T& ViewCMatrixKokkos<T>::operator()(size_t i) const {
     assert(i >= 1 && i <= dim1_ && "i is out of bounds in ViewCMatrixKokkos 1D!");
-    return this_matrix_((i - 1));
+    return this_matrix_[(i - 1)];
 }
 
 template <typename T>
 KOKKOS_FUNCTION
-T& ViewCMatrixKokkos<T>::operator()(size_t i, size_t j) {
+T& ViewCMatrixKokkos<T>::operator()(size_t i, size_t j) const {
     assert(i >= 1 && i <= dim1_ && "i is out of bounds in ViewCMatrixKokkos 2D!");
     assert(j >= 1 && j <= dim2_ && "j is out of bounds in ViewCMatrixKokkos 2D!");
-    return this_matrix_((j - 1) + ((i - 1) * dim2_));
+    return this_matrix_[(j - 1) + ((i - 1) * dim2_)];
 }
 
 template <typename T>
 KOKKOS_FUNCTION
-T& ViewCMatrixKokkos<T>::operator()(size_t i, size_t j, size_t k) {
+T& ViewCMatrixKokkos<T>::operator()(size_t i, size_t j, size_t k) const {
     assert(i >= 1 && i <= dim1_ && "i is out of bounds in ViewCMatrixKokkos 3D!");
     assert(j >= 1 && j <= dim2_ && "j is out of bounds in ViewCMatrixKokkos 3D!");
     assert(k >= 1 && k <= dim3_ && "k is out of bounds in ViewCMatrixKokkos 3D!");
-    return this_matrix_((k - 1) + ((j - 1) * dim3_) 
-                                + ((i - 1) * dim3_ * dim2_));
+    return this_matrix_[(k - 1) + ((j - 1) * dim3_) 
+                                + ((i - 1) * dim3_ * dim2_)];
 }
 
 template <typename T>
 KOKKOS_FUNCTION
-T& ViewCMatrixKokkos<T>::operator()(size_t i, size_t j , size_t k, size_t l) { 
+T& ViewCMatrixKokkos<T>::operator()(size_t i, size_t j , size_t k, size_t l) const { 
     assert(i >= 1 && i <= dim1_ && "i is out of bounds in ViewCMatrixKokkos 4D!");
     assert(j >= 1 && j <= dim2_ && "j is out of bounds in ViewCMatrixKokkos 4D!");
     assert(k >= 1 && k <= dim3_ && "k is out of bounds in ViewCMatrixKokkos 4D!");
     assert(l >= 1 && l <= dim4_ && "l is out of bounds in ViewCMatrixKokkos 4D!");
-    return this_matrix_((l - 1) + ((k - 1) * dim4_) 
+    return this_matrix_[(l - 1) + ((k - 1) * dim4_) 
                                 + ((j - 1) * dim4_ * dim3_) 
-                                + ((i - 1) * dim4_ * dim3_ * dim2_));
+                                + ((i - 1) * dim4_ * dim3_ * dim2_)];
 }
 
 template <typename T>
 KOKKOS_FUNCTION
 T& ViewCMatrixKokkos<T>::operator()(size_t i, size_t j, size_t k, size_t l, 
-                                    size_t m) {
+                                    size_t m) const {
     assert(i >= 1 && i <= dim1_ && "i is out of bounds for ViewCMatrixKokkos 5D!");
     assert(j >= 1 && j <= dim2_ && "j is out of bounds for ViewCMatrixKokkos 5D!");
     assert(k >= 1 && k <= dim3_ && "k is out of bounds for ViewCMatrixKokkos 5D!");
     assert(l >= 1 && l <= dim4_ && "l is out of bounds for ViewCMatrixKokkos 5D!");
     assert(m >= 1 && m <= dim5_ && "m is out of bounds for ViewCMatrixKokkos 5D!");
-    return this_matrix_((m - 1) + ((l - 1) * dim5_)
+    return this_matrix_[(m - 1) + ((l - 1) * dim5_)
                                 + ((k - 1) * dim5_ * dim4_)
                                 + ((j - 1) * dim5_ * dim4_ * dim3_)
-                                + ((i - 1) * dim5_ * dim4_ * dim3_ * dim2_));
+                                + ((i - 1) * dim5_ * dim4_ * dim3_ * dim2_)];
 }
 
 template <typename T>
 KOKKOS_FUNCTION
 T& ViewCMatrixKokkos<T>::operator()(size_t i, size_t j, size_t k, size_t l, 
-                                    size_t m, size_t n) {
+                                    size_t m, size_t n) const {
     assert(i >= 1 && i <= dim1_ && "i is out of bounds for ViewCMatrixKokkos 6D!");
     assert(j >= 1 && j <= dim2_ && "j is out of bounds for ViewCMatrixKokkos 6D!");
     assert(k >= 1 && k <= dim3_ && "k is out of bounds for ViewCMatrixKokkos 6D!");
     assert(l >= 1 && l <= dim4_ && "l is out of bounds for ViewCMatrixKokkos 6D!");
     assert(m >= 1 && m <= dim5_ && "m is out of bounds for ViewCMatrixKokkos 6D!");
     assert(n >= 1 && n <= dim6_ && "n is out of bounds for ViewCMatrixKokkos 6D!");
-    return this_matrix_((n - 1) + ((m - 1) * dim6_)
+    return this_matrix_[(n - 1) + ((m - 1) * dim6_)
                                 + ((l - 1) * dim6_ * dim5_)
                                 + ((k - 1) * dim6_ * dim5_ * dim4_)
                                 + ((j - 1) * dim6_ * dim5_ * dim4_ * dim3_)
-                                + ((i - 1) * dim6_ * dim5_ * dim4_ * dim3_ * dim2_));
+                                + ((i - 1) * dim6_ * dim5_ * dim4_ * dim3_ * dim2_)];
 }
 
 template <typename T>
@@ -4924,12 +4924,12 @@ RaggedRightArrayKokkos<T> & RaggedRightArrayKokkos<T>::operator= (const RaggedRi
     deep_copy(h_templen, templen);
     length_ = h_templen(0);
 
-    printf("Length %ld\n", length_);
+    //printf("Length %ld\n", length_);
 
-    Kokkos::parallel_for("StartCheck", dim1_+1, KOKKOS_CLASS_LAMBDA(const int i) {
-            printf("%d) Start %ld\n", i, start_index_(i));
-        });
-    Kokkos::fence();
+    //Kokkos::parallel_for("StartCheck", dim1_+1, KOKKOS_CLASS_LAMBDA(const int i) {
+    //        printf("%d) Start %ld\n", i, start_index_(i));
+    //    });
+    //Kokkos::fence();
     
     array_ = TArray1D("array_", length_);
 

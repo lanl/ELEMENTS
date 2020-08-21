@@ -47,6 +47,7 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${VECTOR_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 
 #add Likwid module path here
+#find_package(likwid REQUIRED)
 
 set(mtest_CXX_SRCS main.cpp pseudo_mesh.cpp child.cpp inherited_inits.cpp)
 set(mtest_H_SRCS pseudo_mesh.hpp matar.h kokkos_alias.h child.hpp parents.h inherited_inits.hpp)
@@ -55,6 +56,8 @@ add_executable(mtest ${mtest_SRCS})
 
 # Executable that runs CPU stream benchmark on MATAR's Kokkos-specific classes
 add_executable(mbench main_benchmark.cpp matar.h kokkos_alias.h)
+# Find LIKWID's header files
+#target_include_directories(mbench PUBLIC ${LIKWID_INCLUDE_DIRS})
 
 include_directories(./)
 
@@ -62,3 +65,5 @@ add_subdirectory(Kokkos/kokkos)
 
 target_link_libraries(mtest Kokkos::kokkos)
 target_link_libraries(mbench Kokkos::kokkos)
+# Link against LIKWID in addition to Kokkos
+#target_link_libraries(mbench PUBLIC ${LIKWID_LIBRARIES} Kokkos::kokkos)

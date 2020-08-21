@@ -27,13 +27,13 @@
 
 int main() {
     int size_i = 5, size_j = 4, size_k = 3;
-	const int size1 = 12000000;
 	const int size3 = 256;
-	const int repeat = 101;
+	const int size1 = size3 * size3 * size3;
+	const int repeat = 10;
 
 	std::cout<<"Size of 1D problem: "<<size1<<"\n";
 	std::cout<<"Size of 3D problem (each dimension): "<<size3<<"\n";
-
+//#ifdef CPUBENCH
 	//===========================================================
 	//	cpu stream benchmarks
 	//===========================================================	
@@ -360,6 +360,7 @@ int main() {
 
 	std::cout<<"=============================================================\n";
 
+//#endif
 
 
 
@@ -489,20 +490,30 @@ int main() {
     // Kokkos stream benchmark test (for FMatrixKokkos and CArrayKokkos objects)
     // printf("\n Kokkos stream benchmark CArrayKokkos\n");
 
-    // Create 1D CArrayKokkos objects
-    auto arr1 = CArrayKokkos <real_t> (nsize);
-    auto arr2 = CArrayKokkos <real_t> (nsize);
-    auto arr3 = CArrayKokkos <real_t> (nsize);
+    // Create 1D FArrayKokkos objects
+    auto arr1 = FArrayKokkos <real_t> (nsize);
+    auto arr2 = FArrayKokkos <real_t> (nsize);
+    auto arr3 = FArrayKokkos <real_t> (nsize);
+
+    // Create 1D ViewFArrayKokkos objects
+    auto arr1_v = ViewFArrayKokkos <real_t> (arr1.pointer(), nsize);
+    auto arr2_v = ViewFArrayKokkos <real_t> (arr2.pointer(), nsize);
+    auto arr3_v = ViewFArrayKokkos <real_t> (arr3.pointer(), nsize);
 
     // Create 1D Kokkos View objects
     RMatrix1D kv_arr1("kv_arr1", nsize);
     RMatrix1D kv_arr2("kv_arr2", nsize);
     RMatrix1D kv_arr3("kv_arr3", nsize);
 
-    // Create 3D CArrayKokkos objects
-    auto arr1_3D = CArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
-    auto arr2_3D = CArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
-    auto arr3_3D = CArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
+    // Create 3D FArrayKokkos objects
+    auto arr1_3D = FArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
+    auto arr2_3D = FArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
+    auto arr3_3D = FArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
+
+    // Create 3D ViewFArrayKokkos objects
+    auto arr1_3D_v = ViewFArrayKokkos <real_t> (arr1_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
+    auto arr2_3D_v = ViewFArrayKokkos <real_t> (arr2_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
+    auto arr3_3D_v = ViewFArrayKokkos <real_t> (arr3_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
 
     // Create 3D Kokkos View objects
     RMatrix3D kv_arr1_3D("kv_arr1_3D", nsize_3D, nsize_3D, nsize_3D);
@@ -548,9 +559,9 @@ int main() {
         Kokkos::parallel_for("Copy (1D)", nsize, KOKKOS_LAMBDA(const int i) {
                 arr3(i) = arr1(i);
                 });
+        std::chrono::duration<double> copy_time = std::chrono::high_resolution_clock::now() - begin;
         Kokkos::fence();
         
-        std::chrono::duration<double> copy_time = std::chrono::high_resolution_clock::now() - begin;
 
         // Record copy kernel timing
         matar_kokkos_timings[0].push_back(copy_time.count());
@@ -563,9 +574,9 @@ int main() {
         Kokkos::parallel_for("Copy (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
                 kv_arr3(i) = kv_arr1(i);
                 });
+        std::chrono::duration<double> copy_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
         Kokkos::fence();
 
-        std::chrono::duration<double> copy_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
 
         // Record 1D Kokkos View copy kernel timing
         kokkos_views_timings[0].push_back(copy_time_kv_1D.count());
@@ -580,9 +591,9 @@ int main() {
                          KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 arr3_3D(i, j, k) = arr1_3D(i, j, k);
                 });
+        std::chrono::duration<double> copy_time_3D = std::chrono::high_resolution_clock::now() - begin;
         Kokkos::fence();
         
-        std::chrono::duration<double> copy_time_3D = std::chrono::high_resolution_clock::now() - begin;
 
         // Record 3D CArrayKokkos copy kernel timing
         matar_kokkos_timings_3D[0].push_back(copy_time_3D.count());
@@ -594,9 +605,9 @@ int main() {
                          KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 kv_arr3_3D(i, j, k) = kv_arr1_3D(i, j, k);
                 });
+        std::chrono::duration<double> copy_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
         Kokkos::fence();
 
-        std::chrono::duration<double> copy_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
 
         // Record 3D Kokkos View copy kernel timing
         kokkos_views_timings_3D[0].push_back(copy_time_kv_3D.count());
@@ -610,9 +621,9 @@ int main() {
         Kokkos::parallel_for("Scale (1D)", nsize, KOKKOS_LAMBDA(const int i) {
                 arr2(i) = scalar * arr3(i);
                 });
+        std::chrono::duration<double> scale_time = std::chrono::high_resolution_clock::now() - begin;
         Kokkos::fence();
         
-        std::chrono::duration<double> scale_time = std::chrono::high_resolution_clock::now() - begin;
 
         // Record scale kernel timing
         matar_kokkos_timings[1].push_back(scale_time.count());
@@ -625,9 +636,9 @@ int main() {
         Kokkos::parallel_for("Scale (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
                 kv_arr2(i) = scalar * kv_arr3(i);
                 });
+        std::chrono::duration<double> scale_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
         Kokkos::fence();
 
-        std::chrono::duration<double> scale_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
 
         // Record 1D Kokkos View scale kernel timing
         kokkos_views_timings[1].push_back(scale_time_kv_1D.count());   
@@ -642,9 +653,9 @@ int main() {
                          KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 arr2_3D(i, j, k) = scalar * arr3_3D(i, j, k);
                 });
+        std::chrono::duration<double> scale_time_3D = std::chrono::high_resolution_clock::now() - begin;
         Kokkos::fence();
         
-        std::chrono::duration<double> scale_time_3D = std::chrono::high_resolution_clock::now() - begin;
 
         // Record 3D CArrayKokkos scale kernel timing
         matar_kokkos_timings_3D[1].push_back(scale_time_3D.count());
@@ -656,9 +667,9 @@ int main() {
                          KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 kv_arr2_3D(i, j, k) = scalar * kv_arr3_3D(i, j, k);
                 });
+        std::chrono::duration<double> scale_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
         Kokkos::fence();
 
-        std::chrono::duration<double> scale_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
 
         // Record 3D Kokkos View scale kernel timing
         kokkos_views_timings_3D[1].push_back(scale_time_kv_3D.count());
@@ -673,9 +684,9 @@ int main() {
         Kokkos::parallel_for("Sum (1D)", nsize, KOKKOS_LAMBDA(const int i) {
                 arr3(i) = arr1(i) + arr2(i);
                 });
+        std::chrono::duration<double> sum_time = std::chrono::high_resolution_clock::now() - begin;
         Kokkos::fence();
         
-        std::chrono::duration<double> sum_time = std::chrono::high_resolution_clock::now() - begin;
 
         // Record sum kernel timing
         // matar_kokkos_timings(2, iter) = sum_time.count();
@@ -689,9 +700,9 @@ int main() {
         Kokkos::parallel_for("Sum (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
                 kv_arr3(i) = kv_arr1(i) + kv_arr2(i);
                 });
+        std::chrono::duration<double> sum_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
         Kokkos::fence();
 
-        std::chrono::duration<double> sum_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
 
         // Record 1D Kokkos View sum kernel timing
         kokkos_views_timings[2].push_back(sum_time_kv_1D.count());   
@@ -1031,6 +1042,7 @@ int main() {
     
     std::cout << std::endl;
 
+//#ifdef MMM
     // Perform matrix matrix multiply benchmark
     int matrix_size = 64 * 64;
     int matrix_total_size = (matrix_size * matrix_size);
@@ -1086,7 +1098,7 @@ int main() {
     for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
 
-        Kokkos::parallel_for ("RaggedDownTeam", TeamPolicy(matrix_size, Kokkos::AUTO), KOKKOS_LAMBDA (const TeamPolicy::member_type &teamMember) {
+        Kokkos::parallel_for ("MMM", TeamPolicy(matrix_size, Kokkos::AUTO), KOKKOS_LAMBDA (const TeamPolicy::member_type &teamMember) {
                 const int i = teamMember.league_rank();
 
                 Kokkos::parallel_for (Kokkos::TeamThreadRange (teamMember, matrix_size), [=] (const int j) {
@@ -1178,6 +1190,7 @@ int main() {
     std::cout << "MMM max time: " << *minmax_mmm_kv.second << " sec" << std::endl;
     std::cout << "MMM avg time: " << average_mmm_kv << " sec" << std::endl;
     std::cout << std::endl;
+//#endif
     
     }
     Kokkos::finalize();

@@ -6,5 +6,8 @@ cmake -DKOKKOS=1 \
 -DKokkos_ARCH_SKX=1  ..
 
 # For Cuda
-# cmake -DKOKKOS=1 -DCUDA=1 -DKokkos_ARCH_PASCAL61=1 -DCMAKE_CXX_COMPILER={Path-to-src-files}/Kokkos/kokkos/bin/nvcc_wrapper ..
+# cmake -DKOKKOS=1 \
+# -DCUDA=1 \
+# -DKokkos_ARCH_VOLTA70=1 \
+# -DCMAKE_CXX_COMPILER=/home/ttafolla/Desktop/new_kokkos/ELEMENTS/Matar/Kokkify/MatarTest/Kokkos/kokkos/bin/nvcc_wrapper ..
 

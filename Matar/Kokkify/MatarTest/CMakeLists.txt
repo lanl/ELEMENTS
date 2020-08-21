@@ -47,6 +47,7 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${VECTOR_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 
 #add Likwid module path here
+find_package(likwid)
 
 set(mtest_CXX_SRCS main.cpp pseudo_mesh.cpp child.cpp inherited_inits.cpp)
 set(mtest_H_SRCS pseudo_mesh.hpp matar.h kokkos_alias.h child.hpp parents.h inherited_inits.hpp)
@@ -56,9 +57,23 @@ add_executable(mtest ${mtest_SRCS})
 # Executable that runs CPU stream benchmark on MATAR's Kokkos-specific classes
 add_executable(mbench main_benchmark.cpp matar.h kokkos_alias.h)
 
+#executable for matrix-matrix multiply tests
+add_executable(mattest main_mmm.cpp matar.h kokkos_alias.h)
+
+#executable for 3d test
+#add_executable(test_3d main_3dtests.cpp matar.h kokkos_alias.h)
+
 include_directories(./)
 
 add_subdirectory(Kokkos/kokkos)
 
+#target_link_libraries(test_3d Kokkos::kokkos ${LIKWID_LIBRARIES})
+#target_include_directories(test_3d PUBLIC ${LIKWID_INCLUDE_DIRS})
+
+target_link_libraries(mattest Kokkos::kokkos ${LIKWID_LIBRARIES})
+target_include_directories(mattest PUBLIC ${LIKWID_INCLUDE_DIRS})
+
 target_link_libraries(mtest Kokkos::kokkos)
-target_link_libraries(mbench Kokkos::kokkos)
+
+target_link_libraries(mbench Kokkos::kokkos ${LIKWID_LIBRARIES})
+target_include_directories(mbench PUBLIC ${LIKWID_INCLUDE_DIRS})

@@ -43,7 +43,7 @@
 #include "kokkos_alias.h"
 
 //To disable asserts, uncomment the following line
-//#define NDEBUG
+#define NDEBUG
 
 //---Begin Standard Data Structures---
 
@@ -2033,7 +2033,7 @@ public:
 template <typename T>
 RaggedRightArray<T>::RaggedRightArray (CArray<size_t> &strides_array){
     // The length of the stride array is some_dim1;
-    //dim1_  = strides_array.size();
+    dim1_  = strides_array.size();
     
     // Create and initialize the starting index of the entries in the 1D array
     start_index_ = new size_t[(dim1_ + 1)];  // note the dim1+1
@@ -2054,7 +2054,7 @@ RaggedRightArray<T>::RaggedRightArray (CArray<size_t> &strides_array){
 template <typename T>
 RaggedRightArray<T>::RaggedRightArray (ViewCArray<size_t> &strides_array) {
     // The length of the stride array is some_dim1;
-    //dim1_  = strides_array.size();
+    dim1_  = strides_array.size();
     
     // Create and initialize the starting index of the entries in the 1D array
     start_index_ = new size_t[(dim1_ + 1)];  // note the dim1+1

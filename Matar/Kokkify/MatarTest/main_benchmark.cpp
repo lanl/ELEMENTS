@@ -35,7 +35,7 @@ int main() {
     int size_i = 5, size_j = 4, size_k = 3;
 	const int size3 = 256;
 	const int size1 = size3 * size3 * size3;
-	const int repeat = 10;
+	const int repeat = 3;
 
 	std::cout<<"Size of 1D problem: "<<size1<<"\n";
 	std::cout<<"Size of 3D problem (each dimension): "<<size3<<"\n";
@@ -50,30 +50,36 @@ int main() {
 	auto c_arr1 = CArray<double>(size1);
 	auto c_arr2 = CArray<double>(size1);
 	auto c_arr3 = CArray<double>(size1);
+	auto c_arr4 = CArray<double>(size1);
 
 	//3D
 	auto c_arr1_3d = CArray<double>(size3, size3, size3);
 	auto c_arr2_3d = CArray<double>(size3, size3, size3);
 	auto c_arr3_3d = CArray<double>(size3, size3, size3);
+	auto c_arr4_3d = CArray<double>(size3, size3, size3);
 
 	//1D
 	double* reg_arr1_1d = new double[size1];
 	double* reg_arr2_1d = new double[size1];
 	double* reg_arr3_1d = new double[size1];
+	double* reg_arr4_1d = new double[size1];
 
 	//3D
 	double*** reg_arr1_3d = new double**[size3];
 	double*** reg_arr2_3d = new double**[size3];
 	double*** reg_arr3_3d = new double**[size3];
-	
+	double*** reg_arr4_3d = new double**[size3];	
+
 	for(size_t i = 0; i < size3; i++) {
 	 reg_arr1_3d[i] = new double*[size3];	
 	 reg_arr2_3d[i] = new double*[size3];	
-	 reg_arr3_3d[i] = new double*[size3];	
+	 reg_arr3_3d[i] = new double*[size3];
+	 reg_arr4_3d[i] = new double*[size3];	
 	  for(size_t j = 0; j < size3; j++) {
 		reg_arr1_3d[i][j] = new double[size3];
 		reg_arr2_3d[i][j] = new double[size3];
 		reg_arr3_3d[i][j] = new double[size3];
+		reg_arr4_3d[i][j] = new double[size3];
 	   }
 	  }
 

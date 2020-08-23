@@ -2454,9 +2454,9 @@ int main() {
     auto fak_arr3_3D = FArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
 
     // Create 3D ViewFArrayKokkos objects
-    auto vfak_arr1_3D = ViewFArrayKokkos <real_t> (arr1_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
-    auto vfak_arr2_3D = ViewFArrayKokkos <real_t> (arr2_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
-    auto vfak_arr3_3D = ViewFArrayKokkos <real_t> (arr3_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
+    auto vfak_arr1_3D = ViewFArrayKokkos <real_t> (fak_arr1_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
+    auto vfak_arr2_3D = ViewFArrayKokkos <real_t> (fak_arr2_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
+    auto vfak_arr3_3D = ViewFArrayKokkos <real_t> (fak_arr3_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
 
     // Create 3D CArrayKokkos objects
     auto cak_arr1_3D = CArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
@@ -2477,6 +2477,16 @@ int main() {
     policy3D array_type_STREAM = policy3D({0, 0, 0},
                                           {nsize_3D, nsize_3D, nsize_3D});
 
+   	Kokkos::parallel_for("Initialize (3D FAK)", array_type_STREAM,
+   		                 KOKKOS_LAMBDA(const int k, const int j, const int i) {
+
+   		    // Initialize 3D FArrayKokkos objects
+   		    fak_arr1_3D(i, j, k) = 1.0;
+   		    fak_arr2_3D(i, j, k) = 2.0;
+   		    fak_arr3_3D(i, j, k) = 0.0;
+   		    });
+   	Kokkos::fence();
+
     Kokkos::parallel_for("Initialize (3D)", array_type_STREAM, 
                          KOKKOS_LAMBDA(const int i, const int j, const int k) {
             // Initialize "regularly" allocated 3D C++ arrays
@@ -2485,9 +2495,9 @@ int main() {
             //reg_arr3_3D[i][j][k] = 0.0;
 
             // Initialize 3D CArrayKokkos objects
-            arr1_3D(i, j, k) = 1.0;
-            arr2_3D(i, j, k) = 2.0;
-            arr3_3D(i, j, k) = 0.0;
+            cak_arr1_3D(i, j, k) = 1.0;
+            cak_arr2_3D(i, j, k) = 2.0;
+            cak_arr3_3D(i, j, k) = 0.0;
     
             // Initialize 3D Kokkos View objects
             kv_arr1_3D(i, j, k) = 1.0;
@@ -2527,7 +2537,7 @@ int main() {
     for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
          
-        Kokkos::parallel_for("Copy (3D)", array_type_STREAM, 
+        Kokkos::parallel_for("Copy (3D CAK)", array_type_STREAM, 
                          KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 cak_arr3_3D(i, j, k) = cak_arr1_3D(i, j, k);
                 });
@@ -2544,7 +2554,7 @@ int main() {
     for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
          
-        Kokkos::parallel_for("Scale (3D)", array_type_STREAM, 
+        Kokkos::parallel_for("Scale (3D CAK)", array_type_STREAM, 
                          KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 cak_arr2_3D(i, j, k) = (scalar * cak_arr3_3D(i, j, k));
                 });
@@ -2561,7 +2571,7 @@ int main() {
     for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
          
-        Kokkos::parallel_for("Sum (3D)", array_type_STREAM, 
+        Kokkos::parallel_for("Sum (3D CAK)", array_type_STREAM, 
                          KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 cak_arr3_3D(i, j, k) = (cak_arr1_3D(i, j, k) + cak_arr2_3D(i, j, k));
                 });
@@ -2579,7 +2589,7 @@ int main() {
     for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
          
-        Kokkos::parallel_for("Triad (3D)", array_type_STREAM, 
+        Kokkos::parallel_for("Triad (3D CAK)", array_type_STREAM, 
                          KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 cak_arr1_3D(i, j, k) = (cak_arr2_3D(i, j, k) + (scalar * cak_arr3_3D(i, j, k)));
                 });
@@ -2600,7 +2610,7 @@ int main() {
 
         begin = std::chrono::high_resolution_clock::now();
 
-        Kokkos::parallel_reduce("Dot product (3D)", array_type_STREAM, 
+        Kokkos::parallel_reduce("Dot product (3D CAK)", array_type_STREAM, 
                                 KOKKOS_LAMBDA(const int i, const int j, 
                                               const int k, real_t& tmp) {
                 tmp += (cak_arr1_3D(i, j, k) * cak_arr2_3D(i, j, k));

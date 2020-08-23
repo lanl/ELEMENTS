@@ -2838,18 +2838,17 @@ int main() {
 
     policy2D mmm_type = policy2D({0,0}, {matrix_size,matrix_size});
     Kokkos::parallel_for("MatrixInit", mmm_type, KOKKOS_LAMBDA(const int i, const int j) {
-            //cak_mat1(i, j) = (real_t) (i + 1) * (j + 1);
-            //cak_mat2(i, j) = (real_t) (i + 2) * (j + 2);
-
             // Initialize 2D CArrayKokkos objects (arrays)
-            cak_mat1(i, j) = 1.0 
-            cak_mat1(i, j) = 1.0 
+            cak_mat1(i, j) = (real_t) (i + 1) * (j + 1);
+            cak_mat2(i, j) = (real_t) (i + 2) * (j + 2);
+            //cak_mat1(i, j) = 1.0;
+            //cak_mat1(i, j) = 1.0;
 
             // Initialize 2D Kokkos Views objects (arrays)
-            //kv_mat1(i, j) = (real_t) (i + 1) * (j + 1);
-            //kv_mat2(i, j) = (real_t) (i + 2) * (j + 2);
-            kv_mat1(i, j) = 1.0
-            kv_mat1(i, j) = 1.0
+            kv_mat1(i, j) = (real_t) (i + 1) * (j + 1);
+            kv_mat2(i, j) = (real_t) (i + 2) * (j + 2);
+            //kv_mat1(i, j) = 1.0;
+            //kv_mat1(i, j) = 1.0;
         });
     Kokkos::fence();
 

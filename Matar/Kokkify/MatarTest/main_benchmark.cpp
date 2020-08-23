@@ -2560,7 +2560,7 @@ int main() {
                 });
         Kokkos::fence();
         
-        std::chrono::duration<double> scale_time_3D = std::chrono::high_resolution_clock::now() - begin;
+        std::chrono::duration<double> scale_time_3D = (std::chrono::high_resolution_clock::now() - begin);
 
         // Record 3D CArrayKokkos scale kernel timing
         matar_kokkos_timings_3D[1].push_back(scale_time_3D.count());

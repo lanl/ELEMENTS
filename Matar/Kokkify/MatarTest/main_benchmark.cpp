@@ -2190,8 +2190,6 @@ int main() {
 
     cak_arr3_1D_err /= nsize;
 
-    real_t epsi = (std::numeric_limits<real_t>::epsilon() * 100.0);
-
     if (cak_arr1_1D_err > epsi) {
     	std::cout << "Validation failed on cak_arr1. Average error "
     	          << cak_arr1_1D_err << std::endl;
@@ -2363,8 +2361,6 @@ int main() {
     Kokkos::fence();
 
     kv_arr3_1D_err /= nsize;
-
-    real_t epsi = (std::numeric_limits<real_t>::epsilon() * 100.0);
 
     if (kv_arr1_1D_err > epsi) {
     	std::cout << "Validation failed on kv_arr1. Average error "

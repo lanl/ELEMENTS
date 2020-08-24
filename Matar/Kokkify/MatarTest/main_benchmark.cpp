@@ -1830,7 +1830,7 @@ int main(int argc, char** argv) {
 
     // printf("Stream benchmark with %d elements.\n", nsize);
 
-    // Initialize 1D CArrayKokkos and 1D Kokkos View objects
+    // Initialize 1D FArrayKokkos, 1D CArrayKokkos, and 1D Kokkos View objects
     Kokkos::parallel_for("Initialize", nsize, KOKKOS_LAMBDA(const int i) {
                 // Initialize "regularly" allocated 1D C++ arrays
                 //reg_arr1[i] = 1.0;
@@ -2061,6 +2061,192 @@ int main(int argc, char** argv) {
         // (ignore the first result)
         double average = std::accumulate(fak_1D_timings[ker].begin() + 1,
                                          fak_1D_timings[ker].end(),
+                                         0.0) / (double) (repeat - 1);
+
+        // Print kernel computation memory bandwidth statistics
+        std::cout << std::left << std::setw(12) << labels[ker]
+                  << std::left << std::setw(12) << std::setprecision(3) <<
+                  ((1.0E-6 * sizes[ker]) / (*minmax.first))
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
+                  << std::left << std::setw(12) << std::setprecision(5) << average
+                  << std::endl;
+    }
+    
+    std::cout << std::endl;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // 1D ViewFArrayKokkos STREAM benchmark suite 
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Initialize the 1D ViewFArrayKokkos objects
+    Kokkos::parallel_for("Initialize (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i) {
+            // Initialize 1D FArrayKokkos objects
+            vfak_arr1(i) = arr1_init_val;
+            vfak_arr2(i) = arr2_init_val;
+            vfak_arr3(i) = arr3_init_val;
+    Kokkos::fence();
+
+    // Vector that stores the times taken by the various kernel calls on the
+    // 1D ViewFArrayKokkos objects
+    std::vector<std::vector<double>> vfak_1D_timings(num_kernels);
+
+    // Variable the stores the dot product of vectors a and b
+    real_t vfak_dot_1D_fin_val;
+
+    for (int iter = 0; iter < repeat; iter++) {
+    	// 1D ViewFArrayKokkos copy kernel
+
+        begin = std::chrono::high_resolution_clock::now();
+         
+        Kokkos::parallel_for("Copy (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i) {
+                vfak_arr3(i) = vfak_arr1(i);
+                });
+        Kokkos::fence();
+
+        end = std::chrono::high_resolution_clock::now();
+
+        // Record copy kernel timing
+        vfak_1D_timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+
+    	// 1D ViewFArrayKokkos scale kernel
+
+        begin = std::chrono::high_resolution_clock::now();
+        
+        Kokkos::parallel_for("Scale (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i) {
+                vfak_arr2(i) = (scalar * vfak_arr3(i));
+                });
+        Kokkos::fence();
+
+        end = std::chrono::high_resolution_clock::now();
+        
+        // Record scale kernel timing
+        vfak_1D_timings[1].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+
+    	// PERF_START(tag) // tag is a string, e.g., "copy"
+    	// 1D ViewFArrayKokkos sum kernel
+
+		begin = std::chrono::high_resolution_clock::now();
+        
+        Kokkos::parallel_for("Sum (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i) {
+                vfak_arr3(i) = (vfak_arr1(i) + vfak_arr2(i));
+                });
+        Kokkos::fence();
+
+        end = std::chrono::high_resolution_clock::now();
+        
+        // Record sum kernel timing
+        vfak_1D_timings[2].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count()); 
+
+	    // 1D ViewFArrayKokkos triad kernel
+
+	    //LIKWID_MARKER_START("1D_VFAK_TRIAD");
+        begin = std::chrono::high_resolution_clock::now();
+        
+        Kokkos::parallel_for("Triad (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i) {
+                vfak_arr1(i) = (vfak_arr2(i) + (scalar * vfak_arr3(i)));
+                });
+        Kokkos::fence();
+        
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("1D_VFAK_TRIAD");
+
+        // Record triad kernel timing
+        vfak_1D_timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+	   
+	    // 1D ViewFArrayKokkos dot product kernel
+
+		//LIKWID_MARKER_START("1D_VFAK_DOT");
+		vfak_dot_1D_fin_val = 0.0;
+
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_reduce("Dot product (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+                tmp += (vfak_arr1(i) * vfak_arr2(i));
+        }, vfak_dot_1D_fin_val);
+        Kokkos::fence();
+
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("1D_VFAK_DOT");
+
+        // Record dot product kernel timing
+        vfak_1D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+    }
+
+    // Verify 1D ViewFArrayKokkos STREAM benchmark results
+    real_t vfak_arr1_1D_err = 0;
+    real_t vfak_arr2_1D_err = 0;
+    real_t vfak_arr3_1D_err = 0;
+    real_t vfak_dot_1D_err = std::fabs(dot_1D_fin_val - vfak_dot_1D_fin_val);
+
+    Kokkos::parallel_reduce("arr1 Error (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (vfak_arr1(i) - arr1_fin_val) >= 0 ? (vfak_arr1(i) - arr1_fin_val) : (arr1_fin_val - vfak_arr1(i));
+    }, vfak_arr1_1D_err);
+    Kokkos::fence();
+
+    vfak_arr1_1D_err /= nsize;
+
+    Kokkos::parallel_reduce("arr1 Error (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (vfak_arr2(i) - arr2_fin_val) >= 0 ? (vfak_arr2(i) - arr2_fin_val) : (arr2_fin_val - vfak_arr2(i));
+    }, vfak_arr2_1D_err);
+    Kokkos::fence();
+
+    vfak_arr2_1D_err /= nsize;
+
+    Kokkos::parallel_reduce("arr1 Error (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (vfak_arr3(i) - arr3_fin_val) >= 0 ? (vfak_arr3(i) - arr3_fin_val) : (arr3_fin_val - vfak_arr3(i));
+    }, vfak_arr3_1D_err);
+    Kokkos::fence();
+
+    vfak_arr3_1D_err /= nsize;
+
+    if (vfak_arr1_1D_err > epsi) {
+    	std::cout << "Validation failed on vfak_arr1. Average error "
+    	          << vfak_arr1_1D_err << std::endl;
+    }
+
+    if (vfak_arr2_1D_err > epsi) {
+    	std::cout << "Validation failed on vfak_arr2. Average error "
+    	          << vfak_arr2_1D_err << std::endl;
+    }
+
+    if (vfak_arr3_1D_err > epsi) {
+    	std::cout << "Validation failed on vfak_arr3. Average error "
+    	          << vfak_arr3_1D_err << std::endl;
+    }
+
+    // Check the dot product error up to 8 decimal places
+    if (vfak_dot_1D_err > 1.0E-8) {
+    	std::cout << "Validation failed on 1D VFAK dot product kernel. Error is "
+    	          << vfak_dot_1D_err << std::endl << std::setprecision(15)
+    	          << "Dot product was " << vfak_dot_1D_fin_val 
+    	          << " but should be "  << dot_1D_fin_val
+    	          << std::endl;
+    }
+
+    // Print kernel computation memory bandwidth table header
+    std::cout << "--------------------------------------------" << std::endl;
+    std::cout << "1D ViewFArrayKokkos STREAM benchmark results" << std::endl;
+    std::cout << "--------------------------------------------" << std::endl;
+    std::cout << std::left << std::setw(12) << "Kernel"
+              << std::left << std::setw(12) << "MBytes/sec"
+              << std::left << std::setw(12) << "Min (sec)"
+              << std::left << std::setw(12) << "Max (sec)"
+              << std::left << std::setw(12) << "Average (sec)"
+              << std::endl
+              << std::fixed;
+
+    // Calculate kernel memory bandwidths
+    for (int ker = 0; ker < num_kernels; ker++) {
+        // Get min/max times taken on kernel computation
+        // (ignore the first result)
+        auto minmax = std::minmax_element(vfak_1D_timings[ker].begin() + 1,
+                                          vfak_1D_timings[ker].end());
+
+        // Calculate average time taken on kernel computation
+        // (ignore the first result)
+        double average = std::accumulate(vfak_1D_timings[ker].begin() + 1,
+                                         vfak_1D_timings[ker].end(),
                                          0.0) / (double) (repeat - 1);
 
         // Print kernel computation memory bandwidth statistics

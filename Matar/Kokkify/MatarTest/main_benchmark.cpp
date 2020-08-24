@@ -2034,7 +2034,7 @@ int main() {
     // Check the dot product error up to 8 decimal places
     if (fak_dot_1D_err > 1.0E-8) {
     	std::cout << "Validation failed on 1D FAK dot product kernel. Error is "
-    	          << fak_dot_1D_err << std::setprecision(15)
+    	          << fak_dot_1D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << fak_dot_1D_fin_val 
     	          << " but should be "  << dot_1D_fin_val
     	          << std::endl;
@@ -2208,7 +2208,7 @@ int main() {
     // Check the dot product error up to 8 decimal places
     if (cak_dot_1D_err > 1.0E-8) {
     	std::cout << "Validation failed on 1D CAK dot product kernel. Error is "
-    	          << cak_dot_1D_err << std::setprecision(15)
+    	          << cak_dot_1D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << cak_dot_1D_fin_val 
     	          << " but should be "  << dot_1D_fin_val
     	          << std::endl;
@@ -2380,7 +2380,7 @@ int main() {
     // Check the dot product error up to 8 decimal places
     if (kv_dot_1D_err > 1.0E-8) {
     	std::cout << "Validation failed on 1D KV dot product kernel. Error is "
-    	          << kv_dot_1D_err << std::setprecision(15)
+    	          << kv_dot_1D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << kv_dot_1D_fin_val 
     	          << " but should be "  << dot_1D_fin_val
     	          << std::endl;
@@ -2704,7 +2704,7 @@ int main() {
     // Check the dot product error up to 8 decimal places
     if (cak_dot_3D_err > 1.0E-8) {
     	std::cout << "Validation failed on 3D CAK dot product kernel. Error is "
-    	          << cak_dot_3D_err << std::setprecision(15)
+    	          << cak_dot_3D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << cak_dot_3D_fin_val 
     	          << " but should be "  << dot_3D_fin_val
     	          << std::endl;

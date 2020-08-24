@@ -2086,7 +2086,7 @@ int main(int argc, char** argv) {
             vfak_arr2(i) = arr2_init_val;
             vfak_arr3(i) = arr3_init_val;
     Kokkos::fence();
-
+    /*
     // Vector that stores the times taken by the various kernel calls on the
     // 1D ViewFArrayKokkos objects
     std::vector<std::vector<double>> vfak_1D_timings(num_kernels);
@@ -2260,7 +2260,7 @@ int main(int argc, char** argv) {
     }
     
     std::cout << std::endl;
-
+	*/
     ////////////////////////////////////////////////////////////////////////////
     // 1D CArrayKokkos STREAM benchmark suite 
     ////////////////////////////////////////////////////////////////////////////

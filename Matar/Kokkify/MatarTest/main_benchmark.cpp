@@ -2558,6 +2558,200 @@ int main() {
     */
 
     ////////////////////////////////////////////////////////////////////////////
+    // 3D FArrayKokkos STREAM benchmark suite 
+    ////////////////////////////////////////////////////////////////////////////    
+
+    // Vector that stores the times taken by the various kernel calls on the
+    // 3D FArrayKokkos objects
+    std::vector<std::vector<double>> fak_3D_timings(num_kernels);
+
+    real_t fak_dot_3D_fin_val;
+
+    for (int iter = 0; iter < repeat; iter++) {
+    	// 3D FArrayKokkos copy kernel  
+
+        begin = std::chrono::high_resolution_clock::now();
+         
+        Kokkos::parallel_for("Copy (3D FAK)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                fak_arr3_3D(i, j, k) = fak_arr1_3D(i, j, k);
+                });
+        Kokkos::fence();
+        
+        end = std::chrono::high_resolution_clock::now();
+
+        // Record 3D FArrayKokkos copy kernel timing
+        fak_3D_timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+
+    	// 3D FArrayKokkos scale kernel
+
+        begin = std::chrono::high_resolution_clock::now();
+         
+        Kokkos::parallel_for("Scale (3D FAK)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                fak_arr2_3D(i, j, k) = (scalar * fak_arr3_3D(i, j, k));
+                });
+        Kokkos::fence();
+        
+        end = std::chrono::high_resolution_clock::now();
+
+        // Record 3D FArrayKokkos scale kernel timing
+        fak_3D_timings[1].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+
+    	// 3D FArrayKokkos sum kernel
+
+        begin = std::chrono::high_resolution_clock::now();
+         
+        Kokkos::parallel_for("Sum (3D FAK)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                fak_arr3_3D(i, j, k) = (fak_arr1_3D(i, j, k) + fak_arr2_3D(i, j, k));
+                });
+        Kokkos::fence();
+        
+        end = std::chrono::high_resolution_clock::now();
+
+        // Record 3D FArrayKokkos sum kernel timing
+        fak_3D_timings[2].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+
+    	// 3D FArrayKokkos triad kernel
+
+    	//LIKWID_MARKER_START("3D_FAK_TRIAD");
+        begin = std::chrono::high_resolution_clock::now();
+         
+        Kokkos::parallel_for("Triad (3D FAK)", array_type_STREAM, 
+                         KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                fak_arr1_3D(i, j, k) = (fak_arr2_3D(i, j, k) + (scalar * fak_arr3_3D(i, j, k)));
+                });
+        Kokkos::fence();
+        
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("3D_FAK_TRIAD");
+
+        // Record 3D FArrayKokkos triad kernel timing
+        fak_3D_timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+
+	    // 3D FArrayKokkos dot product kernel
+
+	    //LIKWID_MARKER_START("3D_FAK_DOT");
+        fak_dot_3D_fin_val = 0;
+
+        begin = std::chrono::high_resolution_clock::now();
+
+        Kokkos::parallel_reduce("Dot product (3D FAK)", array_type_STREAM, 
+                                KOKKOS_LAMBDA(const int k, const int j, 
+                                              const int i, real_t& tmp) {
+                tmp += (fak_arr1_3D(i, j, k) * fak_arr2_3D(i, j, k));
+        }, fak_dot_3D_fin_val);
+        Kokkos::fence();
+
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("3D_FAK_DOT");
+
+        // Record dot product kernel timing
+        fak_3D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+    }
+
+    // Verify 3D FArrayKokkos STREAM benchmark results
+    real_t fak_arr1_3D_err = 0;
+    real_t fak_arr2_3D_err = 0;
+    real_t fak_arr3_3D_err = 0;
+    real_t fak_dot_3D_err = std::fabs(dot_3D_fin_val - fak_dot_3D_fin_val);
+
+    Kokkos::parallel_reduce("arr1 Error (3D FAK)", array_type_STREAM, 
+                            KOKKOS_LAMBDA(const int k, const int j, 
+                                          const int i, real_t& tmp) {
+            tmp += (fak_arr1_3D(i, j, k) - arr1_fin_val) >= 0
+                   ? (fak_arr1_3D(i, j, k) - arr1_fin_val)
+                   : (arr1_fin_val - fak_arr1_3D(i, j, k));
+    }, fak_arr1_3D_err);
+    Kokkos::fence();
+
+    fak_arr1_3D_err /= ARRAY_SIZE_3D;
+
+    Kokkos::parallel_reduce("arr2 Error (3D FAK)", array_type_STREAM, 
+                            KOKKOS_LAMBDA(const int k, const int j, 
+                                          const int i, real_t& tmp) {
+            tmp += (fak_arr2_3D(i, j, k) - arr2_fin_val) >= 0
+                   ? (fak_arr2_3D(i, j, k) - arr2_fin_val)
+                   : (arr2_fin_val - fak_arr2_3D(i, j, k));
+    }, fak_arr2_3D_err);
+    Kokkos::fence();
+
+    fak_arr2_3D_err /= ARRAY_SIZE_3D;
+
+    Kokkos::parallel_reduce("arr3 Error (3D FAK)", array_type_STREAM, 
+                            KOKKOS_LAMBDA(const int k, const int j, 
+                                          const int i, real_t& tmp) {
+            tmp += (fak_arr3_3D(i, j, k) - arr3_fin_val) >= 0
+                   ? (fak_arr3_3D(i, j, k) - arr3_fin_val)
+                   : (arr3_fin_val - fak_arr3_3D(i, j, k));
+    }, fak_arr3_3D_err);
+    Kokkos::fence();
+
+    fak_arr3_3D_err /= ARRAY_SIZE_3D;
+
+    if (fak_arr1_3D_err > epsi) {
+    	std::cout << "Validation failed on fak_arr1_3D. Average error "
+    	          << fak_arr1_3D_err << std::endl;
+    }
+
+    if (fak_arr2_3D_err > epsi) {
+    	std::cout << "Validation failed on fak_arr2_3D. Average error "
+    	          << fak_arr2_3D_err << std::endl;
+    }
+
+    if (fak_arr3_3D_err > epsi) {
+    	std::cout << "Validation failed on fak_arr3_3D. Average error "
+    	          << fak_arr3_3D_err << std::endl;
+    }
+
+    // Check the dot product error up to 8 decimal places
+    if (fak_dot_3D_err > 1.0E-8) {
+    	std::cout << "Validation failed on 3D FAK dot product kernel. Error is "
+    	          << fak_dot_3D_err << std::endl << std::setprecision(15)
+    	          << "Dot product was " << fak_dot_3D_fin_val 
+    	          << " but should be "  << dot_3D_fin_val
+    	          << std::endl;
+    }
+    
+    // Print kernel computation memory bandwidth table header
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << "3D CArrayKokkos STREAM benchmark results" << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << std::left << std::setw(12) << "Kernel"
+              << std::left << std::setw(12) << "MBytes/sec"
+              << std::left << std::setw(12) << "Min (sec)"
+              << std::left << std::setw(12) << "Max (sec)"
+              << std::left << std::setw(12) << "Average (sec)"
+              << std::endl
+              << std::fixed;
+
+    // Calculate kernel memory bandwidths
+    for (int ker = 0; ker < num_kernels; ker++) {
+        // Get min/max times taken on kernel computation
+        // (ignore the first result)
+        auto minmax = std::minmax_element(cak_3D_timings[ker].begin() + 1,
+                                          cak_3D_timings[ker].end());
+
+        // Calculate average time taken on kernel computation
+        // (ignore the first result)
+        double average = std::accumulate(cak_3D_timings[ker].begin() + 1,
+                                         cak_3D_timings[ker].end(),
+                                         0.0) / (double) (repeat - 1);
+
+        // Print kernel computation memory bandwidth statistics
+        std::cout << std::left << std::setw(12) << labels[ker]
+                  << std::left << std::setw(12) << std::setprecision(3) <<
+                  ((1.0E-6 * sizes_3D[ker]) / (*minmax.first))
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.first
+                  << std::left << std::setw(12) << std::setprecision(5) << *minmax.second
+                  << std::left << std::setw(12) << std::setprecision(5) << average
+                  << std::endl;
+    }
+    
+    std::cout << std::endl;
+
+    ////////////////////////////////////////////////////////////////////////////
     // 3D CArrayKokkos STREAM benchmark suite 
     ////////////////////////////////////////////////////////////////////////////     
 

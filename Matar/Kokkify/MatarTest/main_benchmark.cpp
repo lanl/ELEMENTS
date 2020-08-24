@@ -5,6 +5,7 @@
 #include <chrono>         // To access timing calipers
 #include <cmath>
 #include <limits>
+#include <cstdlib>
 #include "matar.h"
 
 // For LIKWID
@@ -30,14 +31,14 @@
 // #define PERF_STOP(tag)  if (LIKWID_PERFMON && LIKWID_ENABLED) LIKWID_MARKER_STOP(tag);
 // #define PERF_CLOSE      if (LIKWID_PERFMON && LIKWID_ENABLED) LIKWID_MARKER_CLOSE;
 
-int main() {
+int main(int argc, char** argv) {
     // Start LIKWID
      LIKWID_MARKER_INIT;
 
     int size_i = 5, size_j = 4, size_k = 3;
 	const int size3 = 256;
 	const int size1 = size3 * size3 * size3;
-	const int repeat = 3;
+	unsigned int repeat = std::atoi(argv[1]);
 
 	std::cout<<"Size of 1D problem: "<<size1<<"\n";
 	std::cout<<"Size of 3D problem (each dimension): "<<size3<<"\n";

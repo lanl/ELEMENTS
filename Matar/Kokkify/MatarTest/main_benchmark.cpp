@@ -1726,12 +1726,8 @@ int main() {
     int num_kernels = 5;
 
     // std::vector<std::vector<double>> reg_arr_timings(num_kernels);
-    std::vector<std::vector<double>> cak_1D_timings(num_kernels);
-    std::vector<std::vector<double>> kv_1D_timings(num_kernels);
 
     // std::vector<std::vector<double>> reg_arr_timings_3D(num_kernels);
-    std::vector<std::vector<double>> cak_3D_timings(num_kernels);
-    std::vector<std::vector<double>> kv_3D_timings(num_kernels);
 
     // Declare timers
     std::chrono::high_resolution_clock::time_point begin, end;
@@ -2082,6 +2078,10 @@ int main() {
     // 1D CArrayKokkos STREAM benchmark suite 
     ////////////////////////////////////////////////////////////////////////////
 
+   	// Vector that stores the times taken by the various kernel calls on the
+    // 1D CArrayKokkos objects
+   	std::vector<std::vector<double>> cak_1D_timings(num_kernels);
+
    	real_t cak_dot_1D_fin_val;
 
     for (int iter = 0; iter < repeat; iter++) {
@@ -2254,6 +2254,10 @@ int main() {
     ////////////////////////////////////////////////////////////////////////////
     // 1D Kokkos View STREAM benchmark suite 
     ////////////////////////////////////////////////////////////////////////////
+
+    // Vector that stores the times taken by the various kernel calls on the
+    // 1D Kokkos Views objects
+   	std::vector<std::vector<double>> kv_1D_timings(num_kernels);
 
     real_t kv_dot_1D_fin_val;
 
@@ -2716,7 +2720,7 @@ int main() {
     
     // Print kernel computation memory bandwidth table header
     std::cout << "----------------------------------------" << std::endl;
-    std::cout << "3D CArrayKokkos STREAM benchmark results" << std::endl;
+    std::cout << "3D FArrayKokkos STREAM benchmark results" << std::endl;
     std::cout << "----------------------------------------" << std::endl;
     std::cout << std::left << std::setw(12) << "Kernel"
               << std::left << std::setw(12) << "MBytes/sec"
@@ -2730,13 +2734,13 @@ int main() {
     for (int ker = 0; ker < num_kernels; ker++) {
         // Get min/max times taken on kernel computation
         // (ignore the first result)
-        auto minmax = std::minmax_element(cak_3D_timings[ker].begin() + 1,
-                                          cak_3D_timings[ker].end());
+        auto minmax = std::minmax_element(fak_3D_timings[ker].begin() + 1,
+                                          fak_3D_timings[ker].end());
 
         // Calculate average time taken on kernel computation
         // (ignore the first result)
-        double average = std::accumulate(cak_3D_timings[ker].begin() + 1,
-                                         cak_3D_timings[ker].end(),
+        double average = std::accumulate(fak_3D_timings[ker].begin() + 1,
+                                         fak_3D_timings[ker].end(),
                                          0.0) / (double) (repeat - 1);
 
         // Print kernel computation memory bandwidth statistics
@@ -2753,7 +2757,11 @@ int main() {
 
     ////////////////////////////////////////////////////////////////////////////
     // 3D CArrayKokkos STREAM benchmark suite 
-    ////////////////////////////////////////////////////////////////////////////     
+    ////////////////////////////////////////////////////////////////////////////
+
+    // Vector that stores the times taken by the various kernel calls on the
+    // 3D CArrayKokkos objects
+    std::vector<std::vector<double>> cak_3D_timings(num_kernels);   
 
     real_t cak_dot_3D_fin_val;
 
@@ -2944,6 +2952,10 @@ int main() {
     ////////////////////////////////////////////////////////////////////////////
     // 3D Kokkos View STREAM benchmark suite 
     ////////////////////////////////////////////////////////////////////////////
+
+    // Vector that stores the times taken by the various kernel calls on the
+    // 3D Kokkos Views objects
+    std::vector<std::vector<double>> kv_3D_timings(num_kernels);
 
     real_t kv_dot_3D_fin_val;
 

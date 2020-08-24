@@ -2032,7 +2032,7 @@ int main() {
     }
 
     // Check the dot product error up to 8 decimal places
-    if (fak_dot_1D_err > ) {
+    if (fak_dot_1D_err > 1.0E-8) {
     	std::cout << "Validation failed on 1D FAK dot product kernel. Error is "
     	          << fak_dot_1D_err << std::setprecision(15)
     	          << "Dot product was " << fak_dot_1D_fin_val 

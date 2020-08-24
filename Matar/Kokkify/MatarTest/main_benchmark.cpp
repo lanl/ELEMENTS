@@ -2335,7 +2335,7 @@ int main() {
         kv_1D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     }
 
-    // Verify 1D FArrayKokkos STREAM benchmark results
+    // Verify 1D Kokkos View STREAM benchmark results
     real_t kv_arr1_1D_err = 0;
     real_t kv_arr2_1D_err = 0;
     real_t kv_arr3_1D_err = 0;
@@ -2645,6 +2645,69 @@ int main() {
 
         // Record dot product kernel timing
         cak_3D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+    }
+
+    // Verify 3D CArrayKokkos STREAM benchmark results
+    real_t cak_arr1_3D_err = 0;
+    real_t cak_arr2_3D_err = 0;
+    real_t cak_arr3_3D_err = 0;
+    real_t cak_dot_3D_err = std::fabs(dot_3D_fin_val - cak_dot_3D_fin_val);
+
+    Kokkos::parallel_reduce("arr1 Error (3D CAK)", array_type_STREAM, 
+                            KOKKOS_LAMBDA(const int i, const int j, 
+                                          const int k, real_t& tmp) {
+            tmp += (cak_arr1_3D(i, j, k) - arr1_fin_val) >= 0
+                   ? (cak_arr1_3D(i, j, k) - arr1_fin_val)
+                   : (arr1_fin_val - cak_arr1_3D(i, j, k));
+    }, cak_arr1_3D_err);
+    Kokkos::fence();
+
+    cak_arr1_3D_err /= ARRAY_SIZE_3D;
+
+    Kokkos::parallel_reduce("arr2 Error (3D CAK)", array_type_STREAM, 
+                            KOKKOS_LAMBDA(const int i, const int j, 
+                                          const int k, real_t& tmp) {
+            tmp += (cak_arr2_3D(i, j, k) - arr2_fin_val) >= 0
+                   ? (cak_arr2_3D(i, j, k) - arr2_fin_val)
+                   : (arr2_fin_val - cak_arr2_3D(i, j, k));
+    }, cak_arr2_3D_err);
+    Kokkos::fence();
+
+    cak_arr2_3D_err /= ARRAY_SIZE_3D;
+
+    Kokkos::parallel_reduce("arr3 Error (3D CAK)", array_type_STREAM, 
+                            KOKKOS_LAMBDA(const int i, const int j, 
+                                          const int k, real_t& tmp) {
+            tmp += (cak_arr3_3D(i, j, k) - arr3_fin_val) >= 0
+                   ? (cak_arr3_3D(i, j, k) - arr3_fin_val)
+                   : (arr3_fin_val - cak_arr3_3D(i, j, k));
+    }, cak_arr3_3D_err);
+    Kokkos::fence();
+
+    cak_arr3_3D_err /= ARRAY_SIZE_3D;
+
+    if (cak_arr1_3D_err > epsi) {
+    	std::cout << "Validation failed on cak_arr1_3D. Average error "
+    	          << cak_arr1_3D_err << std::endl;
+    }
+
+    if (cak_arr2_3D_err > epsi) {
+    	std::cout << "Validation failed on cak_arr2_3D. Average error "
+    	          << cak_arr2_3D_err << std::endl;
+    }
+
+    if (cak_arr3_3D_err > epsi) {
+    	std::cout << "Validation failed on cak_arr3_3D. Average error "
+    	          << cak_arr3_3D_err << std::endl;
+    }
+
+    // Check the dot product error up to 8 decimal places
+    if (cak_dot_3D_err > 1.0E-8) {
+    	std::cout << "Validation failed on 3D CAK dot product kernel. Error is "
+    	          << cak_dot_3D_err << std::setprecision(15)
+    	          << "Dot product was " << cak_dot_3D_fin_val 
+    	          << " but should be "  << dot_3D_fin_val
+    	          << std::endl;
     }
     
     // Print kernel computation memory bandwidth table header

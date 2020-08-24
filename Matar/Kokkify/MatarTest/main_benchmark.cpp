@@ -2,7 +2,9 @@
 #include <iomanip>
 #include <numeric>
 #include <vector>
-#include <chrono>         // To access timing calipers 
+#include <chrono>         // To access timing calipers
+#include <cmath>
+#include <limits>
 #include "matar.h"
 
 // For LIKWID
@@ -1709,7 +1711,6 @@ int main() {
 
     // Number of entries for 1D types (by default, it is 2e25)
     // size_t ARRAY_SIZE_1D = 33554432;
-    double scalar = 3.0;
     size_t nsize = 64 * 64 * 64 * 64;
     size_t nsize_3D = 512;
     size_t ARRAY_SIZE_3D = (nsize_3D * nsize_3D * nsize_3D); 
@@ -1724,17 +1725,16 @@ int main() {
     
     int num_kernels = 5;
 
-    std::vector<std::vector<double>> reg_arr_timings(num_kernels);
-    std::vector<std::vector<double>> matar_kokkos_timings(num_kernels);
-    std::vector<std::vector<double>> kokkos_views_timings(num_kernels);
+    // std::vector<std::vector<double>> reg_arr_timings(num_kernels);
+    std::vector<std::vector<double>> cak_1D_timings(num_kernels);
+    std::vector<std::vector<double>> kv_1D_timings(num_kernels);
 
-    std::vector<std::vector<double>> reg_arr_timings_3D(num_kernels);
-    std::vector<std::vector<double>> matar_kokkos_timings_3D(num_kernels);
-    std::vector<std::vector<double>> kokkos_views_timings_3D(num_kernels);
+    // std::vector<std::vector<double>> reg_arr_timings_3D(num_kernels);
+    std::vector<std::vector<double>> cak_3D_timings(num_kernels);
+    std::vector<std::vector<double>> kv_3D_timings(num_kernels);
 
     // Declare timers
-    // std::chrono::high_resolution_clock::time_point begin;
-    auto begin = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point begin, end;
 
     std::string labels[num_kernels] = {"Copy", "Mul", "Add", "Triad", "Dot"};
 
@@ -1776,6 +1776,31 @@ int main() {
      * 1D array STREAM benchmark suite
      **************************************************************************/
 
+    // There are three vectors involved in the STREAM benchmark: a, b, and c
+    // THe following are their respective initial values
+    real_t arr1_init_val = 0.1;
+    real_t arr2_init_val = 0.2;
+    real_t arr3_init_val = 0.0;
+
+    real_t scalar = 0.4;
+
+    // The following variables contain their respective final values after
+    // all iterations of the STREAM benchmark
+    real_t arr1_fin_val = arr1_init_val;
+    real_t arr2_fin_val = arr2_init_val;
+    real_t arr3_fin_val = arr3_init_val;
+
+    real_t dot_1D_fin_val = 0.0;
+
+    for (int iter = 0; iter < repeat; iter++) {
+    	arr3_fin_val = arr1_fin_val;
+    	arr2_fin_val = scalar * arr3_fin_val;
+    	arr3_fin_val = arr1_fin_val + arr2_fin_val;
+    	arr1_fin_val = arr2_fin_val + (scalar * arr3_fin_val);
+    }
+
+    dot_1D_fin_val = arr1_fin_val * arr2_fin_val * nsize;
+
     // Create "regularly" allocated 1D C++ arrays
     //real_t* reg_arr1 = new real_t[nsize];
     //real_t* reg_arr2 = new real_t[nsize];
@@ -1816,19 +1841,19 @@ int main() {
                 //reg_arr3[i] = 0.0;
 
                 // Initialize 1D FArrayKokkos objects
-                fak_arr1(i) = 1.0;
-                fak_arr2(i) = 2.0;
-                fak_arr3(i) = 0.0;
+                fak_arr1(i) = arr1_init_val;
+                fak_arr2(i) = arr2_init_val;
+                fak_arr3(i) = arr3_init_val;
 
                 // Initialize 1D CArrayKokkos objects
-                cak_arr1(i) = 1.0;
-                cak_arr2(i) = 2.0;
-                cak_arr3(i) = 0.0;
+                cak_arr1(i) = arr1_init_val;
+                cak_arr2(i) = arr2_init_val;
+                cak_arr3(i) = arr3_init_val;
 
                 // Initialize 1D Kokkos View objects
-                kv_arr1(i) = 1.0;
-                kv_arr2(i) = 2.0;
-                kv_arr3(i) = 0.0;
+                kv_arr1(i) = arr1_init_val;
+                kv_arr2(i) = arr2_init_val;
+                kv_arr3(i) = arr3_init_val;
                 });
     Kokkos::fence();
 
@@ -1863,14 +1888,6 @@ int main() {
 
     std::cout.precision(ss);
 
-    // To verify that the kernel (copy, scale, sum, triad, and dot)
-    // calculations are correct
-    real_t copy_exp_val  = 1.0;
-    real_t scale_exp_val = (scalar * 1.0);
-    real_t sum_exp_val   = (1.0 + (scalar * 1.0));
-    real_t triad_exp_val = ((scalar * 1.0) + (scalar * (1.0 + (scalar * 1.0))));
-    real_t dot_exp_val   = (nsize * triad_exp_val * scale_exp_val);
-
     ////////////////////////////////////////////////////////////////////////////
     // 1D "conventionally" allocated C++ array STREAM benchmark suite 
     ////////////////////////////////////////////////////////////////////////////
@@ -1888,9 +1905,12 @@ int main() {
     // 1D FArrayKokkos objects
     std::vector<std::vector<double>> fak_1D_timings(num_kernels);
 
-    // 1D FArrayKokkos copy kernel
+    // Variable the stores the dot product of vectors a and b
+    real_t fak_dot_1D_fin_val;
 
     for (int iter = 0; iter < repeat; iter++) {
+    	// 1D FArrayKokkos copy kernel
+
         begin = std::chrono::high_resolution_clock::now();
          
         Kokkos::parallel_for("Copy (1D FAK)", nsize, KOKKOS_LAMBDA(const int i) {
@@ -1898,25 +1918,13 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> copy_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
+        end = std::chrono::high_resolution_clock::now();
 
-        // Verify results of 1D FArrayKokkos copy kernel
-        Kokkos::parallel_for("Copy verification (1D FAK)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (fak_arr3(i) != copy_exp_val) {
-                    std::cout << "fak_arr3(" << i << ") is not " 
-                              << copy_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
-        
         // Record copy kernel timing
-        fak_1D_timings[0].push_back(copy_time.count());
-    }
+        fak_1D_timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 1D FArrayKokkos scale kernel
+    	// 1D FArrayKokkos scale kernel
 
-    for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
         
         Kokkos::parallel_for("Scale (1D FAK)", nsize, KOKKOS_LAMBDA(const int i) {
@@ -1924,52 +1932,29 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> scale_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify results of 1D FArrayKokkos scale kernel
-        Kokkos::parallel_for("Scale verification (1D FAK)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (fak_arr2(i) != scale_exp_val) {
-                    std::cout << "fak_arr2(" << i << ") is not " 
-                              << scale_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
+        end = std::chrono::high_resolution_clock::now();
         
         // Record scale kernel timing
-        fak_1D_timings[1].push_back(scale_time.count());
-    }
+        fak_1D_timings[1].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // PERF_START(tag) // tag is a string, e.g., "copy"
-    // 1D FArrayKokkos sum kernel
+    	// PERF_START(tag) // tag is a string, e.g., "copy"
+    	// 1D FArrayKokkos sum kernel
 
-    for (int iter = 0; iter < repeat; iter++) {
+		begin = std::chrono::high_resolution_clock::now();
         
         Kokkos::parallel_for("Sum (1D FAK)", nsize, KOKKOS_LAMBDA(const int i) {
                 fak_arr3(i) = (fak_arr1(i) + fak_arr2(i));
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> sum_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify results of 1D FArrayKokkos sum kernel
-        Kokkos::parallel_for("Sum verification (1D FAK)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (fak_arr3(i) != sum_exp_val) {
-                    std::cout << "fak_arr3(" << i << ") is not " 
-                              << sum_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
+        end = std::chrono::high_resolution_clock::now();
         
         // Record sum kernel timing
-        fak_1D_timings[2].push_back(sum_time.count()); 
-    }
+        fak_1D_timings[2].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count()); 
 
-    // 1D FArrayKokkos triad kernel
+	    // 1D FArrayKokkos triad kernel
 
-    //LIKWID_MARKER_START("1D_FAK_TRIAD");
-    for (int iter = 0; iter < repeat; iter++) {
+	    //LIKWID_MARKER_START("1D_FAK_TRIAD");
         begin = std::chrono::high_resolution_clock::now();
         
         Kokkos::parallel_for("Triad (1D FAK)", nsize, KOKKOS_LAMBDA(const int i) {
@@ -1977,49 +1962,84 @@ int main() {
                 });
         Kokkos::fence();
         
-        std::chrono::duration<double> triad_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify results of 1D FArrayKokkos triad kernel
-        Kokkos::parallel_for("Sum verification (1D FAK)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (fak_arr1(i) != triad_exp_val) {
-                    std::cout << "fak_arr3(" << i << ") is not " 
-                              << triad_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("1D_FAK_TRIAD");
 
         // Record triad kernel timing
-        fak_1D_timings[3].push_back(triad_time.count());
-    }
-    //LIKWID_MARKER_STOP("1D_FAK_TRIAD");
-   
-    // 1D FArrayKokkos dot product kernel
+        fak_1D_timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+	   
+	    // 1D FArrayKokkos dot product kernel
 
-    //LIKWID_MARKER_START("1D_FAK_DOT");
-    for (int iter = 0; iter < repeat; iter++) {
-        real_t sum = 0;
+		//LIKWID_MARKER_START("1D_FAK_DOT");
+		fak_dot_1D_fin_val = 0.0;
 
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_reduce("Dot product (1D FAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
                 tmp += (fak_arr1(i) * fak_arr2(i));
-        }, sum);
+        }, fak_dot_1D_fin_val);
         Kokkos::fence();
 
-        std::chrono::duration<double> dot_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify the results of the 1D FArrayKokkos dot product kernel
-        if (sum != dot_exp_val) {
-            std::cout << "Dot product (1D FAK) is not " 
-                      << dot_exp_val << std::endl;
-        }
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("1D_FAK_DOT");
 
         // Record dot product kernel timing
-        fak_1D_timings[4].push_back(dot_time.count());
+        fak_1D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     }
-    //LIKWID_MARKER_STOP("1D_FAK_DOT");
+
+    // Verify 1D FArrayKokkos STREAM benchmark results
+    real_t fak_arr1_1D_err = 0;
+    real_t fak_arr2_1D_err = 0;
+    real_t fak_arr3_1D_err = 0;
+    real_t fak_dot_1D_err = std::fabs(dot_1D_fin_val - fak_dot_1D_fin_val);
+
+    Kokkos::parallel_reduce("arr1 Error (1D FAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (fak_arr1(i) - arr1_fin_val) >= 0 ? (fak_arr1(i) - arr1_fin_val) : (arr1_fin_val - fak_arr1(i));
+    }, fak_arr1_1D_err);
+    Kokkos::fence();
+
+    fak_arr1_1D_err /= nsize;
+
+    Kokkos::parallel_reduce("arr1 Error (1D FAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (fak_arr2(i) - arr2_fin_val) >= 0 ? (fak_arr2(i) - arr2_fin_val) : (arr2_fin_val - fak_arr2(i));
+    }, fak_arr2_1D_err);
+    Kokkos::fence();
+
+    fak_arr2_1D_err /= nsize;
+
+    Kokkos::parallel_reduce("arr1 Error (1D FAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (fak_arr3(i) - arr3_fin_val) >= 0 ? (fak_arr3(i) - arr3_fin_val) : (arr3_fin_val - fak_arr3(i));
+    }, fak_arr3_1D_err);
+    Kokkos::fence();
+
+    fak_arr3_1D_err /= nsize;
+
+    real_t epsi = (std::numeric_limits<real_t>::epsilon() * 100.0);
+
+    if (fak_arr1_1D_err > epsi) {
+    	std::cout << "Validation failed on fak_arr1. Average error "
+    	          << fak_arr1_1D_err << std::endl;
+    }
+
+    if (fak_arr2_1D_err > epsi) {
+    	std::cout << "Validation failed on fak_arr2. Average error "
+    	          << fak_arr2_1D_err << std::endl;
+    }
+
+    if (fak_arr3_1D_err > epsi) {
+    	std::cout << "Validation failed on fak_arr3. Average error "
+    	          << fak_arr3_1D_err << std::endl;
+    }
+
+    // Check the dot product error up to 8 decimal places
+    if (fak_dot_1D_err > ) {
+    	std::cout << "Validation failed on 1D FAK dot product kernel. Error is "
+    	          << fak_dot_1D_err << std::setprecision(15)
+    	          << "Dot product was " << fak_dot_1D_fin_val 
+    	          << " but should be "  << dot_1D_fin_val
+    	          << std::endl;
+    }
+
 
     // Print kernel computation memory bandwidth table header
     std::cout << "----------------------------------------" << std::endl;
@@ -2062,9 +2082,11 @@ int main() {
     // 1D CArrayKokkos STREAM benchmark suite 
     ////////////////////////////////////////////////////////////////////////////
 
-    // 1D CArrayKokkos copy kernel
+   	real_t cak_dot_1D_fin_val;
 
     for (int iter = 0; iter < repeat; iter++) {
+    	// 1D CArrayKokkos copy kernel
+
         begin = std::chrono::high_resolution_clock::now();
          
         Kokkos::parallel_for("Copy (1D CAK)", nsize, KOKKOS_LAMBDA(const int i) {
@@ -2072,25 +2094,13 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> copy_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify results of 1D FArrayKokkos copy kernel
-        Kokkos::parallel_for("Copy verification (1D CAK)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (cak_arr3(i) != copy_exp_val) {
-                    std::cout << "cak_arr3(" << i << ") is not " 
-                              << copy_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
+        end = std::chrono::high_resolution_clock::now();
         
         // Record copy kernel timing
-        matar_kokkos_timings[0].push_back(copy_time.count());
-    }
+        cak_1D_timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     
-    // 1D CArrayKokkos scale kernel
+    	// 1D CArrayKokkos scale kernel
 
-    for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
         
         Kokkos::parallel_for("Scale (1D CAK)", nsize, KOKKOS_LAMBDA(const int i) {
@@ -2098,52 +2108,29 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> scale_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify results of 1D CArrayKokkos scale kernel
-        Kokkos::parallel_for("Scale verification (1D CAK)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (cak_arr2(i) != scale_exp_val) {
-                    std::cout << "cak_arr2(" << i << ") is not " 
-                              << scale_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
+        end = std::chrono::high_resolution_clock::now();
         
         // Record scale kernel timing
-        matar_kokkos_timings[1].push_back(scale_time.count());
-    }
+        cak_1D_timings[1].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     
-    // PERF_START(tag) // tag is a string, e.g., "copy"
-    // 1D CArrayKokkos sum kernel
+	    // PERF_START(tag) // tag is a string, e.g., "copy"
+	    // 1D CArrayKokkos sum kernel
 
-    for (int iter = 0; iter < repeat; iter++) {
+		begin = std::chrono::high_resolution_clock::now();
         
         Kokkos::parallel_for("Sum (1D CAK)", nsize, KOKKOS_LAMBDA(const int i) {
                 cak_arr3(i) = (cak_arr1(i) + cak_arr2(i));
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> sum_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify results of 1D CArrayKokkos sum kernel
-        Kokkos::parallel_for("Sum verification (1D CAK)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (cak_arr3(i) != sum_exp_val) {
-                    std::cout << "cak_arr3(" << i << ") is not " 
-                              << sum_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
+        end = std::chrono::high_resolution_clock::now();
         
         // Record sum kernel timing
-        matar_kokkos_timings[2].push_back(sum_time.count()); 
-    }
+        cak_1D_timings[2].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count()); 
 
-    // 1D CArrayKokkos triad kernel
+	    // 1D CArrayKokkos triad kernel
 
-    //LIKWID_MARKER_START("1D_CAK_TRIAD");
-    for (int iter = 0; iter < repeat; iter++) {
+	    //LIKWID_MARKER_START("1D_CAK_TRIAD");
         begin = std::chrono::high_resolution_clock::now();
         
         Kokkos::parallel_for("Triad (1D CAK)", nsize, KOKKOS_LAMBDA(const int i) {
@@ -2151,49 +2138,30 @@ int main() {
                 });
         Kokkos::fence();
         
-        std::chrono::duration<double> triad_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify results of 1D CArrayKokkos triad kernel
-        Kokkos::parallel_for("Triad verification (1D CAK)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (cak_arr1(i) != triad_exp_val) {
-                    std::cout << "cak_arr1(" << i << ") is not " 
-                              << triad_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("1D_CAK_TRIAD");
 
         // Record triad kernel timing
-        matar_kokkos_timings[3].push_back(triad_time.count());
-    }
-    //LIKWID_MARKER_STOP("1D_CAK_TRIAD");
+        cak_1D_timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
    
-    // 1D CArrayKokkos dot product kernel
+	    // 1D CArrayKokkos dot product kernel
 
-    //LIKWID_MARKER_START("1D_CAK_DOT");
-    for (int iter = 0; iter < repeat; iter++) {
-        real_t sum = 0;
+	    //LIKWID_MARKER_START("1D_CAK_DOT");
+        cak_dot_1D_fin_val = 0;
 
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_reduce("Dot product (1D CAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
                 tmp += (cak_arr1(i) * cak_arr2(i));
-        }, sum);
+        }, cak_dot_1D_fin_val);
         Kokkos::fence();
 
-        std::chrono::duration<double> dot_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify the results of the 1D FArrayKokkos dot product kernel
-        if (sum != dot_exp_val) {
-            std::cout << "Dot product (1D CAK) is not " 
-                      << dot_exp_val << std::endl;
-        }
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("1D_CAK_DOT");
 
         // Record dot product kernel timing
-        matar_kokkos_timings[4].push_back(dot_time.count());
+        cak_1D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     }
-    //LIKWID_MARKER_STOP("1D_CAK_DOT");
 
     // Print kernel computation memory bandwidth table header
     std::cout << "----------------------------------------" << std::endl;
@@ -2211,13 +2179,13 @@ int main() {
     for (int ker = 0; ker < num_kernels; ker++) {
         // Get min/max times taken on kernel computation
         // (ignore the first result)
-        auto minmax = std::minmax_element(matar_kokkos_timings[ker].begin() + 1,
-                                          matar_kokkos_timings[ker].end());
+        auto minmax = std::minmax_element(cak_1D_timings[ker].begin() + 1,
+                                          cak_1D_timings[ker].end());
 
         // Calculate average time taken on kernel computation
         // (ignore the first result)
-        double average = std::accumulate(matar_kokkos_timings[ker].begin() + 1,
-                                         matar_kokkos_timings[ker].end(),
+        double average = std::accumulate(cak_1D_timings[ker].begin() + 1,
+                                         cak_1D_timings[ker].end(),
                                          0.0) / (double) (repeat - 1);
 
         // Print kernel computation memory bandwidth statistics
@@ -2235,10 +2203,12 @@ int main() {
     ////////////////////////////////////////////////////////////////////////////
     // 1D Kokkos View STREAM benchmark suite 
     ////////////////////////////////////////////////////////////////////////////
-  
-    // 1D Kokkos View copy kernel 
+
+    real_t kv_dot_1D_fin_val;
 
     for (int iter = 0; iter < repeat; iter++) {
+    	// 1D Kokkos View copy kernel 
+
         begin = std::chrono::high_resolution_clock::now();
          
         Kokkos::parallel_for("Copy (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
@@ -2246,25 +2216,13 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> copy_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify results of 1D Kokkos View copy kernel
-        Kokkos::parallel_for("Copy verification (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (kv_arr3(i) != copy_exp_val) {
-                    std::cout << "kv_arr3(" << i << ") is not " 
-                              << copy_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
+        end = std::chrono::high_resolution_clock::now();
         
         // Record copy kernel timing
-        kokkos_views_timings[0].push_back(copy_time.count());
-    }
+        kv_1D_timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
    
-    // 1D Kokkos View scale kernel
+    	// 1D Kokkos View scale kernel
 
-    for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
         
         Kokkos::parallel_for("Scale (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
@@ -2272,25 +2230,13 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> scale_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify results of 1D Kokkos View scale kernel
-        Kokkos::parallel_for("Scale verification (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (kv_arr2(i) != scale_exp_val) {
-                    std::cout << "kv_arr2(" << i << ") is not " 
-                              << scale_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
+        end = std::chrono::high_resolution_clock::now();
         
         // Record scale kernel timing
-        kokkos_views_timings[1].push_back(scale_time.count());
-    }
+        kv_1D_timings[1].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 1D Kokkos View sum kernel
+    	// 1D Kokkos View sum kernel
 
-    for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_for("Sum (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
@@ -2298,16 +2244,14 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> sum_time_kv_1D = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
 
         // Record 1D Kokkos View sum kernel timing
-        kokkos_views_timings[2].push_back(sum_time_kv_1D.count());   
-    }
+        kv_1D_timings[2].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());   
 
-    // 1D Kokkos View triad kernel
+	    // 1D Kokkos View triad kernel
 
-    //LIKWID_MARKER_START("1D_KV_TRIAD");
-    for (int iter = 0; iter < repeat; iter++) {
+	    //LIKWID_MARKER_START("1D_KV_TRIAD");
         begin = std::chrono::high_resolution_clock::now();
         
         Kokkos::parallel_for("Triad (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
@@ -2315,49 +2259,30 @@ int main() {
                 });
         Kokkos::fence();
         
-        std::chrono::duration<double> triad_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify results of 1D Kokkos View triad kernel
-        Kokkos::parallel_for("Triad verification (1D KV)", nsize, KOKKOS_LAMBDA(const int i) {
-                if (kv_arr1(i) != triad_exp_val) {
-                    std::cout << "kv_arr1(" << i << ") is not " 
-                              << triad_exp_val << std::endl;
-                }
-                });
-        Kokkos::fence();
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("1D_KV_TRIAD");
 
         // Record triad kernel timing
-        kokkos_views_timings[3].push_back(triad_time.count());
-    }
-    //LIKWID_MARKER_STOP("1D_KV_TRIAD");
+        kv_1D_timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 1D Kokkos View dot product kernel
+	    // 1D Kokkos View dot product kernel
 
-    //LIKWID_MARKER_START("1D_KV_DOT");
-    for (int iter = 0; iter < repeat; iter++) {
-        real_t sum = 0;
+    	//LIKWID_MARKER_START("1D_KV_DOT");
+        kv_dot_1D_fin_val = 0;
 
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_reduce("Dot product (1D KV)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
                 tmp += (kv_arr1(i) * kv_arr2(i));
-        }, sum);
+        }, kv_dot_1D_fin_val);
         Kokkos::fence();
 
-        std::chrono::duration<double> dot_time = 
-            (std::chrono::high_resolution_clock::now() - begin);
-
-        // Verify the results of the 1D Kokkos Views dot product kernel
-        if (sum != dot_exp_val) {
-            std::cout << "Dot product (1D KV) is not " 
-                      << dot_exp_val << std::endl;
-        }
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("1D_KV_DOT");
 
         // Record dot product kernel timing
-        kokkos_views_timings[4].push_back(dot_time.count());
+        kv_1D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     }
-    //LIKWID_MARKER_STOP("1D_KV_DOT");
 
     // Print kernel computation memory bandwidth table header
     std::cout << "---------------------------------------" << std::endl;
@@ -2375,13 +2300,13 @@ int main() {
     for (int ker = 0; ker < num_kernels; ker++) {
         // Get min/max times taken on kernel computation
         // (ignore the first result)
-        auto minmax = std::minmax_element(kokkos_views_timings[ker].begin() + 1,
-                                          kokkos_views_timings[ker].end());
+        auto minmax = std::minmax_element(kv_1D_timings[ker].begin() + 1,
+                                          kv_1D_timings[ker].end());
 
         // Calculate average time taken on kernel computation
         // (ignore the first result)
-        double average = std::accumulate(kokkos_views_timings[ker].begin() + 1,
-                                         kokkos_views_timings[ker].end(),
+        double average = std::accumulate(kv_1D_timings[ker].begin() + 1,
+                                         kv_1D_timings[ker].end(),
                                          0.0) / (double) (repeat - 1);
 
         // Print kernel computation memory bandwidth statistics
@@ -2399,6 +2324,8 @@ int main() {
     /***************************************************************************
      * 3D array STREAM benchmark suite
      **************************************************************************/
+
+    real_t dot_3D_fin_val = arr1_fin_val * arr2_fin_val * ARRAY_SIZE_3D;
 
     std::cout << "-------------------------------------------------------------"
               << std::endl;
@@ -2464,29 +2391,29 @@ int main() {
     auto cak_arr3_3D = CArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
 
     // Create 3D ViewCArrayKokkos objects
-    auto vcak_arr1_3D_v = ViewCArrayKokkos <real_t> (cak_arr1_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
-    auto vcak_arr2_3D_v = ViewCArrayKokkos <real_t> (cak_arr2_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
-    auto vcak_arr3_3D_v = ViewCArrayKokkos <real_t> (cak_arr3_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
+    auto vcak_arr1_3D = ViewCArrayKokkos <real_t> (cak_arr1_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
+    auto vcak_arr2_3D = ViewCArrayKokkos <real_t> (cak_arr2_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
+    auto vcak_arr3_3D = ViewCArrayKokkos <real_t> (cak_arr3_3D.pointer(), nsize_3D, nsize_3D, nsize_3D);
 
     // Create 3D Kokkos View objects
     RMatrix3D kv_arr1_3D("kv_arr1_3D", nsize_3D, nsize_3D, nsize_3D);
     RMatrix3D kv_arr2_3D("kv_arr2_3D", nsize_3D, nsize_3D, nsize_3D);
     RMatrix3D kv_arr3_3D("kv_arr3_3D", nsize_3D, nsize_3D, nsize_3D);
 
-    // Initialize 3D CArrayKokkos and 3D Kokkos View objects
     policy3D array_type_STREAM = policy3D({0, 0, 0},
                                           {nsize_3D, nsize_3D, nsize_3D});
 
+    // Initialize 3D FArrayKokkos objects
    	Kokkos::parallel_for("Initialize (3D FAK)", array_type_STREAM,
    		                 KOKKOS_LAMBDA(const int k, const int j, const int i) {
-
    		    // Initialize 3D FArrayKokkos objects
-   		    fak_arr1_3D(i, j, k) = 1.0;
-   		    fak_arr2_3D(i, j, k) = 2.0;
-   		    fak_arr3_3D(i, j, k) = 0.0;
+   		    fak_arr1_3D(i, j, k) = arr1_init_val;
+   		    fak_arr2_3D(i, j, k) = arr2_init_val;
+   		    fak_arr3_3D(i, j, k) = arr3_init_val;
    		    });
    	Kokkos::fence();
 
+   	// Initialize 3D CArrayKokkos and 3D Kokkos View objects
     Kokkos::parallel_for("Initialize (3D)", array_type_STREAM, 
                          KOKKOS_LAMBDA(const int i, const int j, const int k) {
             // Initialize "regularly" allocated 3D C++ arrays
@@ -2495,14 +2422,14 @@ int main() {
             //reg_arr3_3D[i][j][k] = 0.0;
 
             // Initialize 3D CArrayKokkos objects
-            cak_arr1_3D(i, j, k) = 1.0;
-            cak_arr2_3D(i, j, k) = 2.0;
-            cak_arr3_3D(i, j, k) = 0.0;
+            cak_arr1_3D(i, j, k) = arr1_init_val;
+            cak_arr2_3D(i, j, k) = arr2_init_val;
+            cak_arr3_3D(i, j, k) = arr3_init_val;
     
             // Initialize 3D Kokkos View objects
-            kv_arr1_3D(i, j, k) = 1.0;
-            kv_arr2_3D(i, j, k) = 2.0;
-            kv_arr3_3D(i, j, k) = 0.0;
+            kv_arr1_3D(i, j, k) = arr1_init_val;
+            kv_arr2_3D(i, j, k) = arr2_init_val;
+            kv_arr3_3D(i, j, k) = arr3_init_val;
             });
     Kokkos::fence();
 
@@ -2530,11 +2457,13 @@ int main() {
 
     ////////////////////////////////////////////////////////////////////////////
     // 3D CArrayKokkos STREAM benchmark suite 
-    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////     
 
-    // 3D CArrayKokkos copy kernel       
+    real_t cak_dot_3D_fin_val;
 
     for (int iter = 0; iter < repeat; iter++) {
+    	// 3D CArrayKokkos copy kernel  
+
         begin = std::chrono::high_resolution_clock::now();
          
         Kokkos::parallel_for("Copy (3D CAK)", array_type_STREAM, 
@@ -2543,15 +2472,13 @@ int main() {
                 });
         Kokkos::fence();
         
-        std::chrono::duration<double> copy_time_3D = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
 
         // Record 3D CArrayKokkos copy kernel timing
-        matar_kokkos_timings_3D[0].push_back(copy_time_3D.count());
-    }
+        cak_3D_timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 3D CArrayKokkos scale kernel
+    	// 3D CArrayKokkos scale kernel
 
-    for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
          
         Kokkos::parallel_for("Scale (3D CAK)", array_type_STREAM, 
@@ -2560,15 +2487,13 @@ int main() {
                 });
         Kokkos::fence();
         
-        std::chrono::duration<double> scale_time_3D = (std::chrono::high_resolution_clock::now() - begin);
+        end = std::chrono::high_resolution_clock::now();
 
         // Record 3D CArrayKokkos scale kernel timing
-        matar_kokkos_timings_3D[1].push_back(scale_time_3D.count());
-    }
+        cak_3D_timings[1].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 3D CArrayKokkos sum kernel
-    
-    for (int iter = 0; iter < repeat; iter++) {
+    	// 3D CArrayKokkos sum kernel
+
         begin = std::chrono::high_resolution_clock::now();
          
         Kokkos::parallel_for("Sum (3D CAK)", array_type_STREAM, 
@@ -2577,16 +2502,14 @@ int main() {
                 });
         Kokkos::fence();
         
-        std::chrono::duration<double> sum_time_3D = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
 
         // Record 3D CArrayKokkos sum kernel timing
-        matar_kokkos_timings_3D[2].push_back(sum_time_3D.count());
-    }
+        cak_3D_timings[2].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 3D CArrayKokkos triad kernel
+    	// 3D CArrayKokkos triad kernel
 
-    //LIKWID_MARKER_START("3D_CAK_TRIAD");
-    for (int iter = 0; iter < repeat; iter++) {
+    	//LIKWID_MARKER_START("3D_CAK_TRIAD");
         begin = std::chrono::high_resolution_clock::now();
          
         Kokkos::parallel_for("Triad (3D CAK)", array_type_STREAM, 
@@ -2595,18 +2518,16 @@ int main() {
                 });
         Kokkos::fence();
         
-        std::chrono::duration<double> triad_time_3D = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("3D_CAK_TRIAD");
 
         // Record 3D CArrayKokkos triad kernel timing
-        matar_kokkos_timings_3D[3].push_back(triad_time_3D.count());
-    }
-    //LIKWID_MARKER_STOP("3D_CAK_TRIAD");
+        cak_3D_timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 3D CArrayKokkos dot product kernel
+	    // 3D CArrayKokkos dot product kernel
 
-    //LIKWID_MARKER_START("3D_CAK_DOT");
-    for (int iter = 0; iter < repeat; iter++) {
-        real_t sum = 0;
+	    //LIKWID_MARKER_START("3D_CAK_DOT");
+        cak_dot_3D_fin_val = 0;
 
         begin = std::chrono::high_resolution_clock::now();
 
@@ -2614,15 +2535,15 @@ int main() {
                                 KOKKOS_LAMBDA(const int i, const int j, 
                                               const int k, real_t& tmp) {
                 tmp += (cak_arr1_3D(i, j, k) * cak_arr2_3D(i, j, k));
-        }, sum);
+        }, cak_dot_3D_fin_val);
         Kokkos::fence();
 
-        std::chrono::duration<double> dot_time_3D = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("3D_CAK_DOT");
 
         // Record dot product kernel timing
-        matar_kokkos_timings_3D[4].push_back(dot_time_3D.count());
+        cak_3D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     }
-    //LIKWID_MARKER_STOP("3D_CAK_DOT");
     
     // Print kernel computation memory bandwidth table header
     std::cout << "----------------------------------------" << std::endl;
@@ -2640,13 +2561,13 @@ int main() {
     for (int ker = 0; ker < num_kernels; ker++) {
         // Get min/max times taken on kernel computation
         // (ignore the first result)
-        auto minmax = std::minmax_element(matar_kokkos_timings_3D[ker].begin() + 1,
-                                          matar_kokkos_timings_3D[ker].end());
+        auto minmax = std::minmax_element(cak_3D_timings[ker].begin() + 1,
+                                          cak_3D_timings[ker].end());
 
         // Calculate average time taken on kernel computation
         // (ignore the first result)
-        double average = std::accumulate(matar_kokkos_timings_3D[ker].begin() + 1,
-                                         matar_kokkos_timings_3D[ker].end(),
+        double average = std::accumulate(cak_3D_timings[ker].begin() + 1,
+                                         cak_3D_timings[ker].end(),
                                          0.0) / (double) (repeat - 1);
 
         // Print kernel computation memory bandwidth statistics
@@ -2665,9 +2586,11 @@ int main() {
     // 3D Kokkos View STREAM benchmark suite 
     ////////////////////////////////////////////////////////////////////////////
 
-    // 3D Kokkos View copy kernel
+    real_t kv_dot_3D_fin_val;
 
     for (int iter = 0; iter < repeat; iter++) {
+    	// 3D Kokkos View copy kernel
+
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_for("Copy (3D KV)", array_type_STREAM, 
@@ -2676,15 +2599,13 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> copy_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
 
         // Record 3D Kokkos View copy kernel timing
-        kokkos_views_timings_3D[0].push_back(copy_time_kv_3D.count());
-    }
+        kv_3D_timings[0].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 3D Kokkos View scale kernel
+    	// 3D Kokkos View scale kernel
 
-    for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_for("Scale (3D KV)", array_type_STREAM, 
@@ -2693,15 +2614,13 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> scale_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
 
         // Record 3D Kokkos View scale kernel timing
-        kokkos_views_timings_3D[1].push_back(scale_time_kv_3D.count());
-    }
+        kv_3D_timings[1].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 3D Kokkos View sum kernel
+    	// 3D Kokkos View sum kernel
 
-    for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_for("Sum (3D KV)", array_type_STREAM, 
@@ -2710,16 +2629,14 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> sum_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
 
         // Record 3D Kokkos View sum kernel timing
-        kokkos_views_timings_3D[2].push_back(sum_time_kv_3D.count());
-    }
+        kv_3D_timings[2].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 3D Kokkos View triad kernel
+    	// 3D Kokkos View triad kernel
 
-    //LIKWID_MARKER_START("3D_KV_TRIAD");
-    for (int iter = 0; iter < repeat; iter++) {
+    	//LIKWID_MARKER_START("3D_KV_TRIAD");
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_for("Triad (3D KV)", array_type_STREAM, 
@@ -2728,18 +2645,16 @@ int main() {
                 });
         Kokkos::fence();
 
-        std::chrono::duration<double> triad_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("3D_KV_TRIAD");
 
         // Record 3D Kokkos View triad kernel timing
-        kokkos_views_timings_3D[3].push_back(triad_time_kv_3D.count());
-    }
-    //LIKWID_MARKER_STOP("3D_KV_TRIAD");
+        kv_3D_timings[3].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
 
-    // 3D Kokkos View dot product kernel
+	    // 3D Kokkos View dot product kernel
 
-    //LIKWID_MARKER_START("3D_KV_DOT");
-    for (int iter = 0; iter < repeat; iter++) {
-        real_t sum = 0;
+	    //LIKWID_MARKER_START("3D_KV_DOT");
+        kv_dot_3D_fin_val = 0;
 
         begin = std::chrono::high_resolution_clock::now();
 
@@ -2747,14 +2662,14 @@ int main() {
                                KOKKOS_LAMBDA(const int i, const int j,
                                              const int k, real_t& tmp) {
                 tmp += (kv_arr1_3D(i, j, k) * kv_arr2_3D(i, j, k));
-        }, sum);
+        }, kv_dot_3D_fin_val);
         Kokkos::fence();
 
-        std::chrono::duration<double> dot_time_kv_3D = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
+        //LIKWID_MARKER_STOP("3D_KV_DOT");
 
-        kokkos_views_timings_3D[4].push_back(dot_time_kv_3D.count());
+        kv_3D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     }
-    //LIKWID_MARKER_STOP("3D_KV_DOT");
 
     // Print kernel computation memory bandwidth table header
     std::cout << "---------------------------------------" << std::endl;
@@ -2774,13 +2689,13 @@ int main() {
     for (int ker = 0; ker < num_kernels; ker++) {
         // Get min/max times taken on kernel computation
         // (ignore the first result)
-        auto minmax = std::minmax_element(kokkos_views_timings_3D[ker].begin() + 1,
-                                          kokkos_views_timings_3D[ker].end());
+        auto minmax = std::minmax_element(kv_3D_timings[ker].begin() + 1,
+                                          kv_3D_timings[ker].end());
 
         // Calculate average time taken on kernel computation
         // (ignore the first result)
-        double average = std::accumulate(kokkos_views_timings_3D[ker].begin() + 1,
-                                         kokkos_views_timings_3D[ker].end(),
+        double average = std::accumulate(kv_3D_timings[ker].begin() + 1,
+                                         kv_3D_timings[ker].end(),
                                          0.0) / (double) (repeat - 1);
 
         // Print kernel computation memory bandwidth statistics
@@ -2841,14 +2756,10 @@ int main() {
             // Initialize 2D CArrayKokkos objects (arrays)
             cak_mat1(i, j) = (real_t) (i + 1) * (j + 1);
             cak_mat2(i, j) = (real_t) (i + 2) * (j + 2);
-            //cak_mat1(i, j) = 1.0;
-            //cak_mat1(i, j) = 1.0;
 
             // Initialize 2D Kokkos Views objects (arrays)
             kv_mat1(i, j) = (real_t) (i + 1) * (j + 1);
             kv_mat2(i, j) = (real_t) (i + 2) * (j + 2);
-            //kv_mat1(i, j) = 1.0;
-            //kv_mat1(i, j) = 1.0;
         });
     Kokkos::fence();
 
@@ -2875,12 +2786,11 @@ int main() {
                     //printf("Mat3 (%d, %d) %lf\n", i, j, mat3(i, j));
                 });
             });
-    
         Kokkos::fence();
     
-        std::chrono::duration<double> mmm_time = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
 
-        mmm_timings.push_back(mmm_time.count());
+        mmm_timings.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     }
     //LIKWID_MARKER_STOP("2D_CAK_MMM");
 
@@ -2949,12 +2859,11 @@ int main() {
                     //printf("Mat3 (%d, %d) %lf\n", i, j, mat3(i, j));
                 });
             });
-    
         Kokkos::fence();
     
-        std::chrono::duration<double> mmm_time_kv = std::chrono::high_resolution_clock::now() - begin;
+        end = std::chrono::high_resolution_clock::now();
 
-        mmm_kv_timings.push_back(mmm_time_kv.count());
+        mmm_kv_timings.push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     }
     //LIKWID_MARKER_STOP("2D_KV_MMM");
 

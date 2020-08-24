@@ -3183,7 +3183,7 @@ template <typename T>
 KOKKOS_FUNCTION
 T& ViewFArrayKokkos<T>::operator()(size_t i) const {
     assert( i < dim1_ && "i is out of bounds in ViewFArrayKokkos 1D!");
-    return this_array_[i];
+    return this_array_(i);
 }
 
 //2D

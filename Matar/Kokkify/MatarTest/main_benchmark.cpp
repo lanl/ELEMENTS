@@ -2163,6 +2163,59 @@ int main() {
         cak_1D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
     }
 
+    // Verify 1D CArrayKokkos STREAM benchmark results
+    real_t cak_arr1_1D_err = 0;
+    real_t cak_arr2_1D_err = 0;
+    real_t cak_arr3_1D_err = 0;
+    real_t cak_dot_1D_err = std::fabs(dot_1D_fin_val - cak_dot_1D_fin_val);
+
+    Kokkos::parallel_reduce("arr1 Error (1D CAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (cak_arr1(i) - arr1_fin_val) >= 0 ? (cak_arr1(i) - arr1_fin_val) : (arr1_fin_val - cak_arr1(i));
+    }, cak_arr1_1D_err);
+    Kokkos::fence();
+
+    cak_arr1_1D_err /= nsize;
+
+    Kokkos::parallel_reduce("arr1 Error (1D CAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (cak_arr2(i) - arr2_fin_val) >= 0 ? (cak_arr2(i) - arr2_fin_val) : (arr2_fin_val - cak_arr2(i));
+    }, cak_arr2_1D_err);
+    Kokkos::fence();
+
+    cak_arr2_1D_err /= nsize;
+
+    Kokkos::parallel_reduce("arr1 Error (1D CAK)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (cak_arr3(i) - arr3_fin_val) >= 0 ? (cak_arr3(i) - arr3_fin_val) : (arr3_fin_val - cak_arr3(i));
+    }, cak_arr3_1D_err);
+    Kokkos::fence();
+
+    cak_arr3_1D_err /= nsize;
+
+    real_t epsi = (std::numeric_limits<real_t>::epsilon() * 100.0);
+
+    if (cak_arr1_1D_err > epsi) {
+    	std::cout << "Validation failed on cak_arr1. Average error "
+    	          << cak_arr1_1D_err << std::endl;
+    }
+
+    if (cak_arr2_1D_err > epsi) {
+    	std::cout << "Validation failed on cak_arr2. Average error "
+    	          << cak_arr2_1D_err << std::endl;
+    }
+
+    if (cak_arr3_1D_err > epsi) {
+    	std::cout << "Validation failed on cak_arr3. Average error "
+    	          << cak_arr3_1D_err << std::endl;
+    }
+
+    // Check the dot product error up to 8 decimal places
+    if (cak_dot_1D_err > 1.0E-8) {
+    	std::cout << "Validation failed on 1D CAK dot product kernel. Error is "
+    	          << cak_dot_1D_err << std::setprecision(15)
+    	          << "Dot product was " << cak_dot_1D_fin_val 
+    	          << " but should be "  << dot_1D_fin_val
+    	          << std::endl;
+    }
+
     // Print kernel computation memory bandwidth table header
     std::cout << "----------------------------------------" << std::endl;
     std::cout << "1D CArrayKokkos STREAM benchmark results" << std::endl;
@@ -2282,6 +2335,59 @@ int main() {
 
         // Record dot product kernel timing
         kv_1D_timings[4].push_back(std::chrono::duration_cast<std::chrono::duration<double>>(end - begin).count());
+    }
+
+    // Verify 1D FArrayKokkos STREAM benchmark results
+    real_t kv_arr1_1D_err = 0;
+    real_t kv_arr2_1D_err = 0;
+    real_t kv_arr3_1D_err = 0;
+    real_t kv_dot_1D_err = std::fabs(dot_1D_fin_val - kv_dot_1D_fin_val);
+
+    Kokkos::parallel_reduce("arr1 Error (1D KV)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (kv_arr1(i) - arr1_fin_val) >= 0 ? (kv_arr1(i) - arr1_fin_val) : (arr1_fin_val - kv_arr1(i));
+    }, kv_arr1_1D_err);
+    Kokkos::fence();
+
+    kv_arr1_1D_err /= nsize;
+
+    Kokkos::parallel_reduce("arr1 Error (1D KV)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (kv_arr2(i) - arr2_fin_val) >= 0 ? (kv_arr2(i) - arr2_fin_val) : (arr2_fin_val - kv_arr2(i));
+    }, kv_arr2_1D_err);
+    Kokkos::fence();
+
+    kv_arr2_1D_err /= nsize;
+
+    Kokkos::parallel_reduce("arr1 Error (1D KV)", nsize, KOKKOS_LAMBDA(const int i, real_t& tmp) {
+            tmp += (kv_arr3(i) - arr3_fin_val) >= 0 ? (kv_arr3(i) - arr3_fin_val) : (arr3_fin_val - kv_arr3(i));
+    }, kv_arr3_1D_err);
+    Kokkos::fence();
+
+    kv_arr3_1D_err /= nsize;
+
+    real_t epsi = (std::numeric_limits<real_t>::epsilon() * 100.0);
+
+    if (kv_arr1_1D_err > epsi) {
+    	std::cout << "Validation failed on kv_arr1. Average error "
+    	          << kv_arr1_1D_err << std::endl;
+    }
+
+    if (kv_arr2_1D_err > epsi) {
+    	std::cout << "Validation failed on kv_arr2. Average error "
+    	          << kv_arr2_1D_err << std::endl;
+    }
+
+    if (kv_arr3_1D_err > epsi) {
+    	std::cout << "Validation failed on kv_arr3. Average error "
+    	          << kv_arr3_1D_err << std::endl;
+    }
+
+    // Check the dot product error up to 8 decimal places
+    if (kv_dot_1D_err > 1.0E-8) {
+    	std::cout << "Validation failed on 1D KV dot product kernel. Error is "
+    	          << kv_dot_1D_err << std::setprecision(15)
+    	          << "Dot product was " << kv_dot_1D_fin_val 
+    	          << " but should be "  << dot_1D_fin_val
+    	          << std::endl;
     }
 
     // Print kernel computation memory bandwidth table header

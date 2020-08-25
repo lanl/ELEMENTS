@@ -2016,17 +2016,17 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
 
     if (fak_arr1_1D_err > epsi) {
     	std::cout << "Validation failed on fak_arr1. Average error "
-    	          << fak_arr1_1D_err << std::endl;
+    	          << fak_arr1_1D_err << std::endl << std::endl;
     }
 
     if (fak_arr2_1D_err > epsi) {
     	std::cout << "Validation failed on fak_arr2. Average error "
-    	          << fak_arr2_1D_err << std::endl;
+    	          << fak_arr2_1D_err << std::endl << std::endl;
     }
 
     if (fak_arr3_1D_err > epsi) {
     	std::cout << "Validation failed on fak_arr3. Average error "
-    	          << fak_arr3_1D_err << std::endl;
+    	          << fak_arr3_1D_err << std::endl << std::endl;
     }
 
     // Check the dot product error up to 8 decimal places
@@ -2035,7 +2035,7 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
     	          << fak_dot_1D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << fak_dot_1D_fin_val 
     	          << " but should be "  << dot_1D_fin_val
-    	          << std::endl;
+    	          << std::endl << std::endl;
     }
 
 
@@ -2209,17 +2209,17 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
 
     if (vfak_arr1_1D_err > epsi) {
     	std::cout << "Validation failed on vfak_arr1. Average error "
-    	          << vfak_arr1_1D_err << std::endl;
+    	          << vfak_arr1_1D_err << std::endl << std::endl;
     }
 
     if (vfak_arr2_1D_err > epsi) {
     	std::cout << "Validation failed on vfak_arr2. Average error "
-    	          << vfak_arr2_1D_err << std::endl;
+    	          << vfak_arr2_1D_err << std::endl << std::endl;
     }
 
     if (vfak_arr3_1D_err > epsi) {
     	std::cout << "Validation failed on vfak_arr3. Average error "
-    	          << vfak_arr3_1D_err << std::endl;
+    	          << vfak_arr3_1D_err << std::endl << std::endl;
     }
 
     // Check the dot product error up to 8 decimal places
@@ -2228,7 +2228,7 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
     	          << vfak_dot_1D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << vfak_dot_1D_fin_val 
     	          << " but should be "  << dot_1D_fin_val
-    	          << std::endl;
+    	          << std::endl << std::endl;
     }
 
     // Print kernel computation memory bandwidth table header
@@ -2386,17 +2386,17 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
 
     if (cak_arr1_1D_err > epsi) {
     	std::cout << "Validation failed on cak_arr1. Average error "
-    	          << cak_arr1_1D_err << std::endl;
+    	          << cak_arr1_1D_err << std::endl << std::endl;
     }
 
     if (cak_arr2_1D_err > epsi) {
     	std::cout << "Validation failed on cak_arr2. Average error "
-    	          << cak_arr2_1D_err << std::endl;
+    	          << cak_arr2_1D_err << std::endl << std::endl;
     }
 
     if (cak_arr3_1D_err > epsi) {
     	std::cout << "Validation failed on cak_arr3. Average error "
-    	          << cak_arr3_1D_err << std::endl;
+    	          << cak_arr3_1D_err << std::endl << std::endl;
     }
 
     // Check the dot product error up to 8 decimal places
@@ -2405,7 +2405,7 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
     	          << cak_dot_1D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << cak_dot_1D_fin_val 
     	          << " but should be "  << dot_1D_fin_val
-    	          << std::endl;
+    	          << std::endl << std::endl;
     }
 
     // Print kernel computation memory bandwidth table header
@@ -2562,17 +2562,17 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
 
     if (kv_arr1_1D_err > epsi) {
     	std::cout << "Validation failed on kv_arr1. Average error "
-    	          << kv_arr1_1D_err << std::endl;
+    	          << kv_arr1_1D_err << std::endl << std::endl;
     }
 
     if (kv_arr2_1D_err > epsi) {
     	std::cout << "Validation failed on kv_arr2. Average error "
-    	          << kv_arr2_1D_err << std::endl;
+    	          << kv_arr2_1D_err << std::endl << std::endl;
     }
 
     if (kv_arr3_1D_err > epsi) {
     	std::cout << "Validation failed on kv_arr3. Average error "
-    	          << kv_arr3_1D_err << std::endl;
+    	          << kv_arr3_1D_err << std::endl << std::endl;
     }
 
     // Check the dot product error up to 8 decimal places
@@ -2581,7 +2581,7 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
     	          << kv_dot_1D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << kv_dot_1D_fin_val 
     	          << " but should be "  << dot_1D_fin_val
-    	          << std::endl;
+    	          << std::endl << std::endl;
     }
 
     // Print kernel computation memory bandwidth table header
@@ -2890,17 +2890,17 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
 
     if (fak_arr1_3D_err > epsi) {
     	std::cout << "Validation failed on fak_arr1_3D. Average error "
-    	          << fak_arr1_3D_err << std::endl;
+    	          << fak_arr1_3D_err << std::endl << std::endl;
     }
 
     if (fak_arr2_3D_err > epsi) {
     	std::cout << "Validation failed on fak_arr2_3D. Average error "
-    	          << fak_arr2_3D_err << std::endl;
+    	          << fak_arr2_3D_err << std::endl << std::endl;
     }
 
     if (fak_arr3_3D_err > epsi) {
     	std::cout << "Validation failed on fak_arr3_3D. Average error "
-    	          << fak_arr3_3D_err << std::endl;
+    	          << fak_arr3_3D_err << std::endl << std::endl;
     }
 
     // Check the dot product error up to 8 decimal places
@@ -2909,7 +2909,7 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
     	          << fak_dot_3D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << fak_dot_3D_fin_val 
     	          << " but should be "  << dot_3D_fin_val
-    	          << std::endl;
+    	          << std::endl << std::endl;
     }
     
     // Print kernel computation memory bandwidth table header
@@ -3084,17 +3084,17 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
 
     if (cak_arr1_3D_err > epsi) {
     	std::cout << "Validation failed on cak_arr1_3D. Average error "
-    	          << cak_arr1_3D_err << std::endl;
+    	          << cak_arr1_3D_err << std::endl << std::endl;
     }
 
     if (cak_arr2_3D_err > epsi) {
     	std::cout << "Validation failed on cak_arr2_3D. Average error "
-    	          << cak_arr2_3D_err << std::endl;
+    	          << cak_arr2_3D_err << std::endl << std::endl;
     }
 
     if (cak_arr3_3D_err > epsi) {
     	std::cout << "Validation failed on cak_arr3_3D. Average error "
-    	          << cak_arr3_3D_err << std::endl;
+    	          << cak_arr3_3D_err << std::endl << std::endl;
     }
 
     // Check the dot product error up to 8 decimal places
@@ -3103,7 +3103,7 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
     	          << cak_dot_3D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << cak_dot_3D_fin_val 
     	          << " but should be "  << dot_3D_fin_val
-    	          << std::endl;
+    	          << std::endl << std::endl;
     }
     
     // Print kernel computation memory bandwidth table header
@@ -3277,17 +3277,17 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
 
     if (kv_arr1_3D_err > epsi) {
     	std::cout << "Validation failed on kv_arr1_3D. Average error "
-    	          << kv_arr1_3D_err << std::endl;
+    	          << kv_arr1_3D_err << std::endl << std::endl;
     }
 
     if (kv_arr2_3D_err > epsi) {
     	std::cout << "Validation failed on kv_arr2_3D. Average error "
-    	          << kv_arr2_3D_err << std::endl;
+    	          << kv_arr2_3D_err << std::endl << std::endl;
     }
 
     if (kv_arr3_3D_err > epsi) {
     	std::cout << "Validation failed on kv_arr3_3D. Average error "
-    	          << kv_arr3_3D_err << std::endl;
+    	          << kv_arr3_3D_err << std::endl << std::endl;
     }
 
     // Check the dot product error up to 8 decimal places
@@ -3296,7 +3296,7 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
     	          << kv_dot_3D_err << std::endl << std::setprecision(15)
     	          << "Dot product was " << kv_dot_3D_fin_val 
     	          << " but should be "  << dot_3D_fin_val
-    	          << std::endl;
+    	          << std::endl << std::endl;
     }
 
     // Print kernel computation memory bandwidth table header

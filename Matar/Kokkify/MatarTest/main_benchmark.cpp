@@ -2087,9 +2087,10 @@ using policy2D = Kokkos::MDRangePolicy< Kokkos::Rank<2> >;
     //       objects via the ViewFArrayKokkos objects
     Kokkos::parallel_for("Initialize (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i) {
             // Initialize 1D FArrayKokkos objects
-            fak_arr1(i) = arr1_init_val;
-            fak_arr2(i) = arr2_init_val;
-            fak_arr3(i) = arr3_init_val;
+            vfak_arr1(i) = arr1_init_val;
+            vfak_arr2(i) = arr2_init_val;
+            vfak_arr3(i) = arr3_init_val;
+        	});
     Kokkos::fence();
     //*/
     ///*

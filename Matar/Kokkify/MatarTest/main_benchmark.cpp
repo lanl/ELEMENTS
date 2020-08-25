@@ -2080,11 +2080,15 @@ int main(int argc, char** argv) {
     ////////////////////////////////////////////////////////////////////////////
     ///*
     // Initialize the 1D ViewFArrayKokkos objects
+    // NOTE: For some reason, MATAR's Kokkos-specific view classes are not 
+    //       working correctly.
+    //       Ideally, we should be able to modify the above FArrayKokkos
+    //       objects via the ViewFArrayKokkos objects
     Kokkos::parallel_for("Initialize (1D VFAK)", nsize, KOKKOS_LAMBDA(const int i) {
             // Initialize 1D FArrayKokkos objects
-            vfak_arr1(i) = arr1_init_val;
-            vfak_arr2(i) = arr2_init_val;
-            vfak_arr3(i) = arr3_init_val;
+            fak_arr1(i) = arr1_init_val;
+            fak_arr2(i) = arr2_init_val;
+            fak_arr3(i) = arr3_init_val;
     Kokkos::fence();
     //*/
     ///*

@@ -1731,8 +1731,10 @@ int main(int argc, char** argv) {
     // std::vector<std::vector<double>> reg_arr_timings_3D(num_kernels);
 
     // Declare timers
-    std::chrono::high_resolution_clock::time_point begin, end;
-
+    //std::chrono::high_resolution_clock::time_point begin, end;
+    auto begin = std::chrono::high_resolution_clock::now();
+    auto end   = std::chrono::high_resolution_clock::now();
+    
     std::string labels[num_kernels] = {"Copy", "Mul", "Add", "Triad", "Dot"};
 
     size_t sizes[num_kernels] = {

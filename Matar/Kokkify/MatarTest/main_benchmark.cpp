@@ -35,10 +35,11 @@ int main() {
     int size_i = 5, size_j = 4, size_k = 3;
 	const int size3 = 256;
 	const int size1 = size3 * size3 * size3;
-	const int repeat = 3;
+	const int repeat = 101;
 
 	std::cout<<"Size of 1D problem: "<<size1<<"\n";
 	std::cout<<"Size of 3D problem (each dimension): "<<size3<<"\n";
+	std::cout<<"Each kernel is ran "<<repeat<<" times\n\n\n";
 //#ifdef CPUBENCH
 	//===========================================================
 	//	cpu stream benchmarks
@@ -102,7 +103,7 @@ int main() {
 	//=========================================================================
 
 	//1D
-	std::cout<<"initializing 1D arrays\n";
+	//std::cout<<"initializing 1D arrays\n";
 #pragma omp simd
 	for(size_t i = 0; i < size1; i++) {
 		c_arr1(i) = 1.0;
@@ -110,7 +111,7 @@ int main() {
 	  }
 
 	//3D
-	std::cout<<"initializing 3D arrays\n";
+	//std::cout<<"initializing 3D arrays\n";
 #pragma omp simd collapse(3)
 	for(size_t i = 0; i < size3; i++) {
 	 for(size_t j = 0; j < size3; j++) {
@@ -154,14 +155,12 @@ int main() {
 	//std::cout<<"N = "<<N<<"\n";
 
 	//calculate average
-	double avg_copy_c, tot_copy_c;
+	double avg_copy_c = 0.0, tot_copy_c = 0.0, min1dc_copy = 0.0, max1dc_copy =0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_copy_c += carr_copy_times[i];
 		//std::cout<<"carr_copy_times["<<i<<"] = "<<carr_copy_times[i]<<"\n";
 	}	
 	avg_copy_c = tot_copy_c / (double) (repeat-1);
-	double min1dc_copy;
-	double max1dc_copy;
 	min1dc_copy = *std::min_element(carr_copy_times +1, carr_copy_times + N);
 	max1dc_copy = *std::max_element(carr_copy_times +1, carr_copy_times + N);
 
@@ -185,12 +184,12 @@ int main() {
 	LIKWID_MARKER_STOP("1D_CARRAY_SCALE");
 
 	//compute average
-	double avg_scale1dc, tot_scale_1dc;
+	double avg_scale1dc = 0.0, tot_scale_1dc = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_scale_1dc += c_scale1d_times[i];
 	}
 	avg_scale1dc = tot_scale_1dc / (double) (repeat-1);
-	double min1dc_scale, max1dc_scale;
+	double min1dc_scale = 0.0, max1dc_scale = 0.0;
 	min1dc_scale = *std::min_element(c_scale1d_times + 1, c_scale1d_times + N);
 	max1dc_scale = *std::max_element(c_scale1d_times + 1, c_scale1d_times + N);
 
@@ -214,12 +213,12 @@ int main() {
 	LIKWID_MARKER_STOP("1D_CARRAY_SUM");
 
 	//compute average
-	double avg_sum1dc, tot_sum_1dc;
+	double avg_sum1dc = 0.0, tot_sum_1dc = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_sum_1dc += sum_1dc[i];
 	}
 	avg_sum1dc = tot_sum_1dc / (double) (repeat-1);
-	double min1dc_sum, max1dc_sum;
+	double min1dc_sum = 0.0, max1dc_sum = 0.0;
 	min1dc_sum = *std::min_element(sum_1dc + 1, sum_1dc + N);
 	max1dc_sum = *std::max_element(sum_1dc + 1, sum_1dc + N);
 
@@ -243,12 +242,12 @@ int main() {
 	LIKWID_MARKER_STOP("1D_CARRAY_TRIAD");
 
 	//compute average
-	double avg_triad_1dc, tot_1dctriad;
+	double avg_triad_1dc = 0.0, tot_1dctriad = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_1dctriad += triad_1dc[i];
 	}
 	avg_triad_1dc = tot_1dctriad / (double) (repeat-1);
-	double min1dc_triad, max1dc_triad;
+	double min1dc_triad = 0.0, max1dc_triad = 0.0;
 	min1dc_triad = *std::min_element(triad_1dc + 1, triad_1dc + N);
 	max1dc_triad = *std::max_element(triad_1dc + 1, triad_1dc + N);
 
@@ -277,12 +276,12 @@ int main() {
 	std::cout<<"rand1 = "<<rand1<<"\n";
 
 	//compute averages, min, max
-	double avg_1dcdot, tot_dot1dc;
+	double avg_1dcdot = 0.0, tot_dot1dc = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_dot1dc += dot_1dc[i];
 	}
 	avg_1dcdot = tot_dot1dc / (double) (repeat-1);
-	double min1dc_dot, max1dc_dot;
+	double min1dc_dot = 0.0, max1dc_dot = 0.0;
 	min1dc_dot = *std::min_element(dot_1dc + 1, dot_1dc + N);
 	max1dc_dot = *std::max_element(dot_1dc + 1, dot_1dc + N);
 
@@ -332,12 +331,12 @@ int main() {
 	LIKWID_MARKER_STOP("1D_REG_COPY");	
 
 	//calculate average
-	double avg_copy_r, tot_copy_r;
+	double avg_copy_r = 0.0, tot_copy_r = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_copy_r += reg_copy_times[i];
 	}	
 	avg_copy_r = tot_copy_r / (double) (repeat-1);
-	double min1dr_copy, max1dr_copy;
+	double min1dr_copy = 0.0, max1dr_copy = 0.0;
 	min1dr_copy = *std::min_element(reg_copy_times + 1, reg_copy_times + N);
 	max1dr_copy = *std::max_element(reg_copy_times + 1, reg_copy_times + N);
 
@@ -361,12 +360,12 @@ int main() {
 	LIKWID_MARKER_STOP("1D_REG_SCALE");
 
 	//compute average
-	double avg_scale1dr, tot_scale_1dr;
+	double avg_scale1dr = 0.0, tot_scale_1dr = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_scale_1dr += reg_scale1d_times[i];
 	}
 	avg_scale1dr = tot_scale_1dr / (double) (repeat-1);
-	double min1dr_scale, max1dr_scale;
+	double min1dr_scale = 0.0, max1dr_scale = 0.0;
 	min1dr_scale = *std::min_element(reg_scale1d_times + 1, reg_scale1d_times + N);
 	max1dr_scale = *std::max_element(reg_scale1d_times + 1, reg_scale1d_times + N);
 
@@ -389,12 +388,12 @@ int main() {
 	LIKWID_MARKER_STOP("1D_REG_SUM");
 
 	//compute average
-	double avg_sum1dr, tot_sum_1dr;
+	double avg_sum1dr = 0.0, tot_sum_1dr = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_sum_1dr += sum_1dr[i];
 	}
 	avg_sum1dr = tot_sum_1dr / (double) (repeat-1);
-	double min1dr_sum, max1dr_sum;
+	double min1dr_sum = 0.0, max1dr_sum = 0.0;
 	min1dr_sum = *std::min_element(sum_1dr + 1, sum_1dr + N);
 	max1dr_sum = *std::max_element(sum_1dr + 1, sum_1dr + N);
 
@@ -417,12 +416,12 @@ int main() {
 	LIKWID_MARKER_STOP("1D_REG_TRIAD");
 
 	//compute average
-	double avg_triad_1dr, tot_1drtriad;
+	double avg_triad_1dr = 0.0, tot_1drtriad = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_1drtriad += triad_1dr[i];
 	}
 	avg_triad_1dr = tot_1drtriad / (double) (repeat-1);
-	double min1dr_triad, max1dr_triad;
+	double min1dr_triad = 0.0, max1dr_triad = 0.0;
 	min1dr_triad = *std::min_element(triad_1dr + 1, triad_1dr + N);
 	max1dr_triad = *std::max_element(triad_1dr + 1, triad_1dr + N);
 
@@ -450,12 +449,12 @@ int main() {
 	std::cout<<"Dotsum = "<<dotsum<<"\n";
 
 	//compute averages, min, max
-	double avg_1drdot, tot_dot1dr;
+	double avg_1drdot = 0.0, tot_dot1dr = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_dot1dr += dot_1dr[i];
 	}
 	avg_1drdot = tot_dot1dr / (double) (repeat-1);
-	double min1dr_dot, max1dr_dot;
+	double min1dr_dot = 0.0, max1dr_dot = 0.0;
 	min1dr_dot = *std::min_element(dot_1dr + 1, dot_1dr + N);
 	max1dr_dot = *std::max_element(dot_1dr + 1, dot_1dr + N);
 
@@ -504,13 +503,13 @@ int main() {
 
 
 	//calculate average
-	double avg_copy_v, tot_copy_v;
+	double avg_copy_v = 0.0, tot_copy_v = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_copy_v += view_copy_times[i];
 	}	
 	avg_copy_v = tot_copy_v / (double) (repeat-1);
-	double min1dv_copy;
-	double max1dv_copy;
+	double min1dv_copy = 0.0;
+	double max1dv_copy = 0.0;
 	min1dv_copy = *std::min_element(view_copy_times + 1, view_copy_times + N);
 	max1dv_copy = *std::max_element(view_copy_times + 1, view_copy_times + N);
 
@@ -533,12 +532,12 @@ int main() {
 	LIKWID_MARKER_STOP("1D_VIEW_SCALE");
 	
 	//compute average, min, max
-	double avg_scale1dv, tot_scale_1dv;
+	double avg_scale1dv = 0.0, tot_scale_1dv = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_scale_1dv += v_scale1d_times[i];
 	}
 	avg_scale1dv = tot_scale_1dv / (double) (repeat-1);
-	double min1dv_scale, max1dv_scale;
+	double min1dv_scale = 0.0, max1dv_scale = 0.0;
 	min1dv_scale = *std::min_element(v_scale1d_times + 1, v_scale1d_times + N);
 	max1dv_scale = *std::max_element(v_scale1d_times + 1, v_scale1d_times + N);
 
@@ -561,12 +560,12 @@ int main() {
 	LIKWID_MARKER_STOP("1D_VIEW_SUM");
 
 	//compute average
-	double avg_sum1dv, tot_sum_1dv;
+	double avg_sum1dv = 0.0, tot_sum_1dv = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_sum_1dv += sum_1dv[i];
 	}
 	avg_sum1dv = tot_sum_1dv / (double) (repeat-1);
-	double min1dv_sum, max1dv_sum;
+	double min1dv_sum = 0.0, max1dv_sum = 0.0;
 	min1dv_sum = *std::min_element(sum_1dv + 1, sum_1dv + N);
 	max1dv_sum = *std::max_element(sum_1dv + 1, sum_1dv + N);
 
@@ -589,12 +588,12 @@ int main() {
 	LIKWID_MARKER_STOP("1D_VIEW_TRIAD");
 
 	//compute average
-	double avg_triad_1dv, tot_1dvtriad;
+	double avg_triad_1dv = 0.0, tot_1dvtriad = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_1dvtriad += triad_1dv[i];
 	}
 	avg_triad_1dv = tot_1dvtriad / (double) (repeat-1);
-	double min1dv_triad, max1dv_triad;
+	double min1dv_triad = 0.0, max1dv_triad = 0.0;
 	min1dv_triad = *std::min_element(triad_1dv + 1, triad_1dv + N);
 	max1dv_triad = *std::max_element(triad_1dv + 1, triad_1dv + N);
 
@@ -623,12 +622,12 @@ int main() {
 	std::cout<<"rand3 = "<<rand3<<"\n";
 
 	//compute averages, min, max
-	double avg_1dvdot, tot_dot1dv;
+	double avg_1dvdot = 0.0, tot_dot1dv = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_dot1dv += dot_1dv[i];
 	}
 	avg_1dvdot = tot_dot1dv / (double) (repeat-1);
-	double min1dv_dot, max1dv_dot;
+	double min1dv_dot = 0.0, max1dv_dot = 0.0;
 	min1dv_dot = *std::min_element(dot_1dv + 1, dot_1dv + N);
 	max1dv_dot = *std::max_element(dot_1dv + 1, dot_1dv + N);
 
@@ -654,8 +653,8 @@ int main() {
 	// e.g the %difference for the carray (w.r.t regular array)
 	// c_copy = ( ( avg_carray - avg_regarray) / avg_regarray ) * 100.0
 	// c = carray, v = view
-	double c_copy, c_scale, c_sum, c_triad, c_dot;
-	double v_copy, v_scale, v_sum, v_triad, v_dot;
+	double c_copy = 0.0, c_scale = 0.0, c_sum = 0.0, c_triad = 0.0, c_dot = 0.0;
+	double v_copy = 0.0, v_scale = 0.0, v_sum = 0.0, v_triad = 0.0, v_dot = 0.0;
 	double hund = 100.0;
 
 	//---carray's---
@@ -717,12 +716,12 @@ int main() {
 	LIKWID_MARKER_STOP("3D_CARRAY_COPY");
 
 	//calculate average
-	double avg_copy_3dc, tot_copy_3dc;
+	double avg_copy_3dc = 0.0, tot_copy_3dc = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_copy_3dc += carr_copy_3dtimes[i];
 	}
 	avg_copy_3dc = tot_copy_3dc / (double) (repeat-1);
-	double min3dc_copy, max3dc_copy;
+	double min3dc_copy = 0.0, max3dc_copy = 0.0;
 	min3dc_copy = *std::min_element(carr_copy_3dtimes + 1, carr_copy_3dtimes + N);
 	max3dc_copy = *std::max_element(carr_copy_3dtimes + 1, carr_copy_3dtimes + N);
 
@@ -749,12 +748,12 @@ int main() {
 	LIKWID_MARKER_STOP("3D_CARRAY_SCALE");
 
 	//compute average
-	double avg_scale3dc, tot_scale_3dc;
+	double avg_scale3dc = 0.0, tot_scale_3dc = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_scale_3dc += c_scale3d_times[i];
 	}
 	avg_scale3dc = tot_scale_3dc / (double) (repeat-1);
-	double min3dc_scale, max3dc_scale;
+	double min3dc_scale = 0.0, max3dc_scale = 0.0;
 	min3dc_scale = *std::min_element(c_scale3d_times + 1, c_scale3d_times + N);
 	max3dc_scale = *std::max_element(c_scale3d_times + 1, c_scale3d_times + N);
 	
@@ -781,17 +780,14 @@ int main() {
 	LIKWID_MARKER_STOP("3D_CARRAY_SUM");
 
 	//compute average
-	double avg_sum3dc, tot_sum_3dc;
+	double avg_sum3dc = 0.0, tot_sum_3dc = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_sum_3dc += sum_3dc[i];
 	}
 	avg_sum3dc = tot_sum_3dc / (double) (repeat-1);
-	double min3dc_sum, max3dc_sum;
+	double min3dc_sum = 0.0, max3dc_sum = 0.0;
 	min3dc_sum = *std::min_element(sum_3dc + 1, sum_3dc + N);
 	max3dc_sum = *std::max_element(sum_3dc + 1, sum_3dc + N);
-	std::cout<<"Averape elapsed time for 3D CArray sum = "<<avg_sum3dc<<"s\n";
-	std::cout<<"Min 3D Carray sum time = "<<min3dc_sum<<"s\n";
-	std::cout<<"Max 3D Carray sum time = "<<max3dc_sum<<"s\n";
 
 	//=============================
 	//	TRIAD
@@ -816,12 +812,12 @@ int main() {
 	LIKWID_MARKER_STOP("3D_CARRAY_TRIAD");
 	
 	//compute average
-	double avg_triad_3dc, tot_3dctriad;
+	double avg_triad_3dc = 0.0, tot_3dctriad = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_3dctriad += triad_3dc[i];
 	}
 	avg_triad_3dc = tot_3dctriad / (double) (repeat-1);
-	double min3dc_triad, max3dc_triad;
+	double min3dc_triad = 0.0, max3dc_triad = 0.0;
 	min3dc_triad = *std::min_element(triad_3dc + 1, triad_3dc + N);
 	max3dc_triad = *std::max_element(triad_3dc + 1, triad_3dc + N);
 
@@ -852,12 +848,12 @@ int main() {
 	std::cout<<"dot_sum3dc = "<<dot_3dcsum<<"\n";
 
 	//compute average
-	double avg_dot_3dc, tot_3dcdot;
+	double avg_dot_3dc = 0.0, tot_3dcdot = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_3dcdot += dot_3dc[i];
 	}
 	avg_dot_3dc = tot_3dcdot / (double) (repeat-1);
-	double min3dc_dot, max3dc_dot;
+	double min3dc_dot = 0.0, max3dc_dot = 0.0;
 	min3dc_dot = *std::min_element(dot_3dc + 1, dot_3dc + N);
 	max3dc_dot = *std::max_element(dot_3dc + 1, dot_3dc + N);
 
@@ -909,12 +905,12 @@ int main() {
 	LIKWID_MARKER_STOP("3D_REG_COPY");
 
 	//calculate average
-	double avg_copy_3dr, tot_copy_3dr;
+	double avg_copy_3dr = 0.0, tot_copy_3dr = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_copy_3dr += reg_copy_3dtimes[i];
 	}
 	avg_copy_3dr = tot_copy_3dr / (double) (repeat-1);
-	double min3dr_copy, max3dr_copy;
+	double min3dr_copy = 0.0, max3dr_copy = 0.0;
 	min3dr_copy = *std::min_element(reg_copy_3dtimes + 1, reg_copy_3dtimes + N);
 	max3dr_copy = *std::max_element(reg_copy_3dtimes + 1, reg_copy_3dtimes + N);
 
@@ -942,12 +938,12 @@ int main() {
 	LIKWID_MARKER_STOP("3D_REG_SCALE");
 
 	//compute average
-	double avg_scale3dr, tot_scale_3dr;
+	double avg_scale3dr = 0.0, tot_scale_3dr = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_scale_3dr += reg_scale3d_times[i];
 	}
 	avg_scale3dr = tot_scale_3dr / (double) (repeat-1);
-	double min3dr_scale, max3dr_scale;
+	double min3dr_scale = 0.0, max3dr_scale = 0.0;
 	min3dr_scale = *std::min_element(reg_scale3d_times + 1, reg_scale3d_times + N);
 	max3dr_scale = *std::max_element(reg_scale3d_times + 1, reg_scale3d_times + N);
 
@@ -975,12 +971,12 @@ int main() {
 	LIKWID_MARKER_STOP("3D_REG_SUM");
 
 	//compute average
-	double avg_sum3dr, tot_sum_3dr;
+	double avg_sum3dr = 0.0, tot_sum_3dr = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_sum_3dr += sum_3dr[i];
 	}
 	avg_sum3dr = tot_sum_3dr / (double) (repeat-1);
-	double min3dr_sum, max3dr_sum;
+	double min3dr_sum = 0.0, max3dr_sum = 0.0;
 	min3dr_sum = *std::min_element(sum_3dr + 1, sum_3dr + N);
 	max3dr_sum = *std::max_element(sum_3dr + 1, sum_3dr + N);
 
@@ -1008,12 +1004,12 @@ int main() {
 	LIKWID_MARKER_STOP("3D_REG_TRIAD");	
 
 	//compute average
-	double avg_triad_3dr, tot_3drtriad;
+	double avg_triad_3dr = 0.0, tot_3drtriad = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_3drtriad += triad_3dr[i];
 	}
 	avg_triad_3dr = tot_3drtriad / (double) (repeat-1);
-	double min3dr_triad, max3dr_triad;
+	double min3dr_triad = 0.0, max3dr_triad = 0.0;
 	min3dr_triad = *std::min_element(triad_3dr + 1, triad_3dr + N);
 	max3dr_triad = *std::max_element(triad_3dr + 1, triad_3dr + N);
 
@@ -1045,12 +1041,12 @@ int main() {
 	std::cout<<"dot_sum3dr = "<<dot_3drsum<<"\n";
 
 	//compute average
-	double avg_dot_3dr, tot_3drdot;
+	double avg_dot_3dr = 0.0, tot_3drdot = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_3drdot += dot_3dr[i];
 	}
 	avg_dot_3dr = tot_3drdot / (double) (repeat-1);
-	double min3dr_dot, max3dr_dot;
+	double min3dr_dot = 0.0, max3dr_dot = 0.0;
 	min3dr_dot = *std::min_element(dot_3dr + 1, dot_3dr + N);
 	max3dr_dot = *std::max_element(dot_3dr + 1, dot_3dr + N);
 
@@ -1106,13 +1102,13 @@ int main() {
 
 
 	//calculate average
-	double avg_copy_3dv, tot_copy_3dv;
+	double avg_copy_3dv = 0.0, tot_copy_3dv = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_copy_3dv += view_copy_times3d[i];
 	}	
 	avg_copy_3dv = tot_copy_3dv / (double) (repeat-1);
-	double min3dv_copy;
-	double max3dv_copy;
+	double min3dv_copy = 0.0;
+	double max3dv_copy = 0.0;
 	min3dv_copy = *std::min_element(view_copy_times3d + 1, view_copy_times3d + N);
 	max3dv_copy = *std::max_element(view_copy_times3d + 1, view_copy_times3d + N);
 
@@ -1139,12 +1135,12 @@ int main() {
 	LIKWID_MARKER_STOP("3D_VIEW_SCALE");
 	
 	//compute average, min, max
-	double avg_scale3dv, tot_scale_3dv;
+	double avg_scale3dv = 0.0, tot_scale_3dv = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_scale_3dv += v_scale3d_times[i];
 	}
 	avg_scale3dv = tot_scale_3dv / (double) (repeat-1);
-	double min3dv_scale, max3dv_scale;
+	double min3dv_scale = 0.0, max3dv_scale = 0.0;
 	min3dv_scale = *std::min_element(v_scale3d_times + 1, v_scale3d_times + N);
 	max3dv_scale = *std::max_element(v_scale3d_times + 1, v_scale3d_times + N);
 
@@ -1171,12 +1167,12 @@ int main() {
 	LIKWID_MARKER_STOP("3D_VIEW_SUM");
 	
 	//compute average, min, max
-	double avg_sum3dv, tot_sum_3dv;
+	double avg_sum3dv = 0.0, tot_sum_3dv = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_sum_3dv += v_sum3d_times[i];
 	}
 	avg_sum3dv = tot_sum_3dv / (double) (repeat-1);
-	double min3dv_sum, max3dv_sum;
+	double min3dv_sum = 0.0, max3dv_sum = 0.0;
 	min3dv_sum = *std::min_element(v_sum3d_times + 1, v_sum3d_times + N);
 	max3dv_sum = *std::max_element(v_sum3d_times + 1, v_sum3d_times + N);
 
@@ -1203,12 +1199,12 @@ int main() {
 	LIKWID_MARKER_STOP("3D_VIEW_TRIAD");
 	
 	//compute average, min, max
-	double avg_triad3dv, tot_triad_3dv;
+	double avg_triad3dv = 0.0, tot_triad_3dv = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_triad_3dv += v_triad3d_times[i];
 	}
 	avg_triad3dv = tot_triad_3dv / (double) (repeat-1);
-	double min3dv_triad, max3dv_triad;
+	double min3dv_triad = 0.0, max3dv_triad = 0.0;
 	min3dv_triad = *std::min_element(v_triad3d_times + 1, v_triad3d_times + N);
 	max3dv_triad = *std::max_element(v_triad3d_times + 1, v_triad3d_times + N);
 
@@ -1222,7 +1218,7 @@ int main() {
 	for(size_t t = 0; t < repeat; t++) {
 	   double temp_dotp = 0.0;
 	   auto start_dotp3dv = std::chrono::steady_clock::now();
-#pragma omp simd collapse(3)
+//#pragma omp simd collapse(3)
 	   for(size_t i = 0; i < size3; i++) {
 		for(size_t j = 0; j < size3; j++) {
 		 for(size_t k = 0; k < size3; k++) {
@@ -1240,12 +1236,12 @@ int main() {
 	std::cout<<"Dot product total sum 3d View = "<<sum_dotp<<"\n";
 	
 	//compute average, min, max
-	double avg_dotp3dv, tot_dotp_3dv;
+	double avg_dotp3dv = 0.0, tot_dotp_3dv = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_dotp_3dv += v_dotp3d_times[i];
 	}
 	avg_dotp3dv = tot_dotp_3dv / (double) (repeat-1);
-	double min3dv_dotp, max3dv_dotp;
+	double min3dv_dotp = 0.0, max3dv_dotp = 0.0;
 	min3dv_dotp = *std::min_element(v_dotp3d_times + 1, v_dotp3d_times + N);
 	max3dv_dotp = *std::max_element(v_dotp3d_times + 1, v_dotp3d_times + N);
 
@@ -1271,8 +1267,8 @@ int main() {
 	// e.g the %difference for the carray (w.r.t regular array)
 	// c_copy = ( ( avg_carray - avg_regarray) / avg_regarray ) * 100.0
 	// c = carray, v = view
-	double c_copy3d, c_scale3d, c_sum3d, c_triad3d, c_dot3d;
-	double v_copy3d, v_scale3d, v_sum3d, v_triad3d, v_dot3d;
+	double c_copy3d = 0.0, c_scale3d = 0.0, c_sum3d = 0.0, c_triad3d = 0.0, c_dot3d = 0.0;
+	double v_copy3d = 0.0, v_scale3d = 0.0, v_sum3d = 0.0, v_triad3d = 0.0, v_dot3d = 0.0;
 
 	//---carray's---
 	c_copy3d = ( (avg_copy_3dc - avg_copy_3dr) / avg_copy_3dr ) * hund;
@@ -1328,7 +1324,7 @@ int main() {
 
 
 	//statistics on strides array: avg, min, max
-	double avg_stride, tot_stride, min_stride, max_stride;
+	double avg_stride = 0.0, tot_stride = 0.0, min_stride = 0.0, max_stride = 0.0;
 	for(int i = 0; i < rows; i++){
 	 tot_stride += strides[i];
 	}
@@ -1399,16 +1395,13 @@ int main() {
 	LIKWID_MARKER_STOP("RR_CARRAY_COPY");
 
 	//compute average, max, min
-	double avg_rrcopy, tot_copyrr, min_rrcopy, max_rrcopy;
+	double avg_rrcopy = 0.0, tot_copyrr = 0.0, min_rrcopy = 0.0, max_rrcopy = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_copyrr += rr_times[i];
 	}
 	avg_rrcopy = tot_copyrr / (double) (repeat-1);
 	min_rrcopy = *std::min_element(rr_times + 1, rr_times + N);
 	max_rrcopy = *std::max_element(rr_times + 1, rr_times + N);
-	std::cout<<"Average time for RR copy = "<<avg_rrcopy<<"s\n";
-	std::cout<<"Min time for RR copy = "<<min_rrcopy<<"s\n";
-	std::cout<<"Max time for RR copy = "<<max_rrcopy<<"s\n";
 
 
 
@@ -1434,16 +1427,13 @@ int main() {
 	LIKWID_MARKER_STOP("RR_CARRAY_SCALE");
 
 	//compute average, max, min
-	double avg_rrscale, tot_scale_rr, min_rrscale, max_rrscale;
+	double avg_rrscale = 0.0, tot_scale_rr = 0.0, min_rrscale = 0.0, max_rrscale = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_scale_rr += rr_scale_times[i];
 	}
 	avg_rrscale = tot_scale_rr / (double) (repeat-1);
 	min_rrscale = *std::min_element(rr_scale_times + 1, rr_scale_times + N);
 	max_rrscale = *std::max_element(rr_scale_times + 1, rr_scale_times + N);
-	std::cout<<"Average time for RR scale = "<<avg_rrscale<<"s\n";
-	std::cout<<"Min time for RR scale = "<<min_rrscale<<"s\n";
-	std::cout<<"Max time for RR scale = "<<max_rrscale<<"s\n";
 
 	//======================
 	//	SUM
@@ -1467,16 +1457,13 @@ int main() {
 	LIKWID_MARKER_STOP("RR_CARRAY_SUM");
 
 	//compute average, max, min
-	double avg_rrsum, tot_sum_rr, min_rrsum, max_rrsum;
+	double avg_rrsum = 0.0, tot_sum_rr = 0.0, min_rrsum = 0.0, max_rrsum = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_sum_rr += rr_sum_times[i];
 	}
 	avg_rrsum = tot_sum_rr / (double) (repeat-1);
 	min_rrsum = *std::min_element(rr_sum_times + 1, rr_sum_times + N);
 	max_rrsum = *std::max_element(rr_sum_times + 1, rr_sum_times + N);
-	std::cout<<"Average time for RR sum = "<<avg_rrsum<<"s\n";
-	std::cout<<"Min time for RR sum = "<<min_rrsum<<"s\n";
-	std::cout<<"Max time for RR sum = "<<max_rrsum<<"s\n";
 
 	//======================
 	//	TRIAD
@@ -1500,19 +1487,31 @@ int main() {
 	LIKWID_MARKER_STOP("RR_CARRAY_TRIAD");
 
 	//compute average, max, min
-	double avg_rrtriad, tot_triad_rr, min_rrtriad, max_rrtriad;
+	double avg_rrtriad = 0.0, tot_triad_rr = 0.0, min_rrtriad = 0.0, max_rrtriad = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_triad_rr += rr_triad_times[i];
 	}
 	avg_rrtriad = tot_triad_rr / (double) (repeat-1);
 	min_rrtriad = *std::min_element(rr_triad_times + 1, rr_triad_times + N);
 	max_rrtriad = *std::max_element(rr_triad_times + 1, rr_triad_times + N);
-	std::cout<<"Average time for RR triad = "<<avg_rrtriad<<"s\n";
-	std::cout<<"Min time for RR triad = "<<min_rrtriad<<"s\n";
-	std::cout<<"Max time for RR triad = "<<max_rrtriad<<"s\n";
-	std::cout<<"=============================================================\n";
 
 	std::cout<<"rr4(1,1) = "<<rr4(1,1)<<"\n";
+
+
+	//table for ragged-right matar  output
+	std::cout<<"=============================================================\n";
+	std::cout<<"	RR MATAR Timings Output\n";
+	std::cout<<"=============================================================\n";
+	
+	std::cout<<"Test           Avg.          Min.     Max.   \n";
+	std::cout<<"-------------------------------------------\n";
+	std::cout<<"Copy         "<<avg_rrcopy<<"        "<<min_rrcopy<<"      "<<max_rrcopy<<"\n";
+	std::cout<<"Scale        "<<avg_rrscale<<"      "<<min_rrscale<<"       "<<max_rrscale<<"\n";
+	std::cout<<"Sum          "<<avg_rrsum<<"        "<<min_rrsum<<"        "<<max_rrsum<<"\n";
+	std::cout<<"Triad        "<<avg_rrtriad<<"     "<<min_rrtriad<<"        "<<max_rrtriad<<"\n";
+	std::cout<<"=============================================================\n";
+	std::cout<<"=============================================================\n";
+
 
 	std::cout<<"=============================================================\n";
 	std::cout<<"~~~~~~~~~~~~~~~~~~~RAGGED-RIGHT REGULAR TESTS~~~~~~~~~~~~~~~~~\n";
@@ -1540,16 +1539,13 @@ int main() {
 	LIKWID_MARKER_STOP("RR_REG_COPY");
 
 	//compute average, max, min
-	double avg_reg_rrcopy, tot_reg_copyrr, min_reg_rrcopy, max_reg_rrcopy;
+	double avg_reg_rrcopy = 0.0, tot_reg_copyrr = 0.0, min_reg_rrcopy = 0.0, max_reg_rrcopy = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_reg_copyrr += reg_rr_times[i];
 	}
 	avg_reg_rrcopy = tot_reg_copyrr / (double) (repeat-1);
 	min_reg_rrcopy = *std::min_element(reg_rr_times + 1, reg_rr_times + N);
 	max_reg_rrcopy = *std::max_element(reg_rr_times + 1, reg_rr_times + N);
-	std::cout<<"Average time for trad RR copy = "<<avg_reg_rrcopy<<"s\n";
-	std::cout<<"Min time for trad RR copy = "<<min_reg_rrcopy<<"s\n";
-	std::cout<<"Max time for trad RR copy = "<<max_reg_rrcopy<<"s\n";
 
 
 
@@ -1575,16 +1571,13 @@ int main() {
 	LIKWID_MARKER_STOP("RR_REG_SCALE");
 
 	//compute average, max, min
-	double avg_reg_rrscale, tot_reg_scalerr, min_reg_rrscale, max_reg_rrscale;
+	double avg_reg_rrscale = 0.0, tot_reg_scalerr = 0.0, min_reg_rrscale = 0.0, max_reg_rrscale = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_reg_scalerr += reg_rr_scale[i];
 	}
 	avg_reg_rrscale = tot_reg_scalerr / (double) (repeat-1);
 	min_reg_rrscale = *std::min_element(reg_rr_scale + 1, reg_rr_scale + N);
 	max_reg_rrscale = *std::max_element(reg_rr_scale + 1, reg_rr_scale + N);
-	std::cout<<"Average time for trad RR scale = "<<avg_reg_rrscale<<"s\n";
-	std::cout<<"Min time for trad RR scale = "<<min_reg_rrscale<<"s\n";
-	std::cout<<"Max time for trad RR scale = "<<max_reg_rrscale<<"s\n";
 
 
 	//======================
@@ -1609,16 +1602,13 @@ int main() {
 	LIKWID_MARKER_STOP("RR_REG_SUM");
 	
 	//compute average, max, min
-	double avg_reg_rrsum, tot_reg_sumrr, min_reg_rrsum, max_reg_rrsum;
+	double avg_reg_rrsum = 0.0, tot_reg_sumrr = 0.0, min_reg_rrsum = 0.0, max_reg_rrsum = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_reg_sumrr += reg_rr_sum[i];
 	}
 	avg_reg_rrsum = tot_reg_sumrr / (double) (repeat-1);
 	min_reg_rrsum = *std::min_element(reg_rr_sum + 1, reg_rr_sum + N);
 	max_reg_rrsum = *std::max_element(reg_rr_sum + 1, reg_rr_sum + N);
-	std::cout<<"Average time for trad RR sum = "<<avg_reg_rrsum<<"s\n";
-	std::cout<<"Min time for trad RR sum = "<<min_reg_rrsum<<"s\n";
-	std::cout<<"Max time for trad RR sum = "<<max_reg_rrsum<<"s\n";
 
 
 
@@ -1644,22 +1634,50 @@ int main() {
 	LIKWID_MARKER_STOP("RR_REG_TRIAD");
 
 	//compute average, max, min
-	double avg_reg_rrtriad, tot_reg_triadrr, min_reg_rrtriad, max_reg_rrtriad;
+	double avg_reg_rrtriad = 0.0, tot_reg_triadrr = 0.0, min_reg_rrtriad = 0.0, max_reg_rrtriad = 0.0;
 	for(size_t i = 1; i < repeat; i++) {
 		tot_reg_triadrr += reg_rr_triad[i];
 	}
 	avg_reg_rrtriad = tot_reg_triadrr / (double) (repeat-1);
 	min_reg_rrtriad = *std::min_element(reg_rr_triad + 1, reg_rr_triad + N);
 	max_reg_rrtriad = *std::max_element(reg_rr_triad + 1, reg_rr_triad + N);
-	std::cout<<"Average time for trad RR triad = "<<avg_reg_rrtriad<<"s\n";
-	std::cout<<"Min time for trad RR triad = "<<min_reg_rrtriad<<"s\n";
-	std::cout<<"Max time for trad RR triad = "<<max_reg_rrtriad<<"s\n";
 
 
+	//table for ragged-right regular output
+	std::cout<<"=============================================================\n";
+	std::cout<<"	RR Regular Timings Output\n";
+	std::cout<<"=============================================================\n";
+	
+	std::cout<<"Test           Avg.          Min.     Max.   \n";
+	std::cout<<"-------------------------------------------\n";
+	std::cout<<"Copy         "<<avg_reg_rrcopy<<"        "<<min_reg_rrcopy<<"      "<<max_reg_rrcopy<<"\n";
+	std::cout<<"Scale        "<<avg_reg_rrscale<<"      "<<min_reg_rrscale<<"       "<<max_reg_rrscale<<"\n";
+	std::cout<<"Sum          "<<avg_reg_rrsum<<"        "<<min_reg_rrsum<<"        "<<max_reg_rrsum<<"\n";
+	std::cout<<"Triad        "<<avg_reg_rrtriad<<"     "<<min_reg_rrtriad<<"        "<<max_reg_rrtriad<<"\n";
+	std::cout<<"=============================================================\n";
 	std::cout<<"=============================================================\n";
 
 
 	std::cout<<"reg_rr4(1,1) = "<<reg_rr4[1][1]<<"\n";
+
+	double rr_copy = 0.0, rr_scale = 0.0, rr_triad = 0.0, rr_sum = 0.0;
+	rr_copy = ( (avg_rrcopy - avg_reg_rrcopy) / avg_reg_rrcopy) * hund;
+	rr_scale = ( (avg_rrscale - avg_reg_rrscale) / avg_reg_rrscale) * hund;
+	rr_sum = ( (avg_rrsum - avg_reg_rrsum) / avg_reg_rrsum) * hund;
+	rr_triad = ( (avg_rrtriad - avg_reg_rrtriad) / avg_reg_rrtriad) * hund;
+
+	std::cout<<"=============================================================\n";
+	std::cout<<"	Percent Difference Table for RR Case\n";
+	std::cout<<"=============================================================\n";
+	
+	std::cout<<"Test           RR\n";
+	std::cout<<"-------------------------------------------\n";
+	std::cout<<"Copy         "<<rr_copy<<"\n";
+	std::cout<<"Scale        "<<rr_scale<<"\n";
+	std::cout<<"Sum          "<<rr_sum<<"\n";
+	std::cout<<"Triad        "<<rr_triad<<"\n";
+	std::cout<<"=============================================================\n";
+
 
 	std::cout<<"==========DONE WITH STREAMBENCHMARK CPU TESTS!!!=============\n";
 
@@ -1780,6 +1798,8 @@ int main() {
     //real_t* reg_arr1 = new real_t[nsize];
     //real_t* reg_arr2 = new real_t[nsize];
     //real_t* reg_arr3 = new real_t[nsize];
+
+/*
 
     // Create 1D FArrayKokkos objects
     auto arr1 = FArrayKokkos <real_t> (nsize);
@@ -2119,12 +2139,14 @@ int main() {
                   << std::left << std::setw(12) << std::setprecision(5) << average
                   << std::endl;
     }
-    
+  
+*/  
     std::cout << std::endl;
 
     /***************************************************************************
      * 3D array STREAM benchmark suite
      **************************************************************************/
+/*
 
     std::cout << "-------------------------------------------------------------"
               << std::endl;
@@ -2159,6 +2181,7 @@ int main() {
     //real_t*** reg_arr1_3D = new real_t**[nsize_3D];
     //real_t*** reg_arr2_3D = new real_t**[nsize_3D];
     //real_t*** reg_arr3_3D = new real_t**[nsize_3D];
+*/
 
     /*
     for (int i = 0; i < nsize_3D; i++) {
@@ -2174,6 +2197,7 @@ int main() {
     }
     */
 
+/*
     // Create 3D CArrayKokkos objects
     auto arr1_3D = CArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
     auto arr2_3D = CArrayKokkos <real_t> (nsize_3D, nsize_3D, nsize_3D);
@@ -2207,6 +2231,8 @@ int main() {
             });
     Kokkos::fence();
 
+*/
+
     // De-allocated memory used for "regularly" allocated 3D C++ arrays
     /*
     for (int i = 0; i < nsize_3D; i++) {
@@ -2230,7 +2256,7 @@ int main() {
     ////////////////////////////////////////////////////////////////////////////
 
     // 3D CArrayKokkos copy kernel       
-
+/*
     for (int iter = 0; iter < repeat; iter++) {
         begin = std::chrono::high_resolution_clock::now();
          
@@ -2697,6 +2723,7 @@ int main() {
     //std::cout << "MMM max time: " << *minmax_mmm_kv.second << " sec" << std::endl;
     //std::cout << "MMM avg time: " << average_mmm_kv << " sec" << std::endl;
     //std::cout << std::endl;
+*/
      
 //#endif
     }

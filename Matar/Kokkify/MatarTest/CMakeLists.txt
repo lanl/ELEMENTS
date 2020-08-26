@@ -57,8 +57,12 @@ add_executable(mtest ${mtest_SRCS})
 # Executable that runs CPU stream benchmark on MATAR's Kokkos-specific classes
 add_executable(mbench main_benchmark.cpp matar.h kokkos_alias.h)
 
+#executable for matrix operation tests
+add_executable(mattest main_mmm.cpp matar.h kokkos_alias.h)
+
 # Find LIKWID's header files
 target_include_directories(mbench PUBLIC ${LIKWID_INCLUDE_DIRS})
+target_include_directories(mattest PUBLIC ${LIKWID_INCLUDE_DIRS})
 
 include_directories(./)
 
@@ -68,3 +72,4 @@ target_link_libraries(mtest Kokkos::kokkos)
 #target_link_libraries(mbench Kokkos::kokkos)
 # Link against LIKWID in addition to Kokkos
 target_link_libraries(mbench PUBLIC ${LIKWID_LIBRARIES} Kokkos::kokkos)
+target_link_libraries(mattest PUBLIC ${LIKWID_LIBRARIES} Kokkos::kokkos)

@@ -1858,8 +1858,6 @@ int main(int argc, char** argv) {
               << std::endl
               << std::fixed;
 
-    std::cout << std::endl;
-
     // Calculate kernel memory bandwidths
     for (int ker = 0; ker < num_kernels; ker++) {
         // Get min/max times taken on kernel computation

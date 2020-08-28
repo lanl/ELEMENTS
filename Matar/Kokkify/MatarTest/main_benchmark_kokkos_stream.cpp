@@ -1702,8 +1702,8 @@ int main(int argc, char** argv) {
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_for("Copy (3D KV)", array_type_STREAM, 
-                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                         //KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                         //KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                         KOKKOS_LAMBDA(const int k, const int j, const int i) {
                 kv_arr3_3D(i, j, k) = kv_arr1_3D(i, j, k);
                 });
         Kokkos::fence();
@@ -1718,8 +1718,8 @@ int main(int argc, char** argv) {
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_for("Scale (3D KV)", array_type_STREAM, 
-                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                         //KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                         //KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                         KOKKOS_LAMBDA(const int k, const int j, const int i) {
                 kv_arr2_3D(i, j, k) = (scalar * kv_arr3_3D(i, j, k));
                 });
         Kokkos::fence();
@@ -1734,8 +1734,8 @@ int main(int argc, char** argv) {
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_for("Sum (3D KV)", array_type_STREAM, 
-                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                         //KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                         //KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                         KOKKOS_LAMBDA(const int k, const int j, const int i) {
                 kv_arr3_3D(i, j, k) = (kv_arr1_3D(i, j, k) + kv_arr2_3D(i, j, k));
                 });
         Kokkos::fence();
@@ -1751,8 +1751,8 @@ int main(int argc, char** argv) {
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_for("Triad (3D KV)", array_type_STREAM, 
-                         KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                         //KOKKOS_LAMBDA(const int k, const int j, const int i) {
+                         //KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                         KOKKOS_LAMBDA(const int k, const int j, const int i) {
                 kv_arr1_3D(i, j, k) = (kv_arr2_3D(i, j, k) + (scalar * kv_arr3_3D(i, j, k)));
                 });
         Kokkos::fence();
@@ -1771,8 +1771,8 @@ int main(int argc, char** argv) {
         begin = std::chrono::high_resolution_clock::now();
 
         Kokkos::parallel_reduce("Dot product (3D KV)", array_type_STREAM, 
-                               KOKKOS_LAMBDA(const int i, const int j, const int k, real_t& tmp) {
-                               //KOKKOS_LAMBDA(const int k, const int j, const int i, real_t& tmp) {
+                               //KOKKOS_LAMBDA(const int i, const int j, const int k, real_t& tmp) {
+                               KOKKOS_LAMBDA(const int k, const int j, const int i, real_t& tmp) {
                 tmp += (kv_arr1_3D(i, j, k) * kv_arr2_3D(i, j, k));
         }, kv_dot_3D_fin_val);
         Kokkos::fence();

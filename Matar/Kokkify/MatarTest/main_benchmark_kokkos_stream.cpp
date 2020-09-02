@@ -42,10 +42,6 @@ int main(int argc, char** argv) {
     // Start LIKWID
      LIKWID_MARKER_INIT;
 
-    int size_i = 5, size_j = 4, size_k = 3;
-    const int size3 = 256;
-    const int size1 = size3 * size3 * size3;
-
     const unsigned int default_max_iter = 3;
     const unsigned int repeat = (argc > 1) ? std::atoi(argv[1]) : default_max_iter;
 

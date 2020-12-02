@@ -734,8 +734,8 @@ public:
         this_matrix = some_matrix;
     }
     
-    // overload operator() to access data as array(i,j)
-    //  where i=[0:N-1], j=[0:N-1]
+    // overload operator() to access data as matrix(i,j)
+    //  where i=[1:N], j=[1:N]
     inline T& operator()(size_t i) const
     {
         return this_matrix[i-1];
@@ -864,7 +864,7 @@ public:
 
 
 
-// create a 1D vector that is accessed as an matrix(i,...,n), where i=[0:N-1]
+// create a 1D vector that is accessed as an matrix(i,...,n), where i=[1:N]
 template <typename T>
 class f_matrix_t {
     
@@ -1024,7 +1024,7 @@ public:
 //   C stride matrix related classes  (last index varies the quickest)
 //==============================================================================
 
-// view a 1D vector as an array(i,...,n), where i=[0:N-1]
+// view a 1D vector as an matrix(i,...,n), where i=[1:N]
 template <typename T>
 class view_c_matrix {
 
@@ -1048,8 +1048,8 @@ public:
         this_matrix = some_matrix;
     }
     
-    // overload operator() to access data as array(i,j)
-    //  where i=[0:N-1], j=[0:N-1]
+    // overload operator() to access data as matrix(i,j)
+    //  where i=[1:N], j=[1:N]
     inline T& operator()(size_t i) const
     {
         return this_matrix[i-1];
@@ -1068,8 +1068,8 @@ public:
         this_matrix = some_matrix;
     }
     
-    // overload operator() to access data as array(i,j)
-    //  where i=[0:N-1], j=[0:N-1]
+    // overload operator() to access data as matrix(i,j)
+    //  where i=[1:N], j=[1:N]
     inline T& operator()(size_t i, size_t j) const
     {
         return this_matrix[(j-1) + (i-1)*dim2];
@@ -1090,8 +1090,8 @@ public:
         this_matrix = some_matrix;
     }
     
-    // overload operator() to access data as array(i,j,k)
-    //  where i=[0:N-1], j=[0:N-1], k=[0:N-1]
+    // overload operator() to access data as matrix(i,j,k)
+    //  where i=[1:N], j=[1:N], k=[1:N]
     inline T& operator()(size_t i, size_t j, size_t k) const
     {
         return this_matrix[(k-1) + (j-1)*dim3 + (i-1)*dim3*dim2];
@@ -1114,8 +1114,8 @@ public:
         this_matrix = some_matrix;
     }
     
-    // overload operator() to access data as array(i,j,k,l)
-    //  where i=[0:n-1], j=[0:N-1], k=[0:N-1], l=[0:N-1]
+    // overload operator() to access data as matrix(i,j,k,l)
+    //  where i=[1:n], j=[1:N], k=[1:N], l=[1:N]
     inline T& operator()(size_t i, size_t j, size_t k, size_t l) const
     {
         return this_matrix[(l-1) + (k-1)*dim4 + (j-1)*dim4*dim3 + (i-1)*dim4*dim3*dim2];
@@ -1140,8 +1140,8 @@ public:
         this_matrix = some_matrix;
     }
     
-    // overload operator() to access data as array(i,j,k,l,m)
-    //  where i=[0:N-1], j=[0:N-1], k=[0:N-1], l=[0:N-1], m=[0:N-1]
+    // overload operator() to access data as matrix(i,j,k,l,m)
+    //  where i=[1:N], j=[1:N], k=[1:N], l=[1:N], m=[1:N]
     inline T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m) const
     {
         return this_matrix[(m-1) + (l-1)*dim5 + (k-1)*dim5*dim4 + (j-1)*dim5*dim4*dim3
@@ -1169,8 +1169,8 @@ public:
         this_matrix = some_matrix;
     }
     
-    // overload operator() to access data as array(i,j,k,l,m,n)
-    //  where i=[0:N-1], j=[0:N-1], k=[0:N-1], l=[0:N-1], m=[0:N-1]
+    // overload operator() to access data as matrix(i,j,k,l,m,n)
+    //  where i=[1:N], j=[1:N], k=[1:N], l=[1:N], m=[1:N]
     inline T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m, size_t n) const
     {
         return this_matrix[(n-1) + (m-1)*dim6 + (l-1)*dim6*dim5 + (k-1)*dim6*dim5*dim4 
@@ -1181,7 +1181,7 @@ public:
 }; // end of view_c_matrix
 
 
-// create a 1D vector that is accessed as an array(i,...,n), where i=[0:N-1]
+// create a 1D vector that is accessed as an matrix(i,...,n), where i=[1:N]
 template <typename T>
 class c_matrix_t {
     
@@ -1204,7 +1204,7 @@ public:
       this_matrix = new T[dim1];
    }
    
-   // overload operator() to access data as array(i) where i=[0:N-1]
+   // overload operator() to access data as matrix(i) where i=[1:N]
    inline T& operator()(size_t i) const
    {
       return this_matrix[i-1];
@@ -1220,8 +1220,8 @@ public:
         this_matrix = new T[dim1*dim2];
     }
     
-    // overload operator() to access data as array(i,j)
-    //  where i=[0:N-1], j=[0:N-1]
+    // overload operator() to access data as matrix(i,j)
+    //  where i=[1:N], j=[1:N]
     inline T& operator()(size_t i, size_t j) const
     {
         return this_matrix[(j-1) + (i-1)*dim2];
@@ -1239,8 +1239,8 @@ public:
         this_matrix = new T[some_dim1*some_dim2*some_dim3];
     }
     
-    // overload operator() to access data as array(i,j,k)
-    //  where i=[0:N-1], j=[0:N-1], k=[0:N-1]
+    // overload operator() to access data as matrix(i,j,k)
+    //  where i=[1:N], j=[1:N], k=[1:N]
     inline T& operator()(size_t i, size_t j, size_t k) const
     {
         return this_matrix[(k-1) + (j-1)*dim3 + (i-1)*dim3*dim2];
@@ -1262,8 +1262,8 @@ public:
         this_matrix = new T[some_dim1*some_dim2*some_dim3*some_dim4];
     }
     
-    // overload operator() to access data as array(i,j,k,l)
-    //  where i=[0:n-1], j=[0:N-1], k=[0:N-1], l=[0:N-1]
+    // overload operator() to access data as matrix(i,j,k,l)
+    //  where i=[1:N], j=[1:N], k=[1:N], l=[1:N]
     inline T& operator()(size_t i, size_t j, size_t k, size_t l) const
     {
         return this_matrix[(l-1) + (k-1)*dim4 + (j-1)*dim4*dim3 + (i-1)*dim4*dim3*dim2];
@@ -1287,8 +1287,8 @@ public:
         this_matrix = new T[some_dim1*some_dim2*some_dim3*some_dim4*some_dim5];
     }
     
-    // overload operator() to access data as array(i,j,k,l,m)
-    //  where i=[0:N-1], j=[0:N-1], k=[0:N-1], l=[0:N-1], m=[0:N-1]
+    // overload operator() to access data as matrix(i,j,k,l,m)
+    //  where i=[1:N], j=[1:N], k=[1:N], l=[1:N], m=[1:N]
     inline T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m) const
     {
         return this_matrix[(m-1) + (l-1)*dim5 + (k-1)*dim5*dim4 + (j-1)*dim5*dim4*dim3
@@ -1316,8 +1316,8 @@ public:
                           *some_dim4*some_dim5*some_dim6];
     }
     
-    // overload operator() to access data as array(i,j,k,l,m,n)
-    //  where i=[0:N-1], j=[0:N-1], k=[0:N-1], l=[0:N-1], m=[0:N-1]
+    // overload operator() to access data as matrix(i,j,k,l,m,n)
+    //  where i=[1:N], j=[1:N], k=[1:N], l=[1:N], m=[1:N]
     inline T& operator()(size_t i, size_t j, size_t k, size_t l, size_t m, size_t n) const
     {
         return this_matrix[(n-1) + (m-1)*dim6 + (l-1)*dim6*dim5 + (k-1)*dim6*dim5*dim4 

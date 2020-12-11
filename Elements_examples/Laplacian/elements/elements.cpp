@@ -47,7 +47,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "utilities.h"
 #include "elements.h"
 
-
+#define EPSILON 1.0e-12
 
 using namespace utils;
 
@@ -1337,7 +1337,7 @@ void refine_mesh(
 
     delete [] gauss_id_in_cell;
 
-    mesh.build_connectity();
+    mesh.build_connectivity();
 }
 
 //******************************//
@@ -1916,7 +1916,7 @@ real_t mesh_t::face_coords(int rk_bin, int face_id, int this_dim) const
 // ==== MESH CONNECTIVITY FUNCTIONS ==== // 
     
 // initialize array for mesh connectivity: all cells around a node
-void mesh_t::build_connectity(){
+void mesh_t::build_connectivity(){
     
     // -- NODE TO CELL CONNECTIVITY -- //
     build_node_cell_connectivity(); 
@@ -2281,7 +2281,7 @@ void mesh_t::build_face_connectivity(){
             }
         }
 
-        dist_min = dist(0);
+        dist_min = dist(0); //is dist(0) initialized? what happens if its auto-initialized to a large negative number?
         dist_max = 0.0;
         
         for(int i = 0; i < 28; ++i){
@@ -2289,7 +2289,8 @@ void mesh_t::build_face_connectivity(){
             dist_max = fmax(dist(i),dist_max);
         }
     }
-
+    
+    //why not just initialize to dist_min if node_hash_delta starts as a large number?
     node_hash_delta = fmin(node_hash_delta, dist_min);
     node_hash_delta = node_hash_delta/2.0;
 
@@ -2297,7 +2298,7 @@ void mesh_t::build_face_connectivity(){
     real_t num_bins[num_dim_];
     
     for (int dim = 0; dim < num_dim_; dim++){
-        num_bins[dim] = (coord_max[dim] - coord_min[dim]  + 1.e-12)/node_hash_delta;
+        num_bins[dim] = (coord_max[dim] - coord_min[dim]  + EPSILON)/node_hash_delta;
     }
 
     // Set size of hash key array
@@ -2681,9 +2682,7 @@ void mesh_t::build_element_connectivity(){
 // identify the boundary faces
 void mesh_t::build_bdy_faces (){
     
-    
     int bdy_face_gid = 0;
-    
     
     // loop over the faces in the mesh
     for(int face_gid = 0; face_gid < num_faces_; face_gid++){
@@ -2761,6 +2760,9 @@ void mesh_t::tag_bdys(int this_bc_tag, real_t val, int bdy_set){
     
     
     // save the boundary vertices to this set that are on the plane
+    /* I'm not sure about how the design will (or is in a newer version)
+       evolve, but maybe error control is needed in case the first call
+       to this function has bdy_set > 0 */
     int counter = 0;
     int start = start_index_bdy_set_[bdy_set];
     

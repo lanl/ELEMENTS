@@ -192,9 +192,9 @@ private:
 
     // ---- ELEMENT ---- //
     int   num_elem_;
-    int   num_g_pts_in_elem_;
-    int   num_cells_in_elem_;
-    int   num_nodes_in_elem_;
+    int   num_g_pts_in_elem_;        //number of quadrature points in an element
+    int   num_cells_in_elem_;        //number of finite volume cells defined in an element
+    int   num_nodes_in_elem_;        //nodal degrees of freedom per element
     int   num_mat_pts_in_elem_;
 
     int * cells_in_elem_ = NULL;
@@ -209,9 +209,9 @@ private:
     int   num_cells_;
     
     int * nodes_in_cell_list_ = NULL;      // size of num_cells*8
-    int * num_cells_in_cell_ = NULL;       // size of num_cells
-    int * cells_in_cell_list_start_ = NULL; // size of num_cells+1
-    int * cells_in_cell_list_ = NULL;       // size depends on mesh connectivity
+    int * num_cells_in_cell_ = NULL;       // size of num_cells; stores the number of adjacent elements for each element
+    int * cells_in_cell_list_start_ = NULL; // size of num_nodes+1; used for ragged right 1D array index storage
+    int * cells_in_cell_list_ = NULL;       // size depends on mesh connectivity; stores adjacent element indices for each element
     int * elems_in_cell_list_ = NULL;       // size depends on mesh connectivity
 
 
@@ -223,12 +223,12 @@ private:
     int   num_nodes_;
 
     int * num_cells_in_node_ = NULL;        // size of num_nodes
-    int * cells_in_node_list_start_ = NULL; // size of num_nodes+1
+    int * cells_in_node_list_start_ = NULL; // size of num_nodes+1; used for ragged right 1D array index storage
     int * cells_in_node_list_ = NULL;       // size depends on mesh connectivity
     
-    int * num_elems_in_node_ = NULL;
-    int * elems_in_node_list_start_ = NULL;
-    int * elems_in_node_list_ = NULL;
+    int * num_elems_in_node_ = NULL;        // number of elements a node belongs to in the mesh
+    int * elems_in_node_list_start_ = NULL; // used for ragged right 1D array storage
+    int * elems_in_node_list_ = NULL;       // list of elements a node is shared with
 
     // ---- GAUSS POINTS ---- //
     int   num_g_pts_;
@@ -237,33 +237,37 @@ private:
 
 
     // ---- CORNERS ---- //
-    int   num_corners_;
+    int   num_corners_;                          //the number of countable nodes if the elements in the mesh did not share nodes.
 
-    int * num_corners_in_node_ = NULL;
+    int * num_corners_in_node_ = NULL;           //number of element/cell geometry corners a node is representing
 
-    int * corners_in_cell_list_ = NULL;
+    int * corners_in_cell_list_ = NULL;          //stores the global corner indices for each cell/element
 
-    int * corners_in_node_list_start_ = NULL;
-    int * corners_in_node_list_ = NULL;
+    int * corners_in_node_list_start_ = NULL;    //used for ragged right 1D array storage of the corner indices each node represents
+    int * corners_in_node_list_ = NULL;          //stores the global corner indices for each corner a node is representing
 
     // int * corner_bdy_count_ = NULL;
 
-
+    /*not sure if we should call them faces once we move into the realm of non-linear element surfaces.
+      The formal geometry definition of face is restricted to planar.*/
     // ---- FACES ---- //
-    int   num_faces_;
+    int   num_faces_;                    //total number of smooth element/cell surface segments
 
-    int * face_nodes_list_ = NULL;       // size of num_faces*4
-    int * cells_in_face_list_ = NULL;    // size of num_faces*2
+    int * face_nodes_list_ = NULL;       // size of num_faces*4; stores nodes that belong to the surface segment
+    int * cells_in_face_list_ = NULL;    // size of num_faces*2; stores 1 or 2 cell ids that the surface belongs to
 
 
     // ---- BOUNDARY ---- //
-    int num_bdy_faces_;
-    int num_bdy_sets_;
+    int num_bdy_faces_;          //total number of element/cell surface segments that coincide with the model boundary
+    int num_bdy_sets_;           //number of independent boundary conditions applied to the model
     
-    int * bdy_faces_;          // size depends on mesh
-    int * bdy_set_list_;
-    int * start_index_bdy_set_;
-    int * num_bdy_faces_set_;
+    int * bdy_faces_;            /* size depends on mesh; stores the global element/cell surface indices for all
+                                    such surfaces that coincide with the model boundary */
+    int * bdy_set_list_;         /* stores the set of global element/cell surface indices that pertain to each
+                                    boundary constraint. */
+    int * start_index_bdy_set_;  /* stores the 1D array indices at which each boundary
+                                    constraint's surface index storage commences */
+    int * num_bdy_faces_set_;    /* stores the number of surface segments that pertain to a boundary constraint
 
 
 // ---- MESH GEOMETRIC STATE ---- //
@@ -292,7 +296,11 @@ public:
     //**********************************//
     // Mesh class function definitions  //
     //**********************************//
-
+    
+    /*The variable dim refers to the problem dimension. The variable num_rk refers to
+      the number of vectors (of size dim) stored by each node. For example, position and velocity
+      implies num_rk = 2. e_order and r_order are the element polynomial order and CCH reconstruction
+      polynomial orders respectively.  */
     void init_element (int e_order, int r_order, int dim, int num_elem, int num_rk);
     void init_cells (int ncells, int num_rk);
     void init_nodes (int num_nodes, int num_rk);
@@ -435,11 +443,14 @@ public:
 
 
     // ---- Boundary ---- //
-
+    
+    // returns the number of independent boundary constraints applied to the system
     int num_bdy_sets() const;
-
+    
+    //returns the total number of element/cell surfaces that coincide with the boundary of the model
     int num_bdy_faces() const;
 
+    //returns the global id of a cell surface that coincides with the boundary of the model
     int bdy_faces(int this_bdy_face) const;
 
     // returns the number per bdy-faces in a particular set
@@ -500,17 +511,17 @@ public:
     // ==== MESH CONNECTIVITY FUNCTIONS ==== // 
         
     // initialize array for mesh connectivity: all cells around a node
-    void build_connectity();
+    void build_connectivity();            //invoke all the following connectivity routines
 
-    void build_node_cell_connectivity();
+    void build_node_cell_connectivity();  //build connectivity of nodes to elements/cells
 
-    void build_corner_connectivity();
+    void build_corner_connectivity();     /*build connectivity of globally indexed geometric corners
+                                            (belonging to elements/cells) to elements/cells*/
+    void build_cell_cell_connectivity();  //build connectivity of elements/cells to adjacent elements/cells
 
-    void build_cell_cell_connectivity();
-
-    void build_face_connectivity();
-
-    void build_element_connectivity();
+    void build_face_connectivity();       /*build connectivity of globally indexed element/cell surfaces to
+                                            the global element/cell indices they belong to*/
+    void build_element_connectivity();    //build connectivity of elements to nodes
 
     // identify the boundary faces
     void build_bdy_faces ();
@@ -550,7 +561,7 @@ void refine_mesh(
     const int dim);
 
 
-
+//what does swage stand for or mean?
 namespace swage{
 
     // Used by Gauss2/3D to set quadrature points
@@ -838,7 +849,7 @@ class ref_element{
             const view_c_array <real_t>  &xi_point) = 0;
 
 
-    }; // end of 3D parent class
+    }; // end of 4D parent class
 
 
     /*

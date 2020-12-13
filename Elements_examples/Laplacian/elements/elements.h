@@ -267,7 +267,7 @@ private:
                                     boundary constraint. */
     int * start_index_bdy_set_;  /* stores the 1D array indices at which each boundary
                                     constraint's surface index storage commences */
-    int * num_bdy_faces_set_;    /* stores the number of surface segments that pertain to a boundary constraint
+    int * num_bdy_faces_set_;    //stores the number of surface segments that pertain to a boundary constraint
 
 
 // ---- MESH GEOMETRIC STATE ---- //
@@ -301,6 +301,7 @@ public:
       the number of vectors (of size dim) stored by each node. For example, position and velocity
       implies num_rk = 2. e_order and r_order are the element polynomial order and CCH reconstruction
       polynomial orders respectively.  */
+      
     void init_element (int e_order, int r_order, int dim, int num_elem, int num_rk);
     void init_cells (int ncells, int num_rk);
     void init_nodes (int num_nodes, int num_rk);

@@ -2779,7 +2779,11 @@ void mesh_t::tag_bdys(int this_bc_tag, real_t val, int bdy_set){
             counter ++;
         }
     } // end for bdy_face
-    
+
+    //error output for a boundary condition that was geometrically incompatible
+    if(counter==0)
+    std::cout << " The boundary condition " << bdy_set << " was incompatible with the model geometry" << std::endl;
+
     // save the number of bdy faces in the set
     num_bdy_faces_set_[bdy_set] = counter;
     

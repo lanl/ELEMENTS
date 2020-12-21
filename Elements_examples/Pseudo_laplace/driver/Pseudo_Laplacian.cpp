@@ -46,6 +46,7 @@ num_cells in element = (p_order*2)^3
 
 
 #include "elements.h"
+#include "swage.h"
 #include "matar.h"
 #include "utilities.h"
 #include "header.h"
@@ -68,10 +69,11 @@ void vtk_writer();
 
 void ensight();
 
-
 void smooth_cells();
 
 void smooth_element();
+
+void get_nodal_jacobian();
 
 //==============================================================================
 //   Mesh Variables
@@ -91,7 +93,7 @@ boundary_t  * boundary;
 int NR = 0; // number of Regions
 int NC = 0; // number of contours
 int NF = 0; // number of fill
-int NB = 0; // number of boundary face sets to tag
+int NB = 0; // number of boundary patch sets to tag
 
 
 // --- Graphics output variables ---
@@ -132,16 +134,27 @@ real_t small= 1.0e-8;   // single precision
 int num_dim = 3;
 int p_order = 0;
 
-// --- Element type choice ---
-elements::swage::Hex8        elem;
-elements::swage::Element3D  *element = &elem;
-elements::swage::ref_element  ref_elem;
-
-// --- Mesh declarations ---
-elements::mesh_t init_mesh;
-elements::mesh_t mesh;
 
 
+
+
+// Notes for Adrian
+/*
+
+input() is defined in input.cpp in the src directory
+
+Thanks for catching the spelling error in connectivity
+
+dist(0) is initialized a few lines above in the dist(i) loop
+
+I like the error control idea.  At some point I also plan to 
+add unit test and automate them.
+
+Swage is a reference to a swage block used in blacksmithing.  
+Its a large metal block that has multiple shaps carved into 
+each surface to use for hammering metal into to form it. 
+
+*/
 
 //==============================================================================
 //    Main
@@ -169,6 +182,12 @@ int main(int argc, char *argv[]){
 
     std::cout << "Before boundary  " << std::endl;
     apply_boundary();
+
+
+    // Calculate reference element information
+    calculate_ref_elem();
+
+    get_nodal_jacobian();
 
     dt = 0.001;
 
@@ -263,14 +282,13 @@ void read_mesh(char *MESH){
 
     int num_nodes;
 
-
     // --- Read the number of vertices in the mesh --- //
     fscanf(in,"%d",&num_nodes);
     printf("%d\n" , num_nodes);
 
     // set the vertices in the mesh read in
     int rk_init = 1;
-    init_mesh.init_nodes(num_nodes, rk_init); // add 1 for index starting at 1
+    init_mesh.init_nodes(num_nodes); // add 1 for index starting at 1
     
     std::cout << "Num points read in = " << init_mesh.num_nodes() << std::endl;
 
@@ -278,17 +296,17 @@ void read_mesh(char *MESH){
     // read the initial mesh coordinates
     // x-coords
     for (int node_gid = 0; node_gid < init_mesh.num_nodes(); node_gid++) {
-        fscanf(in,"%le", &init_mesh.node_coords(0, node_gid, 0));
+        fscanf(in,"%le", &init_mesh.node_coords(node_gid, 0));
     }
 
     // y-coords
     for (int node_gid = 0; node_gid < init_mesh.num_nodes(); node_gid++) {
-        fscanf(in,"%le", &init_mesh.node_coords(0, node_gid, 1));
+        fscanf(in,"%le", &init_mesh.node_coords(node_gid, 1));
     }  
 
     // z-coords
     for (int node_gid = 0; node_gid < init_mesh.num_nodes(); node_gid++) {
-        fscanf(in,"%le", &init_mesh.node_coords(0, node_gid, 2));
+        fscanf(in,"%le", &init_mesh.node_coords(node_gid, 2));
     }
 
     
@@ -313,8 +331,8 @@ void read_mesh(char *MESH){
 
     std::cout<<"before initial mesh initialization"<<std::endl;
 
-    init_mesh.init_element(0, 0, 3, num_elem, rk_init);
-    init_mesh.init_cells(num_elem, rk_init);
+    init_mesh.init_element(0, 3, num_elem);
+    init_mesh.init_cells(num_elem);
 
 
 
@@ -370,43 +388,37 @@ void read_mesh(char *MESH){
         // -- CELL TO CELL CONNECTIVITY -- //
         init_mesh.build_cell_cell_connectivity(); 
 
-        // -- FACES -- //
-        init_mesh.build_face_connectivity(); 
+        // -- PATCHES -- //
+        init_mesh.build_patch_connectivity(); 
     }
 
     std::cout<<"refine mesh"<<std::endl;
 
     // refine subcell mesh to desired order
-    refine_mesh(init_mesh, mesh, p_order, rk_storage, num_dim);
+    refine_mesh(init_mesh, mesh, p_order, num_dim);
+
+    
+
+
 
     // Close mesh input file
     fclose(in);
 
 
-    // Copy initial coordinates to all RK stages (starts at 1, zero already filled)
-    for(int rk = 1; rk < rk_storage; rk++){
-        for (int node_gid = 0; node_gid < init_mesh.num_nodes(); node_gid++) {
-            mesh.node_coords(rk, node_gid, 0) = mesh.node_coords(0, node_gid, 0);
-            mesh.node_coords(rk, node_gid, 1) = mesh.node_coords(0, node_gid, 1);
-            mesh.node_coords(rk, node_gid, 2) = mesh.node_coords(0, node_gid, 2);
-        }
-    }
-
     // Create reference element
-    ref_elem.init(p_order, num_dim);
+    ref_elem.init(p_order, num_dim, elem->num_basis());
 
      
-    std::cout << "number of faces = " << mesh.num_faces() << std::endl;
-    std::cout << "End of setup " << std::endl;
-
+    std::cout << "number of patches = " << mesh.num_patches() << std::endl;
+    std::cout << "End of setup " << std::endl;     
 } // end read_mesh
 
 
 void generate_bcs(){
 
-    // build boundary mesh faces
-    mesh.build_bdy_faces();
-    std::cout << "number of boundary faces = " << mesh.num_bdy_faces() << std::endl;
+    // build boundary mesh patches
+    mesh.build_bdy_patches();
+    std::cout << "number of boundary patches = " << mesh.num_bdy_patches() << std::endl;
     std::cout << "building boundary sets " << std::endl;
     // set the number of boundary sets
     
@@ -414,7 +426,7 @@ void generate_bcs(){
     
     mesh.init_bdy_sets(num_bdy_sets);
     
-    // tag the x=0 face,  (Direction, value, bdy_set)
+    // tag the x=0 plane,  (Direction, value, bdy_set)
     std::cout << "tagging x = 0 " << std::endl;
     int bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     real_t value = 0.0;
@@ -422,11 +434,11 @@ void generate_bcs(){
     mesh.tag_bdys(bc_tag, value, bdy_set_id);
     
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy faces in this set = " << mesh.num_bdy_faces_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
 
 
-    // tag the y=0 face,  (Direction, value, bdy_set)
+    // tag the y=0 plane,  (Direction, value, bdy_set)
     std::cout << "tagging y = 0 " << std::endl;
     bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     value = 0.0;
@@ -434,11 +446,11 @@ void generate_bcs(){
     mesh.tag_bdys(bc_tag, value, bdy_set_id);
     
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy faces in this set = " << mesh.num_bdy_faces_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
     
 
-    // tag the z=0 face,  (Direction, value, bdy_set)
+    // tag the z=0 plane,  (Direction, value, bdy_set)
     std::cout << "tagging z = 0 " << std::endl;
     bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     value = 0.0;
@@ -446,7 +458,7 @@ void generate_bcs(){
     mesh.tag_bdys(bc_tag, value, bdy_set_id);
     
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy faces in this set = " << mesh.num_bdy_faces_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
     
 
@@ -457,7 +469,7 @@ void generate_bcs(){
     mesh.tag_bdys(bc_tag, value, bdy_set_id);
 
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy faces in this set = " << mesh.num_bdy_faces_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
 
 
@@ -468,7 +480,7 @@ void generate_bcs(){
     mesh.tag_bdys(bc_tag, value, bdy_set_id);
 
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy faces in this set = " << mesh.num_bdy_faces_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
 
     std::cout << "tagging z = 2 " << std::endl;
@@ -478,7 +490,7 @@ void generate_bcs(){
     mesh.tag_bdys(bc_tag, value, bdy_set_id);
 
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy faces in this set = " << mesh.num_bdy_faces_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
 } // end generate_bcs
 
@@ -491,12 +503,12 @@ void allocate_state(){
     // --- allocate and initialize the defaults for the problem ---
 
     // ---- Node initialization ---- //
-    node.init_node_state(num_dim, mesh);
+    node.init_node_state(num_dim, mesh, rk_storage);
     std::cout << "Node state allocated and initialized to zero"  << std::endl;
     std::cout << std::endl;
 
     // ---- Material point initialization ---- //
-    mat_pt.init_mat_pt_state(num_dim, mesh);
+    mat_pt.init_mat_pt_state(num_dim, mesh, rk_storage);
     std::cout << "Material point state allocated and initialized to zero"  << std::endl;
     std::cout << std::endl;
 } // end allocate_state
@@ -520,9 +532,9 @@ void initialize_state(){
                 // increment the number of cells attached to this vertex
                 int vert_gid = mesh.nodes_in_cell(cell_gid, node_lid); // get the global_id
                 
-                cell_coords_x += mesh.node_coords(rk_stage, vert_gid, 0);
-                cell_coords_y += mesh.node_coords(rk_stage, vert_gid, 1);
-                cell_coords_z += mesh.node_coords(rk_stage, vert_gid, 2);
+                cell_coords_x += mesh.node_coords(vert_gid, 0);
+                cell_coords_y += mesh.node_coords(vert_gid, 1);
+                cell_coords_z += mesh.node_coords(vert_gid, 2);
                 
             }// end for loop over node_lid
             
@@ -588,83 +600,101 @@ void initialize_state(){
     } // end for fills
 
     std::cout << "After fill instructions"  << std::endl;
-    
 } // end initialize_state
 
 
-// void calculate_ref_elem(){
+void calculate_ref_elem(){
 
 
 
-//     real_t partial_xia[elem.num_verts];
-//     auto partial_xi = view_c_array <real_t> (partial_xia, elem.num_verts);
+    real_t partial_xia[elem->num_basis()];
+    auto partial_xi = ViewCArray <real_t> (partial_xia, elem->num_basis());
 
-//     real_t partial_etaa[elem.num_verts];
-//     auto partial_eta = view_c_array <real_t> (partial_etaa, elem.num_verts);
+    real_t partial_etaa[elem->num_basis()];
+    auto partial_eta = ViewCArray <real_t> (partial_etaa, elem->num_basis());
 
-//     real_t partial_mua[elem.num_verts];
-//     auto partial_mu = view_c_array <real_t> (partial_mua, elem.num_verts);
-
-
-//     std::cout << "::::  Getting partials of basis  ::::" << std::endl;
-
-//     for(int vert_lid = 0; vert_lid < elem.num_verts; vert_lid++){
-
-//         auto ref_vert = view_c_array<real_t> (&elem.ref_locs(vert_lid,0), mesh.num_dim());
-
-//         std::cout << "Local Vertex =  "<< vert_lid << std::endl;
+    real_t partial_mua[elem->num_basis()];
+    auto partial_mu = ViewCArray <real_t> (partial_mua, elem->num_basis());
 
 
-//         // Calculate array of partials of each basis at the point ref_vert
-//         elem.partial_xi_basis(partial_xi, ref_vert);
-//         elem.partial_eta_basis(partial_eta, ref_vert);
-//         elem.partial_mu_basis(partial_mu, ref_vert);
+    std::cout << "::::  Getting partials of basis  ::::" << std::endl;
+    std::cout << "Num Basis =  "<< elem->num_basis() << std::endl;
+
+    std::cout << "Num_ref_nodes  "<< ref_elem.num_ref_nodes() << std::endl;
+
+    for(int node_rid = 0; node_rid < ref_elem.num_ref_nodes(); node_rid++){
+
+        // make temp array of ref node positions
+        real_t ref_node_loc_a[mesh.num_dim()];
+        auto ref_node_loc = ViewCArray<real_t> (ref_node_loc_a, mesh.num_dim());
+
+        for(int dim = 0; dim < mesh.num_dim(); dim++){
+
+            ref_node_loc(dim) = ref_elem.ref_node_positions(node_rid, dim);
+        }
+    
+        std::cout << "Local Node =  "<< node_rid << std::endl;
+
+        // Calculate array of partials of each basis at the point ref_node
+        elem->partial_xi_basis(partial_xi, ref_node_loc);
+        elem->partial_eta_basis(partial_eta, ref_node_loc);
+        elem->partial_mu_basis(partial_mu, ref_node_loc);
         
-//         // Save the partials of each basis to the reference vertex
+        // Save the partials of each basis to the reference node
         
-//         for(int basis_id = 0; basis_id < elem.num_verts; basis_id++){
+        for(int basis_id = 0; basis_id < elem->num_basis(); basis_id++){
             
-//             ref_elem.ref_elem_grad(vert_lid, basis_id, 0) = partial_xi(basis_id);
-//             ref_elem.ref_elem_grad(vert_lid, basis_id, 1) = partial_eta(basis_id);
-//             ref_elem.ref_elem_grad(vert_lid, basis_id, 2) = partial_mu(basis_id);
+            ref_elem.ref_nodal_gradient(node_rid, basis_id, 0) = partial_xi(basis_id);
+            ref_elem.ref_nodal_gradient(node_rid, basis_id, 1) = partial_eta(basis_id);
+            ref_elem.ref_nodal_gradient(node_rid, basis_id, 2) = partial_mu(basis_id);
 
-//             // std::cout << "Partial Xi for basis "<< basis_id <<" = " << partial_xi(basis_id) << std::endl;
-//             // std::cout << "Partial Eta for basis "<< basis_id <<" = " << partial_eta(basis_id) << std::endl;
-//             // std::cout << "Partial Mu for basis "<< basis_id <<" = " << partial_eta(basis_id) << std::endl;
-//             // std::cout << "Basis " << basis_id  << std::endl;
-//             // std::cout << "XX Partial Xi = "  << ref_elem.ref_elem_grad(vert_lid, basis_id, 0) << std::endl;
-//             // std::cout << "XX Partial Eta = " << ref_elem.ref_elem_grad(vert_lid, basis_id, 1) << std::endl;
-//             // std::cout << "XX Partial Mu = "  << ref_elem.ref_elem_grad(vert_lid, basis_id, 2) << std::endl;
+            // std::cout << "Partial Xi for basis "<< basis_id <<" = " << partial_xi(basis_id) << std::endl;
+            // std::cout << "Partial Eta for basis "<< basis_id <<" = " << partial_eta(basis_id) << std::endl;
+            // std::cout << "Partial Mu for basis "<< basis_id <<" = " << partial_eta(basis_id) << std::endl;
+            // std::cout << "Basis " << basis_id  << std::endl;
+            // std::cout << "XX Partial Xi = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 0) << std::endl;
+            // std::cout << "XX Partial Eta = " << ref_elem.ref_nodal_gradient(node_rid, basis_id, 1) << std::endl;
+            // std::cout << "XX Partial Mu = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 2) << std::endl;
             
-//             partial_xi(basis_id) = 0.0;
-//             partial_eta(basis_id)= 0.0;
-//             partial_mu(basis_id) = 0.0;
-
-//         }
-
-//         std::cout << std::endl;
-
-//     } // end for vert_lid 
 
 
-//     // for(int vert_lid = 0; vert_lid < elem.num_verts; vert_lid++){
 
-//     //     std::cout << "Local Vertex =  "<< vert_lid << std::endl;
+            partial_xi(basis_id) = 0.0;
+            partial_eta(basis_id)= 0.0;
+            partial_mu(basis_id) = 0.0;
 
-//     //     for(int basis_id = 0; basis_id < elem.num_verts; basis_id++){
+        }
+
+
+
+        
+
+        std::cout << std::endl;
+
+    } // end for node_rid
+
+
+    // for(int node_rid = 0; node_rid < ref_elem.num_ref_nodes(); node_rid++){
+
+    //     std::cout << "Local Reference Node =  "<< node_rid << std::endl;
+
+    //     for(int basis_id = 0; basis_id < elem->num_basis(); basis_id++){
             
-//     //         std::cout << "Basis " << basis_id  << std::endl;
-//     //         std::cout << "Partial Xi = "  << ref_elem.ref_elem_grad(vert_lid, basis_id, 0) << std::endl;
-//     //         std::cout << "Partial Eta = " << ref_elem.ref_elem_grad(vert_lid, basis_id, 1) << std::endl;
-//     //         std::cout << "Partial Mu = "  << ref_elem.ref_elem_grad(vert_lid, basis_id, 2) << std::endl;
-//     //     }
+    //         std::cout << "Basis " << basis_id  << std::endl;
+    //         std::cout << "Partial Xi = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 0) << std::endl;
+    //         std::cout << "Partial Eta = " << ref_elem.ref_nodal_gradient(node_rid, basis_id, 1) << std::endl;
+    //         std::cout << "Partial Mu = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 2) << std::endl;
+    //     }
 
-//     //     std::cout << std::endl;
-//     // } // end vert lid
+    //     std::cout << std::endl;
+    // } // end vert lid
 
-//     std::cout << "Finished gradient vector" << std::endl;
+    std::cout << "Finished gradient vector" << std::endl;
 
-// }
+}
+
+
+
 
 
 // Runtime Functions
@@ -672,15 +702,15 @@ void initialize_state(){
 void apply_boundary(){
 
 
-    for (int bdy_face_gid = 0; bdy_face_gid < mesh.num_bdy_faces_in_set(3); bdy_face_gid++){
+    for (int bdy_patch_gid = 0; bdy_patch_gid < mesh.num_bdy_patches_in_set(3); bdy_patch_gid++){
                 
-        // get the global id for this boundary face
-        int face_gid = mesh.bdy_faces_in_set(3, bdy_face_gid);
+        // get the global id for this boundary patch
+        int patch_gid = mesh.bdy_patches_in_set(3, bdy_patch_gid);
 
         // apply boundary condition at nodes on boundary
         for(int node_lid = 0; node_lid < 4; node_lid++){
             
-            int node_gid = mesh.node_in_face(face_gid, node_lid);
+            int node_gid = mesh.node_in_patch(patch_gid, node_lid);
 
             // Set nodal temp to zero
             node.field(node_gid) = 0.0;
@@ -689,16 +719,16 @@ void apply_boundary(){
     }
 
     // std::cout << "Apply temp" << std::endl;
-    // Apply constant temp of 1 to x=0 face of mesh
-    for (int bdy_face_gid = 0; bdy_face_gid < mesh.num_bdy_faces_in_set(0); bdy_face_gid++){
+    // Apply constant temp of 1 to x=0 plane of mesh
+    for (int bdy_patch_gid = 0; bdy_patch_gid < mesh.num_bdy_patches_in_set(0); bdy_patch_gid++){
                 
-        // get the global id for this boundary face
-        int face_gid = mesh.bdy_faces_in_set(0, bdy_face_gid);
+        // get the global id for this boundary patch
+        int patch_gid = mesh.bdy_patches_in_set(0, bdy_patch_gid);
 
         // apply boundary condition at nodes on boundary
         for(int node_lid = 0; node_lid < 4; node_lid++){
             
-            int node_gid = mesh.node_in_face(face_gid, node_lid);
+            int node_gid = mesh.node_in_patch(patch_gid, node_lid);
 
             // Set nodal temp to zero
             node.field(node_gid) = 40.0;
@@ -810,6 +840,132 @@ void smooth_element(){
     }// end loop over elements
 }
 
+void get_nodal_jacobian(){
+
+// loop over the mesh
+
+    for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
+        
+        for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){ // 1 for linear elements
+
+            int cell_gid = mesh.cells_in_elem(elem_gid, cell_lid);
+
+            // Loop over nodes in cell and initialize jacobian to zero
+            for(int node_lid = 0; node_lid < mesh.num_nodes_in_cell(); node_lid++){
+
+                int node_gid = mesh.nodes_in_cell(cell_gid, node_lid);
+                
+                for(int dim_i = 0; dim_i < mesh.num_dim(); dim_i++){
+                    for(int dim_j = 0; dim_j < mesh.num_dim(); dim_j++){
+
+                        mesh.node_jacobian(node_gid, dim_i, dim_j) = 0.0;
+                    }
+                }
+            }
+
+            // Calculate the actual jacobian for that node
+            for(int node_lid = 0; node_lid < mesh.num_nodes_in_cell(); node_lid++){
+                
+                int node_gid = mesh.nodes_in_cell(cell_gid, node_lid);
+
+
+
+                for(int dim_i = 0; dim_i < mesh.num_dim(); dim_i++){
+                    for(int dim_j = 0; dim_j < mesh.num_dim(); dim_j++){
+
+                        // Sum over the basis functions and nodes where they are defined
+                        for(int basis_id = 0; basis_id < mesh.num_nodes_in_cell(); basis_id++){
+
+                            int ref_node_gid = mesh.nodes_in_cell(cell_gid, basis_id);
+
+                            mesh.node_jacobian(node_gid, dim_i, dim_j) += 
+                                mesh.node_coords(ref_node_gid , dim_i) * ref_elem.ref_nodal_gradient(node_lid, basis_id, dim_j);
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+// NOTE: Save only J^inverse and det_J
+#pragma omp 
+    // loop over the nodes of the mesh
+    for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
+
+        mesh.node_det_j(node_gid) = 
+            mesh.node_jacobian(node_gid, 0, 0) 
+          * ( (mesh.node_jacobian(node_gid, 1, 1)*mesh.node_jacobian(node_gid, 2, 2)) - (mesh.node_jacobian(node_gid, 2, 1)*mesh.node_jacobian(node_gid, 1, 2)) )  //group 1
+          - mesh.node_jacobian(node_gid, 0, 1) 
+          * ( (mesh.node_jacobian(node_gid, 1, 0)*mesh.node_jacobian(node_gid, 2, 2)) - (mesh.node_jacobian(node_gid, 2, 0)*mesh.node_jacobian(node_gid, 1, 2)) ) // group 2
+          + mesh.node_jacobian(node_gid, 0, 2) 
+          * ( (mesh.node_jacobian(node_gid, 1, 0)*mesh.node_jacobian(node_gid, 2, 1)) - (mesh.node_jacobian(node_gid, 2, 0)*mesh.node_jacobian(node_gid, 1, 1)) ); // group 3
+
+    }
+
+    for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
+
+        mat_pt.volume(cell_gid) = 0;
+
+        for(int node_lid = 0; node_lid < mesh.num_nodes_in_cell(); node_lid++){
+
+            int node_gid = mesh.nodes_in_cell(cell_gid, node_lid);
+
+            mat_pt.volume(cell_gid) += mesh.node_det_j(node_gid);
+        }
+
+        std::cout<< "Volume for cell  "<< cell_gid << " = "<< mat_pt.volume(cell_gid) << std::endl;
+    }
+
+    // NOTE: Invert and save J^inverse here!
+
+
+
+    for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
+        
+        auto jacobian_view = ViewCArray <real_t> (&mesh.node_jacobian(node_gid, 0, 0), mesh.num_dim(), mesh.num_dim());
+        auto jacobian_inverse_view = ViewCArray <real_t> (&mesh.node_jacobian_inv(node_gid, 0, 0), mesh.num_dim(), mesh.num_dim());
+
+        elements::jacobian_inverse_3d(jacobian_inverse_view, jacobian_view);
+    }
+
+
+    // Check J^-1 * J = I
+
+
+    for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
+        
+        real_t test_array[3][3];
+
+        for(int dim_k = 0; dim_k < mesh.num_dim(); dim_k++){
+            for(int dim_i = 0; dim_i < mesh.num_dim(); dim_i++){
+
+                test_array[dim_i][dim_k] = 0.0;
+            }
+        }
+
+        for(int dim_k = 0; dim_k < mesh.num_dim(); dim_k++){
+            for(int dim_j = 0; dim_j < mesh.num_dim(); dim_j++){
+                for(int dim_i = 0; dim_i < mesh.num_dim(); dim_i++){
+                    test_array[dim_i][dim_k] += mesh.node_jacobian(node_gid, dim_i, dim_j) * mesh.node_jacobian_inv(node_gid, dim_j, dim_k);
+                }
+            }
+        }
+        std::cout << std::fixed;
+        std::cout<< "J * J^-1 for node  "<< node_gid << " = " << std::endl;
+        std::cout  << test_array[0][0] << "     " << test_array[0][1] << "     " << test_array[0][2] << std::endl;
+        std::cout  << test_array[1][0] << "     " << test_array[1][1] << "     " << test_array[1][2] << std::endl;
+        std::cout  << test_array[2][0] << "     " << test_array[2][1] << "     " << test_array[2][2] << std::endl;
+    }
+
+
+    
+} // end subroutine
+
+
+
+
+
 
 // Output writers
 
@@ -916,9 +1072,9 @@ void vtk_writer(){
     
     for (int node_gid = 0; node_gid < num_nodes; node_gid++){
         
-        fprintf(out[0],"%f   %f   %f   \n",mesh.node_coords(0, node_gid, 0),
-                                           mesh.node_coords(0, node_gid, 1),
-                                           mesh.node_coords(0, node_gid, 2));
+        fprintf(out[0],"%f   %f   %f   \n",mesh.node_coords(node_gid, 0),
+                                           mesh.node_coords(node_gid, 1),
+                                           mesh.node_coords(node_gid, 2));
 
     } 
 
@@ -974,11 +1130,11 @@ void vtk_writer(){
     for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
         fprintf(out[0],"%i  \n", 6);
 
-        for(int face_lid = 0; face_lid < 6; face_lid++){
+        for(int patch_lid = 0; patch_lid < 6; patch_lid++){
 
             fprintf(out[0],"4  ");
             for(int node_lid = 0; node_lid < 4; node_lid++){
-                fprintf(out[0],"%i  ", mesh.node_in_face_in_cell(cell_gid, face_lid, node_lid));
+                fprintf(out[0],"%i  ", mesh.node_in_patch_in_cell(cell_gid, patch_lid, node_lid));
             }
 
             fprintf(out[0],"\n");
@@ -1015,7 +1171,7 @@ void vtk_writer(){
 
 void ensight(){
 
-    auto convert_vert_list_ord_Ensight = c_array_t <int> (8);
+    auto convert_vert_list_ord_Ensight = CArray <int> (8);
     convert_vert_list_ord_Ensight(0) = 1;
     convert_vert_list_ord_Ensight(1) = 0;
     convert_vert_list_ord_Ensight(2) = 2;
@@ -1042,7 +1198,7 @@ void ensight(){
     int num_cells = mesh.num_cells();
 
     // save the cell state to an array for exporting to graphics files
-    auto cell_fields = c_array_t <real_t> (num_cells, num_scalar_vars);
+    auto cell_fields = CArray <real_t> (num_cells, num_scalar_vars);
 
     int cell_cnt = 0;
     int c_in_e = mesh.num_cells_in_elem();
@@ -1109,13 +1265,13 @@ void ensight(){
 
 
     // save the vertex vector fields to an array for exporting to graphics files
-    auto vec_fields = c_array_t <real_t> (num_nodes, num_vec_vars, 3);
+    auto vec_fields = CArray <real_t> (num_nodes, num_vec_vars, 3);
 
     for (int node_gid = 0; node_gid < num_nodes; node_gid++){
         
-        vec_fields(node_gid, 0, 0) = mesh.node_coords(0, node_gid, 0); 
-        vec_fields(node_gid, 0, 1) = mesh.node_coords(0, node_gid, 1);
-        vec_fields(node_gid, 0, 2) = mesh.node_coords(0, node_gid, 2);
+        vec_fields(node_gid, 0, 0) = mesh.node_coords(node_gid, 0); 
+        vec_fields(node_gid, 0, 1) = mesh.node_coords(node_gid, 1);
+        vec_fields(node_gid, 0, 2) = mesh.node_coords(node_gid, 2);
 
     } // end for loop over vertices
 
@@ -1163,15 +1319,15 @@ void ensight(){
     
     // write all components of the point coordinates
     for (int node_gid=0; node_gid<num_nodes; node_gid++){
-        fprintf(out[0],"%12.5e\n",mesh.node_coords(0, node_gid, 0));
+        fprintf(out[0],"%12.5e\n",mesh.node_coords(node_gid, 0));
     }
     
     for (int node_gid=0; node_gid<num_nodes; node_gid++){
-        fprintf(out[0],"%12.5e\n",mesh.node_coords(0, node_gid, 1));
+        fprintf(out[0],"%12.5e\n",mesh.node_coords(node_gid, 1));
     }
     
     for (int node_gid=0; node_gid<num_nodes; node_gid++){
-        fprintf(out[0],"%12.5e\n",mesh.node_coords(0, node_gid, 2));
+        fprintf(out[0],"%12.5e\n",mesh.node_coords(node_gid, 2));
     }
     
     // convert_vert_list_ord_Ensight

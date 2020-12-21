@@ -7,12 +7,12 @@
 
 using namespace utils;
 
-
-
 struct material_t {
 
-    real_t field1;     // some field
-
+    real_t temp;     // temperature
+    real_t cond;     // Thermal conductivity
+    real_t den;  // Density
+    real_t cp;   // Specific heat
 };
 
 
@@ -35,7 +35,7 @@ enum vol_tag
 struct mat_fill_t {
     
     // type
-    region::vol_tag volume; // 1 is global, 2 are planes, 3 is a sphere
+    region::vol_tag volume; // 1 is global, 2 are planes, 3 is a cylinder
     
     // material id
     int mat_id;
@@ -107,12 +107,13 @@ struct boundary_t {
 // --- Mesh variables ---
 extern node_t         node;
 extern mat_pt_t       mat_pt;
-extern elements::swage::ref_element  ref_elem;
+extern elements::ref_element  ref_elem;
 
 extern material_t   *material;
 extern mat_fill_t   *mat_fill;
 extern boundary_t   *boundary;
 
+// extern elements::elem_type_t*   elem_choice;
 
 extern int NR;     // number or Regions
 extern int NC;     // number of contours
@@ -160,10 +161,6 @@ extern int num_dim;
 extern int p_order;
 
 extern int num_bdy_sets;
-
-
-
-
 
 
 

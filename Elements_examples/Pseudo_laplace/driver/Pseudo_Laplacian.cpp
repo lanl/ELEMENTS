@@ -889,7 +889,7 @@ void get_nodal_jacobian(){
     }
 
 // NOTE: Save only J^inverse and det_J
-#pragma omp 
+#pragma omp simd //Modified by Daniel
     // loop over the nodes of the mesh
     for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
 

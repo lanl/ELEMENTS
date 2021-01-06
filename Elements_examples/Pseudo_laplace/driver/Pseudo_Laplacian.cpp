@@ -166,7 +166,7 @@ int main(int argc, char *argv[]){
 
 
     // ---- Read input file, define state and boundary conditions ---- //
-    input();
+    input(); //is this function defined? I could only see the declaration in header.h
 
     // ---- Read intial mesh, refine, and build connectivity ---- //
     read_mesh(argv[1]);

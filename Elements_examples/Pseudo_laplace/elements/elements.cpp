@@ -47,7 +47,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "utilities.h"
 #include "elements.h"
 
-
+#define EPSILON 1.0e-12
 
 using namespace utils;
 

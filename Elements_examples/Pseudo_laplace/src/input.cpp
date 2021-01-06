@@ -11,7 +11,7 @@
 #include "state.h"
 #include "header.h"
 #include "elements.h"
-
+#include "swage.h"
 
 using namespace utils;
 
@@ -38,12 +38,29 @@ void input(){
     dt_cfl = 0.5;
 
 
-    p_order = 6;
+    p_order = 3;
 
     // ---- graphics information ---- //
     graphics_cyc_ival = 10;
     graphics_dt_ival  = 0.1;    // every 0.1 time units
 
+
+
+    // ---- Set Element Type ---- //
+    // allocate element type memory
+    elements::elem_type_t* elem_choice;
+
+    elem_choice = new elements::elem_type_t;
+    
+
+    int NE = 1; // number of elemet types in problem
+    
+    elem_choice = (elements::elem_type_t *) malloc((size_t)(NE*sizeof(elements::elem_type_t)));
+    
+
+    elem_choice->type = elements::elem_types::elem_type::Hex8;
+
+    elements::choose_elem_type(elem_choice[0]);
 
     // ---- fill instructions and intial conditions ---- //
 
@@ -104,7 +121,9 @@ void input(){
     // Tag Z=0 plane
     boundary[5].surface = bdy::z_plane;
     boundary[5].value = 2.0;
-    boundary[5].thermal_bc = bdy::isothermal;    
+    boundary[5].thermal_bc = bdy::isothermal;
+
+
 } // end of input
 
 

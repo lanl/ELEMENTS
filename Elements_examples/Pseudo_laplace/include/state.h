@@ -4,6 +4,7 @@
 #include "utilities.h"
 #include "matar.h"
 #include "elements.h"
+#include "swage.h"
 
 using namespace utils;
 
@@ -27,11 +28,11 @@ private:
 
 public:
 
-    void init_node_state (int num_dim, elements::mesh_t& mesh)
+    void init_node_state (int num_dim, swage::mesh_t& mesh, int num_rk)
     {
 
         num_dim_   = num_dim;
-        num_rk_    = mesh.num_rk();
+        num_rk_    = num_rk;
         num_nodes_ = mesh.num_nodes();
 
         // node_field_ = c_array_t <real_t> (num_nodes_);
@@ -53,7 +54,7 @@ public:
     }
 
 
-    // deconstructor 
+    // deconstructor WARNING:POSSIBLY REMOVE????
     ~node_t ( ) {
         delete[] node_field_;
     }
@@ -82,14 +83,17 @@ private:
     // Some field
     real_t *field_ = NULL;
 
+    // Volume
+    real_t *volume_ = NULL;
+
 
 public:
 
-    void init_mat_pt_state (int num_dim, elements::mesh_t& mesh)
+    void init_mat_pt_state (int num_dim, swage::mesh_t& mesh, int num_rk)
     {
 
         num_dim_   = num_dim;
-        num_rk_    = mesh.num_rk();
+        num_rk_    = num_rk;
         
         // **** Material Point State **** //
         num_matpt_ = mesh.num_cells();
@@ -98,6 +102,8 @@ public:
         coords_ = new real_t[num_rk_*num_matpt_*num_dim_]();
         
         field_ = new real_t[num_matpt_]();
+
+        volume_ = new real_t[num_matpt_]();
 
     }
 
@@ -116,7 +122,10 @@ public:
         return field_[mat_pt_gid];
     }
 
-
+    inline real_t& volume(int mat_pt_gid) const
+    {
+        return volume_[mat_pt_gid];
+    }
 
     // deconstructor
     ~mat_pt_t ( ) {
@@ -124,9 +133,14 @@ public:
         delete[] mat_id_;
         delete[] coords_;
         delete[] field_;
+        delete[] volume_;
 
     }
 };
+
+
+
+
 
 
 #endif // end STATE_H

@@ -51,104 +51,10 @@ num_cells in element = (p_order*2)^3
 #include "utilities.h"
 #include "header.h"
 #include "state.h"
-
-
-void read_mesh(char *MESH);
-
-void generate_bcs();
-
-void allocate_state();
-
-void initialize_state();
-
-void calculate_ref_elem();
-
-void apply_boundary();
-
-void vtk_writer();
-
-void ensight();
-
-void smooth_cells();
-
-void smooth_element();
-
-void get_nodal_jacobian();
-
-//==============================================================================
-//   Mesh Variables
-//==============================================================================
-
-// --- Mesh state declarations ---
-node_t          node;
-mat_pt_t        mat_pt;
-
-
-material_t  * material;
-mat_fill_t  * mat_fill;
-boundary_t  * boundary;
-
-
-// --- Mesh regions and material fills ---
-int NR = 0; // number of Regions
-int NC = 0; // number of contours
-int NF = 0; // number of fill
-int NB = 0; // number of boundary patch sets to tag
-
-
-// --- Graphics output variables ---
-int graphics_id = 0;
-int graphics_cyc_ival = 0;
-
-real_t graphics_times[250];
-real_t graphics_dt_ival = 1.0e8;
-real_t graphics_time = graphics_dt_ival;  // the times for writing graphics dump
-
-
-// --- Time and cycling variables ---
-real_t TIME = 0.0;
-real_t TFINAL = 1.e16;
-real_t dt = 1.e-8;
-real_t dt_max = 1.0e-2;
-real_t dt_min = 1.0e-8;
-real_t dt_cfl = 0.3;
-real_t dt_start = 1.0e-8;
-
-int rk_num_stages = 1;
-int rk_storage = 1;
-int rk_stage = 0;
-
-int cycle = 0;
-int cycle_stop = 1000000000;
-int stop_calc = 0;    // a flag to end the calculation when = 1
-
-real_t percent_comp = 0.0;
-
-// --- Precision variables ---
-real_t fuzz = 1.0e-16;  // machine precision
-real_t tiny = 1.0e-12;  // very very small (between real_t and single)
-real_t small= 1.0e-8;   // single precision
-
-
-// --- Dimensional and mesh constants ---
-int num_dim = 3;
-int p_order = 0;
-
-
-
-
+#include "Static_Solve.h"
 
 // Notes for Adrian
 /*
-
-input() is defined in input.cpp in the src directory
-
-Thanks for catching the spelling error in connectivity
-
-dist(0) is initialized a few lines above in the dist(i) loop
-
-I like the error control idea.  At some point I also plan to 
-add unit test and automate them.
 
 Swage is a reference to a swage block used in blacksmithing.  
 Its a large metal block that has multiple shaps carved into 
@@ -159,7 +65,6 @@ each surface to use for hammering metal into to form it.
 //==============================================================================
 //    Main
 //==============================================================================
-
 
 
 int main(int argc, char *argv[]){

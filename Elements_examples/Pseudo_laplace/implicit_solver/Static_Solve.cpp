@@ -50,9 +50,11 @@ num_cells in element = (p_order*2)^3
 #include "matar.h"
 #include "utilities.h"
 #include "header.h"
+#include "Simulation_Parameters.h"
 #include "state.h"
 #include "Static_Solve.h"
 
+using namespace Simulation_Parameters;
 // Notes for Adrian
 /*
 
@@ -65,9 +67,12 @@ each surface to use for hammering metal into to form it.
 //==============================================================================
 //    Main
 //==============================================================================
-
-
 int main(int argc, char *argv[]){
+  Static_Solve::run(argc,argv);
+  return 0;
+}
+
+void Static_Solve::run(int argc, char *argv[]){
 
 
     // ---- Read input file, define state and boundary conditions ---- //
@@ -167,7 +172,7 @@ int main(int argc, char *argv[]){
 
 
 // Input and setup
-void read_mesh(char *MESH){
+void Static_Solve::read_mesh(char *MESH){
 
     FILE *in;
     char ch;
@@ -321,8 +326,15 @@ void read_mesh(char *MESH){
     std::cout << "End of setup " << std::endl;     
 } // end read_mesh
 
+void Static_Solve::init_global(){
+  int num_elems = mesh.num_elems();
+  int nodes_per_elem = mesh.num_nodes_in_elem();
+  //allocate storage for the sparse mass matrix map used in the assembly process
+  Global_Mass_Matrix_Sparse_Map = CArray <int> (num_elems,nodes_per_elem*nodes_per_elem);
 
-void generate_bcs(){
+}
+
+void Static_Solve::generate_bcs(){
 
     // build boundary mesh patches
     mesh.build_bdy_patches();
@@ -403,7 +415,7 @@ void generate_bcs(){
 } // end generate_bcs
 
 
-void allocate_state(){
+void Static_Solve::allocate_state(){
 
 
     std::cout << "Allocate and Initialize"  << std::endl;
@@ -422,7 +434,7 @@ void allocate_state(){
 } // end allocate_state
 
 
-void initialize_state(){
+void Static_Solve::initialize_state(){
     
     std::cout << "Before fill instructions"  << std::endl;
     //--- apply the fill instructions ---//
@@ -511,7 +523,7 @@ void initialize_state(){
 } // end initialize_state
 
 
-void calculate_ref_elem(){
+void Static_Solve::calculate_ref_elem(){
 
 
 
@@ -607,7 +619,7 @@ void calculate_ref_elem(){
 
 // Runtime Functions
 
-void apply_boundary(){
+void Static_Solve::apply_boundary(){
 
 
     for (int bdy_patch_gid = 0; bdy_patch_gid < mesh.num_bdy_patches_in_set(3); bdy_patch_gid++){
@@ -646,7 +658,7 @@ void apply_boundary(){
 }
 
 
-void smooth_cells(){
+void Static_Solve::smooth_cells(){
 
 
     // Walk over cells 
@@ -692,7 +704,7 @@ void smooth_cells(){
 }
 
 
-void smooth_element(){
+void Static_Solve::smooth_element(){
 
     // Walk over each element in the mesh
     for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
@@ -748,7 +760,7 @@ void smooth_element(){
     }// end loop over elements
 }
 
-void get_nodal_jacobian(){
+void Static_Solve::get_nodal_jacobian(){
 
 // loop over the mesh
 
@@ -871,13 +883,9 @@ void get_nodal_jacobian(){
 } // end subroutine
 
 
-
-
-
-
 // Output writers
 
-void vtk_writer(){
+void Static_Solve::vtk_writer(){
 
     const int num_scalar_vars = 2;
     const int num_vec_vars = 1;
@@ -1077,7 +1085,7 @@ void vtk_writer(){
 } // end vtk_writer
 
 
-void ensight(){
+void Static_Solve::ensight(){
 
     auto convert_vert_list_ord_Ensight = CArray <int> (8);
     convert_vert_list_ord_Ensight(0) = 1;

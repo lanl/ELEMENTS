@@ -51,104 +51,12 @@ num_cells in element = (p_order*2)^3
 #include "utilities.h"
 #include "header.h"
 #include "state.h"
+#include "Simulation_Parameters.h"
+#include "Pseudo_Laplacian.h"
 
+using namespace utils;
 
-void read_mesh(char *MESH);
-
-void generate_bcs();
-
-void allocate_state();
-
-void initialize_state();
-
-void calculate_ref_elem();
-
-void apply_boundary();
-
-void vtk_writer();
-
-void ensight();
-
-void smooth_cells();
-
-void smooth_element();
-
-void get_nodal_jacobian();
-
-//==============================================================================
-//   Mesh Variables
-//==============================================================================
-
-// --- Mesh state declarations ---
-node_t          node;
-mat_pt_t        mat_pt;
-
-
-material_t  * material;
-mat_fill_t  * mat_fill;
-boundary_t  * boundary;
-
-
-// --- Mesh regions and material fills ---
-int NR = 0; // number of Regions
-int NC = 0; // number of contours
-int NF = 0; // number of fill
-int NB = 0; // number of boundary patch sets to tag
-
-
-// --- Graphics output variables ---
-int graphics_id = 0;
-int graphics_cyc_ival = 0;
-
-real_t graphics_times[250];
-real_t graphics_dt_ival = 1.0e8;
-real_t graphics_time = graphics_dt_ival;  // the times for writing graphics dump
-
-
-// --- Time and cycling variables ---
-real_t TIME = 0.0;
-real_t TFINAL = 1.e16;
-real_t dt = 1.e-8;
-real_t dt_max = 1.0e-2;
-real_t dt_min = 1.0e-8;
-real_t dt_cfl = 0.3;
-real_t dt_start = 1.0e-8;
-
-int rk_num_stages = 1;
-int rk_storage = 1;
-int rk_stage = 0;
-
-int cycle = 0;
-int cycle_stop = 1000000000;
-int stop_calc = 0;    // a flag to end the calculation when = 1
-
-real_t percent_comp = 0.0;
-
-// --- Precision variables ---
-real_t fuzz = 1.0e-16;  // machine precision
-real_t tiny = 1.0e-12;  // very very small (between real_t and single)
-real_t small= 1.0e-8;   // single precision
-
-
-// --- Dimensional and mesh constants ---
-int num_dim = 3;
-int p_order = 0;
-
-
-
-
-
-// Notes for Adrian
 /*
-
-input() is defined in input.cpp in the src directory
-
-Thanks for catching the spelling error in connectivity
-
-dist(0) is initialized a few lines above in the dist(i) loop
-
-I like the error control idea.  At some point I also plan to 
-add unit test and automate them.
 
 Swage is a reference to a swage block used in blacksmithing.  
 Its a large metal block that has multiple shaps carved into 
@@ -156,21 +64,39 @@ each surface to use for hammering metal into to form it.
 
 */
 
+Pseudo_Laplacian::Pseudo_Laplacian() : Solver(){
+  //create parameter object
+    simparam = new Simulation_Parameters();
+  //create ref element object
+    ref_elem = new elements::ref_element();
+  //create mesh objects
+    init_mesh = new swage::mesh_t();
+    mesh = new swage::mesh_t();
+
+    element_select = new elements::element_selector();
+}
+
+Pseudo_Laplacian::~Pseudo_Laplacian(){
+   delete simparam;
+   delete ref_elem;
+   delete init_mesh;
+   delete mesh;
+   delete element_select;
+}
+
 //==============================================================================
-//    Main
+//    Primary simulation runtime routine
 //==============================================================================
 
 
-
-int main(int argc, char *argv[]){
-
-
+void Pseudo_Laplacian::run(int argc, char *argv[]){
+    
     // ---- Read input file, define state and boundary conditions ---- //
-    input(); //is this function defined? I could only see the declaration in header.h
+    simparam->input();
 
     // ---- Read intial mesh, refine, and build connectivity ---- //
     read_mesh(argv[1]);
-    std::cout << "Num elements = " << mesh.num_elems() << std::endl;
+    std::cout << "Num elements = " << mesh->num_elems() << std::endl;
 
     // ---- Find Boundaries on mesh ---- //
     generate_bcs();
@@ -189,23 +115,29 @@ int main(int argc, char *argv[]){
 
     get_nodal_jacobian();
 
-    dt = 0.001;
+    real_t dt = simparam->dt;
+    int cycle_stop = simparam->cycle_stop;
+    real_t &TIME = simparam->TIME;
+    real_t TFINAL = simparam->TFINAL;
+    int &cycle = simparam->cycle;
+    int graphics_cyc_ival = simparam->graphics_cyc_ival;
+    real_t graphics_dt_ival = simparam->graphics_dt_ival;
+    real_t graphics_time = simparam->graphics_dt_ival;
+    real_t &percent_comp = simparam->percent_comp;
+
 
     // Solve the Laplacian
 
 
     ensight();
 
-
-
     for (cycle = 1; cycle <= cycle_stop; cycle++) {
-
         // stop calculation if flag
-        if (stop_calc == 1) break;
+        if (simparam->stop_calc == 1) break;
 
 
         // Set timestep
-        dt = 0.001;
+        dt = simparam->dt;
 
 
         // smooth_cells();
@@ -262,11 +194,13 @@ int main(int argc, char *argv[]){
 
 
 // Input and setup
-void read_mesh(char *MESH){
+void Pseudo_Laplacian::read_mesh(char *MESH){
 
     FILE *in;
     char ch;
-    
+    int num_dim = simparam->num_dim;
+    int p_order = simparam->p_order;
+
     //read the mesh    WARNING: assumes an ensight .geo file
     in = fopen(MESH,"r");  
     
@@ -288,25 +222,28 @@ void read_mesh(char *MESH){
 
     // set the vertices in the mesh read in
     int rk_init = 1;
-    init_mesh.init_nodes(num_nodes); // add 1 for index starting at 1
+    init_mesh->init_nodes(num_nodes); // add 1 for index starting at 1
     
-    std::cout << "Num points read in = " << init_mesh.num_nodes() << std::endl;
+    std::cout << "Num points read in = " << init_mesh->num_nodes() << std::endl;
 
 
     // read the initial mesh coordinates
     // x-coords
-    for (int node_gid = 0; node_gid < init_mesh.num_nodes(); node_gid++) {
-        fscanf(in,"%le", &init_mesh.node_coords(node_gid, 0));
+    for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
+        fscanf(in,"%le", &init_mesh->node_coords(node_gid, 0));
+        //std::cout<<" "<< init_mesh->node_coords(node_gid, 0)<<std::endl;
     }
 
     // y-coords
-    for (int node_gid = 0; node_gid < init_mesh.num_nodes(); node_gid++) {
-        fscanf(in,"%le", &init_mesh.node_coords(node_gid, 1));
+    for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
+        fscanf(in,"%le", &init_mesh->node_coords(node_gid, 1));
+        //std::cout<<" "<< init_mesh->node_coords(node_gid, 1)<<std::endl;
     }  
 
     // z-coords
-    for (int node_gid = 0; node_gid < init_mesh.num_nodes(); node_gid++) {
-        fscanf(in,"%le", &init_mesh.node_coords(node_gid, 2));
+    for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
+        fscanf(in,"%le", &init_mesh->node_coords(node_gid, 2));
+        //std::cout<<" "<< init_mesh->node_coords(node_gid, 2)<<std::endl;
     }
 
     /*
@@ -334,8 +271,8 @@ void read_mesh(char *MESH){
 
     std::cout<<"before initial mesh initialization"<<std::endl;
 
-    init_mesh.init_element(0, 3, num_elem);
-    init_mesh.init_cells(num_elem);
+    init_mesh->init_element(0, 3, num_elem);
+    init_mesh->init_cells(num_elem);
 
 
 
@@ -343,12 +280,33 @@ void read_mesh(char *MESH){
     for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
         for (int node_lid = 0; node_lid < 8; node_lid++){
             
-            fscanf(in,"%d",&init_mesh.nodes_in_cell(cell_gid, node_lid));
-
+            fscanf(in,"%d",&init_mesh->nodes_in_cell(cell_gid, node_lid));
+            //std::cout<<" "<< init_mesh->nodes_in_cell(cell_gid, node_lid);
             // shift to start vertex index space at 0
-            init_mesh.nodes_in_cell(cell_gid,node_lid) = init_mesh.nodes_in_cell(cell_gid, node_lid) - 1;
+            init_mesh->nodes_in_cell(cell_gid,node_lid) = init_mesh->nodes_in_cell(cell_gid, node_lid) - 1;
         }
+        //std::cout<<" "<<std::endl;
     }
+
+    //element type selection (subject to change)
+    // ---- Set Element Type ---- //
+    // allocate element type memory
+    elements::elem_type_t* elem_choice;
+    
+    elem_choice = new elements::elem_type_t;
+
+    int NE = 1; // number of element types in problem
+    
+    elem_choice = (elements::elem_type_t *) malloc((size_t)(NE*sizeof(elements::elem_type_t)));
+    
+    //current default
+    elem_choice->type = elements::elem_types::elem_type::Hex8;
+    
+    //set base type pointer to one of the existing derived type object references
+    if(simparam->num_dim==2)
+    element_select->choose_2Delem_type(elem_choice[0], elem2D);
+    else if(simparam->num_dim==3)
+    element_select->choose_3Delem_type(elem_choice[0], elem);
 
     // Convert ijk index system to the finite element numbering convention
     // for vertices in cell
@@ -367,12 +325,12 @@ void read_mesh(char *MESH){
     for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
         for (int node_lid = 0; node_lid < 8; node_lid++){
     
-            tmp_ijk_indx[node_lid] = init_mesh.nodes_in_cell(cell_gid, convert_ensight_to_ijk[node_lid]);
+            tmp_ijk_indx[node_lid] = init_mesh->nodes_in_cell(cell_gid, convert_ensight_to_ijk[node_lid]);
         }   
         
         for (int node_lid = 0; node_lid < 8; node_lid++){
 
-            init_mesh.nodes_in_cell(cell_gid, node_lid) = tmp_ijk_indx[node_lid];
+            init_mesh->nodes_in_cell(cell_gid, node_lid) = tmp_ijk_indx[node_lid];
         }
     }
 
@@ -383,61 +341,56 @@ void read_mesh(char *MESH){
     if(num_elem > 1) {
 
         // -- NODE TO CELL CONNECTIVITY -- //
-        init_mesh.build_node_cell_connectivity(); 
+        init_mesh->build_node_cell_connectivity(); 
 
         // -- CORNER CONNECTIVITY -- //
-        init_mesh.build_corner_connectivity(); 
+        init_mesh->build_corner_connectivity(); 
 
         // -- CELL TO CELL CONNECTIVITY -- //
-        init_mesh.build_cell_cell_connectivity(); 
+        init_mesh->build_cell_cell_connectivity(); 
 
         // -- PATCHES -- //
-        init_mesh.build_patch_connectivity(); 
+        init_mesh->build_patch_connectivity(); 
     }
 
     std::cout<<"refine mesh"<<std::endl;
 
     // refine subcell mesh to desired order
-    refine_mesh(init_mesh, mesh, p_order, num_dim);
-
-    
-
-
-
+    swage::refine_mesh(*init_mesh, *mesh, p_order, num_dim);
+    std::cout<<"done refining"<< simparam->num_dim <<std::endl;
     // Close mesh input file
     fclose(in);
-
-
+    
     // Create reference element
-    ref_elem.init(p_order, num_dim, elem->num_basis());
-
+    ref_elem->init(p_order, num_dim, elem->num_basis());
+    std::cout<<"done with ref elem"<<std::endl;
      
-    std::cout << "number of patches = " << mesh.num_patches() << std::endl;
+    std::cout << "number of patches = " << mesh->num_patches() << std::endl;
     std::cout << "End of setup " << std::endl;     
 } // end read_mesh
 
 
-void generate_bcs(){
+void Pseudo_Laplacian::generate_bcs(){
 
     // build boundary mesh patches
-    mesh.build_bdy_patches();
-    std::cout << "number of boundary patches = " << mesh.num_bdy_patches() << std::endl;
+    mesh->build_bdy_patches();
+    std::cout << "number of boundary patches = " << mesh->num_bdy_patches() << std::endl;
     std::cout << "building boundary sets " << std::endl;
     // set the number of boundary sets
     
-    int num_bdy_sets = NB;
+    int num_bdy_sets = simparam->NB;
     
-    mesh.init_bdy_sets(num_bdy_sets);
+    mesh->init_bdy_sets(num_bdy_sets);
     
     // tag the x=0 plane,  (Direction, value, bdy_set)
     std::cout << "tagging x = 0 " << std::endl;
     int bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     real_t value = 0.0;
     int bdy_set_id = 0;
-    mesh.tag_bdys(bc_tag, value, bdy_set_id);
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
     
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
 
 
@@ -446,10 +399,10 @@ void generate_bcs(){
     bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     value = 0.0;
     bdy_set_id = 1;
-    mesh.tag_bdys(bc_tag, value, bdy_set_id);
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
     
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
     
 
@@ -458,10 +411,10 @@ void generate_bcs(){
     bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     value = 0.0;
     bdy_set_id = 2;
-    mesh.tag_bdys(bc_tag, value, bdy_set_id);
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
     
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
     
 
@@ -469,10 +422,10 @@ void generate_bcs(){
     bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     value = 2.0;
     bdy_set_id = 3;
-    mesh.tag_bdys(bc_tag, value, bdy_set_id);
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
 
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
 
 
@@ -480,50 +433,58 @@ void generate_bcs(){
     bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     value = 2.0;
     bdy_set_id = 4;
-    mesh.tag_bdys(bc_tag, value, bdy_set_id);
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
 
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
 
     std::cout << "tagging z = 2 " << std::endl;
     bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     value = 2.0;
     bdy_set_id = 5;
-    mesh.tag_bdys(bc_tag, value, bdy_set_id);
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
 
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh.num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
 } // end generate_bcs
 
 
-void allocate_state(){
+void Pseudo_Laplacian::allocate_state(){
 
+    int rk_storage = simparam->rk_storage;
+    int num_dim = simparam->num_dim;
+    node_t *node = simparam->node;
+    mat_pt_t *mat_pt = simparam->mat_pt;
 
     std::cout << "Allocate and Initialize"  << std::endl;
     std::cout << "RK num stages = "<< rk_storage  << std::endl;
     // --- allocate and initialize the defaults for the problem ---
 
     // ---- Node initialization ---- //
-    node.init_node_state(num_dim, mesh, rk_storage);
+    node->init_node_state(num_dim, *mesh, rk_storage);
     std::cout << "Node state allocated and initialized to zero"  << std::endl;
     std::cout << std::endl;
 
     // ---- Material point initialization ---- //
-    mat_pt.init_mat_pt_state(num_dim, mesh, rk_storage);
+    mat_pt->init_mat_pt_state(num_dim, *mesh, rk_storage);
     std::cout << "Material point state allocated and initialized to zero"  << std::endl;
     std::cout << std::endl;
 } // end allocate_state
 
 
-void initialize_state(){
-    
+void Pseudo_Laplacian::initialize_state(){
+    int NF = simparam->NF;
+    mat_pt_t *mat_pt = simparam->mat_pt;
+    mat_fill_t *mat_fill = simparam->mat_fill;
+    int rk_stage = simparam->rk_stage;
+
     std::cout << "Before fill instructions"  << std::endl;
     //--- apply the fill instructions ---//
     for (int f_id = 0; f_id < NF; f_id++){
         
-        for (int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++) {
+        for (int cell_gid = 0; cell_gid < mesh->num_cells(); cell_gid++) {
             
             // calculate the coordinates and radius of the cell
             real_t cell_coords_x = 0.0;
@@ -533,11 +494,11 @@ void initialize_state(){
             for (int node_lid = 0; node_lid < 8; node_lid++){
                 
                 // increment the number of cells attached to this vertex
-                int vert_gid = mesh.nodes_in_cell(cell_gid, node_lid); // get the global_id
+                int vert_gid = mesh->nodes_in_cell(cell_gid, node_lid); // get the global_id
                 
-                cell_coords_x += mesh.node_coords(vert_gid, 0);
-                cell_coords_y += mesh.node_coords(vert_gid, 1);
-                cell_coords_z += mesh.node_coords(vert_gid, 2);
+                cell_coords_x += mesh->node_coords(vert_gid, 0);
+                cell_coords_y += mesh->node_coords(vert_gid, 1);
+                cell_coords_z += mesh->node_coords(vert_gid, 2);
                 
             }// end for loop over node_lid
             
@@ -547,9 +508,9 @@ void initialize_state(){
 
             // Material points at cell center
 
-            mat_pt.coords(rk_stage, cell_gid, 0) = cell_coords_x;
-            mat_pt.coords(rk_stage, cell_gid, 1) = cell_coords_y;
-            mat_pt.coords(rk_stage, cell_gid, 2) = cell_coords_z;
+            mat_pt->coords(rk_stage, cell_gid, 0) = cell_coords_x;
+            mat_pt->coords(rk_stage, cell_gid, 1) = cell_coords_y;
+            mat_pt->coords(rk_stage, cell_gid, 2) = cell_coords_z;
 
             
             // spherical radius
@@ -595,7 +556,7 @@ void initialize_state(){
 
             if (fill_this == 1){    
                 
-                mat_pt.field(cell_gid) = mat_fill[f_id].field2;
+                mat_pt->field(cell_gid) = mat_fill[f_id].field2;
 
 
             } // end if fill volume
@@ -606,9 +567,8 @@ void initialize_state(){
 } // end initialize_state
 
 
-void calculate_ref_elem(){
-
-
+void Pseudo_Laplacian::calculate_ref_elem(){
+    int num_dim = simparam->num_dim;
 
     real_t partial_xia[elem->num_basis()];
     auto partial_xi = ViewCArray <real_t> (partial_xia, elem->num_basis());
@@ -623,17 +583,17 @@ void calculate_ref_elem(){
     std::cout << "::::  Getting partials of basis  ::::" << std::endl;
     std::cout << "Num Basis =  "<< elem->num_basis() << std::endl;
 
-    std::cout << "Num_ref_nodes  "<< ref_elem.num_ref_nodes() << std::endl;
+    std::cout << "Num_ref_nodes  "<< ref_elem->num_ref_nodes() << std::endl;
 
-    for(int node_rid = 0; node_rid < ref_elem.num_ref_nodes(); node_rid++){
+    for(int node_rid = 0; node_rid < ref_elem->num_ref_nodes(); node_rid++){
 
         // make temp array of ref node positions
-        real_t ref_node_loc_a[mesh.num_dim()];
-        auto ref_node_loc = ViewCArray<real_t> (ref_node_loc_a, mesh.num_dim());
+        real_t ref_node_loc_a[mesh->num_dim()];
+        auto ref_node_loc = ViewCArray<real_t> (ref_node_loc_a, mesh->num_dim());
 
-        for(int dim = 0; dim < mesh.num_dim(); dim++){
+        for(int dim = 0; dim < mesh->num_dim(); dim++){
 
-            ref_node_loc(dim) = ref_elem.ref_node_positions(node_rid, dim);
+            ref_node_loc(dim) = ref_elem->ref_node_positions(node_rid, dim);
         }
     
         std::cout << "Local Node =  "<< node_rid << std::endl;
@@ -647,9 +607,9 @@ void calculate_ref_elem(){
         
         for(int basis_id = 0; basis_id < elem->num_basis(); basis_id++){
             
-            ref_elem.ref_nodal_gradient(node_rid, basis_id, 0) = partial_xi(basis_id);
-            ref_elem.ref_nodal_gradient(node_rid, basis_id, 1) = partial_eta(basis_id);
-            ref_elem.ref_nodal_gradient(node_rid, basis_id, 2) = partial_mu(basis_id);
+            ref_elem->ref_nodal_gradient(node_rid, basis_id, 0) = partial_xi(basis_id);
+            ref_elem->ref_nodal_gradient(node_rid, basis_id, 1) = partial_eta(basis_id);
+            ref_elem->ref_nodal_gradient(node_rid, basis_id, 2) = partial_mu(basis_id);
 
             // std::cout << "Partial Xi for basis "<< basis_id <<" = " << partial_xi(basis_id) << std::endl;
             // std::cout << "Partial Eta for basis "<< basis_id <<" = " << partial_eta(basis_id) << std::endl;
@@ -668,9 +628,6 @@ void calculate_ref_elem(){
 
         }
 
-
-
-        
 
         std::cout << std::endl;
 
@@ -697,192 +654,198 @@ void calculate_ref_elem(){
 }
 
 
-
-
-
 // Runtime Functions
 
-void apply_boundary(){
+void Pseudo_Laplacian::apply_boundary(){
 
+    node_t *node = simparam->node;
 
-    for (int bdy_patch_gid = 0; bdy_patch_gid < mesh.num_bdy_patches_in_set(3); bdy_patch_gid++){
+    for (int bdy_patch_gid = 0; bdy_patch_gid < mesh->num_bdy_patches_in_set(3); bdy_patch_gid++){
                 
         // get the global id for this boundary patch
-        int patch_gid = mesh.bdy_patches_in_set(3, bdy_patch_gid);
+        int patch_gid = mesh->bdy_patches_in_set(3, bdy_patch_gid);
 
         // apply boundary condition at nodes on boundary
         for(int node_lid = 0; node_lid < 4; node_lid++){
             
-            int node_gid = mesh.node_in_patch(patch_gid, node_lid);
+            int node_gid = mesh->node_in_patch(patch_gid, node_lid);
 
             // Set nodal temp to zero
-            node.field(node_gid) = 0.0;
+            node->field(node_gid) = 0.0;
 
         }
     }
 
     // std::cout << "Apply temp" << std::endl;
     // Apply constant temp of 1 to x=0 plane of mesh
-    for (int bdy_patch_gid = 0; bdy_patch_gid < mesh.num_bdy_patches_in_set(0); bdy_patch_gid++){
+    for (int bdy_patch_gid = 0; bdy_patch_gid < mesh->num_bdy_patches_in_set(0); bdy_patch_gid++){
                 
         // get the global id for this boundary patch
-        int patch_gid = mesh.bdy_patches_in_set(0, bdy_patch_gid);
+        int patch_gid = mesh->bdy_patches_in_set(0, bdy_patch_gid);
 
         // apply boundary condition at nodes on boundary
         for(int node_lid = 0; node_lid < 4; node_lid++){
             
-            int node_gid = mesh.node_in_patch(patch_gid, node_lid);
+            int node_gid = mesh->node_in_patch(patch_gid, node_lid);
 
             // Set nodal temp to zero
-            node.field(node_gid) = 40.0;
+            node->field(node_gid) = 40.0;
 
         }
     }
 }
 
 
-void smooth_cells(){
-
+void Pseudo_Laplacian::smooth_cells(){
+    mat_pt_t *mat_pt = simparam->mat_pt;
+    mat_fill_t *mat_fill = simparam->mat_fill;
+    node_t *node = simparam->node;
 
     // Walk over cells 
-    for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
+    for(int cell_gid = 0; cell_gid < mesh->num_cells(); cell_gid++){
 
         // Temporary holder variable
         real_t temp_avg = 0.0;
 
         // Walk over nodes in cell and calculate average
-        for(int node_lid = 0; node_lid < mesh.num_nodes_in_cell(); node_lid++){
+        for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
 
             // Get global index of the node
-            int node_gid = mesh.nodes_in_cell(cell_gid, node_lid);
+            int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
 
-            temp_avg += node.field(node_gid)/8.0;
+            temp_avg += node->field(node_gid)/8.0;
 
         }
 
         // Save average to material point at cell center
-        mat_pt.field(cell_gid) = temp_avg;
+        mat_pt->field(cell_gid) = temp_avg;
 
     } // end of loop over cells
 
     // Walk over all the nodes
-    for(int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++){
+    for(int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++){
 
         real_t temp_avg = 0.0;
         
         // Walk over all the cells connected to the node and average values
-        for(int cell_lid = 0; cell_lid < mesh.num_cells_in_node(node_gid); cell_lid++){
+        for(int cell_lid = 0; cell_lid < mesh->num_cells_in_node(node_gid); cell_lid++){
 
             // Get global index of the cell
-            int cell_gid = mesh.cells_in_node(node_gid, cell_lid);
+            int cell_gid = mesh->cells_in_node(node_gid, cell_lid);
 
-            temp_avg += mat_pt.field(cell_gid)/ (real_t)mesh.num_cells_in_node(node_gid);
+            temp_avg += mat_pt->field(cell_gid)/ (real_t)mesh->num_cells_in_node(node_gid);
         
         }
 
         // Save average to the node
-        node.field(node_gid) = temp_avg;
+        node->field(node_gid) = temp_avg;
 
     } // end of loop over nodes
 }
 
 
-void smooth_element(){
+void Pseudo_Laplacian::smooth_element(){
+    mat_pt_t *mat_pt = simparam->mat_pt;
+    mat_fill_t *mat_fill = simparam->mat_fill;
+    node_t *node = simparam->node;
 
     // Walk over each element in the mesh
-    for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
+    for(int elem_gid = 0; elem_gid < mesh->num_elems(); elem_gid++){
 
         // Walk over each cell in the element
-        for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){
+        for(int cell_lid = 0; cell_lid < mesh->num_cells_in_elem(); cell_lid++){
 
             // Get the global ID of the cell
-            int cell_gid = mesh.cells_in_elem(elem_gid, cell_lid);
+            int cell_gid = mesh->cells_in_elem(elem_gid, cell_lid);
 
             real_t temp_avg = 0.0;
 
             // Loop over nodes in the cell
-            for(int node_lid = 0; node_lid < mesh.num_nodes_in_cell(); node_lid++){
+            for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
 
                 // Get global ID for this node
-                int node_gid = mesh.nodes_in_cell(cell_gid, node_lid);
+                int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
 
-                temp_avg += node.field(node_gid)/mesh.num_nodes_in_cell();
+                temp_avg += node->field(node_gid)/mesh->num_nodes_in_cell();
 
             }
 
             // Save averaged values to cell centered material point
-            mat_pt.field(cell_gid) = temp_avg;
+            mat_pt->field(cell_gid) = temp_avg;
         }// end loop over nodes
     }// end loop over elements
 
 
     // Walk over each element in the mesh
-    for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
+    for(int elem_gid = 0; elem_gid < mesh->num_elems(); elem_gid++){
        
         // Walk over each node in the element
-        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem(); node_lid++){
+        for(int node_lid = 0; node_lid < mesh->num_nodes_in_elem(); node_lid++){
 
             // Get global ID of the node
-            int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+            int node_gid = mesh->nodes_in_elem(elem_gid, node_lid);
 
             real_t temp_avg = 0.0;
 
             // Walk over all cell connected to the node
-            for(int cell_lid = 0; cell_lid < mesh.num_cells_in_node(node_gid); cell_lid++){
+            for(int cell_lid = 0; cell_lid < mesh->num_cells_in_node(node_gid); cell_lid++){
 
                 // Get globa ID for the cell
-                int cell_gid = mesh.cells_in_node(node_gid, cell_lid);
+                int cell_gid = mesh->cells_in_node(node_gid, cell_lid);
 
-                temp_avg += mat_pt.field(cell_gid)/ (real_t)mesh.num_cells_in_node(node_gid);
+                temp_avg += mat_pt->field(cell_gid)/ (real_t)mesh->num_cells_in_node(node_gid);
             }
 
             // Save averaged field to node
-            node.field(node_gid) = temp_avg;
+            node->field(node_gid) = temp_avg;
 
         }// end loop over nodes
     }// end loop over elements
 }
 
-void get_nodal_jacobian(){
+void Pseudo_Laplacian::get_nodal_jacobian(){
+  mat_pt_t *mat_pt = simparam->mat_pt;
+  mat_fill_t *mat_fill = simparam->mat_fill;
+  int num_dim = simparam->num_dim;
 
-// loop over the mesh
+  // loop over the mesh
 
-    for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
+    for(int elem_gid = 0; elem_gid < mesh->num_elems(); elem_gid++){
         
-        for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){ // 1 for linear elements
+        for(int cell_lid = 0; cell_lid < mesh->num_cells_in_elem(); cell_lid++){ // 1 for linear elements
 
-            int cell_gid = mesh.cells_in_elem(elem_gid, cell_lid);
+            int cell_gid = mesh->cells_in_elem(elem_gid, cell_lid);
 
             // Loop over nodes in cell and initialize jacobian to zero
-            for(int node_lid = 0; node_lid < mesh.num_nodes_in_cell(); node_lid++){
+            for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
 
-                int node_gid = mesh.nodes_in_cell(cell_gid, node_lid);
+                int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
                 
-                for(int dim_i = 0; dim_i < mesh.num_dim(); dim_i++){
-                    for(int dim_j = 0; dim_j < mesh.num_dim(); dim_j++){
+                for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
+                    for(int dim_j = 0; dim_j < mesh->num_dim(); dim_j++){
 
-                        mesh.node_jacobian(node_gid, dim_i, dim_j) = 0.0;
+                        mesh->node_jacobian(node_gid, dim_i, dim_j) = 0.0;
                     }
                 }
             }
 
             // Calculate the actual jacobian for that node
-            for(int node_lid = 0; node_lid < mesh.num_nodes_in_cell(); node_lid++){
+            for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
                 
-                int node_gid = mesh.nodes_in_cell(cell_gid, node_lid);
+                int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
 
 
 
-                for(int dim_i = 0; dim_i < mesh.num_dim(); dim_i++){
-                    for(int dim_j = 0; dim_j < mesh.num_dim(); dim_j++){
+                for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
+                    for(int dim_j = 0; dim_j < mesh->num_dim(); dim_j++){
 
                         // Sum over the basis functions and nodes where they are defined
-                        for(int basis_id = 0; basis_id < mesh.num_nodes_in_cell(); basis_id++){
+                        for(int basis_id = 0; basis_id < mesh->num_nodes_in_cell(); basis_id++){
 
-                            int ref_node_gid = mesh.nodes_in_cell(cell_gid, basis_id);
+                            int ref_node_gid = mesh->nodes_in_cell(cell_gid, basis_id);
 
-                            mesh.node_jacobian(node_gid, dim_i, dim_j) += 
-                                mesh.node_coords(ref_node_gid , dim_i) * ref_elem.ref_nodal_gradient(node_lid, basis_id, dim_j);
+                            mesh->node_jacobian(node_gid, dim_i, dim_j) += 
+                                mesh->node_coords(ref_node_gid , dim_i) * ref_elem->ref_nodal_gradient(node_lid, basis_id, dim_j);
                         }
                     }
                 }
@@ -894,40 +857,40 @@ void get_nodal_jacobian(){
 // NOTE: Save only J^inverse and det_J
 #pragma omp simd //Modified by Daniel
     // loop over the nodes of the mesh
-    for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
+    for (int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++) {
 
-        mesh.node_det_j(node_gid) = 
-            mesh.node_jacobian(node_gid, 0, 0) 
-          * ( (mesh.node_jacobian(node_gid, 1, 1)*mesh.node_jacobian(node_gid, 2, 2)) - (mesh.node_jacobian(node_gid, 2, 1)*mesh.node_jacobian(node_gid, 1, 2)) )  //group 1
-          - mesh.node_jacobian(node_gid, 0, 1) 
-          * ( (mesh.node_jacobian(node_gid, 1, 0)*mesh.node_jacobian(node_gid, 2, 2)) - (mesh.node_jacobian(node_gid, 2, 0)*mesh.node_jacobian(node_gid, 1, 2)) ) // group 2
-          + mesh.node_jacobian(node_gid, 0, 2) 
-          * ( (mesh.node_jacobian(node_gid, 1, 0)*mesh.node_jacobian(node_gid, 2, 1)) - (mesh.node_jacobian(node_gid, 2, 0)*mesh.node_jacobian(node_gid, 1, 1)) ); // group 3
+        mesh->node_det_j(node_gid) = 
+            mesh->node_jacobian(node_gid, 0, 0) 
+          * ( (mesh->node_jacobian(node_gid, 1, 1)*mesh->node_jacobian(node_gid, 2, 2)) - (mesh->node_jacobian(node_gid, 2, 1)*mesh->node_jacobian(node_gid, 1, 2)) )  //group 1
+          - mesh->node_jacobian(node_gid, 0, 1) 
+          * ( (mesh->node_jacobian(node_gid, 1, 0)*mesh->node_jacobian(node_gid, 2, 2)) - (mesh->node_jacobian(node_gid, 2, 0)*mesh->node_jacobian(node_gid, 1, 2)) ) // group 2
+          + mesh->node_jacobian(node_gid, 0, 2) 
+          * ( (mesh->node_jacobian(node_gid, 1, 0)*mesh->node_jacobian(node_gid, 2, 1)) - (mesh->node_jacobian(node_gid, 2, 0)*mesh->node_jacobian(node_gid, 1, 1)) ); // group 3
 
     }
 
-    for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
+    for(int cell_gid = 0; cell_gid < mesh->num_cells(); cell_gid++){
 
-        mat_pt.volume(cell_gid) = 0;
+        mat_pt->volume(cell_gid) = 0;
 
-        for(int node_lid = 0; node_lid < mesh.num_nodes_in_cell(); node_lid++){
+        for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
 
-            int node_gid = mesh.nodes_in_cell(cell_gid, node_lid);
+            int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
 
-            mat_pt.volume(cell_gid) += mesh.node_det_j(node_gid);
+            mat_pt->volume(cell_gid) += mesh->node_det_j(node_gid);
         }
 
-        std::cout<< "Volume for cell  "<< cell_gid << " = "<< mat_pt.volume(cell_gid) << std::endl;
+        std::cout<< "Volume for cell  "<< cell_gid << " = "<< mat_pt->volume(cell_gid) << std::endl;
     }
 
     // NOTE: Invert and save J^inverse here!
 
 
 
-    for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
+    for (int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++) {
         
-        auto jacobian_view = ViewCArray <real_t> (&mesh.node_jacobian(node_gid, 0, 0), mesh.num_dim(), mesh.num_dim());
-        auto jacobian_inverse_view = ViewCArray <real_t> (&mesh.node_jacobian_inv(node_gid, 0, 0), mesh.num_dim(), mesh.num_dim());
+        auto jacobian_view = ViewCArray <real_t> (&mesh->node_jacobian(node_gid, 0, 0), mesh->num_dim(), mesh->num_dim());
+        auto jacobian_inverse_view = ViewCArray <real_t> (&mesh->node_jacobian_inv(node_gid, 0, 0), mesh->num_dim(), mesh->num_dim());
 
         elements::jacobian_inverse_3d(jacobian_inverse_view, jacobian_view);
     }
@@ -936,21 +899,21 @@ void get_nodal_jacobian(){
     // Check J^-1 * J = I
 
 
-    for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
+    for (int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++) {
         
         real_t test_array[3][3];
 
-        for(int dim_k = 0; dim_k < mesh.num_dim(); dim_k++){
-            for(int dim_i = 0; dim_i < mesh.num_dim(); dim_i++){
+        for(int dim_k = 0; dim_k < mesh->num_dim(); dim_k++){
+            for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
 
                 test_array[dim_i][dim_k] = 0.0;
             }
         }
 
-        for(int dim_k = 0; dim_k < mesh.num_dim(); dim_k++){
-            for(int dim_j = 0; dim_j < mesh.num_dim(); dim_j++){
-                for(int dim_i = 0; dim_i < mesh.num_dim(); dim_i++){
-                    test_array[dim_i][dim_k] += mesh.node_jacobian(node_gid, dim_i, dim_j) * mesh.node_jacobian_inv(node_gid, dim_j, dim_k);
+        for(int dim_k = 0; dim_k < mesh->num_dim(); dim_k++){
+            for(int dim_j = 0; dim_j < mesh->num_dim(); dim_j++){
+                for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
+                    test_array[dim_i][dim_k] += mesh->node_jacobian(node_gid, dim_i, dim_j) * mesh->node_jacobian_inv(node_gid, dim_j, dim_k);
                 }
             }
         }
@@ -972,7 +935,9 @@ void get_nodal_jacobian(){
 
 // Output writers
 
-void vtk_writer(){
+void Pseudo_Laplacian::vtk_writer(){
+    int graphics_id = simparam->graphics_id;
+    int num_dim = simparam->num_dim;
 
     const int num_scalar_vars = 2;
     const int num_vec_vars = 1;
@@ -1017,8 +982,8 @@ void vtk_writer(){
     
     out[0] = fopen(filename, "w");
     
-    int num_nodes = mesh.num_nodes();
-    int num_cells = mesh.num_cells();
+    int num_nodes = mesh->num_nodes();
+    int num_cells = mesh->num_cells();
 
 
     fprintf(out[0],"<?xml version=\"1.0\"?> \n");
@@ -1075,9 +1040,9 @@ void vtk_writer(){
     
     for (int node_gid = 0; node_gid < num_nodes; node_gid++){
         
-        fprintf(out[0],"%f   %f   %f   \n",mesh.node_coords(node_gid, 0),
-                                           mesh.node_coords(node_gid, 1),
-                                           mesh.node_coords(node_gid, 2));
+        fprintf(out[0],"%f   %f   %f   \n",mesh->node_coords(node_gid, 0),
+                                           mesh->node_coords(node_gid, 1),
+                                           mesh->node_coords(node_gid, 2));
 
     } 
 
@@ -1102,7 +1067,7 @@ void vtk_writer(){
     for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
         
         for(int node = 0; node < 8; node++){
-            fprintf(out[0],"%i  ", mesh.nodes_in_cell(cell_gid, node));
+            fprintf(out[0],"%i  ", mesh->nodes_in_cell(cell_gid, node));
         }
 
         fprintf(out[0],"\n");
@@ -1137,7 +1102,7 @@ void vtk_writer(){
 
             fprintf(out[0],"4  ");
             for(int node_lid = 0; node_lid < 4; node_lid++){
-                fprintf(out[0],"%i  ", mesh.node_in_patch_in_cell(cell_gid, patch_lid, node_lid));
+                fprintf(out[0],"%i  ", mesh->node_in_patch_in_cell(cell_gid, patch_lid, node_lid));
             }
 
             fprintf(out[0],"\n");
@@ -1172,7 +1137,11 @@ void vtk_writer(){
 } // end vtk_writer
 
 
-void ensight(){
+void Pseudo_Laplacian::ensight(){
+    mat_pt_t *mat_pt = simparam->mat_pt;
+    int graphics_id = simparam->graphics_id;
+    real_t *graphics_times = simparam->graphics_times;
+    real_t &TIME = simparam->TIME;
 
     auto convert_vert_list_ord_Ensight = CArray <int> (8);
     convert_vert_list_ord_Ensight(0) = 1;
@@ -1197,31 +1166,31 @@ void ensight(){
     };
 
 
-    int num_nodes = mesh.num_nodes();
-    int num_cells = mesh.num_cells();
+    int num_nodes = mesh->num_nodes();
+    int num_cells = mesh->num_cells();
 
     // save the cell state to an array for exporting to graphics files
     auto cell_fields = CArray <real_t> (num_cells, num_scalar_vars);
 
     int cell_cnt = 0;
-    int c_in_e = mesh.num_cells_in_elem();
+    int c_in_e = mesh->num_cells_in_elem();
     int elem_val = 1;
 
 
     for (int cell_gid=0; cell_gid<num_cells; cell_gid++){
-        cell_fields(cell_gid, 0) = mat_pt.field(cell_gid);    
+        cell_fields(cell_gid, 0) = mat_pt->field(cell_gid);    
     } // end for k over cells
 
-    int num_elem = mesh.num_elems();
+    int num_elem = mesh->num_elems();
 
     int num_sub_1d;
 
-    if(mesh.elem_order() == 0){
+    if(mesh->elem_order() == 0){
         num_sub_1d = 1;
     }
     
     else{
-        num_sub_1d = mesh.elem_order()*2;
+        num_sub_1d = mesh->elem_order()*2;
     }
 
 
@@ -1262,7 +1231,7 @@ void ensight(){
     // Use average temp from each node as cell temp
     for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
 
-        cell_fields(cell_gid, 3) = mat_pt.field(cell_gid);    
+        cell_fields(cell_gid, 3) = mat_pt->field(cell_gid);    
 
     } // end for k over cells
 
@@ -1272,9 +1241,9 @@ void ensight(){
 
     for (int node_gid = 0; node_gid < num_nodes; node_gid++){
         
-        vec_fields(node_gid, 0, 0) = mesh.node_coords(node_gid, 0); 
-        vec_fields(node_gid, 0, 1) = mesh.node_coords(node_gid, 1);
-        vec_fields(node_gid, 0, 2) = mesh.node_coords(node_gid, 2);
+        vec_fields(node_gid, 0, 0) = mesh->node_coords(node_gid, 0); 
+        vec_fields(node_gid, 0, 1) = mesh->node_coords(node_gid, 1);
+        vec_fields(node_gid, 0, 2) = mesh->node_coords(node_gid, 2);
 
     } // end for loop over vertices
 
@@ -1318,19 +1287,19 @@ void ensight(){
     
     // --- vertices ---
     fprintf(out[0],"coordinates\n");
-    fprintf(out[0],"%10d\n",mesh.num_nodes());
+    fprintf(out[0],"%10d\n",mesh->num_nodes());
     
     // write all components of the point coordinates
     for (int node_gid=0; node_gid<num_nodes; node_gid++){
-        fprintf(out[0],"%12.5e\n",mesh.node_coords(node_gid, 0));
+        fprintf(out[0],"%12.5e\n",mesh->node_coords(node_gid, 0));
     }
     
     for (int node_gid=0; node_gid<num_nodes; node_gid++){
-        fprintf(out[0],"%12.5e\n",mesh.node_coords(node_gid, 1));
+        fprintf(out[0],"%12.5e\n",mesh->node_coords(node_gid, 1));
     }
     
     for (int node_gid=0; node_gid<num_nodes; node_gid++){
-        fprintf(out[0],"%12.5e\n",mesh.node_coords(node_gid, 2));
+        fprintf(out[0],"%12.5e\n",mesh->node_coords(node_gid, 2));
     }
     
     // convert_vert_list_ord_Ensight
@@ -1344,7 +1313,7 @@ void ensight(){
 
         for (int j=0; j<8; j++){
             this_index = convert_vert_list_ord_Ensight(j);
-            fprintf(out[0],"%10d\t",mesh.nodes_in_cell(cell_gid, this_index)+1); // note node_gid starts at 1
+            fprintf(out[0],"%10d\t",mesh->nodes_in_cell(cell_gid, this_index)+1); // note node_gid starts at 1
 
         }
         fprintf(out[0],"\n");

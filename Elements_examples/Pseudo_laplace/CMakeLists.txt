@@ -12,6 +12,5 @@ if (NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 
 add_subdirectory(elements)
-add_subdirectory(src)
 add_subdirectory(driver)
 add_subdirectory(implicit_solver)

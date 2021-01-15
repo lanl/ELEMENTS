@@ -33,12 +33,13 @@ public:
 
         num_dim_   = num_dim;
         num_rk_    = num_rk;
+        std::cout << "before mesh access = "<< std::endl;
         num_nodes_ = mesh.num_nodes();
-
+        std::cout << "after mesh access = "<< std::endl;
         // node_field_ = c_array_t <real_t> (num_nodes_);
 
         node_field_ = new real_t[num_nodes_]();
-
+        std::cout << "after array declared = "<< std::endl;
     }
 
 
@@ -137,10 +138,6 @@ public:
 
     }
 };
-
-
-
-
 
 
 #endif // end STATE_H

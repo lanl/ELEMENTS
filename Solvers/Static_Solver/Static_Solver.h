@@ -1,7 +1,8 @@
-#ifndef PSEUDO_LAPLACIAN_H
-#define PSEUDO_LAPLACIAN_H
+#ifndef STATIC_SOLVER_H
+#define STATIC_SOLVER_H  
 
-#include "Solver.h"
+#include "utilities.h"
+#include "../Solver.h"
 
 namespace swage{
   class mesh_t;
@@ -14,11 +15,11 @@ namespace elements{
   class ref_element;
 }
 
-class Pseudo_Laplacian: public Solver{
+class Static_Solver: public Solver{
 
 public:
-  Pseudo_Laplacian();
-  ~Pseudo_Laplacian();
+  Static_Solver();
+  ~Static_Solver();
 
   void run(int argc, char *argv[]);
 

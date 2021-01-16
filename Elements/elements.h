@@ -220,44 +220,12 @@ namespace elements{
 
 
 class ref_element{
-    private:
-        
-        int num_dim_;
-        
-        int num_ref_nodes_1D_;
-        int num_ref_cells_1D_;
-        int num_ref_corners_1D_;
-        
-        // cells
-        int num_ref_cells_in_elem_;
-        
-        // nodes
-        int num_ref_nodes_in_elem_;
-        int num_ref_nodes_in_cell_;
-        //DANint *ref_nodes_in_cell_ = NULL;
-        CArray <int> ref_nodes_in_cell_;
-        
-        //DANreal_t *ref_node_positions_ = NULL;
-        //DANreal_t *ref_node_g_weights_ = NULL;
-        CArray <real_t> ref_node_positions_;
-        CArray <real_t> ref_node_g_weights_;
-        // corners
-        int num_ref_corners_in_cell_;
-        int num_ref_corners_in_elem_;
-        //DANint* ref_corners_in_cell_ = NULL;
-        CArray <int> ref_corners_in_cell_;
-        
-        //DANreal_t *ref_corner_surf_normals_ = NULL;
-        //DANreal_t *ref_corner_g_weights_ = NULL;
-        //DANreal_t *ref_corner_surf_g_weights_ = NULL;
-        CArray <real_t> ref_corner_surf_normals_;
-        CArray <real_t> ref_corner_g_weights_;
-        CArray <real_t> ref_corner_surf_g_weights_;
-
-        // Num basis functions
-        int num_basis_;
     
     public:
+        // Constructor
+        ref_element(){}
+        // Deconstructor
+        ~ref_element();
         // DANIELLOOK
         // Gradient of basis
         CArray <real_t> ref_nodal_gradient_;
@@ -295,19 +263,48 @@ class ref_element{
 
         // Nodal jacobian and determinant should be in mesh class, I think....
         //real_t ref_nodal_jacobian(int node_rid, int basis_id, int dim) const;
+
+    private:
         
+        int num_dim_;
+        
+        int num_ref_nodes_1D_;
+        int num_ref_cells_1D_;
+        int num_ref_corners_1D_;
+        
+        // cells
+        int num_ref_cells_in_elem_;
+        
+        // nodes
+        int num_ref_nodes_in_elem_;
+        int num_ref_nodes_in_cell_;
+        //DANint *ref_nodes_in_cell_ = NULL;
+        CArray <int> ref_nodes_in_cell_;
+        
+        //DANreal_t *ref_node_positions_ = NULL;
+        //DANreal_t *ref_node_g_weights_ = NULL;
+        CArray <real_t> ref_node_positions_;
+        CArray <real_t> ref_node_g_weights_;
+        // corners
+        int num_ref_corners_in_cell_;
+        int num_ref_corners_in_elem_;
+        //DANint* ref_corners_in_cell_ = NULL;
+        CArray <int> ref_corners_in_cell_;
+        
+        //DANreal_t *ref_corner_surf_normals_ = NULL;
+        //DANreal_t *ref_corner_g_weights_ = NULL;
+        //DANreal_t *ref_corner_surf_g_weights_ = NULL;
+        CArray <real_t> ref_corner_surf_normals_;
+        CArray <real_t> ref_corner_g_weights_;
+        CArray <real_t> ref_corner_surf_g_weights_;
 
-
-        // Deconstructor
-        ~ref_element();
+        // Num basis functions
+        int num_basis_;
 
     };
 
 
     class Element2D {
-        
-        protected:
-            const static int num_dim_ = 2;
 
         public:
         
@@ -340,14 +337,12 @@ class ref_element{
         // Map from vertex to node
         virtual int vert_node_map( const int vert_lid) = 0;
 
+        protected:
+            const static int num_dim_ = 2;
 
     }; // end of 2D element class
 
     class Element3D {
-        
-        protected:
-            const static int num_dim_ = 3;
-
         public:
         
         virtual int num_verts() = 0;
@@ -385,6 +380,9 @@ class ref_element{
 
         // Reference vertices location
         virtual real_t& ref_locs(const int vert_lid, const int dim) = 0;
+        
+        protected:
+            const static int num_dim_ = 3;
 
     }; // end of 3D parent class
 
@@ -1204,40 +1202,25 @@ struct elem_type_t {
     elem_types::elem_type type;   
 };
 
+class element_selector{
+  public:
+    //2D element objects
+    Quad4 Quad4_Object;
+    Quad8 Quad8_Object;
+    Quad12 Quad12_Object;
+    QuadN QuadN_Object;
 
-void choose_elem_type(elem_type_t elem_type);
+    //3D element objects
+    Hex8 Hex8_Object;
+    Hex20 Hex20_Object;
+    Hex32 Hex32_Object;
+    HexN HexN_Object;
+
+    void choose_3Delem_type(elem_type_t elem_type, Element3D *&elem);
+    void choose_2Delem_type(elem_type_t elem_type, Element2D *&elem2D);
+};
+
 
 } // end namespace elements
-
-
-// --- Element type choice ---
-
-// 2D Element Types
-
-extern elements::Element2D* elem2D;
-
-extern elements::Quad4      Quad4_elem;
-extern elements::Quad8      Quad8_elem;
-extern elements::Quad12     Quad12_elem;
-extern elements::QuadN      QuadN_elem;
-
-// 3D element types
-extern elements::Element3D* elem;
-
-extern elements::Hex8      Hex8_elem;
-extern elements::Hex20     Hex20_elem;
-extern elements::Hex32     Hex32_elem;
-extern elements::HexN      HexN_elem;
-
-
-// Reference element
-extern elements::ref_element  ref_elem;
-
-
-extern elements::elem_type_t*   elem_choice;
-
-
-
-
 
 #endif //ELEMENTS_H

@@ -64,6 +64,11 @@ patch 6: [1,3,7,5]
 
 
 class mesh_t {
+public:
+    // constructor
+    mesh_t ( ){}
+    // deconstructor
+    ~mesh_t ( );
     
 private:
     
@@ -433,9 +438,6 @@ public:
     int check_bdy(int patch_gid, int this_bc_tag, real_t val);
 
 
-    // deconstructor
-    ~mesh_t ( );
-
 }; // end of mesh_t declaration
 
 
@@ -446,11 +448,6 @@ void refine_mesh(
     const int dim);
 
 } // end namespace swage
-
-extern swage::mesh_t init_mesh;
-extern swage::mesh_t mesh;
-
-
 
 
 #endif // SWAGE_H 

@@ -2251,10 +2251,4 @@ void refine_mesh(
     mesh.build_connectivity();
 }
 
-
-
 } // end namespace swage
-
-
-swage::mesh_t init_mesh;
-swage::mesh_t mesh;

@@ -3,7 +3,7 @@
 Collection of math functionality such as linear equation solvers
 
 */
-
+#include <cmath>
 #include "math_util.h"
 #include "utilities.h"
 

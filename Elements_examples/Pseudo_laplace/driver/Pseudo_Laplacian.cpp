@@ -1139,7 +1139,7 @@ void Pseudo_Laplacian::vtk_writer(){
 
 void Pseudo_Laplacian::ensight(){
     mat_pt_t *mat_pt = simparam->mat_pt;
-    int graphics_id = simparam->graphics_id;
+    int &graphics_id = simparam->graphics_id;
     real_t *graphics_times = simparam->graphics_times;
     real_t &TIME = simparam->TIME;
 

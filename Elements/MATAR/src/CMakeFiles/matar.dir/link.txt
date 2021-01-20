@@ -1,2 +1,0 @@
-D:/Cygwin_Files/bin/ar.exe qc libmatar.a CMakeFiles/matar.dir/matar.cpp.obj
-D:/Cygwin_Files/bin/ranlib.exe libmatar.a

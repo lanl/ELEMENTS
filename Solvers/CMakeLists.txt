@@ -11,4 +11,3 @@ add_executable(main ${Solver_SRC_CXX} ${Solver_SRC_H} ${Class_SRC} ${Laplace_SRC
 
 target_link_libraries (main swage)
 target_link_libraries (main elements)
-target_link_libraries (main input)

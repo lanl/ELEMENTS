@@ -97,7 +97,9 @@ void Static_Solver::run(int argc, char *argv[]){
     // ---- Read intial mesh, refine, and build connectivity ---- //
     read_mesh(argv[1]);
     std::cout << "Num elements = " << mesh->num_elems() << std::endl;
-
+    
+    init_global();
+    
     // ---- Find Boundaries on mesh ---- //
     generate_bcs();
 
@@ -1432,9 +1434,143 @@ void Static_Solver::ensight(){
 } // end ensight
 
 void Static_Solver::init_global(){
-  int num_elems = mesh->num_elems();
-  int nodes_per_elem = mesh->num_nodes_in_elem();
-  //allocate storage for the sparse mass matrix map used in the assembly process
-  //Global_Mass_Matrix_Sparse_Map = CArray <int> (num_elems,nodes_per_elem*nodes_per_elem);
 
+  int num_elems = mesh->num_elems();
+  int num_nodes = mesh->num_nodes();
+  int nodes_per_elem = mesh->num_nodes_in_elem();
+  CArray <size_t> Mass_Matrix_strides_initial = CArray <size_t> (num_nodes);
+  CArray <size_t> Mass_Matrix_strides = CArray <size_t> (num_nodes);
+  CArray <int> Graph_Fill = CArray <int> (num_nodes);
+  CArray <real_t> Local_Mass_Matrix = CArray <real_t> (nodes_per_elem,nodes_per_elem);
+  CArray <int> nodes_in_cell_list_ = mesh->nodes_in_cell_list_;
+  CArray <int> cells_in_node_list_ = mesh->cells_in_node_list_;
+  CArray <int> num_cells_in_node_ = mesh->num_cells_in_node_;
+  CArray <int> current_row_nodes_scanned;
+  int current_row_n_nodes_scanned;
+  int local_node_index, current_column_index;;
+  int max_stride = 0;
+  
+  
+  //allocate storage for the sparse mass matrix map used in the assembly process
+  Global_Mass_Matrix_Assembly_Map = CArray <size_t> (num_elems,nodes_per_elem,nodes_per_elem);
+
+  //allocate array used to determine global node repeats in the sparse graph later
+  CArray <int> global_nodes_used = CArray <int> (num_nodes);
+
+  /*allocate array that stores which column the global node index occured on for the current row
+    when removing repeats*/
+  CArray <size_t> column_index = CArray <size_t> (num_nodes);
+  
+  //initialize stride arrays
+  for(int inode = 0; inode < num_nodes; inode++){
+      Mass_Matrix_strides_initial(inode) = 0;
+      Mass_Matrix_strides(inode) = 0;
+      global_nodes_used(inode) = 0;
+      column_index(inode) = 0;
+      Graph_Fill(inode) = 0;
+  }
+  
+  //count strides for Sparse Pattern Graph with global repeats
+  for (int ielem = 0; ielem < num_elems; ielem++)
+    for (int lnode = 0; lnode < nodes_per_elem; lnode++){
+      local_node_index = nodes_in_cell_list_(ielem, lnode);
+      Mass_Matrix_strides_initial(local_node_index) += nodes_per_elem;
+    }
+  
+  //equate strides for later
+  for(int inode = 0; inode < num_nodes; inode++)
+    Mass_Matrix_strides(inode) = Mass_Matrix_strides_initial(inode);
+  
+  //compute maximum stride
+  for(int inode = 0; inode < num_nodes; inode++)
+    if(Mass_Matrix_strides_initial(inode) > max_stride) max_stride = Mass_Matrix_strides_initial(inode);
+  
+  //allocate array used in the repeat removal process
+  current_row_nodes_scanned = CArray <int> (max_stride);
+  //allocate sparse graph with node repeats
+  RaggedRightArray <size_t> Repeat_Matrix_DOF_List = RaggedRightArray <size_t> (Mass_Matrix_strides_initial);
+  RaggedRightArrayofVectors <size_t> Element_local_indices = RaggedRightArrayofVectors <size_t> (Mass_Matrix_strides_initial,3);
+  
+  //Fill the initial Graph with repeats
+  //count strides for Sparse Pattern Graph with global repeats
+  
+  for (int ielem = 0; ielem < num_elems; ielem++)
+    for (int lnode = 0; lnode < nodes_per_elem; lnode++){
+      local_node_index = nodes_in_cell_list_(ielem, lnode);
+      for (int jnode = 0; jnode < nodes_per_elem; jnode++){
+        current_column_index = Graph_Fill(local_node_index)+jnode;
+        Repeat_Matrix_DOF_List(local_node_index, current_column_index) = nodes_in_cell_list_(ielem,jnode);
+
+        //fill inverse map
+        Element_local_indices(local_node_index,Graph_Fill(local_node_index)+jnode,0) = ielem;
+        Element_local_indices(local_node_index,Graph_Fill(local_node_index)+jnode,1) = lnode;
+        Element_local_indices(local_node_index,Graph_Fill(local_node_index)+jnode,2) = jnode;
+
+        //fill forward map
+        Global_Mass_Matrix_Assembly_Map(ielem,lnode,jnode) = current_column_index;
+      }
+      Graph_Fill(local_node_index) += nodes_per_elem;
+    }
+  
+  //remove repeats from the inital graph setup
+  int current_node, current_element_index, element_row_index, element_column_index, current_stride;
+  for (int inode = 0; inode < num_nodes; inode++){
+    current_row_n_nodes_scanned = 0;
+    for (int istride = 0; istride < Mass_Matrix_strides(inode); istride++){
+      current_node = Repeat_Matrix_DOF_List(inode,istride);
+      if(global_nodes_used(current_node)){
+        //set forward map index to the index where this global node was first found
+        current_element_index = Element_local_indices(inode,istride,0);
+        element_row_index = Element_local_indices(inode,istride,1);
+        element_column_index = Element_local_indices(inode,istride,2);
+
+        Global_Mass_Matrix_Assembly_Map(current_element_index,element_row_index, element_column_index) 
+            = column_index(current_node);   
+
+        
+        //swap current node with the end of the current row and shorten the stride of the row
+        //first swap information about the inverse and forward maps
+
+        current_stride = Mass_Matrix_strides(inode);
+        Element_local_indices(inode,istride,0) = Element_local_indices(inode,current_stride,0);
+        Element_local_indices(inode,istride,1) = Element_local_indices(inode,current_stride,1);
+        Element_local_indices(inode,istride,2) = Element_local_indices(inode,current_stride,2);
+        current_element_index = Element_local_indices(inode,istride,0);
+        element_row_index = Element_local_indices(inode,istride,1);
+        element_column_index = Element_local_indices(inode,istride,2);
+
+        Global_Mass_Matrix_Assembly_Map(current_element_index,element_row_index, element_column_index) 
+            = istride;
+
+        //now that the element map information has been copied, copy the global node index and delete the last index
+
+        Repeat_Matrix_DOF_List(inode,istride) = Repeat_Matrix_DOF_List(inode,Mass_Matrix_strides(inode));
+        istride--;
+        Mass_Matrix_strides(inode)--;
+      }
+      else{
+        /*this node hasn't shown up in the row before; add it to the list of nodes
+          that have been scanned uniquely. Use this list to reset the flag array
+          afterwards without having to loop over all the nodes in the system*/
+        global_nodes_used(current_node) = 1;
+        column_index(current_node) = istride;
+        current_row_nodes_scanned(current_row_n_nodes_scanned) = current_node;
+        current_row_n_nodes_scanned++;
+      }
+    }
+    //reset nodes used list for the next row of the sparse list
+    for(int node_reset = 0; node_reset < current_row_n_nodes_scanned; node_reset++)
+      global_nodes_used(current_row_nodes_scanned(node_reset)) = 0;
+
+  }
+  std::cout << "started run" << std::endl;
+  //copy reduced content to non_repeat storage
+
+
+  //deallocate repeat matrix
+  
+  /*At this stage the sparse graph should have unique global indices on each row.
+    The constructed Assembly map (to the global sparse matrix)
+    is used to loop over each element's local mass matrix in the assembly process.*/
+  
 }

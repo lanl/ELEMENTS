@@ -53,6 +53,9 @@ namespace swage{
 // Mesh_t function definitions  //
 //******************************//
 
+mesh_t::mesh_t () {
+  local_index_set_flag = 0;
+}
 
 // ==== MESH CONSTANTS ==== // 
  
@@ -736,6 +739,7 @@ void mesh_t::build_node_cell_connectivity(){
     // create memory for a list for all cell-node pairs
     //DANcells_in_node_list_ = new int [num_corners];
     cells_in_node_list_ = CArray <int> (num_corners);
+    if(local_index_set_flag) local_index_list_ = CArray <int> (num_corners);
     
 
     // Loop over nodes to set the start point of the ragged right array indices
@@ -766,6 +770,7 @@ void mesh_t::build_node_cell_connectivity(){
             
             // save the global cell index to the list
             cells_in_node_list_(index) = cell_gid;
+            if(local_index_set_flag) local_index_list_(index) = node_lid;
             
             // each point-cell pair makes a corner
             num_corners_saved[node_gid] ++;  //number of corners saved to this node

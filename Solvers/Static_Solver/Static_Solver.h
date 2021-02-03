@@ -3,6 +3,7 @@
 
 #include "utilities.h"
 #include "../Solver.h"
+#include "matar.h"
 
 namespace swage{
   class mesh_t;
@@ -57,6 +58,10 @@ public:
   
 
   class Simulation_Parameters *simparam;
+
+  CArray <size_t> Global_Mass_Matrix_Assembly_Map;
+  RaggedRightArray <size_t> Mass_Matrix_DOF_List;
+  RaggedRightArray <real_t> Mass_Matrix;
   
 };
 

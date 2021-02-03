@@ -66,10 +66,19 @@ patch 6: [1,3,7,5]
 class mesh_t {
 public:
     // constructor
-    mesh_t ( ){}
+    mesh_t ( );
     // deconstructor
     ~mesh_t ( );
     
+    //flags
+    int local_index_set_flag; //determines whether to store local indices along with node to cell connectivity
+    
+    CArray <int> nodes_in_cell_list_;
+    CArray <int> num_cells_in_node_;
+    CArray <int> cells_in_node_list_start_;
+    CArray <int> cells_in_node_list_;
+    CArray <int> local_index_list_;         //stores the element-local indices of all nodes (for each element the node connects to) for ease of access later.
+
 private:
     
     // ---- GENERAL INFORMATION ---- //
@@ -113,7 +122,6 @@ private:
     // ---- CELLS ---- //
     int   num_cells_;
     
-    CArray <int> nodes_in_cell_list_;
     CArray <int> num_cells_in_cell_;
     CArray <int> cells_in_cell_list_start_;
     CArray <int> cells_in_cell_list_;
@@ -126,10 +134,6 @@ private:
 
     // ---- NODES ---- //
     int   num_nodes_;
-
-    CArray <int> num_cells_in_node_;
-    CArray <int> cells_in_node_list_start_;
-    CArray <int> cells_in_node_list_;
 
     CArray <int> num_elems_in_node_;
     CArray <int> elems_in_node_list_start_;

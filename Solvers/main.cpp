@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <mpi.h>
 #include "Solver.h"
 #include "Pseudo_Laplacian.h"
 #include "Static_Solver.h"
@@ -12,6 +13,9 @@
 
 int main(int argc, char *argv[]){
   
+  //initialize MPI
+  MPI_Init(&argc,&argv);
+
   /*General strategy: process initial input here to determine which solver
     object to construct
   */
@@ -31,6 +35,9 @@ int main(int argc, char *argv[]){
   
   //invoke optional finalize function
   if(solver->finalize_flag) solver->finalize();
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Finalize();
 
   return 0;
 }

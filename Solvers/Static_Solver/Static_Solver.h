@@ -28,6 +28,12 @@ public:
 
   void init_global();
 
+  void assemble();
+
+  int solve();
+
+  void local_matrix(int ielem, CArray <real_t> &Local_Matrix);
+
   void generate_bcs();
 
   void allocate_state();
@@ -60,8 +66,11 @@ public:
   class Simulation_Parameters *simparam;
 
   CArray <size_t> Global_Mass_Matrix_Assembly_Map;
-  RaggedRightArray <size_t> Mass_Matrix_DOF_List;
+  RaggedRightArray <size_t> Graph_Matrix;
+  RaggedRightArray <size_t> DOF_Graph_Matrix;
   RaggedRightArray <real_t> Mass_Matrix;
+  CArray <size_t> Mass_Matrix_strides;
+  CArray <size_t> Graph_Matrix_strides;
   
 };
 

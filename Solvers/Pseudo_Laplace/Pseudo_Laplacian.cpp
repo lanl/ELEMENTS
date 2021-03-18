@@ -91,6 +91,8 @@ Pseudo_Laplacian::~Pseudo_Laplacian(){
 
 void Pseudo_Laplacian::run(int argc, char *argv[]){
     
+    std::cout << "Running Pseudo-Laplacian Example" << std::endl;
+
     // ---- Read input file, define state and boundary conditions ---- //
     simparam->input();
 

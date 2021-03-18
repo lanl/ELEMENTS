@@ -1,8 +1,8 @@
 add_library(elements elements.cpp elements.h)
 add_library(swage swage.cpp swage.h)
 
-include_directories(MATAR)
-add_subdirectory(MATAR)
+include_directories(../Include)
+include_directories(../MATAR/src)
 
 target_link_libraries(elements matar)
 target_link_libraries(swage matar)

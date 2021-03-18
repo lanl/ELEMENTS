@@ -42,7 +42,7 @@ void Simulation_Parameters::input(){
   dt_cfl = 0.5;
 
   //polynomial interpolation order
-  p_order = 3;
+  p_order = 0;
 
   // ---- graphics information ---- //
   graphics_cyc_ival = 10;

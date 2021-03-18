@@ -43,7 +43,7 @@ num_cells in element = (p_order*2)^3
 #include <stdlib.h> 
 #include <math.h>  // fmin, fmax, abs note: fminl is long
 #include <sys/stat.h>
-
+#include <mpi.h>
 
 #include "elements.h"
 #include "swage.h"
@@ -53,6 +53,13 @@ num_cells in element = (p_order*2)^3
 #include "state.h"
 #include "Simulation_Parameters.h"
 #include "Static_Solver.h"
+#include "Epetra_MpiComm.h"
+#include "Teuchos_RCP.hpp"
+#include "Epetra_Map.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_MultiVector.h"
+#include "Amesos2_Version.hpp"
+#include "Amesos2.hpp"
 
 using namespace utils;
 
@@ -74,6 +81,8 @@ Static_Solver::Static_Solver() : Solver(){
     mesh = new swage::mesh_t();
 
     element_select = new elements::element_selector();
+
+    Epetra_MpiComm comm (MPI_COMM_WORLD);
 }
 
 Static_Solver::~Static_Solver(){
@@ -91,6 +100,8 @@ Static_Solver::~Static_Solver(){
 
 void Static_Solver::run(int argc, char *argv[]){
     
+    std::cout << "Running Static Solver Example" << std::endl;
+
     // ---- Read input file, define state and boundary conditions ---- //
     simparam->input();
 
@@ -98,7 +109,17 @@ void Static_Solver::run(int argc, char *argv[]){
     read_mesh(argv[1]);
     std::cout << "Num elements = " << mesh->num_elems() << std::endl;
     
+    //allocate and fill sparse structures needed for global solution
     init_global();
+
+    //assemble the global solution (mass matrix etc.)
+    assemble();
+
+    //debug solve; move later after bcs applies
+    int solver_exit = solve();
+    if(solver_exit == EXIT_SUCCESS) return;
+
+    std::cout << "finished linear solver" << std::endl;
     
     // ---- Find Boundaries on mesh ---- //
     generate_bcs();
@@ -358,7 +379,7 @@ void Static_Solver::read_mesh(char *MESH){
     std::cout<<"refine mesh"<<std::endl;
 
     // refine subcell mesh to desired order
-    swage::refine_mesh(*init_mesh, *mesh, p_order, num_dim);
+    swage::refine_mesh(*init_mesh, *mesh, 0, num_dim);
     std::cout<<"done refining"<< simparam->num_dim <<std::endl;
     // Close mesh input file
     fclose(in);
@@ -1433,24 +1454,28 @@ void Static_Solver::ensight(){
     graphics_id++;
 } // end ensight
 
+/* ----------------------------------------------------------------------
+   Initialize global vectors and array maps needed for matrix assembly
+------------------------------------------------------------------------- */
+
 void Static_Solver::init_global(){
 
+  int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
   int nodes_per_elem = mesh->num_nodes_in_elem();
-  CArray <size_t> Mass_Matrix_strides_initial = CArray <size_t> (num_nodes);
-  CArray <size_t> Mass_Matrix_strides = CArray <size_t> (num_nodes);
+  Mass_Matrix_strides = CArray <size_t> (num_nodes*num_dim);
   CArray <int> Graph_Fill = CArray <int> (num_nodes);
-  CArray <real_t> Local_Mass_Matrix = CArray <real_t> (nodes_per_elem,nodes_per_elem);
-  CArray <int> nodes_in_cell_list_ = mesh->nodes_in_cell_list_;
-  CArray <int> cells_in_node_list_ = mesh->cells_in_node_list_;
-  CArray <int> num_cells_in_node_ = mesh->num_cells_in_node_;
-  CArray <int> current_row_nodes_scanned;
+  //CArray <int> nodes_in_cell_list_ = mesh->nodes_in_cell_list_;
+  CArray <size_t> current_row_nodes_scanned;
   int current_row_n_nodes_scanned;
-  int local_node_index, current_column_index;;
+  int local_node_index, current_column_index;
   int max_stride = 0;
   
-  
+  //allocate stride arrays
+  CArray <size_t> Graph_Matrix_strides_initial = CArray <size_t> (num_nodes);
+  Graph_Matrix_strides = CArray <size_t> (num_nodes);
+
   //allocate storage for the sparse mass matrix map used in the assembly process
   Global_Mass_Matrix_Assembly_Map = CArray <size_t> (num_elems,nodes_per_elem,nodes_per_elem);
 
@@ -1463,8 +1488,8 @@ void Static_Solver::init_global(){
   
   //initialize stride arrays
   for(int inode = 0; inode < num_nodes; inode++){
-      Mass_Matrix_strides_initial(inode) = 0;
-      Mass_Matrix_strides(inode) = 0;
+      Graph_Matrix_strides_initial(inode) = 0;
+      Graph_Matrix_strides(inode) = 0;
       global_nodes_used(inode) = 0;
       column_index(inode) = 0;
       Graph_Fill(inode) = 0;
@@ -1473,38 +1498,38 @@ void Static_Solver::init_global(){
   //count strides for Sparse Pattern Graph with global repeats
   for (int ielem = 0; ielem < num_elems; ielem++)
     for (int lnode = 0; lnode < nodes_per_elem; lnode++){
-      local_node_index = nodes_in_cell_list_(ielem, lnode);
-      Mass_Matrix_strides_initial(local_node_index) += nodes_per_elem;
+      local_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
+      Graph_Matrix_strides_initial(local_node_index) += nodes_per_elem;
     }
   
   //equate strides for later
   for(int inode = 0; inode < num_nodes; inode++)
-    Mass_Matrix_strides(inode) = Mass_Matrix_strides_initial(inode);
+    Graph_Matrix_strides(inode) = Graph_Matrix_strides_initial(inode);
   
   //compute maximum stride
   for(int inode = 0; inode < num_nodes; inode++)
-    if(Mass_Matrix_strides_initial(inode) > max_stride) max_stride = Mass_Matrix_strides_initial(inode);
+    if(Graph_Matrix_strides_initial(inode) > max_stride) max_stride = Graph_Matrix_strides_initial(inode);
   
   //allocate array used in the repeat removal process
-  current_row_nodes_scanned = CArray <int> (max_stride);
+  current_row_nodes_scanned = CArray <size_t> (max_stride);
+
   //allocate sparse graph with node repeats
-  RaggedRightArray <size_t> Repeat_Matrix_DOF_List = RaggedRightArray <size_t> (Mass_Matrix_strides_initial);
-  RaggedRightArrayofVectors <size_t> Element_local_indices = RaggedRightArrayofVectors <size_t> (Mass_Matrix_strides_initial,3);
+  RaggedRightArray <size_t> Repeat_Graph_Matrix = RaggedRightArray <size_t> (Graph_Matrix_strides_initial);
+  RaggedRightArrayofVectors <size_t> Element_local_indices = RaggedRightArrayofVectors <size_t> (Graph_Matrix_strides_initial,3);
   
   //Fill the initial Graph with repeats
-  //count strides for Sparse Pattern Graph with global repeats
   
   for (int ielem = 0; ielem < num_elems; ielem++)
     for (int lnode = 0; lnode < nodes_per_elem; lnode++){
-      local_node_index = nodes_in_cell_list_(ielem, lnode);
+      local_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
       for (int jnode = 0; jnode < nodes_per_elem; jnode++){
         current_column_index = Graph_Fill(local_node_index)+jnode;
-        Repeat_Matrix_DOF_List(local_node_index, current_column_index) = nodes_in_cell_list_(ielem,jnode);
+        Repeat_Graph_Matrix(local_node_index, current_column_index) = mesh->nodes_in_cell_list_(ielem,jnode);
 
         //fill inverse map
-        Element_local_indices(local_node_index,Graph_Fill(local_node_index)+jnode,0) = ielem;
-        Element_local_indices(local_node_index,Graph_Fill(local_node_index)+jnode,1) = lnode;
-        Element_local_indices(local_node_index,Graph_Fill(local_node_index)+jnode,2) = jnode;
+        Element_local_indices(local_node_index,current_column_index,0) = ielem;
+        Element_local_indices(local_node_index,current_column_index,1) = lnode;
+        Element_local_indices(local_node_index,current_column_index,2) = jnode;
 
         //fill forward map
         Global_Mass_Matrix_Assembly_Map(ielem,lnode,jnode) = current_column_index;
@@ -1512,12 +1537,15 @@ void Static_Solver::init_global(){
       Graph_Fill(local_node_index) += nodes_per_elem;
     }
   
+  //debug statement
+  //std::cout << "started run" << std::endl;
+
   //remove repeats from the inital graph setup
   int current_node, current_element_index, element_row_index, element_column_index, current_stride;
   for (int inode = 0; inode < num_nodes; inode++){
     current_row_n_nodes_scanned = 0;
-    for (int istride = 0; istride < Mass_Matrix_strides(inode); istride++){
-      current_node = Repeat_Matrix_DOF_List(inode,istride);
+    for (int istride = 0; istride < Graph_Matrix_strides(inode); istride++){
+      current_node = Repeat_Graph_Matrix(inode,istride);
       if(global_nodes_used(current_node)){
         //set forward map index to the index where this global node was first found
         current_element_index = Element_local_indices(inode,istride,0);
@@ -1531,10 +1559,11 @@ void Static_Solver::init_global(){
         //swap current node with the end of the current row and shorten the stride of the row
         //first swap information about the inverse and forward maps
 
-        current_stride = Mass_Matrix_strides(inode);
-        Element_local_indices(inode,istride,0) = Element_local_indices(inode,current_stride,0);
-        Element_local_indices(inode,istride,1) = Element_local_indices(inode,current_stride,1);
-        Element_local_indices(inode,istride,2) = Element_local_indices(inode,current_stride,2);
+        current_stride = Graph_Matrix_strides(inode);
+        if(istride!=current_stride-1){
+        Element_local_indices(inode,istride,0) = Element_local_indices(inode,current_stride-1,0);
+        Element_local_indices(inode,istride,1) = Element_local_indices(inode,current_stride-1,1);
+        Element_local_indices(inode,istride,2) = Element_local_indices(inode,current_stride-1,2);
         current_element_index = Element_local_indices(inode,istride,0);
         element_row_index = Element_local_indices(inode,istride,1);
         element_column_index = Element_local_indices(inode,istride,2);
@@ -1544,9 +1573,10 @@ void Static_Solver::init_global(){
 
         //now that the element map information has been copied, copy the global node index and delete the last index
 
-        Repeat_Matrix_DOF_List(inode,istride) = Repeat_Matrix_DOF_List(inode,Mass_Matrix_strides(inode));
+        Repeat_Graph_Matrix(inode,istride) = Repeat_Graph_Matrix(inode,current_stride-1);
+        }
         istride--;
-        Mass_Matrix_strides(inode)--;
+        Graph_Matrix_strides(inode)--;
       }
       else{
         /*this node hasn't shown up in the row before; add it to the list of nodes
@@ -1563,9 +1593,12 @@ void Static_Solver::init_global(){
       global_nodes_used(current_row_nodes_scanned(node_reset)) = 0;
 
   }
-  std::cout << "started run" << std::endl;
+  
   //copy reduced content to non_repeat storage
-
+  Graph_Matrix = RaggedRightArray <size_t> (Graph_Matrix_strides);
+  for(int inode = 0; inode < num_nodes; inode++)
+    for(int istride = 0; istride < Graph_Matrix_strides(inode); istride++)
+      Graph_Matrix(inode,istride) = Repeat_Graph_Matrix(inode,istride);
 
   //deallocate repeat matrix
   
@@ -1573,4 +1606,198 @@ void Static_Solver::init_global(){
     The constructed Assembly map (to the global sparse matrix)
     is used to loop over each element's local mass matrix in the assembly process.*/
   
+  //expand strides for mass matrix by multipling by dim
+  for(int inode = 0; inode < num_nodes; inode++){
+    for (int idim = 0; idim < num_dim; idim++)
+    Mass_Matrix_strides(num_dim*inode + idim) = num_dim*Graph_Matrix_strides(inode);
+  }
+
+  Mass_Matrix = RaggedRightArray <real_t> (Mass_Matrix_strides);
+  DOF_Graph_Matrix = RaggedRightArray <size_t> (Mass_Matrix_strides);
+
+  //initialize Mass Matrix entries to 0
+  for (int idof = 0; idof < num_dim*num_nodes; idof++)
+    for (int istride = 0; istride < Mass_Matrix_strides(idof); istride++){
+      Mass_Matrix(idof,istride) = 0;
+      DOF_Graph_Matrix(idof,istride) = Graph_Matrix(idof/num_dim,istride/num_dim)*num_dim + istride%num_dim;
+    }
+  
+  /*
+  //debug print nodal positions and indices
+  std::cout << " ------------NODAL POSITIONS--------------"<<std::endl;
+  for (int inode = 0; inode < num_nodes; inode++){
+      std::cout << "node: " << inode + 1 << " { ";
+    for (int istride = 0; istride < num_dim; istride++){
+        std::cout << mesh->node_coords(inode,istride) << " , ";
+    }
+    std::cout << " }"<< std::endl;
+  }
+  //debug print element edof
+
+  std::cout << " ------------ELEMENT EDOF--------------"<<std::endl;
+
+  for (int ielem = 0; ielem < num_elems; ielem++){
+    std::cout << "elem:  " << ielem+1 << std::endl;
+    for (int lnode = 0; lnode < nodes_per_elem; lnode++){
+        std::cout << "{ ";
+          std::cout << lnode+1 << " = " << mesh->nodes_in_cell_list_(ielem,lnode) + 1 << " ";
+        
+        std::cout << " }"<< std::endl;
+    }
+    std::cout << std::endl;
+  }
+
+  //debug section; print mass matrix graph and per element map
+  std::cout << " ------------SPARSE GRAPH MATRIX--------------"<<std::endl;
+  for (int inode = 0; inode < num_nodes; inode++){
+      std::cout << "row: " << inode + 1 << " { ";
+    for (int istride = 0; istride < Graph_Matrix_strides(inode); istride++){
+        std::cout << istride + 1 << " = " << Repeat_Graph_Matrix(inode,istride) + 1 << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+  }
+
+  std::cout << " ------------ELEMENT ASSEMBLY MAP--------------"<<std::endl;
+
+  for (int ielem = 0; ielem < num_elems; ielem++){
+    std::cout << "elem:  " << ielem+1 << std::endl;
+    for (int lnode = 0; lnode < nodes_per_elem; lnode++){
+        std::cout << "{ "<< std::endl;
+        for (int jnode = 0; jnode < nodes_per_elem; jnode++){
+          std::cout <<"(" << lnode+1 << "," << jnode+1 << ")"<< " = " << Global_Mass_Matrix_Assembly_Map(ielem,lnode, jnode) + 1 << " ";
+        }
+        std::cout << " }"<< std::endl;
+    }
+    std::cout << std::endl;
+  }
+  */
+  
+}
+
+/* ----------------------------------------------------------------------
+   Assemble the Sparse Mass Matrix
+------------------------------------------------------------------------- */
+
+void Static_Solver::assemble(){
+  int num_dim = simparam->num_dim;
+  int num_elems = mesh->num_elems();
+  int num_nodes = mesh->num_nodes();
+  int nodes_per_elem = mesh->num_nodes_in_elem();
+  int current_row_n_nodes_scanned;
+  int local_node_index, current_row, current_column;
+  int max_stride = 0;
+  CArray <real_t> Local_Mass_Matrix = CArray <real_t> (num_dim*nodes_per_elem,num_dim*nodes_per_elem);
+
+  //assemble the global mass matrix
+  for (int ielem = 0; ielem < num_elems; ielem++){
+    //construct local mass matrix for this element
+    local_matrix(ielem, Local_Mass_Matrix);
+    //assign entries of this local matrix to the sparse global matrix storage;
+    for (int inode = 0; inode < nodes_per_elem; inode++){
+      current_row = num_dim*mesh->nodes_in_cell_list_(ielem,inode);
+      for(int jnode = 0; jnode < nodes_per_elem; jnode++){
+        
+        current_column = num_dim*Global_Mass_Matrix_Assembly_Map(ielem,inode,jnode);
+        for (int idim = 0; idim < num_dim; idim++)
+          for (int jdim = 0; jdim < num_dim; jdim++)
+            Mass_Matrix(current_row + idim, current_column + jdim) += Local_Mass_Matrix(num_dim*inode + idim,num_dim*jnode + jdim);
+      }
+    }
+  }
+
+  //debug print of mass matrix
+  //debug section; print mass matrix graph and per element map
+  std::cout << " ------------SPARSE MASS MATRIX--------------"<<std::endl;
+  for (int idof = 0; idof < num_nodes; idof++){
+      std::cout << "row: " << idof + 1 << " { ";
+    for (int istride = 0; istride < Mass_Matrix_strides(num_dim*idof)/num_dim; istride++){
+        std::cout << istride + 1 << " = " << Mass_Matrix(num_dim*idof,istride*num_dim) << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+  }
+
+}
+
+void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
+  int num_dim = simparam->num_dim;
+  int num_elems = mesh->num_elems();
+  int num_nodes = mesh->num_nodes();
+  int nodes_per_elem = mesh->num_nodes_in_elem();
+  CArray <real_t> Shape_Vector = CArray <real_t> (num_dim*nodes_per_elem);
+  //test process; replace with quadrature integration afterwards
+  for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
+    Shape_Vector(ifill) = 0.5;
+  
+  for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
+    for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++)
+      Local_Matrix(ifill,jfill) = Shape_Vector(ifill)*Shape_Vector(jfill);
+  
+}
+
+/* ----------------------------------------------------------------------
+   Solve the FEA linear system
+------------------------------------------------------------------------- */
+
+int Static_Solver::solve(){
+/*
+  int num_dim = simparam->num_dim;
+  int num_elems = mesh->num_elems();
+  int num_nodes = mesh->num_nodes();
+  int nodes_per_elem = mesh->num_nodes_in_elem();
+  int current_row_n_nodes_scanned;
+  int local_node_index, current_row, current_column;
+  int max_stride = 0;
+
+  std::string solver_name = "KLU2";
+  // Before we do anything, check that the solver is enabled
+  if( !Amesos2::query(solver_name) ){
+    std::cerr << solver_name << " not enabled.  Exiting..." << std::endl;
+    return EXIT_SUCCESS;	// Otherwise CTest will pick it up as
+				// failure, which it isn't really
+  }
+
+  //allocate X solution vector and RHS B vector
+  CArray <real_t> X_Solve = CArray <real_t> (num_dim*nodes_per_elem);
+  CArray <real_t> B_RHS = CArray <real_t> (num_dim*nodes_per_elem);
+
+  //Construct Solver object
+  Teuchos::RCP<Amesos2::Solver<Epetra_CrsMatrix,Epetra_MultiVector> > solver;
+
+  const Epetra_MpiComm epetracomm (MPI_COMM_WORLD);
+  typedef Epetra_CrsMatrix MAT;
+  typedef Epetra_MultiVector MV;
+
+  //Parallel map
+  Epetra_Map solvemap = Epetra_Map(num_dim*nodes_per_elem, 0, epetracomm);
+
+  //Matrix 
+  Epetra_CrsGraph Agraph = Epetra_CrsGraph(Copy, solvemap, (int*) Mass_Matrix_strides.get_pointer(),
+                           (int) DOF_Graph_Matrix.size(), (int*) DOF_Graph_Matrix.get_pointer(), (int*) DOF_Graph_Matrix.get_starts(), true);
+  Epetra_CrsMatrix Amatrix = Epetra_CrsMatrix(Copy, Agraph, (double *) Mass_Matrix.get_pointer());
+   
+
+  // Create random X
+  Teuchos::RCP<MV> X = Teuchos::rcp( new Epetra_MultiVector(Copy, solvemap, X_Solve.get_pointer(), 1, 1) );
+  X->Random();
+
+  Teuchos::RCP<MV> B = Teuchos::rcp( new Epetra_MultiVector(Copy, solvemap, B_RHS.get_pointer(), 1, 1) );
+  B->Random();
+
+  solver = Amesos2::create<MAT,MV>(solver_name, Teuchos::rcp(&Amatrix), X, B);
+
+  solver->solve();
+
+  //debug print of solution
+  //debug section; print mass matrix graph and per element map
+  */
+  /*
+  std::cout << " ------------NODAL DISPLACEMENT VECTOR--------------"<<std::endl;
+  for (int idof = 0; idof < num_nodes; idof++){
+      std::cout << "row: " << idof + 1 << " { ";
+    for (int istride = 0; istride < Mass_Matrix_strides(num_dim*idof)/num_dim; istride++){
+        std::cout << istride + 1 << " = " << Mass_Matrix(num_dim*idof,istride*num_dim) << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+  }
+  */
 }

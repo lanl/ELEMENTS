@@ -65,9 +65,13 @@
 #include <Kokkos_View.hpp>
 #include <Kokkos_Parallel.hpp>
 #include <Kokkos_Parallel_Reduce.hpp>
+#include "Tpetra_Details_makeColMap.hpp"
+#include "Tpetra_Details_DefaultTypes.hpp"
+#include <set>
 
 #include "Amesos2.hpp"
 #include "Amesos2_Version.hpp"
+#include "matar.h"
 
 
 int main(int argc, char *argv[]) {
@@ -81,6 +85,7 @@ int main(int argc, char *argv[]) {
   typedef Tpetra::MultiVector<Scalar,LO,GO> MV;
 
   typedef Kokkos::ViewTraits<LO*, Kokkos::LayoutLeft, void, void>::size_type SizeType;
+  typedef Tpetra::Details::DefaultTypes::node_type node_type;
   using traits = Kokkos::ViewTraits<LO*, Kokkos::LayoutLeft, void, void>;
   
   using array_layout    = typename traits::array_layout;
@@ -94,6 +99,7 @@ int main(int argc, char *argv[]) {
   using Teuchos::rcp;
 
   typedef Kokkos::View<Scalar*, Kokkos::LayoutRight, device_type, memory_traits> values_array;
+  typedef Kokkos::View<GO*, array_layout, device_type, memory_traits> global_indices_array;
   typedef Kokkos::View<LO*, array_layout, device_type, memory_traits> indices_array;
   typedef Kokkos::View<SizeType*, array_layout, device_type, memory_traits> row_pointers;
  
@@ -101,11 +107,9 @@ int main(int argc, char *argv[]) {
   using vec_device_type = typename vec_map_type::device_type;
   typedef Kokkos::DualView<Scalar**, Kokkos::LayoutLeft, device_type>::t_dev vec_array;
   //typedef Tpetra::dual_view_type::t_dev vec_array;
-
   
 
-
-  // Before we do anything, check that SuperLU is enabled
+  // Before we do anything, check that KLU2 is enabled
   if( !Amesos2::query("KLU2") ){
     std::cerr << "KLU2 not enabled in this run.  Exiting..." << std::endl;
     return EXIT_SUCCESS;        // Otherwise CTest will pick it up as
@@ -122,54 +126,108 @@ int main(int argc, char *argv[]) {
   out << Amesos2::version() << std::endl << std::endl;
 
   const size_t numVectors = 1;
-
-  // create a Map
-  global_size_t nrows = 6;
-  global_size_t *entries_per_row = new global_size_t[nrows];
-  row_pointers row_offsets = row_pointers("row_offsets", nrows+1);
   
-  row_offsets(0) = 0;
-  entries_per_row[0] = 3;
-  row_offsets(1) = 3;
-  entries_per_row[1] = 2;
-  row_offsets(2) = 5;
-  entries_per_row[2] = 1;
-  row_offsets(3) = 6;
-  entries_per_row[3] = 2;
-  row_offsets(4) = 8;
-  entries_per_row[4] = 2;
-  row_offsets(5) = 10;
-  entries_per_row[5] = 2;
-  row_offsets(6) = 12;
+  //construct global data for example; normally this would be from file input and distributed
+  //according to the row map at that point
+  global_size_t nrows = 6;
+  int count_data[nrows];
+  double rhs_data[nrows];
+  int index_data[nrows][nrows];
+  double value_data[nrows][nrows];
+  count_data[0] = 3; count_data[1] = 2; count_data[2] = 1;
+  count_data[3] = 2; count_data[4] = 2; count_data[5] = 2;
 
-  global_size_t nnz = 0;
+  index_data[0][0] = 0; index_data[0][1] = 2; index_data[0][2] = 4;
+  index_data[1][0] = 0; index_data[1][1] = 1;
+  index_data[2][0] = 2;
+  index_data[3][0] = 0; index_data[3][1] = 3;
+  index_data[4][0] = 1; index_data[4][1] = 4;
+  index_data[5][0] = 3; index_data[5][1] = 5;
 
-  //count number of non-zeros
-  for(int i = 0; i < nrows; i++) nnz+=row_offsets(i);
+  value_data[0][0] = 7; value_data[0][1] = -3; value_data[0][2] = -1;
+  value_data[1][0] = 2; value_data[1][1] = 8;
+  value_data[2][0] = 1;
+  value_data[3][0] = -3; value_data[3][1] = 5;
+  value_data[4][0] = -1; value_data[4][1] = 4;
+  value_data[5][0] = -2; value_data[5][1] = 6;
 
-  indices_array all_indices = indices_array("indices_array",nnz);
-  values_array all_values = values_array("values_array",nnz);
+  rhs_data[0] = -7;
+  rhs_data[1] = 18;
+  rhs_data[2] = 3;
+  rhs_data[3] = 17;
+  rhs_data[4] = 18;
+  rhs_data[5] = 28;
+  
+  // create a Map
+  RCP<Tpetra::Map<LO,GO,node_type> > map
+    = rcp( new Tpetra::Map<LO,GO,node_type>(nrows,0,comm) );
+
+  global_size_t local_nrows = map->getNodeNumElements();
+  global_size_t *entries_per_row = new global_size_t[local_nrows];
+  row_pointers row_offsets = row_pointers("row_offsets", local_nrows+1);
+  
+  //populate local row offset data from global data
+  global_size_t min_gid = map->getMinGlobalIndex();
+  global_size_t max_gid = map->getMaxGlobalIndex();
+  global_size_t index_base = map->getIndexBase();
+
+  //init row_offsets
+  for(int i=0; i < local_nrows+1; i++)
+    row_offsets(i) = 0;
+
+  for(LO i=0; i < local_nrows; i++){
+    entries_per_row[i] = count_data[map->getGlobalElement(i)];
+    row_offsets(i+1) = entries_per_row[i] + row_offsets(i);
+  }
+  
+  //row_offsets(1) = 3;
+  //entries_per_row[1] = 2;
+  //row_offsets(2) = 5;
+  //entries_per_row[2] = 1;
+  //row_offsets(3) = 6;
+  //entries_per_row[3] = 2;
+  //row_offsets(4) = 8;
+  //entries_per_row[4] = 2;
+  //row_offsets(5) = 10;
+  //entries_per_row[5] = 2;
+  //row_offsets(6) = 12;
+
+  global_size_t nnz = row_offsets(local_nrows);
+
+  //indices_array all_indices = indices_array("indices_array",nnz);
+  //values_array all_values = values_array("values_array",nnz);
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> all_global_indices(nnz);
+  CArrayKokkos<LO, array_layout, device_type, memory_traits> all_indices(nnz);
+  CArrayKokkos<Scalar, Kokkos::LayoutRight, device_type, memory_traits> all_values(nnz);
+  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Bview(local_nrows);
+  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Xview(local_nrows);
 
   //set Kokkos view data
+  LO entrycount = 0;
+  for(LO i=0; i < local_nrows; i++){
+    for(LO j=0; j < entries_per_row[i]; j++){
+    all_global_indices(entrycount) = index_data[map->getGlobalElement(i)][j];
+    all_values(entrycount) = value_data[map->getGlobalElement(i)][j];
+    entrycount++;
+    }
+  }
+  
+  //build column map
+  RCP<const Tpetra::Map<LO,GO,node_type> > colmap;
+  const RCP<const Tpetra::Map<LO,GO,node_type> > dommap = map;
 
-  all_indices(0) = 0; all_indices(1) = 2; all_indices(2) = 4;
-  all_indices(3) = 0; all_indices(4) = 1;
-  all_indices(5) = 2;
-  all_indices(6) = 0; all_indices(7) = 3;
-  all_indices(8) = 1; all_indices(9) = 4;
-  all_indices(10) = 3; all_indices(11) = 5;
+  Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,all_global_indices.get_kokkos_view(), nullptr);
 
-  all_values(0) = 7; all_values(1) = -3; all_values(2) = -1;
-  all_values(3) = 2; all_values(4) = 8;
-  all_values(5) = 1;
-  all_values(6) = -3; all_values(7) = 5;
-  all_values(8) = -1; all_values(9) = 4;
-  all_values(10) = -2; all_values(11) = 6;
+  //convert global indices to local indices using column map
+  entrycount = 0;
+  for(LO i=0; i < local_nrows; i++){
+    for(LO j=0; j < entries_per_row[i]; j++){
+    all_indices(entrycount) = colmap->getLocalElement(all_global_indices(entrycount));
+    entrycount++;
+    }
+  }
 
-  RCP<Tpetra::Map<LO,GO> > map
-    = rcp( new Tpetra::Map<LO,GO>(nrows,0,comm) );
-
-  RCP<MAT> A = rcp( new MAT(map, map, row_offsets, all_indices, all_values) ); // max of three entries in a row
+  RCP<MAT> A = rcp( new MAT(map, colmap, row_offsets, all_indices.get_kokkos_view(), all_values.get_kokkos_view()) ); // max of three entries in a row
 
   /*
    * We will solve a system with a known solution, for which we will be using
@@ -200,8 +258,9 @@ int main(int argc, char *argv[]) {
   *fos << std::endl;
 
   // Create random X
-  vec_array Xview = vec_array("Xview", nrows,1);
-  RCP<MV> X = rcp(new MV(map, Xview));
+  vec_array Xview_pass = vec_array("Xview_pass", local_nrows,1);
+  Xview_pass.assign_data(Xview.pointer());
+  RCP<MV> X = rcp(new MV(map, Xview_pass));
   X->randomize();
 
   /* Create B
@@ -215,14 +274,19 @@ int main(int argc, char *argv[]) {
    *   [18]
    *   [28]]
    */
-  vec_array Bview = vec_array("Bview", nrows,1);
-  RCP<MV> B = rcp(new MV(map, Bview));
-  int data[6] = {-7,18,3,17,18,28};
-  for( int i = 0; i < 6; ++i ){
-    if( B->getMap()->isNodeGlobalElement(i) ){
-      B->replaceGlobalValue(i,0,data[i]);
-    }
-  }
+  vec_array Bview_pass = vec_array("Bview", local_nrows,1);
+  for(LO i=0; i < local_nrows; i++)
+    Bview(i) = rhs_data[map->getGlobalElement(i)];
+  
+  Bview_pass.assign_data(Bview.pointer());
+
+  RCP<MV> B = rcp(new MV(map, Bview_pass));
+
+  //for( int i = 0; i < 6; ++i ){
+    //if( B->getMap()->isNodeGlobalElement(i) ){
+      //B->replaceGlobalValue(i,0,data[i]);
+    //}
+  //}
 
   *fos << "RHS :" << std::endl;
   B->describe(*fos,Teuchos::VERB_EXTREME);
@@ -250,6 +314,11 @@ int main(int argc, char *argv[]) {
   *fos << "Solution :" << std::endl;
   X->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
+
+  //*fos << "Xview :" << std::endl;
+  //for(int print = 0; print < local_nrows; print++)
+    //*fos << Xview(print) << "; ";
+  //*fos << std::endl;
 
   // We are done.
   return 0;

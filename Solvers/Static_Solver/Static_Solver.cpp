@@ -1,0 +1,1803 @@
+/* 
+
+Example code for smoothing some field on the mesh. 
+
+
+A representative mesh is shown:
+
+p
+*---------*---------*
+|         |         |
+|         |         |
+|    *z   |    *    |
+|         |         |
+|         |         |
+*---------*---------*
+|         |         |
+|         |         |
+|    *    |    *    |
+|         |         |
+|         |         |
+*---------*---------*
+
+The smoothing operation follows a two step process:
+
+1. ) Loop over all the nodes (p) in a cell and 
+average the field to the cell center materhial
+point (z). 
+
+2.) Loop over all of the cells (z) connected to a node (p)
+and average values to the nodal field.
+
+
+Each cell is within an element, and the number of cells is 
+defined by the user using the p_order variable in the input
+
+num_cells in element = (p_order*2)^3
+
+*/
+
+
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h> 
+#include <math.h>  // fmin, fmax, abs note: fminl is long
+#include <sys/stat.h>
+#include <mpi.h>
+
+#include "elements.h"
+#include "swage.h"
+#include "matar.h"
+#include "utilities.h"
+#include "header.h"
+#include "state.h"
+#include "Simulation_Parameters.h"
+#include "Static_Solver.h"
+#include "Epetra_MpiComm.h"
+#include "Teuchos_RCP.hpp"
+#include "Epetra_Map.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_MultiVector.h"
+#include "Amesos2_Version.hpp"
+#include "Amesos2.hpp"
+
+using namespace utils;
+
+/*
+
+Swage is a reference to a swage block used in blacksmithing.  
+Its a large metal block that has multiple shaps carved into 
+each surface to use for hammering metal into to form it. 
+
+*/
+
+Static_Solver::Static_Solver() : Solver(){
+  //create parameter object
+    simparam = new Simulation_Parameters();
+  //create ref element object
+    ref_elem = new elements::ref_element();
+  //create mesh objects
+    init_mesh = new swage::mesh_t();
+    mesh = new swage::mesh_t();
+
+    element_select = new elements::element_selector();
+
+    Epetra_MpiComm comm (MPI_COMM_WORLD);
+}
+
+Static_Solver::~Static_Solver(){
+   delete simparam;
+   delete ref_elem;
+   delete init_mesh;
+   delete mesh;
+   delete element_select;
+}
+
+//==============================================================================
+//    Primary simulation runtime routine
+//==============================================================================
+
+
+void Static_Solver::run(int argc, char *argv[]){
+    
+    std::cout << "Running Static Solver Example" << std::endl;
+
+    // ---- Read input file, define state and boundary conditions ---- //
+    simparam->input();
+
+    // ---- Read intial mesh, refine, and build connectivity ---- //
+    read_mesh(argv[1]);
+    std::cout << "Num elements = " << mesh->num_elems() << std::endl;
+    
+    //allocate and fill sparse structures needed for global solution
+    init_global();
+
+    //assemble the global solution (mass matrix etc.)
+    assemble();
+
+    //debug solve; move later after bcs applies
+    int solver_exit = solve();
+    if(solver_exit == EXIT_SUCCESS) return;
+
+    std::cout << "finished linear solver" << std::endl;
+    
+    // ---- Find Boundaries on mesh ---- //
+    generate_bcs();
+
+    // ---- Allocate memory for state on mesh ---- //
+    allocate_state();
+
+    initialize_state();
+
+    std::cout << "Before boundary  " << std::endl;
+    apply_boundary();
+
+
+    // Calculate reference element information
+    calculate_ref_elem();
+
+    get_nodal_jacobian();
+
+    real_t dt = simparam->dt;
+    int cycle_stop = simparam->cycle_stop;
+    real_t &TIME = simparam->TIME;
+    real_t TFINAL = simparam->TFINAL;
+    int &cycle = simparam->cycle;
+    int graphics_cyc_ival = simparam->graphics_cyc_ival;
+    real_t graphics_dt_ival = simparam->graphics_dt_ival;
+    real_t graphics_time = simparam->graphics_dt_ival;
+    real_t &percent_comp = simparam->percent_comp;
+
+
+    // Solve the Laplacian
+
+
+    ensight();
+
+    for (cycle = 1; cycle <= cycle_stop; cycle++) {
+        // stop calculation if flag
+        if (simparam->stop_calc == 1) break;
+
+
+        // Set timestep
+        dt = simparam->dt;
+
+
+        // smooth_cells();
+
+        smooth_element();
+
+        apply_boundary();
+
+        // increment the time
+        TIME += dt;
+
+
+
+        // Runtime outputs
+
+        if ((cycle%10) == 0) {
+            percent_comp = (TIME/TFINAL)*100.;
+            printf("Percent complete = %.2f \n", percent_comp); 
+        }
+        
+        // end of calculation
+        if (TIME>=TFINAL) break;
+
+        
+        if ((cycle%50) == 0) {
+            printf("Step = %d   dt = %e  time = %e  \n ", cycle, dt, TIME);
+        }
+
+        
+        // output a graphics dump
+        if ((cycle%graphics_cyc_ival) == 0 || (TIME-graphics_time) >= 0.0) {
+            
+            printf("****************Graphics write*************** \n");
+            ensight();
+            
+            // set next time to dump a graphics output
+            graphics_time += graphics_dt_ival;
+        }
+        
+        
+    } // end of cycle loop
+
+    // Data writers
+    ensight();
+    // vtk_writer();
+
+    std::cout << "End of Main file" << std::endl;
+
+}
+
+//==============================================================================
+//   Function Definitions
+//==============================================================================
+
+
+// Input and setup
+void Static_Solver::read_mesh(char *MESH){
+
+    FILE *in;
+    char ch;
+    int num_dim = simparam->num_dim;
+    int p_order = simparam->p_order;
+
+    //read the mesh    WARNING: assumes an ensight .geo file
+    in = fopen(MESH,"r");  
+    
+    //skip 8 lines
+    for (int j = 1; j <= 8; j++) {
+        int i=0;
+        while ((ch=(char)fgetc(in))!='\n') {
+            i++;
+            printf("%c",ch);
+        }
+        printf("\n");
+    }  
+
+    int num_nodes;
+
+    // --- Read the number of vertices in the mesh --- //
+    fscanf(in,"%d",&num_nodes);
+    printf("%d\n" , num_nodes);
+
+    // set the vertices in the mesh read in
+    int rk_init = 1;
+    init_mesh->init_nodes(num_nodes); // add 1 for index starting at 1
+    
+    std::cout << "Num points read in = " << init_mesh->num_nodes() << std::endl;
+
+
+    // read the initial mesh coordinates
+    // x-coords
+    for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
+        fscanf(in,"%le", &init_mesh->node_coords(node_gid, 0));
+        //std::cout<<" "<< init_mesh->node_coords(node_gid, 0)<<std::endl;
+    }
+
+    // y-coords
+    for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
+        fscanf(in,"%le", &init_mesh->node_coords(node_gid, 1));
+        //std::cout<<" "<< init_mesh->node_coords(node_gid, 1)<<std::endl;
+    }  
+
+    // z-coords
+    for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
+        fscanf(in,"%le", &init_mesh->node_coords(node_gid, 2));
+        //std::cout<<" "<< init_mesh->node_coords(node_gid, 2)<<std::endl;
+    }
+
+    /*
+    ch = (char)fgetc(in);
+    printf("%c",ch);
+
+    //skip 1 line
+    for (int j=1; j<=1; j++) {
+        int i=0;
+        while ((ch=(char)fgetc(in))!='\n') {
+            i++;
+            printf("%c",ch);
+        }
+        printf("\n");
+    }
+    */
+    char skip_string[20];
+    fscanf(in,"%s",skip_string);
+    std::cout << skip_string <<std::endl;
+    int num_elem = 0;
+    
+    // --- read the number of cells in the mesh ---
+    fscanf(in,"%d",&num_elem);
+    printf("Num elements read in %d\n" , num_elem);
+
+    std::cout<<"before initial mesh initialization"<<std::endl;
+
+    init_mesh->init_element(0, 3, num_elem);
+    init_mesh->init_cells(num_elem);
+
+
+
+    // for each cell read the list of associated nodes
+    for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
+        for (int node_lid = 0; node_lid < 8; node_lid++){
+            
+            fscanf(in,"%d",&init_mesh->nodes_in_cell(cell_gid, node_lid));
+            //std::cout<<" "<< init_mesh->nodes_in_cell(cell_gid, node_lid);
+            // shift to start vertex index space at 0
+            init_mesh->nodes_in_cell(cell_gid,node_lid) = init_mesh->nodes_in_cell(cell_gid, node_lid) - 1;
+        }
+        //std::cout<<" "<<std::endl;
+    }
+
+    //element type selection (subject to change)
+    // ---- Set Element Type ---- //
+    // allocate element type memory
+    elements::elem_type_t* elem_choice;
+    
+    elem_choice = new elements::elem_type_t;
+
+    int NE = 1; // number of element types in problem
+    
+    elem_choice = (elements::elem_type_t *) malloc((size_t)(NE*sizeof(elements::elem_type_t)));
+    
+    //current default
+    elem_choice->type = elements::elem_types::elem_type::Hex8;
+    
+    //set base type pointer to one of the existing derived type object references
+    if(simparam->num_dim==2)
+    element_select->choose_2Delem_type(elem_choice[0], elem2D);
+    else if(simparam->num_dim==3)
+    element_select->choose_3Delem_type(elem_choice[0], elem);
+
+    // Convert ijk index system to the finite element numbering convention
+    // for vertices in cell
+    int convert_ensight_to_ijk[8];
+    convert_ensight_to_ijk[0] = 0;
+    convert_ensight_to_ijk[1] = 1;
+    convert_ensight_to_ijk[2] = 3;
+    convert_ensight_to_ijk[3] = 2;
+    convert_ensight_to_ijk[4] = 4;
+    convert_ensight_to_ijk[5] = 5;
+    convert_ensight_to_ijk[6] = 7;
+    convert_ensight_to_ijk[7] = 6;
+    
+    int tmp_ijk_indx[8];
+
+    for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
+        for (int node_lid = 0; node_lid < 8; node_lid++){
+    
+            tmp_ijk_indx[node_lid] = init_mesh->nodes_in_cell(cell_gid, convert_ensight_to_ijk[node_lid]);
+        }   
+        
+        for (int node_lid = 0; node_lid < 8; node_lid++){
+
+            init_mesh->nodes_in_cell(cell_gid, node_lid) = tmp_ijk_indx[node_lid];
+        }
+    }
+
+    // Build all connectivity in initial mesh
+    std::cout<<"Before initial mesh connectivity"<<std::endl;
+
+    if(num_elem < 0) std::cout << "ERROR, NO ELEMENTS IN MESH" << std::endl;
+    if(num_elem > 1) {
+
+        // -- NODE TO CELL CONNECTIVITY -- //
+        init_mesh->build_node_cell_connectivity(); 
+
+        // -- CORNER CONNECTIVITY -- //
+        init_mesh->build_corner_connectivity(); 
+
+        // -- CELL TO CELL CONNECTIVITY -- //
+        init_mesh->build_cell_cell_connectivity(); 
+
+        // -- PATCHES -- //
+        init_mesh->build_patch_connectivity(); 
+    }
+
+    std::cout<<"refine mesh"<<std::endl;
+
+    // refine subcell mesh to desired order
+    swage::refine_mesh(*init_mesh, *mesh, 0, num_dim);
+    std::cout<<"done refining"<< simparam->num_dim <<std::endl;
+    // Close mesh input file
+    fclose(in);
+    
+    // Create reference element
+    ref_elem->init(p_order, num_dim, elem->num_basis());
+    std::cout<<"done with ref elem"<<std::endl;
+     
+    std::cout << "number of patches = " << mesh->num_patches() << std::endl;
+    std::cout << "End of setup " << std::endl;     
+} // end read_mesh
+
+
+void Static_Solver::generate_bcs(){
+
+    // build boundary mesh patches
+    mesh->build_bdy_patches();
+    std::cout << "number of boundary patches = " << mesh->num_bdy_patches() << std::endl;
+    std::cout << "building boundary sets " << std::endl;
+    // set the number of boundary sets
+    
+    int num_bdy_sets = simparam->NB;
+    
+    mesh->init_bdy_sets(num_bdy_sets);
+    
+    // tag the x=0 plane,  (Direction, value, bdy_set)
+    std::cout << "tagging x = 0 " << std::endl;
+    int bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+    real_t value = 0.0;
+    int bdy_set_id = 0;
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
+    
+    std::cout << "tagged a set " << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << std::endl;
+
+
+    // tag the y=0 plane,  (Direction, value, bdy_set)
+    std::cout << "tagging y = 0 " << std::endl;
+    bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+    value = 0.0;
+    bdy_set_id = 1;
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
+    
+    std::cout << "tagged a set " << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << std::endl;
+    
+
+    // tag the z=0 plane,  (Direction, value, bdy_set)
+    std::cout << "tagging z = 0 " << std::endl;
+    bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+    value = 0.0;
+    bdy_set_id = 2;
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
+    
+    std::cout << "tagged a set " << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << std::endl;
+    
+
+    std::cout << "tagging x = 2 " << std::endl;
+    bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+    value = 2.0;
+    bdy_set_id = 3;
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
+
+    std::cout << "tagged a set " << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << std::endl;
+
+
+    std::cout << "tagging y = 2 " << std::endl;
+    bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+    value = 2.0;
+    bdy_set_id = 4;
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
+
+    std::cout << "tagged a set " << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "tagging z = 2 " << std::endl;
+    bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+    value = 2.0;
+    bdy_set_id = 5;
+    mesh->tag_bdys(bc_tag, value, bdy_set_id);
+
+    std::cout << "tagged a set " << std::endl;
+    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << std::endl;
+} // end generate_bcs
+
+
+void Static_Solver::allocate_state(){
+
+    int rk_storage = simparam->rk_storage;
+    int num_dim = simparam->num_dim;
+    node_t *node = simparam->node;
+    mat_pt_t *mat_pt = simparam->mat_pt;
+
+    std::cout << "Allocate and Initialize"  << std::endl;
+    std::cout << "RK num stages = "<< rk_storage  << std::endl;
+    // --- allocate and initialize the defaults for the problem ---
+
+    // ---- Node initialization ---- //
+    node->init_node_state(num_dim, *mesh, rk_storage);
+    std::cout << "Node state allocated and initialized to zero"  << std::endl;
+    std::cout << std::endl;
+
+    // ---- Material point initialization ---- //
+    mat_pt->init_mat_pt_state(num_dim, *mesh, rk_storage);
+    std::cout << "Material point state allocated and initialized to zero"  << std::endl;
+    std::cout << std::endl;
+} // end allocate_state
+
+
+void Static_Solver::initialize_state(){
+    int NF = simparam->NF;
+    mat_pt_t *mat_pt = simparam->mat_pt;
+    mat_fill_t *mat_fill = simparam->mat_fill;
+    int rk_stage = simparam->rk_stage;
+
+    std::cout << "Before fill instructions"  << std::endl;
+    //--- apply the fill instructions ---//
+    for (int f_id = 0; f_id < NF; f_id++){
+        
+        for (int cell_gid = 0; cell_gid < mesh->num_cells(); cell_gid++) {
+            
+            // calculate the coordinates and radius of the cell
+            real_t cell_coords_x = 0.0;
+            real_t cell_coords_y = 0.0;
+            real_t cell_coords_z = 0.0;
+            
+            for (int node_lid = 0; node_lid < 8; node_lid++){
+                
+                // increment the number of cells attached to this vertex
+                int vert_gid = mesh->nodes_in_cell(cell_gid, node_lid); // get the global_id
+                
+                cell_coords_x += mesh->node_coords(vert_gid, 0);
+                cell_coords_y += mesh->node_coords(vert_gid, 1);
+                cell_coords_z += mesh->node_coords(vert_gid, 2);
+                
+            }// end for loop over node_lid
+            
+            cell_coords_x = cell_coords_x/8.0;
+            cell_coords_y = cell_coords_y/8.0;
+            cell_coords_z = cell_coords_z/8.0;
+
+            // Material points at cell center
+
+            mat_pt->coords(rk_stage, cell_gid, 0) = cell_coords_x;
+            mat_pt->coords(rk_stage, cell_gid, 1) = cell_coords_y;
+            mat_pt->coords(rk_stage, cell_gid, 2) = cell_coords_z;
+
+            
+            // spherical radius
+            real_t radius = sqrt( cell_coords_x*cell_coords_x +
+                                  cell_coords_y*cell_coords_y +
+                                  cell_coords_z*cell_coords_z );
+            
+            // cylinderical radius
+            real_t radius_cyl = sqrt( cell_coords_x*cell_coords_x +
+                                      cell_coords_y*cell_coords_y);
+            
+            
+            // default is not to fill the cell
+            int fill_this = 0;
+            
+            // check to see if this cell should be filled
+            switch(mat_fill[f_id].volume)
+            {
+                case region::global:
+                {
+                    fill_this = 1;
+                }
+                case region::box:
+                {
+                    if ( cell_coords_x >= mat_fill[f_id].x1
+                        && cell_coords_x <= mat_fill[f_id].x2
+                        && cell_coords_y >= mat_fill[f_id].y1
+                        && cell_coords_y <= mat_fill[f_id].y2
+                        && cell_coords_z >= mat_fill[f_id].z1
+                        && cell_coords_z <= mat_fill[f_id].z2 ) fill_this = 1;
+                }
+                case region::cylinder:
+                {
+                    if ( radius_cyl >= mat_fill[f_id].radius1
+                      && radius_cyl <= mat_fill[f_id].radius2 ) fill_this = 1;
+                }
+                case region::sphere:
+                {
+                    if ( radius >= mat_fill[f_id].radius1
+                      && radius <= mat_fill[f_id].radius2 ) fill_this = 1;
+                }
+            } // end of switch
+
+            if (fill_this == 1){    
+                
+                mat_pt->field(cell_gid) = mat_fill[f_id].field2;
+
+
+            } // end if fill volume
+        } // end for cell loop
+    } // end for fills
+
+    std::cout << "After fill instructions"  << std::endl;
+} // end initialize_state
+
+
+void Static_Solver::calculate_ref_elem(){
+    int num_dim = simparam->num_dim;
+
+    real_t partial_xia[elem->num_basis()];
+    auto partial_xi = ViewCArray <real_t> (partial_xia, elem->num_basis());
+
+    real_t partial_etaa[elem->num_basis()];
+    auto partial_eta = ViewCArray <real_t> (partial_etaa, elem->num_basis());
+
+    real_t partial_mua[elem->num_basis()];
+    auto partial_mu = ViewCArray <real_t> (partial_mua, elem->num_basis());
+
+
+    std::cout << "::::  Getting partials of basis  ::::" << std::endl;
+    std::cout << "Num Basis =  "<< elem->num_basis() << std::endl;
+
+    std::cout << "Num_ref_nodes  "<< ref_elem->num_ref_nodes() << std::endl;
+
+    for(int node_rid = 0; node_rid < ref_elem->num_ref_nodes(); node_rid++){
+
+        // make temp array of ref node positions
+        real_t ref_node_loc_a[mesh->num_dim()];
+        auto ref_node_loc = ViewCArray<real_t> (ref_node_loc_a, mesh->num_dim());
+
+        for(int dim = 0; dim < mesh->num_dim(); dim++){
+
+            ref_node_loc(dim) = ref_elem->ref_node_positions(node_rid, dim);
+        }
+    
+        std::cout << "Local Node =  "<< node_rid << std::endl;
+
+        // Calculate array of partials of each basis at the point ref_node
+        elem->partial_xi_basis(partial_xi, ref_node_loc);
+        elem->partial_eta_basis(partial_eta, ref_node_loc);
+        elem->partial_mu_basis(partial_mu, ref_node_loc);
+        
+        // Save the partials of each basis to the reference node
+        
+        for(int basis_id = 0; basis_id < elem->num_basis(); basis_id++){
+            
+            ref_elem->ref_nodal_gradient(node_rid, basis_id, 0) = partial_xi(basis_id);
+            ref_elem->ref_nodal_gradient(node_rid, basis_id, 1) = partial_eta(basis_id);
+            ref_elem->ref_nodal_gradient(node_rid, basis_id, 2) = partial_mu(basis_id);
+
+            // std::cout << "Partial Xi for basis "<< basis_id <<" = " << partial_xi(basis_id) << std::endl;
+            // std::cout << "Partial Eta for basis "<< basis_id <<" = " << partial_eta(basis_id) << std::endl;
+            // std::cout << "Partial Mu for basis "<< basis_id <<" = " << partial_eta(basis_id) << std::endl;
+            // std::cout << "Basis " << basis_id  << std::endl;
+            // std::cout << "XX Partial Xi = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 0) << std::endl;
+            // std::cout << "XX Partial Eta = " << ref_elem.ref_nodal_gradient(node_rid, basis_id, 1) << std::endl;
+            // std::cout << "XX Partial Mu = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 2) << std::endl;
+            
+
+
+
+            partial_xi(basis_id) = 0.0;
+            partial_eta(basis_id)= 0.0;
+            partial_mu(basis_id) = 0.0;
+
+        }
+
+
+        std::cout << std::endl;
+
+    } // end for node_rid
+
+
+    // for(int node_rid = 0; node_rid < ref_elem.num_ref_nodes(); node_rid++){
+
+    //     std::cout << "Local Reference Node =  "<< node_rid << std::endl;
+
+    //     for(int basis_id = 0; basis_id < elem->num_basis(); basis_id++){
+            
+    //         std::cout << "Basis " << basis_id  << std::endl;
+    //         std::cout << "Partial Xi = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 0) << std::endl;
+    //         std::cout << "Partial Eta = " << ref_elem.ref_nodal_gradient(node_rid, basis_id, 1) << std::endl;
+    //         std::cout << "Partial Mu = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 2) << std::endl;
+    //     }
+
+    //     std::cout << std::endl;
+    // } // end vert lid
+
+    std::cout << "Finished gradient vector" << std::endl;
+
+}
+
+
+// Runtime Functions
+
+void Static_Solver::apply_boundary(){
+
+    node_t *node = simparam->node;
+
+    for (int bdy_patch_gid = 0; bdy_patch_gid < mesh->num_bdy_patches_in_set(3); bdy_patch_gid++){
+                
+        // get the global id for this boundary patch
+        int patch_gid = mesh->bdy_patches_in_set(3, bdy_patch_gid);
+
+        // apply boundary condition at nodes on boundary
+        for(int node_lid = 0; node_lid < 4; node_lid++){
+            
+            int node_gid = mesh->node_in_patch(patch_gid, node_lid);
+
+            // Set nodal temp to zero
+            node->field(node_gid) = 0.0;
+
+        }
+    }
+
+    // std::cout << "Apply temp" << std::endl;
+    // Apply constant temp of 1 to x=0 plane of mesh
+    for (int bdy_patch_gid = 0; bdy_patch_gid < mesh->num_bdy_patches_in_set(0); bdy_patch_gid++){
+                
+        // get the global id for this boundary patch
+        int patch_gid = mesh->bdy_patches_in_set(0, bdy_patch_gid);
+
+        // apply boundary condition at nodes on boundary
+        for(int node_lid = 0; node_lid < 4; node_lid++){
+            
+            int node_gid = mesh->node_in_patch(patch_gid, node_lid);
+
+            // Set nodal temp to zero
+            node->field(node_gid) = 40.0;
+
+        }
+    }
+}
+
+
+void Static_Solver::smooth_cells(){
+    mat_pt_t *mat_pt = simparam->mat_pt;
+    mat_fill_t *mat_fill = simparam->mat_fill;
+    node_t *node = simparam->node;
+
+    // Walk over cells 
+    for(int cell_gid = 0; cell_gid < mesh->num_cells(); cell_gid++){
+
+        // Temporary holder variable
+        real_t temp_avg = 0.0;
+
+        // Walk over nodes in cell and calculate average
+        for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
+
+            // Get global index of the node
+            int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
+
+            temp_avg += node->field(node_gid)/8.0;
+
+        }
+
+        // Save average to material point at cell center
+        mat_pt->field(cell_gid) = temp_avg;
+
+    } // end of loop over cells
+
+    // Walk over all the nodes
+    for(int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++){
+
+        real_t temp_avg = 0.0;
+        
+        // Walk over all the cells connected to the node and average values
+        for(int cell_lid = 0; cell_lid < mesh->num_cells_in_node(node_gid); cell_lid++){
+
+            // Get global index of the cell
+            int cell_gid = mesh->cells_in_node(node_gid, cell_lid);
+
+            temp_avg += mat_pt->field(cell_gid)/ (real_t)mesh->num_cells_in_node(node_gid);
+        
+        }
+
+        // Save average to the node
+        node->field(node_gid) = temp_avg;
+
+    } // end of loop over nodes
+}
+
+
+void Static_Solver::smooth_element(){
+    mat_pt_t *mat_pt = simparam->mat_pt;
+    mat_fill_t *mat_fill = simparam->mat_fill;
+    node_t *node = simparam->node;
+
+    // Walk over each element in the mesh
+    for(int elem_gid = 0; elem_gid < mesh->num_elems(); elem_gid++){
+
+        // Walk over each cell in the element
+        for(int cell_lid = 0; cell_lid < mesh->num_cells_in_elem(); cell_lid++){
+
+            // Get the global ID of the cell
+            int cell_gid = mesh->cells_in_elem(elem_gid, cell_lid);
+
+            real_t temp_avg = 0.0;
+
+            // Loop over nodes in the cell
+            for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
+
+                // Get global ID for this node
+                int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
+
+                temp_avg += node->field(node_gid)/mesh->num_nodes_in_cell();
+
+            }
+
+            // Save averaged values to cell centered material point
+            mat_pt->field(cell_gid) = temp_avg;
+        }// end loop over nodes
+    }// end loop over elements
+
+
+    // Walk over each element in the mesh
+    for(int elem_gid = 0; elem_gid < mesh->num_elems(); elem_gid++){
+       
+        // Walk over each node in the element
+        for(int node_lid = 0; node_lid < mesh->num_nodes_in_elem(); node_lid++){
+
+            // Get global ID of the node
+            int node_gid = mesh->nodes_in_elem(elem_gid, node_lid);
+
+            real_t temp_avg = 0.0;
+
+            // Walk over all cell connected to the node
+            for(int cell_lid = 0; cell_lid < mesh->num_cells_in_node(node_gid); cell_lid++){
+
+                // Get globa ID for the cell
+                int cell_gid = mesh->cells_in_node(node_gid, cell_lid);
+
+                temp_avg += mat_pt->field(cell_gid)/ (real_t)mesh->num_cells_in_node(node_gid);
+            }
+
+            // Save averaged field to node
+            node->field(node_gid) = temp_avg;
+
+        }// end loop over nodes
+    }// end loop over elements
+}
+
+void Static_Solver::get_nodal_jacobian(){
+  mat_pt_t *mat_pt = simparam->mat_pt;
+  mat_fill_t *mat_fill = simparam->mat_fill;
+  int num_dim = simparam->num_dim;
+
+  // loop over the mesh
+
+    for(int elem_gid = 0; elem_gid < mesh->num_elems(); elem_gid++){
+        
+        for(int cell_lid = 0; cell_lid < mesh->num_cells_in_elem(); cell_lid++){ // 1 for linear elements
+
+            int cell_gid = mesh->cells_in_elem(elem_gid, cell_lid);
+
+            // Loop over nodes in cell and initialize jacobian to zero
+            for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
+
+                int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
+                
+                for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
+                    for(int dim_j = 0; dim_j < mesh->num_dim(); dim_j++){
+
+                        mesh->node_jacobian(node_gid, dim_i, dim_j) = 0.0;
+                    }
+                }
+            }
+
+            // Calculate the actual jacobian for that node
+            for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
+                
+                int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
+
+
+
+                for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
+                    for(int dim_j = 0; dim_j < mesh->num_dim(); dim_j++){
+
+                        // Sum over the basis functions and nodes where they are defined
+                        for(int basis_id = 0; basis_id < mesh->num_nodes_in_cell(); basis_id++){
+
+                            int ref_node_gid = mesh->nodes_in_cell(cell_gid, basis_id);
+
+                            mesh->node_jacobian(node_gid, dim_i, dim_j) += 
+                                mesh->node_coords(ref_node_gid , dim_i) * ref_elem->ref_nodal_gradient(node_lid, basis_id, dim_j);
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+// NOTE: Save only J^inverse and det_J
+#pragma omp simd //Modified by Daniel
+    // loop over the nodes of the mesh
+    for (int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++) {
+
+        mesh->node_det_j(node_gid) = 
+            mesh->node_jacobian(node_gid, 0, 0) 
+          * ( (mesh->node_jacobian(node_gid, 1, 1)*mesh->node_jacobian(node_gid, 2, 2)) - (mesh->node_jacobian(node_gid, 2, 1)*mesh->node_jacobian(node_gid, 1, 2)) )  //group 1
+          - mesh->node_jacobian(node_gid, 0, 1) 
+          * ( (mesh->node_jacobian(node_gid, 1, 0)*mesh->node_jacobian(node_gid, 2, 2)) - (mesh->node_jacobian(node_gid, 2, 0)*mesh->node_jacobian(node_gid, 1, 2)) ) // group 2
+          + mesh->node_jacobian(node_gid, 0, 2) 
+          * ( (mesh->node_jacobian(node_gid, 1, 0)*mesh->node_jacobian(node_gid, 2, 1)) - (mesh->node_jacobian(node_gid, 2, 0)*mesh->node_jacobian(node_gid, 1, 1)) ); // group 3
+
+    }
+
+    for(int cell_gid = 0; cell_gid < mesh->num_cells(); cell_gid++){
+
+        mat_pt->volume(cell_gid) = 0;
+
+        for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
+
+            int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
+
+            mat_pt->volume(cell_gid) += mesh->node_det_j(node_gid);
+        }
+
+        std::cout<< "Volume for cell  "<< cell_gid << " = "<< mat_pt->volume(cell_gid) << std::endl;
+    }
+
+    // NOTE: Invert and save J^inverse here!
+
+
+
+    for (int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++) {
+        
+        auto jacobian_view = ViewCArray <real_t> (&mesh->node_jacobian(node_gid, 0, 0), mesh->num_dim(), mesh->num_dim());
+        auto jacobian_inverse_view = ViewCArray <real_t> (&mesh->node_jacobian_inv(node_gid, 0, 0), mesh->num_dim(), mesh->num_dim());
+
+        elements::jacobian_inverse_3d(jacobian_inverse_view, jacobian_view);
+    }
+
+
+    // Check J^-1 * J = I
+
+
+    for (int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++) {
+        
+        real_t test_array[3][3];
+
+        for(int dim_k = 0; dim_k < mesh->num_dim(); dim_k++){
+            for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
+
+                test_array[dim_i][dim_k] = 0.0;
+            }
+        }
+
+        for(int dim_k = 0; dim_k < mesh->num_dim(); dim_k++){
+            for(int dim_j = 0; dim_j < mesh->num_dim(); dim_j++){
+                for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
+                    test_array[dim_i][dim_k] += mesh->node_jacobian(node_gid, dim_i, dim_j) * mesh->node_jacobian_inv(node_gid, dim_j, dim_k);
+                }
+            }
+        }
+        std::cout << std::fixed;
+        std::cout<< "J * J^-1 for node  "<< node_gid << " = " << std::endl;
+        std::cout  << test_array[0][0] << "     " << test_array[0][1] << "     " << test_array[0][2] << std::endl;
+        std::cout  << test_array[1][0] << "     " << test_array[1][1] << "     " << test_array[1][2] << std::endl;
+        std::cout  << test_array[2][0] << "     " << test_array[2][1] << "     " << test_array[2][2] << std::endl;
+    }
+
+
+    
+} // end subroutine
+
+
+
+
+
+
+// Output writers
+
+void Static_Solver::vtk_writer(){
+    int graphics_id = simparam->graphics_id;
+    int num_dim = simparam->num_dim;
+
+    const int num_scalar_vars = 2;
+    const int num_vec_vars = 1;
+    const int num_cell_vars = 1;
+
+    const char name[10] = {"Testing"};
+    const char scalar_var_names[num_scalar_vars][15] = {
+        "fake1", "elem"
+    };
+    const char vec_var_names[num_vec_vars][15] = {
+        "velocity"
+    };
+
+    const char cell_var_names[num_vec_vars][15] = {
+        "cell_gid"
+    };
+    //  ---------------------------------------------------------------------------
+    //  Setup of file and directoring for exporting
+    //  ---------------------------------------------------------------------------
+
+    
+    FILE *out[20];   // the output files that are written to
+    char filename[128];
+    
+    struct stat st;
+    
+    if(stat("vtk",&st) != 0)
+        system("mkdir vtk");
+    
+    if(stat("vtk/data",&st) != 0)
+        system("mkdir vtk/data");
+
+
+    //  ---------------------------------------------------------------------------
+    //  Write the Geometry file
+    //  ---------------------------------------------------------------------------
+    
+
+    
+    sprintf(filename, "vtk/data/%s_%05d_%i.vtu", name, graphics_id, 0);
+    // filename has the full string
+    
+    out[0] = fopen(filename, "w");
+    
+    int num_nodes = mesh->num_nodes();
+    int num_cells = mesh->num_cells();
+
+
+    fprintf(out[0],"<?xml version=\"1.0\"?> \n");
+    fprintf(out[0],"<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n");
+    fprintf(out[0],"<UnstructuredGrid>\n");
+    fprintf(out[0],"<Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n", num_nodes, num_cells);
+
+    
+
+    //  ---------------------------------------------------------------------------
+    //  Write point data
+    //  ---------------------------------------------------------------------------
+
+
+    fprintf(out[0],"<PointData> \n");
+
+
+    fprintf(out[0],"</PointData> \n");
+    fprintf(out[0],"\n");
+
+
+
+    //  ---------------------------------------------------------------------------
+    //  Write cell data
+    //  ---------------------------------------------------------------------------
+
+    fprintf(out[0],"<CellData> \n");
+
+    for(int cell_var = 0; cell_var < num_cell_vars; cell_var++){
+        
+        fprintf(out[0],"<DataArray type=\"Float64\" Name=\"%s\" Format=\"ascii\">\n", cell_var_names[cell_var]);
+        
+        for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+            
+            fprintf(out[0],"%f\n",(float) cell_gid);
+
+        } // end for k over cells
+    }
+    fprintf(out[0],"</DataArray> \n");
+    fprintf(out[0],"</CellData> \n");
+    fprintf(out[0],"\n");
+
+
+    //  ---------------------------------------------------------------------------
+    //  Write node positions
+    //  ---------------------------------------------------------------------------
+
+    real_t min_coord = 0;
+    real_t max_coord = 2.0;
+    fprintf(out[0],"<Points> \n");
+
+        
+    fprintf(out[0],"<DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"%i\" format=\"ascii\">\n", num_dim);
+    
+    for (int node_gid = 0; node_gid < num_nodes; node_gid++){
+        
+        fprintf(out[0],"%f   %f   %f   \n",mesh->node_coords(node_gid, 0),
+                                           mesh->node_coords(node_gid, 1),
+                                           mesh->node_coords(node_gid, 2));
+
+    } 
+
+    fprintf(out[0],"</DataArray> \n");
+    fprintf(out[0],"</Points> \n");
+    fprintf(out[0],"\n");
+
+
+    //  ---------------------------------------------------------------------------
+    //  Write cell type definitions
+    //  ---------------------------------------------------------------------------
+
+    fprintf(out[0],"<Cells> \n");
+    fprintf(out[0],"\n");
+
+
+    // Cell connectivity
+
+    fprintf(out[0],"<DataArray type=\"Int64\" Name=\"connectivity\">\n");
+
+    // write nodes in a cell
+    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+        
+        for(int node = 0; node < 8; node++){
+            fprintf(out[0],"%i  ", mesh->nodes_in_cell(cell_gid, node));
+        }
+
+        fprintf(out[0],"\n");
+
+    } // end for k over cells
+    fprintf(out[0],"</DataArray> \n");
+    fprintf(out[0],"\n");
+
+
+    fprintf(out[0],"<DataArray type=\"Int64\" Name=\"offsets\">\n");
+    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+        fprintf(out[0],"%i  \n", 8*(cell_gid+1));
+    } // end for k over cells
+    fprintf(out[0],"</DataArray> \n");
+    fprintf(out[0],"\n");
+
+
+    fprintf(out[0],"<DataArray type=\"UInt64\" Name=\"types\">\n");
+    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+        fprintf(out[0],"%i  \n", 42);
+    } // end for k over cells
+    fprintf(out[0],"</DataArray> \n");
+    fprintf(out[0],"\n");
+
+
+    fprintf(out[0],"<DataArray type=\"Int64\" Name=\"faces\">\n");
+    
+    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+        fprintf(out[0],"%i  \n", 6);
+
+        for(int patch_lid = 0; patch_lid < 6; patch_lid++){
+
+            fprintf(out[0],"4  ");
+            for(int node_lid = 0; node_lid < 4; node_lid++){
+                fprintf(out[0],"%i  ", mesh->node_in_patch_in_cell(cell_gid, patch_lid, node_lid));
+            }
+
+            fprintf(out[0],"\n");
+        }
+
+
+    } // end for k over cells
+    fprintf(out[0],"</DataArray> \n");
+    fprintf(out[0],"\n");
+
+
+    int faceoffsets = 31;
+    fprintf(out[0],"<DataArray type=\"Int64\" Name=\"faceoffsets\">\n");
+    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+        fprintf(out[0],"%i  \n", faceoffsets*(cell_gid+1));
+    } // end for k over cells
+    
+    fprintf(out[0],"</DataArray> \n");
+    fprintf(out[0],"\n");
+
+
+    fprintf(out[0],"</Cells> \n");
+    fprintf(out[0],"\n");
+
+
+    fprintf(out[0],"\n");
+    fprintf(out[0],"</Piece> \n");
+    fprintf(out[0],"</UnstructuredGrid> \n");
+    fprintf(out[0],"</VTKFile> \n");
+
+    fclose(out[0]);
+} // end vtk_writer
+
+
+void Static_Solver::ensight(){
+    mat_pt_t *mat_pt = simparam->mat_pt;
+    int &graphics_id = simparam->graphics_id;
+    real_t *graphics_times = simparam->graphics_times;
+    real_t &TIME = simparam->TIME;
+
+    auto convert_vert_list_ord_Ensight = CArray <int> (8);
+    convert_vert_list_ord_Ensight(0) = 1;
+    convert_vert_list_ord_Ensight(1) = 0;
+    convert_vert_list_ord_Ensight(2) = 2;
+    convert_vert_list_ord_Ensight(3) = 3;
+    convert_vert_list_ord_Ensight(4) = 5;
+    convert_vert_list_ord_Ensight(5) = 4;
+    convert_vert_list_ord_Ensight(6) = 6;
+    convert_vert_list_ord_Ensight(7) = 7;
+
+
+    const int num_scalar_vars = 4;
+    const int num_vec_vars = 1;
+
+    const char name[10] = {"Testing"};
+    const char scalar_var_names[num_scalar_vars][15] = {
+       "cell_field1", "elem", "elem_id", "cell_field2"
+    };
+    const char vec_var_names[num_vec_vars][15] = {
+        "position"
+    };
+
+
+    int num_nodes = mesh->num_nodes();
+    int num_cells = mesh->num_cells();
+
+    // save the cell state to an array for exporting to graphics files
+    auto cell_fields = CArray <real_t> (num_cells, num_scalar_vars);
+
+    int cell_cnt = 0;
+    int c_in_e = mesh->num_cells_in_elem();
+    int elem_val = 1;
+
+
+    for (int cell_gid=0; cell_gid<num_cells; cell_gid++){
+        cell_fields(cell_gid, 0) = mat_pt->field(cell_gid);    
+    } // end for k over cells
+
+    int num_elem = mesh->num_elems();
+
+    int num_sub_1d;
+
+    if(mesh->elem_order() == 0){
+        num_sub_1d = 1;
+    }
+    
+    else{
+        num_sub_1d = mesh->elem_order()*2;
+    }
+
+
+
+    for (int elem_gid = 0; elem_gid < num_elem; elem_gid++){
+
+        for(int k = 0; k < num_sub_1d; k++){
+            for(int j = 0; j < num_sub_1d; j++){
+                for(int i = 0; i < num_sub_1d; i++){
+
+                    int cell_index = i + j*num_sub_1d + k*num_sub_1d*num_sub_1d;
+                    int cell_mesh_index = cell_index + num_sub_1d*num_sub_1d*num_sub_1d*(elem_gid);
+                    cell_fields(cell_mesh_index, 1) = elem_val;
+
+                }
+
+            }
+        }
+        elem_val *= -1;
+    }
+
+    for (int elem_gid = 0; elem_gid < num_elem; elem_gid++){
+
+        for(int k = 0; k < num_sub_1d; k++){
+            for(int j = 0; j < num_sub_1d; j++){
+                for(int i = 0; i < num_sub_1d; i++){
+
+                    int cell_index = i + j*num_sub_1d + k*num_sub_1d*num_sub_1d;
+                    int cell_mesh_index = cell_index + num_sub_1d*num_sub_1d*num_sub_1d*(elem_gid);
+                    cell_fields(cell_mesh_index, 2) = elem_gid;
+
+                }
+
+            }
+        }
+    }
+
+    // Use average temp from each node as cell temp
+    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+
+        cell_fields(cell_gid, 3) = mat_pt->field(cell_gid);    
+
+    } // end for k over cells
+
+
+    // save the vertex vector fields to an array for exporting to graphics files
+    auto vec_fields = CArray <real_t> (num_nodes, num_vec_vars, 3);
+
+    for (int node_gid = 0; node_gid < num_nodes; node_gid++){
+        
+        vec_fields(node_gid, 0, 0) = mesh->node_coords(node_gid, 0); 
+        vec_fields(node_gid, 0, 1) = mesh->node_coords(node_gid, 1);
+        vec_fields(node_gid, 0, 2) = mesh->node_coords(node_gid, 2);
+
+    } // end for loop over vertices
+
+    //  ---------------------------------------------------------------------------
+    //  Setup of file and directoring for exporting
+    //  ---------------------------------------------------------------------------
+
+    
+    FILE *out[20];   // the output files that are written to
+    char filename[128];
+    
+    struct stat st;
+    
+    if(stat("ensight",&st) != 0)
+        system("mkdir ensight");
+    
+    if(stat("ensight/data",&st) != 0)
+        system("mkdir ensight/data");
+
+
+    //  ---------------------------------------------------------------------------
+    //  Write the Geometry file
+    //  ---------------------------------------------------------------------------
+    
+    
+    sprintf(filename, "ensight/data/%s.%05d.geo", name, graphics_id);
+    // filename has the full string
+    
+    out[0] = fopen(filename, "w");
+    
+    
+    fprintf(out[0],"A graphics dump by Cercion \n");
+    fprintf(out[0],"%s","EnSight Gold geometry\n");
+    fprintf(out[0],"%s","node id assign\n");
+    fprintf(out[0],"%s","element id assign\n");
+    
+    fprintf(out[0],"part\n");
+    fprintf(out[0],"%10d\n",1);
+    fprintf(out[0],"Mesh\n");
+    
+    
+    // --- vertices ---
+    fprintf(out[0],"coordinates\n");
+    fprintf(out[0],"%10d\n",mesh->num_nodes());
+    
+    // write all components of the point coordinates
+    for (int node_gid=0; node_gid<num_nodes; node_gid++){
+        fprintf(out[0],"%12.5e\n",mesh->node_coords(node_gid, 0));
+    }
+    
+    for (int node_gid=0; node_gid<num_nodes; node_gid++){
+        fprintf(out[0],"%12.5e\n",mesh->node_coords(node_gid, 1));
+    }
+    
+    for (int node_gid=0; node_gid<num_nodes; node_gid++){
+        fprintf(out[0],"%12.5e\n",mesh->node_coords(node_gid, 2));
+    }
+    
+    // convert_vert_list_ord_Ensight
+    // --- cells ---
+    fprintf(out[0],"hexa8\n");
+    fprintf(out[0],"%10d\n",num_cells);
+    int this_index;
+    
+    // write all global point numbers for this cell
+    for (int cell_gid = 0; cell_gid<num_cells; cell_gid++) {
+
+        for (int j=0; j<8; j++){
+            this_index = convert_vert_list_ord_Ensight(j);
+            fprintf(out[0],"%10d\t",mesh->nodes_in_cell(cell_gid, this_index)+1); // note node_gid starts at 1
+
+        }
+        fprintf(out[0],"\n");
+    }
+  
+    fclose(out[0]);
+    
+ 
+    // ---------------------------------------------------------------------------
+    // Write the Scalar variable files
+    // ---------------------------------------------------------------------------
+    // ensight_vars = (den, pres,...)
+    for (int var = 0; var < num_scalar_vars; var++){
+        
+        // write a scalar value
+        sprintf(filename,"ensight/data/%s.%05d.%s", name, graphics_id, scalar_var_names[var]);
+
+        out[0]=fopen(filename,"w");
+        
+        fprintf(out[0],"Per_elem scalar values\n");
+        fprintf(out[0],"part\n");
+        fprintf(out[0],"%10d\n",1);
+        
+        fprintf(out[0],"hexa8\n");  // e.g., hexa8
+        
+        for (int cell_gid=0; cell_gid<num_cells; cell_gid++) {
+            fprintf(out[0],"%12.5e\n", cell_fields(cell_gid, var));
+        }
+        
+        fclose(out[0]);
+        
+    } // end for var
+
+    //  ---------------------------------------------------------------------------
+    //  Write the Vector variable files
+    //  ---------------------------------------------------------------------------
+    
+    // ensight vector vars = (position, velocity, force)
+    for (int var=0; var<num_vec_vars; var++){
+        
+        sprintf(filename,"ensight/data/%s.%05d.%s", name, graphics_id, vec_var_names[var]);
+        
+        out[0]=fopen(filename,"w");
+        fprintf(out[0],"Per_node vector values\n");
+        fprintf(out[0],"part\n");
+        fprintf(out[0],"%10d\n",1);
+        fprintf(out[0],"coordinates\n");
+        
+        for (int node_gid=0; node_gid<num_nodes; node_gid++){
+            fprintf(out[0],"%12.5e\n",vec_fields(node_gid, var, 0));
+        }
+        
+        for (int node_gid=0; node_gid<num_nodes; node_gid++){
+            fprintf(out[0],"%12.5e\n",vec_fields(node_gid, var, 1));
+        }
+        
+        for (int node_gid=0; node_gid<num_nodes; node_gid++){
+            fprintf(out[0],"%12.5e\n",vec_fields(node_gid, var, 2));
+        }
+        
+        fclose(out[0]);
+    } // end for var
+
+    // ---------------------------------------------------------------------------
+    // Write the case file
+    // ---------------------------------------------------------------------------
+    
+    sprintf(filename,"ensight/%s.case",name);
+    out[0]=fopen(filename,"w");
+    
+    fprintf(out[0],"FORMAT\n");
+    fprintf(out[0],"type: ensight gold\n");
+    fprintf(out[0],"GEOMETRY\n");
+    
+    sprintf(filename,"model: data/%s.*****.geo\n",name);
+    fprintf(out[0],"%s",filename);
+    fprintf(out[0],"VARIABLE\n");
+    
+    for (int var=0; var<num_scalar_vars; var++){
+        sprintf(filename,
+                "scalar per element: %s data/%s.*****.%s\n",
+                scalar_var_names[var], name, scalar_var_names[var]);
+        fprintf(out[0],"%s",filename);
+    }
+    
+    for (int var=0; var<num_vec_vars; var++){
+        
+        sprintf(filename,
+                "vector per node: %s data/%s.*****.%s\n",
+                vec_var_names[var], name, vec_var_names[var]);
+        fprintf(out[0],"%s",filename);
+    }
+    
+    fprintf(out[0],"TIME\n");
+    fprintf(out[0],"time set: 1\n");
+    fprintf(out[0],"number of steps: %4d\n",graphics_id+1);
+    fprintf(out[0],"filename start number: 0\n");
+    fprintf(out[0],"filename increment: 1\n");
+    fprintf(out[0],"time values: \n");
+
+    
+    graphics_times[graphics_id]=TIME;
+    
+    for (int i=0;i<=graphics_id;i++) {
+        fprintf(out[0],"%12.5e\n",graphics_times[i]);
+    }
+    fclose(out[0]);
+    
+    
+    // ---------------------------------------------------------------------------
+    // Done writing the graphics dump
+    // ---------------------------------------------------------------------------
+
+    // increment graphics id counter
+    graphics_id++;
+} // end ensight
+
+/* ----------------------------------------------------------------------
+   Initialize global vectors and array maps needed for matrix assembly
+------------------------------------------------------------------------- */
+
+void Static_Solver::init_global(){
+
+  int num_dim = simparam->num_dim;
+  int num_elems = mesh->num_elems();
+  int num_nodes = mesh->num_nodes();
+  int nodes_per_elem = mesh->num_nodes_in_elem();
+  Mass_Matrix_strides = CArray <size_t> (num_nodes*num_dim);
+  CArray <int> Graph_Fill = CArray <int> (num_nodes);
+  //CArray <int> nodes_in_cell_list_ = mesh->nodes_in_cell_list_;
+  CArray <size_t> current_row_nodes_scanned;
+  int current_row_n_nodes_scanned;
+  int local_node_index, current_column_index;
+  int max_stride = 0;
+  
+  //allocate stride arrays
+  CArray <size_t> Graph_Matrix_strides_initial = CArray <size_t> (num_nodes);
+  Graph_Matrix_strides = CArray <size_t> (num_nodes);
+
+  //allocate storage for the sparse mass matrix map used in the assembly process
+  Global_Mass_Matrix_Assembly_Map = CArray <size_t> (num_elems,nodes_per_elem,nodes_per_elem);
+
+  //allocate array used to determine global node repeats in the sparse graph later
+  CArray <int> global_nodes_used = CArray <int> (num_nodes);
+
+  /*allocate array that stores which column the global node index occured on for the current row
+    when removing repeats*/
+  CArray <size_t> column_index = CArray <size_t> (num_nodes);
+  
+  //initialize stride arrays
+  for(int inode = 0; inode < num_nodes; inode++){
+      Graph_Matrix_strides_initial(inode) = 0;
+      Graph_Matrix_strides(inode) = 0;
+      global_nodes_used(inode) = 0;
+      column_index(inode) = 0;
+      Graph_Fill(inode) = 0;
+  }
+  
+  //count strides for Sparse Pattern Graph with global repeats
+  for (int ielem = 0; ielem < num_elems; ielem++)
+    for (int lnode = 0; lnode < nodes_per_elem; lnode++){
+      local_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
+      Graph_Matrix_strides_initial(local_node_index) += nodes_per_elem;
+    }
+  
+  //equate strides for later
+  for(int inode = 0; inode < num_nodes; inode++)
+    Graph_Matrix_strides(inode) = Graph_Matrix_strides_initial(inode);
+  
+  //compute maximum stride
+  for(int inode = 0; inode < num_nodes; inode++)
+    if(Graph_Matrix_strides_initial(inode) > max_stride) max_stride = Graph_Matrix_strides_initial(inode);
+  
+  //allocate array used in the repeat removal process
+  current_row_nodes_scanned = CArray <size_t> (max_stride);
+
+  //allocate sparse graph with node repeats
+  RaggedRightArray <size_t> Repeat_Graph_Matrix = RaggedRightArray <size_t> (Graph_Matrix_strides_initial);
+  RaggedRightArrayofVectors <size_t> Element_local_indices = RaggedRightArrayofVectors <size_t> (Graph_Matrix_strides_initial,3);
+  
+  //Fill the initial Graph with repeats
+  
+  for (int ielem = 0; ielem < num_elems; ielem++)
+    for (int lnode = 0; lnode < nodes_per_elem; lnode++){
+      local_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
+      for (int jnode = 0; jnode < nodes_per_elem; jnode++){
+        current_column_index = Graph_Fill(local_node_index)+jnode;
+        Repeat_Graph_Matrix(local_node_index, current_column_index) = mesh->nodes_in_cell_list_(ielem,jnode);
+
+        //fill inverse map
+        Element_local_indices(local_node_index,current_column_index,0) = ielem;
+        Element_local_indices(local_node_index,current_column_index,1) = lnode;
+        Element_local_indices(local_node_index,current_column_index,2) = jnode;
+
+        //fill forward map
+        Global_Mass_Matrix_Assembly_Map(ielem,lnode,jnode) = current_column_index;
+      }
+      Graph_Fill(local_node_index) += nodes_per_elem;
+    }
+  
+  //debug statement
+  //std::cout << "started run" << std::endl;
+
+  //remove repeats from the inital graph setup
+  int current_node, current_element_index, element_row_index, element_column_index, current_stride;
+  for (int inode = 0; inode < num_nodes; inode++){
+    current_row_n_nodes_scanned = 0;
+    for (int istride = 0; istride < Graph_Matrix_strides(inode); istride++){
+      current_node = Repeat_Graph_Matrix(inode,istride);
+      if(global_nodes_used(current_node)){
+        //set forward map index to the index where this global node was first found
+        current_element_index = Element_local_indices(inode,istride,0);
+        element_row_index = Element_local_indices(inode,istride,1);
+        element_column_index = Element_local_indices(inode,istride,2);
+
+        Global_Mass_Matrix_Assembly_Map(current_element_index,element_row_index, element_column_index) 
+            = column_index(current_node);   
+
+        
+        //swap current node with the end of the current row and shorten the stride of the row
+        //first swap information about the inverse and forward maps
+
+        current_stride = Graph_Matrix_strides(inode);
+        if(istride!=current_stride-1){
+        Element_local_indices(inode,istride,0) = Element_local_indices(inode,current_stride-1,0);
+        Element_local_indices(inode,istride,1) = Element_local_indices(inode,current_stride-1,1);
+        Element_local_indices(inode,istride,2) = Element_local_indices(inode,current_stride-1,2);
+        current_element_index = Element_local_indices(inode,istride,0);
+        element_row_index = Element_local_indices(inode,istride,1);
+        element_column_index = Element_local_indices(inode,istride,2);
+
+        Global_Mass_Matrix_Assembly_Map(current_element_index,element_row_index, element_column_index) 
+            = istride;
+
+        //now that the element map information has been copied, copy the global node index and delete the last index
+
+        Repeat_Graph_Matrix(inode,istride) = Repeat_Graph_Matrix(inode,current_stride-1);
+        }
+        istride--;
+        Graph_Matrix_strides(inode)--;
+      }
+      else{
+        /*this node hasn't shown up in the row before; add it to the list of nodes
+          that have been scanned uniquely. Use this list to reset the flag array
+          afterwards without having to loop over all the nodes in the system*/
+        global_nodes_used(current_node) = 1;
+        column_index(current_node) = istride;
+        current_row_nodes_scanned(current_row_n_nodes_scanned) = current_node;
+        current_row_n_nodes_scanned++;
+      }
+    }
+    //reset nodes used list for the next row of the sparse list
+    for(int node_reset = 0; node_reset < current_row_n_nodes_scanned; node_reset++)
+      global_nodes_used(current_row_nodes_scanned(node_reset)) = 0;
+
+  }
+  
+  //copy reduced content to non_repeat storage
+  Graph_Matrix = RaggedRightArray <size_t> (Graph_Matrix_strides);
+  for(int inode = 0; inode < num_nodes; inode++)
+    for(int istride = 0; istride < Graph_Matrix_strides(inode); istride++)
+      Graph_Matrix(inode,istride) = Repeat_Graph_Matrix(inode,istride);
+
+  //deallocate repeat matrix
+  
+  /*At this stage the sparse graph should have unique global indices on each row.
+    The constructed Assembly map (to the global sparse matrix)
+    is used to loop over each element's local mass matrix in the assembly process.*/
+  
+  //expand strides for mass matrix by multipling by dim
+  for(int inode = 0; inode < num_nodes; inode++){
+    for (int idim = 0; idim < num_dim; idim++)
+    Mass_Matrix_strides(num_dim*inode + idim) = num_dim*Graph_Matrix_strides(inode);
+  }
+
+  Mass_Matrix = RaggedRightArray <real_t> (Mass_Matrix_strides);
+  DOF_Graph_Matrix = RaggedRightArray <size_t> (Mass_Matrix_strides);
+
+  //initialize Mass Matrix entries to 0
+  for (int idof = 0; idof < num_dim*num_nodes; idof++)
+    for (int istride = 0; istride < Mass_Matrix_strides(idof); istride++){
+      Mass_Matrix(idof,istride) = 0;
+      DOF_Graph_Matrix(idof,istride) = Graph_Matrix(idof/num_dim,istride/num_dim)*num_dim + istride%num_dim;
+    }
+  
+  /*
+  //debug print nodal positions and indices
+  std::cout << " ------------NODAL POSITIONS--------------"<<std::endl;
+  for (int inode = 0; inode < num_nodes; inode++){
+      std::cout << "node: " << inode + 1 << " { ";
+    for (int istride = 0; istride < num_dim; istride++){
+        std::cout << mesh->node_coords(inode,istride) << " , ";
+    }
+    std::cout << " }"<< std::endl;
+  }
+  //debug print element edof
+
+  std::cout << " ------------ELEMENT EDOF--------------"<<std::endl;
+
+  for (int ielem = 0; ielem < num_elems; ielem++){
+    std::cout << "elem:  " << ielem+1 << std::endl;
+    for (int lnode = 0; lnode < nodes_per_elem; lnode++){
+        std::cout << "{ ";
+          std::cout << lnode+1 << " = " << mesh->nodes_in_cell_list_(ielem,lnode) + 1 << " ";
+        
+        std::cout << " }"<< std::endl;
+    }
+    std::cout << std::endl;
+  }
+
+  //debug section; print mass matrix graph and per element map
+  std::cout << " ------------SPARSE GRAPH MATRIX--------------"<<std::endl;
+  for (int inode = 0; inode < num_nodes; inode++){
+      std::cout << "row: " << inode + 1 << " { ";
+    for (int istride = 0; istride < Graph_Matrix_strides(inode); istride++){
+        std::cout << istride + 1 << " = " << Repeat_Graph_Matrix(inode,istride) + 1 << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+  }
+
+  std::cout << " ------------ELEMENT ASSEMBLY MAP--------------"<<std::endl;
+
+  for (int ielem = 0; ielem < num_elems; ielem++){
+    std::cout << "elem:  " << ielem+1 << std::endl;
+    for (int lnode = 0; lnode < nodes_per_elem; lnode++){
+        std::cout << "{ "<< std::endl;
+        for (int jnode = 0; jnode < nodes_per_elem; jnode++){
+          std::cout <<"(" << lnode+1 << "," << jnode+1 << ")"<< " = " << Global_Mass_Matrix_Assembly_Map(ielem,lnode, jnode) + 1 << " ";
+        }
+        std::cout << " }"<< std::endl;
+    }
+    std::cout << std::endl;
+  }
+  */
+  
+}
+
+/* ----------------------------------------------------------------------
+   Assemble the Sparse Mass Matrix
+------------------------------------------------------------------------- */
+
+void Static_Solver::assemble(){
+  int num_dim = simparam->num_dim;
+  int num_elems = mesh->num_elems();
+  int num_nodes = mesh->num_nodes();
+  int nodes_per_elem = mesh->num_nodes_in_elem();
+  int current_row_n_nodes_scanned;
+  int local_node_index, current_row, current_column;
+  int max_stride = 0;
+  CArray <real_t> Local_Mass_Matrix = CArray <real_t> (num_dim*nodes_per_elem,num_dim*nodes_per_elem);
+
+  //assemble the global mass matrix
+  for (int ielem = 0; ielem < num_elems; ielem++){
+    //construct local mass matrix for this element
+    local_matrix(ielem, Local_Mass_Matrix);
+    //assign entries of this local matrix to the sparse global matrix storage;
+    for (int inode = 0; inode < nodes_per_elem; inode++){
+      current_row = num_dim*mesh->nodes_in_cell_list_(ielem,inode);
+      for(int jnode = 0; jnode < nodes_per_elem; jnode++){
+        
+        current_column = num_dim*Global_Mass_Matrix_Assembly_Map(ielem,inode,jnode);
+        for (int idim = 0; idim < num_dim; idim++)
+          for (int jdim = 0; jdim < num_dim; jdim++)
+            Mass_Matrix(current_row + idim, current_column + jdim) += Local_Mass_Matrix(num_dim*inode + idim,num_dim*jnode + jdim);
+      }
+    }
+  }
+
+  //debug print of mass matrix
+  //debug section; print mass matrix graph and per element map
+  std::cout << " ------------SPARSE MASS MATRIX--------------"<<std::endl;
+  for (int idof = 0; idof < num_nodes; idof++){
+      std::cout << "row: " << idof + 1 << " { ";
+    for (int istride = 0; istride < Mass_Matrix_strides(num_dim*idof)/num_dim; istride++){
+        std::cout << istride + 1 << " = " << Mass_Matrix(num_dim*idof,istride*num_dim) << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+  }
+
+}
+
+void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
+  int num_dim = simparam->num_dim;
+  int num_elems = mesh->num_elems();
+  int num_nodes = mesh->num_nodes();
+  int nodes_per_elem = mesh->num_nodes_in_elem();
+  CArray <real_t> Shape_Vector = CArray <real_t> (num_dim*nodes_per_elem);
+  //test process; replace with quadrature integration afterwards
+  for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
+    Shape_Vector(ifill) = 0.5;
+  
+  for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
+    for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++)
+      Local_Matrix(ifill,jfill) = Shape_Vector(ifill)*Shape_Vector(jfill);
+  
+}
+
+/* ----------------------------------------------------------------------
+   Solve the FEA linear system
+------------------------------------------------------------------------- */
+
+int Static_Solver::solve(){
+/*
+  int num_dim = simparam->num_dim;
+  int num_elems = mesh->num_elems();
+  int num_nodes = mesh->num_nodes();
+  int nodes_per_elem = mesh->num_nodes_in_elem();
+  int current_row_n_nodes_scanned;
+  int local_node_index, current_row, current_column;
+  int max_stride = 0;
+
+  std::string solver_name = "KLU2";
+  // Before we do anything, check that the solver is enabled
+  if( !Amesos2::query(solver_name) ){
+    std::cerr << solver_name << " not enabled.  Exiting..." << std::endl;
+    return EXIT_SUCCESS;	// Otherwise CTest will pick it up as
+				// failure, which it isn't really
+  }
+
+  //allocate X solution vector and RHS B vector
+  CArray <real_t> X_Solve = CArray <real_t> (num_dim*nodes_per_elem);
+  CArray <real_t> B_RHS = CArray <real_t> (num_dim*nodes_per_elem);
+
+  //Construct Solver object
+  Teuchos::RCP<Amesos2::Solver<Epetra_CrsMatrix,Epetra_MultiVector> > solver;
+
+  const Epetra_MpiComm epetracomm (MPI_COMM_WORLD);
+  typedef Epetra_CrsMatrix MAT;
+  typedef Epetra_MultiVector MV;
+
+  //Parallel map
+  Epetra_Map solvemap = Epetra_Map(num_dim*nodes_per_elem, 0, epetracomm);
+
+  //Matrix 
+  Epetra_CrsGraph Agraph = Epetra_CrsGraph(Copy, solvemap, (int*) Mass_Matrix_strides.get_pointer(),
+                           (int) DOF_Graph_Matrix.size(), (int*) DOF_Graph_Matrix.get_pointer(), (int*) DOF_Graph_Matrix.get_starts(), true);
+  Epetra_CrsMatrix Amatrix = Epetra_CrsMatrix(Copy, Agraph, (double *) Mass_Matrix.get_pointer());
+   
+
+  // Create random X
+  Teuchos::RCP<MV> X = Teuchos::rcp( new Epetra_MultiVector(Copy, solvemap, X_Solve.get_pointer(), 1, 1) );
+  X->Random();
+
+  Teuchos::RCP<MV> B = Teuchos::rcp( new Epetra_MultiVector(Copy, solvemap, B_RHS.get_pointer(), 1, 1) );
+  B->Random();
+
+  solver = Amesos2::create<MAT,MV>(solver_name, Teuchos::rcp(&Amatrix), X, B);
+
+  solver->solve();
+
+  //debug print of solution
+  //debug section; print mass matrix graph and per element map
+  */
+  /*
+  std::cout << " ------------NODAL DISPLACEMENT VECTOR--------------"<<std::endl;
+  for (int idof = 0; idof < num_nodes; idof++){
+      std::cout << "row: " << idof + 1 << " { ";
+    for (int istride = 0; istride < Mass_Matrix_strides(num_dim*idof)/num_dim; istride++){
+        std::cout << istride + 1 << " = " << Mass_Matrix(num_dim*idof,istride*num_dim) << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+  }
+  */
+}

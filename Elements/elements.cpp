@@ -47,30 +47,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "utilities.h"
 #include "elements.h"
 
-
+#define EPSILON 1.0e-12
 
 using namespace utils;
-
-
-// 2D Element Types
-elements::Element2D* elem2D;
-
-elements::Quad4      Quad4_elem;
-elements::Quad8      Quad8_elem;
-elements::Quad12     Quad12_elem;
-elements::QuadN      QuadN_elem;
-
-// 3D element types
-elements::Element3D* elem;
-
-elements::Hex8      Hex8_elem;
-elements::Hex20     Hex20_elem;
-elements::Hex32     Hex32_elem;
-elements::HexN      HexN_elem;
-
-
-// Reference element
-elements::ref_element  ref_elem;
 
 namespace elements{
 
@@ -4502,60 +4481,19 @@ void Tess16::partial_tau_basis(
 
 } // End partial tau function
 
+/* ----------------------------------------------------------------------
+   choose the current 3D element type in the calculation
+------------------------------------------------------------------------- */
 
-
-
-
-
-void choose_elem_type(elem_type_t elem_type){
+void element_selector::choose_3Delem_type(elem_type_t elem_type, Element3D *&elem){
 
     switch(elem_type.type)
     {
-        // 2D element types
-        // WARNING: DEFAULTS TO 3D HEX8
-        case elem_types::Quad4:
-        {   
-            elem2D = &Quad4_elem;
-
-            std::cout<<"Quad4 Chosen"<<std::endl;
-
-            break; 
-        }
         
-        case elem_types::Quad8:
-        {
-            elem2D = &Quad8_elem;
-
-            std::cout<<"Quad8 Chosen"<<std::endl;
-
-            break;
-        }
-        
-        case elem_types::Quad12:
-        {
-            elem2D = &Quad12_elem;
-
-            std::cout<<"Quad12 Chosen"<<std::endl;
-
-            break;
-        }
-        
-        case elem_types::QuadN:
-        {
-            // elem = &QuadN_elem;
-            elem = &Hex8_elem;
-
-            std::cout<<"QuadN Chosen"<<std::endl;
-
-
-            break;
-        }
-
-
         // 3D element types
         case elem_types::Hex8:
         {
-            elem = &Hex8_elem;
+            elem = &Hex8_Object;
 
             std::cout<<"Hex8 Chosen"<<std::endl;
 
@@ -4564,7 +4502,7 @@ void choose_elem_type(elem_type_t elem_type){
 
         case elem_types::Hex20:
         {
-            elem = &Hex20_elem;
+            elem = &Hex20_Object;
 
             std::cout<<"Hex20 Chosen"<<std::endl;
 
@@ -4573,7 +4511,7 @@ void choose_elem_type(elem_type_t elem_type){
 
         case elem_types::Hex32:
         {
-            elem = &Hex32_elem;
+            elem = &Hex32_Object;
 
             std::cout<<"Hex32 Chosen"<<std::endl;
 
@@ -4591,11 +4529,69 @@ void choose_elem_type(elem_type_t elem_type){
         
         default : 
         {
-            elem = &Hex8_elem;
+            elem = &Hex8_Object;
 
             std::cout<<"Default Hex8 Chosen"<<std::endl;
 
             break;
+        }
+    }
+} // end choose element function
+
+/* ----------------------------------------------------------------------
+   choose the current 2D element type in the calculation
+------------------------------------------------------------------------- */
+
+void element_selector::choose_2Delem_type(elem_type_t elem_type, Element2D *&elem2D){
+
+    switch(elem_type.type)
+    {
+        // 2D element types
+        // WARNING: DEFAULTS TO 3D Quad4
+        case elem_types::Quad4:
+        {   
+            elem2D = &Quad4_Object;
+
+            std::cout<<"Quad4 Chosen"<<std::endl;
+
+            break; 
+        }
+        
+        case elem_types::Quad8:
+        {
+            elem2D = &Quad8_Object;
+
+            std::cout<<"Quad8 Chosen"<<std::endl;
+
+            break;
+        }
+        
+        case elem_types::Quad12:
+        {
+            elem2D = &Quad12_Object;
+
+            std::cout<<"Quad12 Chosen"<<std::endl;
+
+            break;
+        }
+        
+        case elem_types::QuadN:
+        {
+            // elem = &QuadN_elem;
+
+            std::cout<<"QuadN Chosen"<<std::endl;
+
+
+            break;
+        }
+        
+        default : 
+        {
+            elem2D = &Quad4_Object;
+
+            std::cout<<"Quad4 Chosen"<<std::endl;
+
+            break; 
         }
     }
 } // end choose element function

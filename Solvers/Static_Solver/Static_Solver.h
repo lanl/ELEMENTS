@@ -53,6 +53,8 @@ public:
   void smooth_element();
 
   void get_nodal_jacobian();
+
+  void Element_Material_Properties(size_t, real_t &Element_Modulus, real_t &Poisson_Ratio);
   
   swage::mesh_t *init_mesh;
   swage::mesh_t *mesh;
@@ -64,11 +66,13 @@ public:
   
 
   class Simulation_Parameters *simparam;
-
+  
+  CArray <size_t> Element_Types;
   CArray <size_t> Global_Mass_Matrix_Assembly_Map;
   RaggedRightArray <size_t> Graph_Matrix;
   RaggedRightArray <size_t> DOF_Graph_Matrix;
   RaggedRightArray <real_t> Mass_Matrix;
+  CArray <real_t> Nodal_Forces;
   CArray <size_t> Mass_Matrix_strides;
   CArray <size_t> Graph_Matrix_strides;
   

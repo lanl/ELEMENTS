@@ -44,6 +44,25 @@ num_cells in element = (p_order*2)^3
 #include <math.h>  // fmin, fmax, abs note: fminl is long
 #include <sys/stat.h>
 #include <mpi.h>
+#include <Teuchos_ScalarTraits.hpp>
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_oblackholestream.hpp>
+#include <Teuchos_Tuple.hpp>
+#include <Teuchos_VerboseObject.hpp>
+
+#include <Tpetra_Core.hpp>
+#include <Tpetra_Map.hpp>
+#include <Tpetra_MultiVector.hpp>
+#include <Tpetra_CrsMatrix.hpp>
+#include <Kokkos_View.hpp>
+#include <Kokkos_Parallel.hpp>
+#include <Kokkos_Parallel_Reduce.hpp>
+#include "Tpetra_Details_makeColMap.hpp"
+#include "Tpetra_Details_DefaultTypes.hpp"
+#include <set>
+
+#include "Amesos2.hpp"
+#include "Amesos2_Version.hpp"
 
 #include "elements.h"
 #include "swage.h"
@@ -118,6 +137,9 @@ void Static_Solver::run(int argc, char *argv[]){
     //debug solve; move later after bcs applies
     int solver_exit = solve();
     if(solver_exit == EXIT_SUCCESS) return;
+    std::cout << "Before free pointer  " << std::endl <<std::flush;
+    //debug return to avoid printing further
+    return;
 
     std::cout << "finished linear solver" << std::endl;
     
@@ -297,6 +319,8 @@ void Static_Solver::read_mesh(char *MESH){
     init_mesh->init_element(0, 3, num_elem);
     init_mesh->init_cells(num_elem);
 
+    Element_Types = CArray<size_t>(num_elem); 
+
 
 
     // for each cell read the list of associated nodes
@@ -309,6 +333,7 @@ void Static_Solver::read_mesh(char *MESH){
             init_mesh->nodes_in_cell(cell_gid,node_lid) = init_mesh->nodes_in_cell(cell_gid, node_lid) - 1;
         }
         //std::cout<<" "<<std::endl;
+        Element_Types = 1; //Hex8 default
     }
 
     //element type selection (subject to change)
@@ -1471,6 +1496,9 @@ void Static_Solver::init_global(){
   int current_row_n_nodes_scanned;
   int local_node_index, current_column_index;
   int max_stride = 0;
+
+  //allocate right hand side vector of nodal forces
+  Nodal_Forces = CArray <real_t> (num_nodes*num_dim);
   
   //allocate stride arrays
   CArray <size_t> Graph_Matrix_strides_initial = CArray <size_t> (num_nodes);
@@ -1675,7 +1703,7 @@ void Static_Solver::init_global(){
 }
 
 /* ----------------------------------------------------------------------
-   Assemble the Sparse Mass Matrix
+   Assemble the Sparse Mass Matrix and force vector
 ------------------------------------------------------------------------- */
 
 void Static_Solver::assemble(){
@@ -1716,22 +1744,308 @@ void Static_Solver::assemble(){
     std::cout << " }"<< std::endl;
   }
 
+  //test force vector construction
+  for(int i=0; i < num_dim*num_nodes; i++)
+    Nodal_Forces(i) = i+1;
+
 }
+
+/* ----------------------------------------------------------------------
+   Retrieve material properties associated with a finite element
+------------------------------------------------------------------------- */
+
+void Static_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Modulus, real_t &Poisson_Ratio){
+
+  Element_Modulus = simparam->Elastic_Modulus;
+  Poisson_Ratio = simparam->Poisson_Ratio;
+
+}
+
+/* ----------------------------------------------------------------------
+   Construct the local mass matrix
+------------------------------------------------------------------------- */
 
 void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
   int nodes_per_elem = mesh->num_nodes_in_elem();
+  int num_gauss_points = simparam->num_gauss_points;
+  int z_quad,y_quad,x_quad, direct_product_count;
+
+  direct_product_count = std::pow(num_gauss_points,num_dim);
+  real_t Elastic_Constant, Shear_Term, Pressure_Term, matrix_term;
+  real_t matrix_subterm1, matrix_subterm2, matrix_subterm3, Jacobian;
+  real_t Element_Modulus, Poisson_Ratio;
+  CArray<real_t> legendre_nodes_1D(num_gauss_points);
+  CArray<real_t> legendre_weights_1D(num_gauss_points);
+  real_t pointer_quad_coordinate[num_dim];
+  real_t pointer_quad_coordinate_weight[num_dim];
+  real_t pointer_interpolated_point[num_dim];
+  real_t pointer_point_derivative_s1[num_dim];
+  real_t pointer_point_derivative_s2[num_dim];
+  real_t pointer_point_derivative_s3[num_dim];
+  ViewCArray<real_t> quad_coordinate(pointer_quad_coordinate,num_dim);
+  ViewCArray<real_t> quad_coordinate_weight(pointer_quad_coordinate_weight,num_dim);
+  ViewCArray<real_t> interpolated_point(pointer_interpolated_point,num_dim);
+  ViewCArray<real_t> point_derivative_s1(pointer_point_derivative_s1,num_dim);
+  ViewCArray<real_t> point_derivative_s2(pointer_point_derivative_s2,num_dim);
+  ViewCArray<real_t> point_derivative_s3(pointer_point_derivative_s3,num_dim);
+
+  real_t pointer_basis_values[elem->num_basis()];
+  real_t pointer_basis_derivative_s1[elem->num_basis()];
+  real_t pointer_basis_derivative_s2[elem->num_basis()];
+  real_t pointer_basis_derivative_s3[elem->num_basis()];
+  ViewCArray<real_t> basis_values(pointer_basis_values,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s1(pointer_basis_derivative_s1,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
+  CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
+
+  //initialize weights
+  elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
+  elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
+
+  //acquire set of nodes for this local element
+  for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+    nodal_positions(node_loop,0) = mesh->node_coords((mesh->nodes_in_cell_list_(ielem, node_loop)),0);
+    nodal_positions(node_loop,1) = mesh->node_coords((mesh->nodes_in_cell_list_(ielem, node_loop)),1);
+    nodal_positions(node_loop,2) = mesh->node_coords((mesh->nodes_in_cell_list_(ielem, node_loop)),2);
+  }
+
+  //look up element material properties
+  Element_Material_Properties((size_t) ielem,Element_Modulus,Poisson_Ratio);
+  Elastic_Constant = Element_Modulus/(1+Poisson_Ratio)/(1-2*Poisson_Ratio);
+  Shear_Term = 0.5-Poisson_Ratio;
+  Pressure_Term = 1 - Poisson_Ratio;
   CArray <real_t> Shape_Vector = CArray <real_t> (num_dim*nodes_per_elem);
-  //test process; replace with quadrature integration afterwards
+  CArray <real_t> Shape_Vector_Derivatives = CArray <real_t> (num_dim*nodes_per_elem);
+
+  //initialize local mass matrix storage
   for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
-    Shape_Vector(ifill) = 0.5;
-  
-  for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
-    for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++)
-      Local_Matrix(ifill,jfill) = Shape_Vector(ifill)*Shape_Vector(jfill);
-  
+      for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++)
+      Local_Matrix(ifill,jfill) = 0;
+
+  //loop over quadrature points
+  for(int iquad=0; iquad < direct_product_count; iquad++){
+
+    //set current quadrature point
+    if(num_dim==3) z_quad = iquad/(num_gauss_points*num_gauss_points);
+    y_quad = (iquad % (num_gauss_points*num_gauss_points))/num_gauss_points;
+    x_quad = iquad % num_gauss_points;
+    quad_coordinate(0) = legendre_nodes_1D(x_quad);
+    quad_coordinate(1) = legendre_nodes_1D(y_quad);
+    if(num_dim==3)
+    quad_coordinate(2) = legendre_nodes_1D(z_quad);
+
+    //set current quadrature weight
+    quad_coordinate_weight(0) = legendre_weights_1D(x_quad);
+    quad_coordinate_weight(1) = legendre_weights_1D(y_quad);
+    if(num_dim==3)
+    quad_coordinate_weight(2) = legendre_weights_1D(z_quad);
+
+    //compute shape functions at this point for the element type
+    elem->basis(basis_values,quad_coordinate);
+
+    //compute all the necessary coordinates and derivatives at this point
+
+    //compute shape function derivatives
+    elem->partial_xi_basis(basis_derivative_s1,quad_coordinate);
+    elem->partial_eta_basis(basis_derivative_s2,quad_coordinate);
+    elem->partial_mu_basis(basis_derivative_s3,quad_coordinate);
+
+    //compute derivatives of x,y,z w.r.t the s,t,w isoparametric space
+    //derivative of x,y,z w.r.t s
+    point_derivative_s1(0) = 0;
+    for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+      point_derivative_s1(0) += nodal_positions(node_loop,0)*basis_derivative_s1(node_loop);
+      point_derivative_s1(1) += nodal_positions(node_loop,1)*basis_derivative_s1(node_loop);
+      point_derivative_s1(2) += nodal_positions(node_loop,2)*basis_derivative_s1(node_loop);
+    }
+
+    //derivative of x,y,z w.r.t t
+    point_derivative_s2(0) = 0;
+    for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+      point_derivative_s2(0) += nodal_positions(node_loop,0)*basis_derivative_s2(node_loop);
+      point_derivative_s2(1) += nodal_positions(node_loop,1)*basis_derivative_s2(node_loop);
+      point_derivative_s2(2) += nodal_positions(node_loop,2)*basis_derivative_s2(node_loop);
+    }
+
+    //derivative of x,y,z w.r.t w
+    point_derivative_s3(0) = 0;
+    for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+      point_derivative_s3(0) += nodal_positions(node_loop,0)*basis_derivative_s3(node_loop);
+      point_derivative_s3(1) += nodal_positions(node_loop,1)*basis_derivative_s3(node_loop);
+      point_derivative_s3(2) += nodal_positions(node_loop,2)*basis_derivative_s3(node_loop);
+    }
+
+    //compute the determinant of the Jacobian
+    Jacobian = point_derivative_s1(0)*(point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+               point_derivative_s1(1)*(point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+               point_derivative_s1(2)*(point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1));
+    if(Jacobian<0) Jacobian = -Jacobian;
+
+    //compute the contributions of this quadrature point to all the matrix elements
+    int index_x,index_y,basis_index_x,basis_index_y;
+    for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
+      for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++){
+        index_x = ifill%num_dim;
+        index_y = jfill%num_dim;
+        basis_index_x = ifill/num_dim;
+        basis_index_y = jfill/num_dim;
+
+        //compute mass matrix terms involving derivatives of the shape function and cofactor determinants from cramers rule
+        if(index_x==0&&index_y==0){
+          
+          matrix_subterm1 = Pressure_Term*(basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s1(2))+
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(1)*point_derivative_s2(2)-point_derivative_s2(1)*point_derivative_s1(2)))*
+          (basis_derivative_s1(basis_index_y)*(point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s1(2))+
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(1)*point_derivative_s2(2)-point_derivative_s2(1)*point_derivative_s1(2)));
+
+          matrix_subterm2 = Shear_Term*(-basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s1(2))-
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(0)*point_derivative_s2(2)-point_derivative_s2(0)*point_derivative_s1(2)))*
+          (-basis_derivative_s1(basis_index_y)*(point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s1(2))-
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(0)*point_derivative_s2(2)-point_derivative_s2(0)*point_derivative_s1(2)));
+
+          matrix_subterm3 = Shear_Term*(basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1))-
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s1(1))+
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(0)*point_derivative_s2(1)-point_derivative_s2(0)*point_derivative_s1(1)))*
+          (basis_derivative_s1(basis_index_y)*(point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1))-
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s1(1))+
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(0)*point_derivative_s2(1)-point_derivative_s2(0)*point_derivative_s1(1)));
+
+          matrix_term = matrix_subterm1 + matrix_subterm2 + matrix_subterm3;
+        }
+
+        if(index_x==1&&index_y==1){
+          
+          matrix_subterm1 = Pressure_Term*(-basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s1(2))-
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(0)*point_derivative_s2(2)-point_derivative_s2(0)*point_derivative_s1(2)))*
+          (-basis_derivative_s1(basis_index_y)*(point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s1(2))-
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(0)*point_derivative_s2(2)-point_derivative_s2(0)*point_derivative_s1(2)));
+
+          matrix_subterm2 = Shear_Term*(basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s1(2))+
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(1)*point_derivative_s2(2)-point_derivative_s2(1)*point_derivative_s1(2)))*
+          (basis_derivative_s1(basis_index_y)*(point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s1(2))+
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(1)*point_derivative_s2(2)-point_derivative_s2(1)*point_derivative_s1(2)));
+
+          matrix_subterm3 = Shear_Term*(basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1))-
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s1(1))+
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(0)*point_derivative_s2(1)-point_derivative_s2(0)*point_derivative_s1(1)))*
+          (basis_derivative_s1(basis_index_y)*(point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1))-
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s1(1))+
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(0)*point_derivative_s2(1)-point_derivative_s2(0)*point_derivative_s1(1)));
+
+          matrix_term = matrix_subterm1 + matrix_subterm2 + matrix_subterm3;
+        }
+
+        if(index_x==2&&index_y==2){
+          
+          matrix_subterm1 = Pressure_Term*(basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1))-
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s1(1))+
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(0)*point_derivative_s2(1)-point_derivative_s2(0)*point_derivative_s1(1)))*
+          (basis_derivative_s1(basis_index_y)*(point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1))-
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s1(1))+
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(0)*point_derivative_s2(1)-point_derivative_s2(0)*point_derivative_s1(1)));
+
+          matrix_subterm2 = Shear_Term*(basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s1(2))+
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(1)*point_derivative_s2(2)-point_derivative_s2(1)*point_derivative_s1(2)))*
+          (basis_derivative_s1(basis_index_y)*(point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s1(2))+
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(1)*point_derivative_s2(2)-point_derivative_s2(1)*point_derivative_s1(2)));
+
+          matrix_subterm3 = Shear_Term*(-basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s1(2))-
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(0)*point_derivative_s2(2)-point_derivative_s2(0)*point_derivative_s1(2)))*
+          (-basis_derivative_s1(basis_index_y)*(point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s1(2))-
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(0)*point_derivative_s2(2)-point_derivative_s2(0)*point_derivative_s1(2)));
+
+          matrix_term = matrix_subterm1 + matrix_subterm2 + matrix_subterm3;
+        }
+
+        if((index_x==0&&index_y==1)||(index_x==1&&index_y==0)){
+          matrix_subterm1 = Poisson_Ratio*(-basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s1(2))-
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(0)*point_derivative_s2(2)-point_derivative_s2(0)*point_derivative_s1(2)))*
+          (basis_derivative_s1(basis_index_y)*(point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s1(2))+
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(1)*point_derivative_s2(2)-point_derivative_s2(1)*point_derivative_s1(2)));
+
+          matrix_subterm2 = Shear_Term*(basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s1(2))+
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(1)*point_derivative_s2(2)-point_derivative_s2(1)*point_derivative_s1(2)))*
+          (-basis_derivative_s1(basis_index_y)*(point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s1(2))-
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(0)*point_derivative_s2(2)-point_derivative_s2(0)*point_derivative_s1(2)));
+
+          matrix_term = matrix_subterm1 + matrix_subterm2;
+        }
+
+        if((index_x==0&&index_y==2)||(index_x==2&&index_y==0)){
+          matrix_subterm1 = Poisson_Ratio*(basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1))-
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s1(1))+
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(0)*point_derivative_s2(1)-point_derivative_s2(0)*point_derivative_s1(1)))*
+          (basis_derivative_s1(basis_index_y)*(point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s1(2))+
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(1)*point_derivative_s2(2)-point_derivative_s2(1)*point_derivative_s1(2)));
+
+          matrix_subterm2 = Shear_Term*(basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s2(2))-
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(1)*point_derivative_s3(2)-point_derivative_s3(1)*point_derivative_s1(2))+
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(1)*point_derivative_s2(2)-point_derivative_s2(1)*point_derivative_s1(2)))*
+          (basis_derivative_s1(basis_index_y)*(point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1))-
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s1(1))+
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(0)*point_derivative_s2(1)-point_derivative_s2(0)*point_derivative_s1(1)));
+
+          matrix_term = matrix_subterm1 + matrix_subterm2;
+        }
+
+        if((index_x==1&&index_y==2)||(index_x==2&&index_y==1)){
+          matrix_subterm1 = Poisson_Ratio*(basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1))-
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s1(1))+
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(0)*point_derivative_s2(1)-point_derivative_s2(0)*point_derivative_s1(1)))*
+          (-basis_derivative_s1(basis_index_y)*(point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s1(2))-
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(0)*point_derivative_s2(2)-point_derivative_s2(0)*point_derivative_s1(2)));
+
+          matrix_subterm2 = Shear_Term*(-basis_derivative_s1(basis_index_x)*
+          (point_derivative_s2(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s2(2))+
+          basis_derivative_s2(basis_index_x)*(point_derivative_s1(0)*point_derivative_s3(2)-point_derivative_s3(0)*point_derivative_s1(2))-
+          basis_derivative_s3(basis_index_x)*(point_derivative_s1(0)*point_derivative_s2(2)-point_derivative_s2(0)*point_derivative_s1(2)))*
+          (basis_derivative_s1(basis_index_y)*(point_derivative_s2(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s2(1))-
+          basis_derivative_s2(basis_index_y)*(point_derivative_s1(0)*point_derivative_s3(1)-point_derivative_s3(0)*point_derivative_s1(1))+
+          basis_derivative_s3(basis_index_y)*(point_derivative_s1(0)*point_derivative_s2(1)-point_derivative_s2(0)*point_derivative_s1(1)));
+
+          matrix_term = matrix_subterm1 + matrix_subterm2;
+        }
+
+        Local_Matrix(ifill,jfill) += Elastic_Constant*quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*matrix_term/Jacobian;
+      }
+    }
+
 }
 
 /* ----------------------------------------------------------------------
@@ -1739,7 +2053,28 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
 ------------------------------------------------------------------------- */
 
 int Static_Solver::solve(){
-/*
+
+  typedef double Scalar;
+  typedef Tpetra::Map<>::local_ordinal_type LO;
+  typedef Tpetra::Map<>::global_ordinal_type GO;
+
+  typedef Tpetra::CrsMatrix<Scalar,LO,GO> MAT;
+  typedef Tpetra::MultiVector<Scalar,LO,GO> MV;
+
+  typedef Kokkos::ViewTraits<LO*, Kokkos::LayoutLeft, void, void>::size_type SizeType;
+  typedef Tpetra::Details::DefaultTypes::node_type node_type;
+  using traits = Kokkos::ViewTraits<LO*, Kokkos::LayoutLeft, void, void>;
+  
+  using array_layout    = typename traits::array_layout;
+  using execution_space = typename traits::execution_space;
+  using device_type     = typename traits::device_type;
+  using memory_traits   = typename traits::memory_traits;
+
+  using Tpetra::global_size_t;
+  using Teuchos::tuple;
+  using Teuchos::RCP;
+  using Teuchos::rcp;
+
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
@@ -1747,57 +2082,200 @@ int Static_Solver::solve(){
   int current_row_n_nodes_scanned;
   int local_node_index, current_row, current_column;
   int max_stride = 0;
+  global_size_t global_index, reduced_row_count;
 
-  std::string solver_name = "KLU2";
-  // Before we do anything, check that the solver is enabled
-  if( !Amesos2::query(solver_name) ){
-    std::cerr << solver_name << " not enabled.  Exiting..." << std::endl;
-    return EXIT_SUCCESS;	// Otherwise CTest will pick it up as
-				// failure, which it isn't really
+  Teuchos::RCP<const Teuchos::Comm<int> > comm =
+  Tpetra::getDefaultComm();
+
+  typedef Kokkos::View<Scalar*, Kokkos::LayoutRight, device_type, memory_traits> values_array;
+  typedef Kokkos::View<GO*, array_layout, device_type, memory_traits> global_indices_array;
+  typedef Kokkos::View<LO*, array_layout, device_type, memory_traits> indices_array;
+  typedef Kokkos::View<SizeType*, array_layout, device_type, memory_traits> row_pointers;
+ 
+  using vec_map_type = Tpetra::Map<LO, GO>;
+  using vec_device_type = typename vec_map_type::device_type;
+  typedef Kokkos::DualView<Scalar**, Kokkos::LayoutLeft, device_type>::t_dev vec_array;
+  //typedef Tpetra::dual_view_type::t_dev vec_array;
+
+  // Before we do anything, check that KLU2 is enabled
+  if( !Amesos2::query("KLU2") ){
+    std::cerr << "KLU2 not enabled in this run.  Exiting..." << std::endl;
+    return EXIT_SUCCESS;        // Otherwise CTest will pick it up as
+                                // failure, which it isn't really
   }
 
-  //allocate X solution vector and RHS B vector
-  CArray <real_t> X_Solve = CArray <real_t> (num_dim*nodes_per_elem);
-  CArray <real_t> B_RHS = CArray <real_t> (num_dim*nodes_per_elem);
+  size_t myRank = comm->getRank();
 
-  //Construct Solver object
-  Teuchos::RCP<Amesos2::Solver<Epetra_CrsMatrix,Epetra_MultiVector> > solver;
+  std::ostream &out = std::cout;
 
-  const Epetra_MpiComm epetracomm (MPI_COMM_WORLD);
-  typedef Epetra_CrsMatrix MAT;
-  typedef Epetra_MultiVector MV;
+  out << Amesos2::version() << std::endl << std::endl;
 
-  //Parallel map
-  Epetra_Map solvemap = Epetra_Map(num_dim*nodes_per_elem, 0, epetracomm);
+  const size_t numVectors = 1;
+  
+  //construct global data for example; normally this would be from file input and distributed
+  //according to the row map at that point
+  global_size_t nrows = num_nodes*num_dim;
+ 
+  //check for number of boundary conditions on this mpi rank
+  global_size_t nboundaries = 9;
+  global_size_t nrows_reduced = nrows - nboundaries;
 
-  //Matrix 
-  Epetra_CrsGraph Agraph = Epetra_CrsGraph(Copy, solvemap, (int*) Mass_Matrix_strides.get_pointer(),
-                           (int) DOF_Graph_Matrix.size(), (int*) DOF_Graph_Matrix.get_pointer(), (int*) DOF_Graph_Matrix.get_starts(), true);
-  Epetra_CrsMatrix Amatrix = Epetra_CrsMatrix(Copy, Agraph, (double *) Mass_Matrix.get_pointer());
-   
+  // create a Map
+  RCP<Tpetra::Map<LO,GO,node_type> > map
+    = rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced,0,comm) );
+
+  global_size_t local_nrows = map->getNodeNumElements();
+
+  global_size_t *entries_per_row = new global_size_t[local_nrows];
+  row_pointers row_offsets = row_pointers("row_offsets", local_nrows+1);
+  
+  //populate local row offset data from global data
+  global_size_t min_gid = map->getMinGlobalIndex();
+  global_size_t max_gid = map->getMaxGlobalIndex();
+  global_size_t index_base = map->getIndexBase();
+
+  //init row_offsets
+  for(int i=0; i < local_nrows+1; i++){
+    row_offsets(i) = 0;
+  }
+  
+  //count entries per row
+  for(LO i=0; i < local_nrows; i++){
+    global_index = map->getGlobalElement(i);
+    reduced_row_count = 0;
+    entries_per_row[i] = Mass_Matrix_strides(global_index);
+    for(LO j=0; j < Mass_Matrix_strides(global_index); j++){
+      if(DOF_Graph_Matrix(global_index,j)<nrows_reduced){
+        reduced_row_count++;
+      }
+    }
+    row_offsets(i+1) = reduced_row_count + row_offsets(i);
+  }
+  
+  //remove number of boundary conditions
+  global_size_t nnz = row_offsets(local_nrows);
+
+  //indices_array all_indices = indices_array("indices_array",nnz);
+  //values_array all_values = values_array("values_array",nnz);
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> all_global_indices(nnz);
+  CArrayKokkos<LO, array_layout, device_type, memory_traits> all_indices(nnz);
+  CArrayKokkos<Scalar, Kokkos::LayoutRight, device_type, memory_traits> all_values(nnz);
+  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Bview(local_nrows);
+  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Xview(local_nrows);
+
+  //set Kokkos view data
+  LO entrycount = 0;
+  for(LO i=0; i < local_nrows; i++){
+    for(LO j=0; j < entries_per_row[i]; j++){
+    if(DOF_Graph_Matrix(map->getGlobalElement(i),j)<nrows_reduced){
+    all_global_indices(entrycount) = DOF_Graph_Matrix(map->getGlobalElement(i),j);
+    all_values(entrycount) = Mass_Matrix(map->getGlobalElement(i),j);
+    entrycount++;
+    }
+    }
+  }
+  
+  //build column map
+  RCP<const Tpetra::Map<LO,GO,node_type> > colmap;
+  const RCP<const Tpetra::Map<LO,GO,node_type> > dommap = map;
+
+  Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,all_global_indices.get_kokkos_view(), nullptr);
+
+  //convert global indices to local indices using column map
+  entrycount = 0;
+  for(LO i=0; i < local_nrows; i++){
+    for(LO j=0; j < row_offsets(i+1) - row_offsets(i); j++){
+    all_indices(entrycount) = colmap->getLocalElement(all_global_indices(entrycount));
+    entrycount++;
+    }
+  }
+
+  RCP<MAT> A = rcp( new MAT(map, colmap, row_offsets, all_indices.get_kokkos_view(), all_values.get_kokkos_view()) ); // max of three entries in a row
+
+  /*
+   * We will solve a system with a known solution, for which we will be using
+   * the following matrix:
+   *
+   * [ [ 7,  0,  -3, 0,  -1, 0 ]
+   *   [ 2,  8,  0,  0,  0,  0 ]
+   *   [ 0,  0,  1,  0,  0,  0 ]
+   *   [ -3, 0,  0,  5,  0,  0 ]
+   *   [ 0,  -1, 0,  0,  4,  0 ]
+   *   [ 0,  0,  0,  -2, 0,  6 ] ]
+   *
+   */
+   RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  A->fillComplete();
+  
+  *fos << "Matrix :" << std::endl;
+  A->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
 
   // Create random X
-  Teuchos::RCP<MV> X = Teuchos::rcp( new Epetra_MultiVector(Copy, solvemap, X_Solve.get_pointer(), 1, 1) );
-  X->Random();
+  vec_array Xview_pass = vec_array("Xview_pass", local_nrows,1);
+  Xview_pass.assign_data(Xview.pointer());
+  RCP<MV> X = rcp(new MV(map, Xview_pass));
+  X->randomize();
 
-  Teuchos::RCP<MV> B = Teuchos::rcp( new Epetra_MultiVector(Copy, solvemap, B_RHS.get_pointer(), 1, 1) );
-  B->Random();
-
-  solver = Amesos2::create<MAT,MV>(solver_name, Teuchos::rcp(&Amatrix), X, B);
-
-  solver->solve();
-
-  //debug print of solution
-  //debug section; print mass matrix graph and per element map
-  */
-  /*
-  std::cout << " ------------NODAL DISPLACEMENT VECTOR--------------"<<std::endl;
-  for (int idof = 0; idof < num_nodes; idof++){
-      std::cout << "row: " << idof + 1 << " { ";
-    for (int istride = 0; istride < Mass_Matrix_strides(num_dim*idof)/num_dim; istride++){
-        std::cout << istride + 1 << " = " << Mass_Matrix(num_dim*idof,istride*num_dim) << " , " ;
+  /* Create B
+   *
+   * Use RHS:
+   *
+   *  [[-7]
+   *   [18]
+   *   [ 3]
+   *   [17]
+   *   [18]
+   *   [28]]
+   */
+  vec_array Bview_pass = vec_array("Bview", local_nrows,1);
+  //set bview to test data for debug
+  //for(LO i=0; i < local_nrows; i++)
+    //Bview(i) = Nodal_Forces(map->getGlobalElement(i));
+  entrycount = 0;
+  for(LO i=0; i < local_nrows; i++){
+    Bview(i) = 0;
+    for(LO j=0; j < row_offsets(i+1) - row_offsets(i); j++){
+      Bview(i) += all_values(entrycount++);
     }
-    std::cout << " }"<< std::endl;
   }
-  */
+  
+  Bview_pass.assign_data(Bview.pointer());
+
+  RCP<MV> B = rcp(new MV(map, Bview_pass));
+
+  //for( int i = 0; i < 6; ++i ){
+    //if( B->getMap()->isNodeGlobalElement(i) ){
+      //B->replaceGlobalValue(i,0,data[i]);
+    //}
+  //}
+
+  *fos << "RHS :" << std::endl;
+  B->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+
+  // Create solver interface to Superlu with Amesos2 factory method
+  RCP<Amesos2::Solver<MAT,MV> > solver = Amesos2::create<MAT,MV>("KLU2", A, X, B);
+
+  solver->symbolicFactorization().numericFactorization().solve();
+
+
+  /* Print the solution
+   *
+   * Should be:
+   *
+   *  [[1]
+   *   [2]
+   *   [3]
+   *   [4]
+   *   [5]
+   *   [6]]
+   */
+  
+  
+  *fos << "Solution :" << std::endl;
+  X->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  
+  return 0;
 }

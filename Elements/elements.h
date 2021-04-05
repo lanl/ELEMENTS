@@ -64,6 +64,15 @@ namespace elements{
 //==============================================================================
 
     // Used by Lobatto 1D/2D to set Lobatto quadrature points
+    void legendre_nodes_1D(
+        CArray <real_t> &legendre_nodes_1D,
+        const int &num);
+
+    void legendre_weights_1D(
+        CArray <real_t> &legendre_weights_1D,  // Labbatto weights
+        const int &num);
+
+    // Used by Lobatto 1D/2D to set Lobatto quadrature points
     void labatto_nodes_1D(
         CArray <real_t> &lab_nodes_1D,
         const int &num);
@@ -111,10 +120,6 @@ namespace elements{
 
     //DANvoid set_unit_normals(ViewCArray <real_t> &unit_normals);
     void set_unit_normals(CArray <real_t> &unit_normals);
-
-
-
-
 
     // Used by Gauss2/3D to set quadrature points
     void line_gauss_info(

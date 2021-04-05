@@ -50,3 +50,4 @@ target_include_directories(main PRIVATE ${MPI_CXX_INCLUDE_PATH})
 target_compile_options (main PRIVATE ${CMAKE_CXX_COMPILE_FLAGS})
 target_link_libraries (main ${MPI_CXX_LIBRARIES} ${MPI_CXX_LINK_FLAGS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES})
 
+add_definitions(-DHAVE_KOKKOS=1 -DTRILINOS_INTERFACE=1)

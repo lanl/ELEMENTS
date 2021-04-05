@@ -75,7 +75,11 @@
 
 
 int main(int argc, char *argv[]) {
-  Tpetra::ScopeGuard tpetraScope(&argc,&argv);
+  //Tpetra::ScopeGuard tpetraScope(&argc,&argv);
+  //initialize MPI
+  MPI_Init(&argc,&argv);
+  Teuchos::RCP<const Teuchos::Comm<int> > comm =
+    Tpetra::getDefaultComm();
 
   typedef double Scalar;
   typedef Tpetra::Map<>::local_ordinal_type LO;
@@ -116,8 +120,6 @@ int main(int argc, char *argv[]) {
                                 // failure, which it isn't really
   }
 
-  Teuchos::RCP<const Teuchos::Comm<int> > comm =
-    Tpetra::getDefaultComm();
 
   size_t myRank = comm->getRank();
 

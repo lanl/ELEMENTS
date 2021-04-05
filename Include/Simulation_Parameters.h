@@ -47,6 +47,8 @@ class Simulation_Parameters
   real_t dt_min;
   real_t dt_cfl;
   real_t dt_start;
+  real_t Elastic_Modulus, Poisson_Ratio;
+  int num_gauss_points;
 
   int rk_num_stages;
   int rk_storage;

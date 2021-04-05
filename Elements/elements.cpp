@@ -96,6 +96,67 @@ patch 4: [0,2,6,4]
 patch 6; [1,3,7,5]
 
 */
+// creates nodal positions with Gauss-Legendre quadrature rule
+void legendre_nodes_1D(
+    CArray <real_t> &legendre_nodes_1D,
+    const int &num){
+    if (num == 1){
+        legendre_nodes_1D(0) = 0.0;
+    }
+    else if (num == 2){
+        legendre_nodes_1D(0) =  -0.5773502691896257;
+        legendre_nodes_1D(1) =   0.5773502691896257;
+    }
+    else if (num == 3){
+        legendre_nodes_1D(0) = -0.774596669241483377035853079956;
+        legendre_nodes_1D(1) =  0.0;
+        legendre_nodes_1D(2) =  0.774596669241483377035853079956;
+    }
+    else if (num == 4){
+        legendre_nodes_1D(0) =  -0.8611363115940526;
+        legendre_nodes_1D(1) =  -0.3399810435848563;
+        legendre_nodes_1D(2) =  0.3399810435848563;
+        legendre_nodes_1D(3) =  0.8611363115940526;
+    }
+    else if (num == 5){
+        legendre_nodes_1D(0) =  -0.9061798459386640;
+        legendre_nodes_1D(1) =  -0.5384693101056831;
+        legendre_nodes_1D(2) =  0;
+        legendre_nodes_1D(3) =  0.5384693101056831;
+        legendre_nodes_1D(4) =  0.9061798459386640;
+    }
+} // end of legendre_nodes_1D function
+
+// creates quadrature weights for Gauss-Legendre scheme
+void legendre_weights_1D(
+    CArray <real_t> &legendre_weights_1D,  // Gauss-Legendre weights
+    const int &num){                     // Interpolation order
+    if (num == 1){
+        legendre_weights_1D(0) = 2.0;
+    }
+    else if (num == 2){
+        legendre_weights_1D(0) = 1.0;
+        legendre_weights_1D(1) = 1.0;
+    }
+    else if (num == 3){
+        legendre_weights_1D(0) =  0.555555555555555555555555555555;
+        legendre_weights_1D(1) =  0.888888888888888888888888888888;
+        legendre_weights_1D(2) =  0.555555555555555555555555555555;
+    }
+    else if (num == 4){
+        legendre_weights_1D(0) = 0.3478548451374538;
+        legendre_weights_1D(1) = 0.6521451548625461;
+        legendre_weights_1D(2) = 0.6521451548625461;
+        legendre_weights_1D(3) = 0.3478548451374538;
+    }
+    else if (num == 5){
+        legendre_weights_1D(0) = 0.2369268850561891;
+        legendre_weights_1D(1) = 0.4786286704993665;
+        legendre_weights_1D(2) = 0.5688888888888889;
+        legendre_weights_1D(3) = 0.4786286704993665;
+        legendre_weights_1D(4) = 0.2369268850561891;
+    }
+} // end of legendre_weights_1D function
 
 // creates nodal positions with Labatto spacing
 void labatto_nodes_1D(

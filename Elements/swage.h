@@ -160,7 +160,9 @@ private:
     int   num_patches_;
 
     CArray <int> patch_nodes_list_;
+    CArray <int> patch_local_node_list;
     CArray <int> cells_in_patch_list_;
+    CArray <int> cells_in_patch_local_id_list_;  //stores the local patch id for the corresponding cell
 
 
     // ---- BOUNDARY ---- //
@@ -336,6 +338,9 @@ public:
 
     // returns the global id for a cell that is connected to the patch
     int cells_in_patch(int patch_gid, int this_cell) const;
+
+    // returns the local patch id for the cell and global patch id pair
+    int cells_in_patch_local_id(int patch_gid, int this_cell) const;
           
     // returns the nodes in the patch
     int node_in_patch(int patch_gid, int patchnode_lid) const;

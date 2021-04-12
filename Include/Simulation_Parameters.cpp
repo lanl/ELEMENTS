@@ -55,7 +55,7 @@ void Simulation_Parameters::input(){
   mat_fill = (mat_fill_t *) malloc((size_t)(NF*sizeof(mat_fill_t)));
 
   Elastic_Modulus = 100;
-  Poisson_Ratio = 0.2;
+  Poisson_Ratio = 0.1;
   num_gauss_points = 2;
     
   // Global instructions

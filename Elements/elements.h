@@ -316,6 +316,9 @@ class ref_element{
         virtual int num_verts() = 0;
         virtual int num_nodes() = 0;
         virtual int num_basis() = 0;
+        
+        //list of local ids to basis functions needed to interpolate throughout a given element surface
+        CArray<int> surface_to_dof_lid;
 
         // calculate a physical position in an element for a given xi,eta
         virtual void physical_position(
@@ -353,6 +356,9 @@ class ref_element{
         virtual int num_verts() = 0;
         virtual int num_nodes() = 0;
         virtual int num_basis() = 0;
+
+        //list of local ids to basis functions needed to interpolate throughout a given element surface
+        CArray<int> surface_to_dof_lid;
 
         // calculate a physical position in an element for a given xi,eta,mu
         virtual void physical_position(
@@ -394,6 +400,9 @@ class ref_element{
     class Element4D {
 
         public:
+
+        //list of local ids to basis functions needed to interpolate throughout a given element surface
+        CArray<int> surface_to_dof_lid;
 
         // calculate a physical position in an element for a given xi,eta,mu,tau
         virtual void physical_position(
@@ -483,6 +492,8 @@ class ref_element{
 
         public:
 
+            Quad4();
+            ~Quad4();
 
             int num_verts();
             int num_nodes();
@@ -554,7 +565,8 @@ class ref_element{
 
         public:
 
-
+            Quad8();
+            ~Quad8();
             int num_verts();
             int num_nodes();
             int num_basis();
@@ -625,7 +637,8 @@ class ref_element{
 
         public:
 
-
+            Quad12();
+            ~Quad12();
             int num_verts();
             int num_nodes();
             int num_basis();
@@ -783,7 +796,8 @@ class Hex8: public Element3D {
 
         public:
 
-
+            Hex8();
+            ~Hex8();
             int num_verts();
             int num_nodes();
             int num_basis();
@@ -862,7 +876,8 @@ class Hex8: public Element3D {
 
         public:
 
-
+            Hex20();
+            ~Hex20();
             int num_verts();
             int num_nodes();
             int num_basis();
@@ -949,7 +964,8 @@ class Hex8: public Element3D {
 
         public:
 
-
+            Hex32();
+            ~Hex32();
             int num_verts();
             int num_nodes();
             int num_basis();
@@ -1189,7 +1205,7 @@ namespace elem_types
         QuadN  = 3,   // N node lagrangian quadrilateral element 
         
         // 3D element types
-        Hex8   = 4,   // 8 node serendipity hexahedral element 
+        Hex8   = 4,   // 8 node lagrangian hexahedral element 
         Hex20  = 5,   // 20 node serendipity hexahedral element 
         Hex32  = 6,   // 32 node serendipity hexahedral element 
         HexN   = 7    // N node lagrangian hexahedral element 

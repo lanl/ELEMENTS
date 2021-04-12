@@ -521,6 +521,17 @@ int mesh_t::cells_in_patch(int patch_gid, int this_cell) const
     // return the global id for the cell
     return cells_in_patch_list_(this_index);
 }
+
+// returns the global id for a cell that is connected to the patch
+// DANIELLOOK
+int mesh_t::cells_in_patch_local_id(int patch_gid, int this_cell) const
+{
+    // get the 1D index
+    int this_index = patch_gid*2 + this_cell;  // this_cell = 0 or 1
+
+    // return the global id for the cell
+    return cells_in_patch_local_id_list_(this_index);
+}
       
 // returns the nodes in the patch
 // DANIELLOOK
@@ -1171,12 +1182,14 @@ void mesh_t::build_patch_connectivity(){
     // create memory for the patch structures
     //DANcells_in_patch_list_ = new int [num_patches_*2];   // two cells per patch
     cells_in_patch_list_ = CArray <int> (num_patches_ * 2);
+    cells_in_patch_local_id_list_ = CArray <int> (num_patches_ * 2);
     //DANpatch_nodes_list_    = new int [num_patches_*4];   // four nodes per patch in hex
     patch_nodes_list_    = CArray <int> (num_patches_ * 4);
 
     // initialize the cells_in_patch_list to -1
     for (int patch_gid = 0; patch_gid < 2*num_patches_; patch_gid++){
         cells_in_patch_list_(patch_gid) = -1;
+        cells_in_patch_local_id_list_(patch_gid) = -1;
     }   
 
     for (int patch_gid = 0; patch_gid < 4*num_patches_; patch_gid++){
@@ -1214,6 +1227,7 @@ void mesh_t::build_patch_connectivity(){
                 int this_index = patch_gid*2;  // index in the list
                 
                 cells_in_patch_list_(this_index) = cell_gid;
+                cells_in_patch_local_id_list_(this_index) = patch_lid;
                 
                 // save the nodes for this patch
                 this_index = patch_gid*4;
@@ -1229,6 +1243,7 @@ void mesh_t::build_patch_connectivity(){
                 int this_index = patch_gid*2 + 1; // + num_patches_; // index in the list
 
                 cells_in_patch_list_(this_index) = cell_gid;
+                cells_in_patch_local_id_list_(this_index) = patch_lid;
             }
 
             hash_count++;

@@ -2214,6 +2214,28 @@ as follows
 
 */
 
+Quad4::Quad4() : Element2D(){
+
+  //list of local ids to basis functions needed to interpolate throughout a given element surface
+  surface_to_dof_lid = CArray<int>(4,2);
+  surface_to_dof_lid(0,0) = 0;
+  surface_to_dof_lid(0,1) = 1;
+
+  surface_to_dof_lid(1,0) = 3;
+  surface_to_dof_lid(1,1) = 2;
+
+  surface_to_dof_lid(2,0) = 0;
+  surface_to_dof_lid(2,1) = 3;
+
+  surface_to_dof_lid(3,0) = 1;
+  surface_to_dof_lid(3,1) = 2;
+
+}
+
+Quad4::~Quad4(){
+
+}
+
 real_t Quad4::ref_vert[Quad4::num_verts_*Quad4::num_dim_] = 
     
     {// listed as {Xi, Eta}
@@ -2358,6 +2380,33 @@ int Quad4::vert_node_map(const int vert_lid){
   0------4-------1
 
 */
+
+Quad8::Quad8() : Element2D(){
+
+  //list of local ids to basis functions needed to interpolate throughout a given element surface
+  surface_to_dof_lid = CArray<int>(4,3);
+
+  surface_to_dof_lid(0,0) = 0;
+  surface_to_dof_lid(0,1) = 4;
+  surface_to_dof_lid(0,2) = 1;
+
+  surface_to_dof_lid(1,0) = 3;
+  surface_to_dof_lid(1,1) = 6;
+  surface_to_dof_lid(1,2) = 2;
+
+  surface_to_dof_lid(2,0) = 0;
+  surface_to_dof_lid(2,1) = 7;
+  surface_to_dof_lid(2,2) = 3;
+
+  surface_to_dof_lid(3,0) = 1;
+  surface_to_dof_lid(3,1) = 5;
+  surface_to_dof_lid(3,2) = 2;
+
+}
+
+Quad8::~Quad8(){
+
+}
 
 real_t Quad8::ref_vert[Quad8::num_verts_*Quad8::num_dim_] = // listed as {Xi, Eta}
     {// listed as {Xi, Eta}
@@ -2578,6 +2627,36 @@ as follows
   0----4-----5---1
 
 */
+
+Quad12::Quad12() : Element2D(){
+
+  //list of local ids to basis functions needed to interpolate throughout a given element surface
+  surface_to_dof_lid = CArray<int>(4,4);
+  surface_to_dof_lid(0,0) = 0;
+  surface_to_dof_lid(0,1) = 4;
+  surface_to_dof_lid(0,2) = 5;
+  surface_to_dof_lid(0,3) = 1;
+
+  surface_to_dof_lid(1,0) = 3;
+  surface_to_dof_lid(1,1) = 7;
+  surface_to_dof_lid(1,2) = 6;
+  surface_to_dof_lid(1,3) = 2;
+
+  surface_to_dof_lid(2,0) = 0;
+  surface_to_dof_lid(2,1) = 8;
+  surface_to_dof_lid(2,2) = 11;
+  surface_to_dof_lid(2,3) = 3;
+
+  surface_to_dof_lid(3,0) = 1;
+  surface_to_dof_lid(3,1) = 9;
+  surface_to_dof_lid(3,2) = 10;
+  surface_to_dof_lid(3,3) = 2;
+
+}
+
+Quad12::~Quad12(){
+
+}
       
 real_t Quad12::ref_vert[Quad12::num_verts_*Quad12::num_dim_] = 
     {// listed as {Xi, Eta}
@@ -3083,6 +3162,50 @@ void QuadN::basis_partials (
  
 */
 
+Hex8::Hex8() : Element3D(){
+
+  //list of local ids to basis functions needed to interpolate throughout a given element surface
+  surface_to_dof_lid = CArray<int>(6,4);
+
+  //st planes first
+  surface_to_dof_lid(0,0) = 0;
+  surface_to_dof_lid(0,1) = 1;
+  surface_to_dof_lid(0,2) = 2;
+  surface_to_dof_lid(0,3) = 3;
+  
+  surface_to_dof_lid(1,0) = 4;
+  surface_to_dof_lid(1,1) = 5;
+  surface_to_dof_lid(1,2) = 6;
+  surface_to_dof_lid(1,3) = 7;
+  
+  //sw planes second
+  surface_to_dof_lid(2,0) = 0;
+  surface_to_dof_lid(2,1) = 1;
+  surface_to_dof_lid(2,2) = 4;
+  surface_to_dof_lid(2,3) = 5;
+
+  surface_to_dof_lid(3,0) = 2;
+  surface_to_dof_lid(3,1) = 3;
+  surface_to_dof_lid(3,2) = 6;
+  surface_to_dof_lid(3,3) = 7;
+  
+  //tw planes third
+  surface_to_dof_lid(4,0) = 0;
+  surface_to_dof_lid(4,1) = 2;
+  surface_to_dof_lid(4,2) = 4;
+  surface_to_dof_lid(4,3) = 6;
+
+  surface_to_dof_lid(5,0) = 1;
+  surface_to_dof_lid(5,1) = 3;
+  surface_to_dof_lid(5,2) = 5;
+  surface_to_dof_lid(5,3) = 7;
+
+}
+
+Hex8::~Hex8(){
+
+}
+
 real_t Hex8::ref_vert[Hex8::num_verts_*Hex8::num_dim_] = 
     {// listed as {Xi, Eta, Mu}
     // Bottom Nodes
@@ -3191,7 +3314,7 @@ void Hex8::partial_xi_basis(
             * (1.0 + xi_point(2)*ref_verts(vert_lid, 2));
     
             
-        std::cout << "Partial xi = " << partial_xi(vert_lid)<< std::endl;
+        //std::cout << "Partial xi = " << partial_xi(vert_lid)<< std::endl;
         // std::cout << "Vert Diff x = " << xi_point(0)-ref_verts(vert_lid, 0)<< std::endl;
         // std::cout << "Vert Diff y = " << xi_point(1)-ref_verts(vert_lid, 1)<< std::endl;
         // std::cout << "Vert Diff z = " << xi_point(2)-ref_verts(vert_lid, 2)<< std::endl;
@@ -3292,6 +3415,76 @@ as follows
   0-----8----1
 
 */
+
+Hex20::Hex20() : Element3D(){
+
+  //list of local ids to basis functions needed to interpolate throughout a given element surface
+  surface_to_dof_lid = CArray<int>(6,8);
+
+  //st planes first
+  surface_to_dof_lid(0,0) = 0;
+  surface_to_dof_lid(0,1) = 8;
+  surface_to_dof_lid(0,2) = 1;
+  surface_to_dof_lid(0,3) = 11;
+  surface_to_dof_lid(0,4) = 9;
+  surface_to_dof_lid(0,5) = 3;
+  surface_to_dof_lid(0,6) = 10;
+  surface_to_dof_lid(0,7) = 2;
+  
+  surface_to_dof_lid(1,0) = 4;
+  surface_to_dof_lid(1,1) = 12;
+  surface_to_dof_lid(1,2) = 5;
+  surface_to_dof_lid(1,3) = 15;
+  surface_to_dof_lid(1,4) = 13;
+  surface_to_dof_lid(1,5) = 7;
+  surface_to_dof_lid(1,6) = 14;
+  surface_to_dof_lid(1,7) = 6;
+  
+  //sw planes second
+  surface_to_dof_lid(3,0) = 0;
+  surface_to_dof_lid(3,1) = 8;
+  surface_to_dof_lid(3,2) = 1;
+  surface_to_dof_lid(3,3) = 16;
+  surface_to_dof_lid(3,4) = 17;
+  surface_to_dof_lid(3,5) = 4;
+  surface_to_dof_lid(3,6) = 12;
+  surface_to_dof_lid(3,7) = 5;
+
+  surface_to_dof_lid(3,0) = 3;
+  surface_to_dof_lid(3,1) = 10;
+  surface_to_dof_lid(3,2) = 2;
+  surface_to_dof_lid(3,3) = 19;
+  surface_to_dof_lid(3,4) = 18;
+  surface_to_dof_lid(3,5) = 7;
+  surface_to_dof_lid(3,6) = 14;
+  surface_to_dof_lid(3,7) = 6;
+  
+  //tw planes third
+  surface_to_dof_lid(4,0) = 0;
+  surface_to_dof_lid(4,1) = 11;
+  surface_to_dof_lid(4,2) = 3;
+  surface_to_dof_lid(4,3) = 16;
+  surface_to_dof_lid(4,4) = 19;
+  surface_to_dof_lid(4,5) = 4;
+  surface_to_dof_lid(4,6) = 15;
+  surface_to_dof_lid(4,7) = 7;
+
+  surface_to_dof_lid(5,0) = 1;
+  surface_to_dof_lid(5,1) = 9;
+  surface_to_dof_lid(5,2) = 2;
+  surface_to_dof_lid(5,3) = 17;
+  surface_to_dof_lid(5,4) = 18;
+  surface_to_dof_lid(5,5) = 5;
+  surface_to_dof_lid(5,6) = 13;
+  surface_to_dof_lid(5,7) = 6;
+
+}
+
+Hex20::~Hex20(){
+
+}
+
+
 
 real_t Hex20::ref_vert[Hex20::num_verts_*Hex20::num_dim_] = // listed as {Xi, Eta, Mu}
     // new indices for right hand coordinates
@@ -3651,7 +3844,97 @@ shown below
 */
 
 
+Hex32::Hex32() : Element3D(){
 
+  //list of local ids to basis functions needed to interpolate throughout a given element surface
+  surface_to_dof_lid = CArray<int>(6,12);
+
+  //st planes first
+  surface_to_dof_lid(0,0) = 0;
+  surface_to_dof_lid(0,1) = 16;
+  surface_to_dof_lid(0,2) = 17;
+  surface_to_dof_lid(0,3) = 1;
+  surface_to_dof_lid(0,4) = 8;
+  surface_to_dof_lid(0,5) = 9;
+  surface_to_dof_lid(0,6) = 11;
+  surface_to_dof_lid(0,7) = 10;
+  surface_to_dof_lid(0,8) = 3;
+  surface_to_dof_lid(0,9) = 19;
+  surface_to_dof_lid(0,10) = 18;
+  surface_to_dof_lid(0,11) = 2;
+  
+  surface_to_dof_lid(1,0) = 4;
+  surface_to_dof_lid(1,1) = 20;
+  surface_to_dof_lid(1,2) = 21;
+  surface_to_dof_lid(1,3) = 5;
+  surface_to_dof_lid(1,4) = 12;
+  surface_to_dof_lid(1,5) = 13;
+  surface_to_dof_lid(1,6) = 15;
+  surface_to_dof_lid(1,7) = 14;
+  surface_to_dof_lid(1,8) = 7;
+  surface_to_dof_lid(1,9) = 23;
+  surface_to_dof_lid(1,10) = 22;
+  surface_to_dof_lid(1,11) = 6;
+  
+  //sw planes second
+  surface_to_dof_lid(2,0) = 0;
+  surface_to_dof_lid(2,1) = 16;
+  surface_to_dof_lid(2,2) = 17;
+  surface_to_dof_lid(2,3) = 1;
+  surface_to_dof_lid(2,4) = 24;
+  surface_to_dof_lid(2,5) = 25;
+  surface_to_dof_lid(2,6) = 28;
+  surface_to_dof_lid(2,7) = 29;
+  surface_to_dof_lid(2,8) = 4;
+  surface_to_dof_lid(2,9) = 20;
+  surface_to_dof_lid(2,10) = 21;
+  surface_to_dof_lid(2,11) = 25;
+
+  surface_to_dof_lid(3,0) = 3;
+  surface_to_dof_lid(3,1) = 19;
+  surface_to_dof_lid(3,2) = 18;
+  surface_to_dof_lid(3,3) = 2;
+  surface_to_dof_lid(3,4) = 27;
+  surface_to_dof_lid(3,5) = 26;
+  surface_to_dof_lid(3,6) = 31;
+  surface_to_dof_lid(3,7) = 30;
+  surface_to_dof_lid(3,8) = 7;
+  surface_to_dof_lid(3,9) = 23;
+  surface_to_dof_lid(3,10) = 22;
+  surface_to_dof_lid(3,11) = 6;
+  
+  //tw planes third
+  surface_to_dof_lid(4,0) = 0;
+  surface_to_dof_lid(4,1) = 8;
+  surface_to_dof_lid(4,2) = 11;
+  surface_to_dof_lid(4,3) = 3;
+  surface_to_dof_lid(4,4) = 24;
+  surface_to_dof_lid(4,5) = 27;
+  surface_to_dof_lid(4,6) = 28;
+  surface_to_dof_lid(4,7) = 31;
+  surface_to_dof_lid(4,8) = 4;
+  surface_to_dof_lid(4,9) = 12;
+  surface_to_dof_lid(4,10) = 15;
+  surface_to_dof_lid(4,11) = 7;
+
+  surface_to_dof_lid(5,0) = 1;
+  surface_to_dof_lid(5,1) = 9;
+  surface_to_dof_lid(5,2) = 10;
+  surface_to_dof_lid(5,3) = 2;
+  surface_to_dof_lid(5,4) = 25;
+  surface_to_dof_lid(5,5) = 26;
+  surface_to_dof_lid(5,6) = 29;
+  surface_to_dof_lid(5,7) = 30;
+  surface_to_dof_lid(5,8) = 5;
+  surface_to_dof_lid(5,9) = 13;
+  surface_to_dof_lid(5,10) = 14;
+  surface_to_dof_lid(5,11) = 6;
+
+}
+
+Hex32::~Hex32(){
+
+}
 
 real_t Hex32::ref_vert[Hex32::num_verts_*Hex32::num_dim_] = // listed as {Xi, Eta, Mu}
     {

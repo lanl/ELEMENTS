@@ -55,6 +55,8 @@ public:
   void get_nodal_jacobian();
 
   void Element_Material_Properties(size_t, real_t &Element_Modulus, real_t &Poisson_Ratio);
+
+  void Force_Vector_Construct();
   
   swage::mesh_t *init_mesh;
   swage::mesh_t *mesh;

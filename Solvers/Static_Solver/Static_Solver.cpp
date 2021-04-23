@@ -72,11 +72,7 @@ num_cells in element = (p_order*2)^3
 #include "state.h"
 #include "Simulation_Parameters.h"
 #include "Static_Solver.h"
-#include "Epetra_MpiComm.h"
 #include "Teuchos_RCP.hpp"
-#include "Epetra_Map.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_MultiVector.h"
 #include "Amesos2_Version.hpp"
 #include "Amesos2.hpp"
 
@@ -100,8 +96,6 @@ Static_Solver::Static_Solver() : Solver(){
     mesh = new swage::mesh_t();
 
     element_select = new elements::element_selector();
-
-    Epetra_MpiComm comm (MPI_COMM_WORLD);
 }
 
 Static_Solver::~Static_Solver(){
@@ -127,12 +121,12 @@ void Static_Solver::run(int argc, char *argv[]){
     // ---- Read intial mesh, refine, and build connectivity ---- //
     read_mesh(argv[1]);
     std::cout << "Num elements = " << mesh->num_elems() << std::endl;
-    
-    //allocate and fill sparse structures needed for global solution
-    init_global();
 
     // ---- Find Boundaries on mesh ---- //
     generate_bcs();
+    
+    //allocate and fill sparse structures needed for global solution
+    init_global();
 
     //assemble the global solution (mass matrix etc. and nodal forces)
     assemble();
@@ -416,7 +410,7 @@ void Static_Solver::read_mesh(char *MESH){
 
 
 void Static_Solver::generate_bcs(){
-
+    
     // build boundary mesh patches
     mesh->build_bdy_patches();
     std::cout << "number of boundary patches = " << mesh->num_bdy_patches() << std::endl;
@@ -424,28 +418,42 @@ void Static_Solver::generate_bcs(){
     // set the number of boundary sets
     
     int num_bdy_sets = simparam->NB;
-    
+    int num_surface_force_sets = simparam->NBSF;
+    int num_surface_disp_sets = simparam->NBD;
+    int current_bdy_id = 0;
+    int bdy_set_id;
+    int surf_force_set_id = 0;
+    int surf_disp_set_id = 0;
+
     mesh->init_bdy_sets(num_bdy_sets);
+    Boundary_Condition_Type_List = CArray<size_t>(num_bdy_sets); 
+    Boundary_Surface_Force_Densities = CArray<real_t>(num_surface_force_sets,3);
+    Boundary_Surface_Displacements = CArray<real_t>(num_surface_disp_sets,3);
     
     // tag the x=0 plane,  (Direction, value, bdy_set)
     std::cout << "tagging x = 0 " << std::endl;
     int bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     real_t value = 0.0;
-    int bdy_set_id = 0;
+    bdy_set_id = current_bdy_id++;
     mesh->tag_bdys(bc_tag, value, bdy_set_id);
+    Boundary_Condition_Type_List(bdy_set_id) = DISPLACEMENT_CONDITION;
+    Boundary_Surface_Displacements(surf_disp_set_id,0) = 0;
+    Boundary_Surface_Displacements(surf_disp_set_id,1) = 0;
+    Boundary_Surface_Displacements(surf_disp_set_id,2) = 0;
+    surf_disp_set_id++;
     
     std::cout << "tagged a set " << std::endl;
     std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
-
-
+    /*
+    //This part should be changed so it interfaces with simparam to handle multiple input cases
     // tag the y=0 plane,  (Direction, value, bdy_set)
     std::cout << "tagging y = 0 " << std::endl;
     bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     value = 0.0;
     bdy_set_id = 1;
     mesh->tag_bdys(bc_tag, value, bdy_set_id);
-    
+    Boundary_Condition_Type_List(bdy_set_id) = DISPLACEMENT_CONDITION;
     std::cout << "tagged a set " << std::endl;
     std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
@@ -457,29 +465,33 @@ void Static_Solver::generate_bcs(){
     value = 0.0;
     bdy_set_id = 2;
     mesh->tag_bdys(bc_tag, value, bdy_set_id);
-    
+    Boundary_Condition_Type_List(bdy_set_id) = DISPLACEMENT_CONDITION;
     std::cout << "tagged a set " << std::endl;
     std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
-    
+    */
 
     std::cout << "tagging x = 2 " << std::endl;
     bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     value = 2.0;
-    bdy_set_id = 3;
+    bdy_set_id = current_bdy_id++;
     mesh->tag_bdys(bc_tag, value, bdy_set_id);
-
+    Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+    Boundary_Surface_Force_Densities(surf_force_set_id,0) = 2;
+    Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
+    Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
+    surf_force_set_id++;
     std::cout << "tagged a set " << std::endl;
     std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
 
-
+    /*
     std::cout << "tagging y = 2 " << std::endl;
     bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     value = 2.0;
     bdy_set_id = 4;
     mesh->tag_bdys(bc_tag, value, bdy_set_id);
-
+    Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
     std::cout << "tagged a set " << std::endl;
     std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
@@ -489,10 +501,11 @@ void Static_Solver::generate_bcs(){
     value = 2.0;
     bdy_set_id = 5;
     mesh->tag_bdys(bc_tag, value, bdy_set_id);
-
+    Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
     std::cout << "tagged a set " << std::endl;
     std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
+    */
 } // end generate_bcs
 
 
@@ -1647,7 +1660,7 @@ void Static_Solver::init_global(){
       DOF_Graph_Matrix(idof,istride) = Graph_Matrix(idof/num_dim,istride/num_dim)*num_dim + istride%num_dim;
     }
   
-  /*
+  
   //debug print nodal positions and indices
   std::cout << " ------------NODAL POSITIONS--------------"<<std::endl;
   for (int inode = 0; inode < num_nodes; inode++){
@@ -1658,7 +1671,7 @@ void Static_Solver::init_global(){
     std::cout << " }"<< std::endl;
   }
   //debug print element edof
-
+  /*
   std::cout << " ------------ELEMENT EDOF--------------"<<std::endl;
 
   for (int ielem = 0; ielem < num_elems; ielem++){
@@ -1671,6 +1684,7 @@ void Static_Solver::init_global(){
     }
     std::cout << std::endl;
   }
+  
 
   //debug section; print mass matrix graph and per element map
   std::cout << " ------------SPARSE GRAPH MATRIX--------------"<<std::endl;
@@ -1689,7 +1703,7 @@ void Static_Solver::init_global(){
     for (int lnode = 0; lnode < nodes_per_elem; lnode++){
         std::cout << "{ "<< std::endl;
         for (int jnode = 0; jnode < nodes_per_elem; jnode++){
-          std::cout <<"(" << lnode+1 << "," << jnode+1 << ")"<< " = " << Global_Mass_Matrix_Assembly_Map(ielem,lnode, jnode) + 1 << " ";
+          std::cout <<"(" << lnode+1 << "," << jnode+1 << "," << mesh->nodes_in_cell(ielem,lnode)+1 << ")"<< " = " << Global_Mass_Matrix_Assembly_Map(ielem,lnode, jnode) + 1 << " ";
         }
         std::cout << " }"<< std::endl;
     }
@@ -1723,15 +1737,21 @@ void Static_Solver::assemble(){
       for(int jnode = 0; jnode < nodes_per_elem; jnode++){
         
         current_column = num_dim*Global_Mass_Matrix_Assembly_Map(ielem,inode,jnode);
-        for (int idim = 0; idim < num_dim; idim++)
-          for (int jdim = 0; jdim < num_dim; jdim++)
+        for (int idim = 0; idim < num_dim; idim++){
+          for (int jdim = 0; jdim < num_dim; jdim++){
+            if(current_row + idim==15&&current_column + jdim==4)
+            std::cout << " Local Mass matrix contribution for row " << current_row + idim +1 << " and column " << current_column + jdim + 1 << " : " <<
+            Local_Mass_Matrix(num_dim*inode + idim,num_dim*jnode + jdim) << " from " << ielem +1 << " i: " << num_dim*inode+idim+1 << " j: " << num_dim*jnode + jdim +1 << std::endl << std::endl;
             Mass_Matrix(current_row + idim, current_column + jdim) += Local_Mass_Matrix(num_dim*inode + idim,num_dim*jnode + jdim);
+          }
+        }
       }
     }
   }
 
   //debug print of mass matrix
   //debug section; print mass matrix graph and per element map
+  /*
   std::cout << " ------------SPARSE MASS MATRIX--------------"<<std::endl;
   for (int idof = 0; idof < num_nodes*num_dim; idof++){
       std::cout << "row: " << idof + 1 << " { ";
@@ -1740,12 +1760,15 @@ void Static_Solver::assemble(){
     }
     std::cout << " }"<< std::endl;
   }
-
+  */
   //force vector construction
   
   //initialize
   for(int i=0; i < num_dim*num_nodes; i++)
     Nodal_Forces(i) = 0;
+  
+  //Tag nodes for Boundary conditions such as displacements
+  Displacement_Boundary_Conditions();
 
   //Construct applied nodal force vector with quadrature
   Force_Vector_Construct();
@@ -1927,6 +1950,26 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
           basis_derivative_s3(basis_index_y)*(JT_row1(0)*JT_row2(1)-JT_row2(0)*JT_row1(1)));
 
           matrix_term = matrix_subterm1 + matrix_subterm2 + matrix_subterm3;
+
+           //debug print block
+           /*
+          if(ielem==0&&((jfill==3&&ifill==3))){
+           std::cout << " ------------quadrature point "<< iquad + 1 <<"--------------"<<std::endl;
+           std::cout << "row: " << ifill + 1 << " { ";
+           std::cout << jfill + 1 << " = " << matrix_subterm1 << " , " << " bi:JT11 "<<JT_row1(0) << " bi:JT12 " <<  JT_row1(1) << " bi:JT13 " << JT_row1(2)
+           <<  " bi:JT21 "<<JT_row2(0) << " bi:JT22 " <<  JT_row2(1) << " bi:JT23 " << JT_row2(2) <<  " bi:JT31 "<<JT_row3(0) << " bi:JT32 " <<  JT_row3(1) << " bi:JT33 " << JT_row3(2);
+           std::cout << " }"<< std::endl;
+          }
+          
+          if(ielem==0&&((jfill==3&&ifill==3))){
+           std::cout << " ------------quadrature point "<< iquad + 1 <<"--------------"<<std::endl;
+           std::cout << "row: " << ifill + 1 << " { ";
+           std::cout << jfill + 1 << " = " << matrix_term*Elastic_Constant/Jacobian << " , " << " basis index x s1 "<< basis_derivative_s1(basis_index_x) << " quad x " <<  quad_coordinate(0)
+           <<  " quad y "<< quad_coordinate(1) << " quad z " <<  quad_coordinate(2) << "Force Vector " << Local_Matrix(3,3);
+           std::cout << " }"<< std::endl;
+          }
+          */
+          
         }
 
         if(index_x==1&&index_y==1){
@@ -2015,7 +2058,8 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
           basis_derivative_s3(swap2)*(JT_row1(0)*JT_row2(2)-JT_row2(0)*JT_row1(2)));
 
           matrix_term = matrix_subterm1 + matrix_subterm2;
-          /*
+
+          /* debug print block
           if(iquad==0&&((jfill==4&&ifill==0)||(jfill==0&&ifill==4))){
            std::cout << " ------------LOCAL MASS MATRIX "<< ielem + 1 <<"--------------"<<std::endl;
            std::cout << "row: " << ifill + 1 << " { ";
@@ -2084,9 +2128,11 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
         
         Local_Matrix(ifill,jfill) += Elastic_Constant*quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*matrix_term/Jacobian;
       }
-      //debug print of local mass matrix
       
-      if(iquad==0){
+    }
+
+    //debug print of local mass matrix
+      /*
       std::cout << " ------------LOCAL MASS MATRIX "<< ielem + 1 <<"--------------"<<std::endl;
       for (int idof = 0; idof < num_dim*nodes_per_elem; idof++){
         std::cout << "row: " << idof + 1 << " { ";
@@ -2095,9 +2141,22 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
         }
         std::cout << " }"<< std::endl;
         }
-      }
-      
-    }
+      */
+}
+
+/* ----------------------------------------------------------------------
+   Loop through applied boundary conditions and tag node ids to redecule 
+   necessary rows and columns from the assembled linear system
+------------------------------------------------------------------------- */
+
+void Static_Solver::Displacement_Boundary_Conditions(){
+  int num_bdy_patches_in_set;
+  int current_node_index;
+  int num_bdy_sets = mesh->num_bdy_sets();
+  for(int iboundary = 0; iboundary < num_bdy_sets; iboundary++){
+    if(Boundary_Condition_Type_List(iboundary)!=
+      DISPLACEMENT_CONDITION||X_DISPLACEMENT_CONDITION||Y_DISPLACEMENT_CONDITION||Z_DISPLACEMENT_CONDITION) continue;
+  }
 
 }
 
@@ -2113,12 +2172,7 @@ void Static_Solver::Force_Vector_Construct(){
   int nodes_per_elem = mesh->num_nodes_in_elem();
   int num_gauss_points = simparam->num_gauss_points;
   int z_quad,y_quad,x_quad, direct_product_count;
-  int current_element_index, local_surface_id;
-  real_t force_density[3];
-  force_density[0] = 2;
-  force_density[1] = 0;
-  force_density[2] = 0;
-
+  int current_element_index, local_surface_id, surf_dim1, surf_dim2;
   CArray<real_t> legendre_nodes_1D(num_gauss_points);
   CArray<real_t> legendre_weights_1D(num_gauss_points);
   real_t pointer_quad_coordinate[num_dim];
@@ -2127,34 +2181,71 @@ void Static_Solver::Force_Vector_Construct(){
   ViewCArray<real_t> quad_coordinate(pointer_quad_coordinate,num_dim);
   ViewCArray<real_t> quad_coordinate_weight(pointer_quad_coordinate_weight,num_dim);
   ViewCArray<real_t> interpolated_point(pointer_interpolated_point,num_dim);
+  real_t force_density[3], wedge_product;
+  
+  CArray<real_t> JT_row1(num_dim);
+  CArray<real_t> JT_row2(num_dim);
+  CArray<real_t> JT_row3(num_dim);
 
-  real_t pointer_basis_values[elem->num_basis()];
-  ViewCArray<real_t> basis_values(pointer_basis_values,elem->num_basis());
+  int num_bdy_patches_in_set;
+  int current_node_index;
+  int num_bdy_sets = mesh->num_bdy_sets();
+  int surface_force_set_id = 0;
 
-  //initialize weights
-  elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
-  elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
+  /*Loop through boundary sets and check if they apply surface forces.
+  These sets can have overlapping nodes since applied loading conditions
+  are assumed to be additive*/
+  for(int iboundary = 0; iboundary < num_bdy_sets; iboundary++){
+    if(Boundary_Condition_Type_List(iboundary)!=LOADING_CONDITION) continue;
+    std::cout << "I REACHED THE LOADING BOUNDARY CONDITION" <<std::endl;
+    num_bdy_patches_in_set = mesh->num_bdy_patches_in_set(iboundary);
+    
+    force_density[0] = Boundary_Surface_Force_Densities(surface_force_set_id,0);
+    force_density[1] = Boundary_Surface_Force_Densities(surface_force_set_id,1);
+    force_density[2] = Boundary_Surface_Force_Densities(surface_force_set_id,2);
+    surface_force_set_id++;
 
-  direct_product_count = std::pow(num_gauss_points,num_dim-1);
-  //loop over boundary sets for their applied forces; use quadrature for distributed forces
-  for (int bdy_patch_gid = 0; bdy_patch_gid < mesh->num_bdy_patches_in_set(3); bdy_patch_gid++){
+    real_t pointer_basis_values[elem->num_basis()];
+    ViewCArray<real_t> basis_values(pointer_basis_values,elem->num_basis());
+
+    //initialize weights
+    elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
+    elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
+
+    direct_product_count = std::pow(num_gauss_points,num_dim-1);
+    //loop over boundary sets for their applied forces; use quadrature for distributed forces
+    for (int bdy_patch_gid = 0; bdy_patch_gid < num_bdy_patches_in_set; bdy_patch_gid++){
                 
     // get the global id for this boundary patch
-    int patch_gid = mesh->bdy_patches_in_set(3, bdy_patch_gid);
+    int patch_gid = mesh->bdy_patches_in_set(iboundary, bdy_patch_gid);
     current_element_index = mesh->cells_in_patch(patch_gid,0);
     if(current_element_index==-1) current_element_index = mesh->cells_in_patch(patch_gid,1);
     local_surface_id = mesh->cells_in_patch_local_id(patch_gid,0);
-    if(current_element_index==-1) local_surface_id = mesh->cells_in_patch_local_id(patch_gid,1);
+    if(local_surface_id==-1) local_surface_id = mesh->cells_in_patch_local_id(patch_gid,1);
 
     //loop over quadrature points if this is a distributed force
     for(int iquad=0; iquad < direct_product_count; iquad++){
       
       if(Element_Types(current_element_index)==4){
+
+      real_t pointer_basis_values[8];
+      real_t pointer_basis_derivative_s1[8];
+      real_t pointer_basis_derivative_s2[8];
+      ViewCArray<real_t> basis_values(pointer_basis_values,8);
+      ViewCArray<real_t> basis_derivative_s1(pointer_basis_derivative_s1,8);
+      ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,8);
+      CArray<real_t> nodal_positions(4,num_dim);
+      CArray<real_t> surf_basis_derivative_s1(4,num_dim);
+      CArray<real_t> surf_basis_derivative_s2(4,num_dim);
+      CArray<real_t> surf_basis_values(4,num_dim);
       int local_nodes[4];
       //set current quadrature point
       y_quad = iquad / num_gauss_points;
       x_quad = iquad % num_gauss_points;
+      
       if(local_surface_id<2){
+      surf_dim1 = 0;
+      surf_dim2 = 1;
       quad_coordinate(0) = legendre_nodes_1D(x_quad);
       quad_coordinate(1) = legendre_nodes_1D(y_quad);
       //set to -1 or 1 for an isoparametric space
@@ -2164,6 +2255,8 @@ void Static_Solver::Force_Vector_Construct(){
         quad_coordinate(2) = 1;
       }
       else if(local_surface_id<4){
+      surf_dim1 = 0;
+      surf_dim2 = 2;
       quad_coordinate(0) = legendre_nodes_1D(x_quad);
       quad_coordinate(2) = legendre_nodes_1D(y_quad);
       //set to -1 or 1 for an isoparametric space
@@ -2173,6 +2266,8 @@ void Static_Solver::Force_Vector_Construct(){
         quad_coordinate(1) = 1;
       }
       else if(local_surface_id<6){
+      surf_dim1 = 1;
+      surf_dim2 = 2;
       quad_coordinate(1) = legendre_nodes_1D(x_quad);
       quad_coordinate(2) = legendre_nodes_1D(y_quad);
       //set to -1 or 1 for an isoparametric space
@@ -2186,33 +2281,106 @@ void Static_Solver::Force_Vector_Construct(){
       quad_coordinate_weight(0) = legendre_weights_1D(x_quad);
       quad_coordinate_weight(1) = legendre_weights_1D(y_quad);
 
-      //compute shape functions at this point for the element type
-      elem->basis(basis_values,quad_coordinate);
-
       //find local dof set for this surface
       local_nodes[0] = elem->surface_to_dof_lid(local_surface_id,0);
       local_nodes[1] = elem->surface_to_dof_lid(local_surface_id,1);
       local_nodes[2] = elem->surface_to_dof_lid(local_surface_id,2);
       local_nodes[3] = elem->surface_to_dof_lid(local_surface_id,3);
 
+      //acquire set of nodes for this face
+      for(int node_loop=0; node_loop < 4; node_loop++){
+        current_node_index = mesh->nodes_in_cell(current_element_index, local_nodes[node_loop]);
+        nodal_positions(node_loop,0) = mesh->node_coords(current_node_index,0);
+        nodal_positions(node_loop,1) = mesh->node_coords(current_node_index,1);
+        nodal_positions(node_loop,2) = mesh->node_coords(current_node_index,2);
+      }
+
+      if(local_surface_id<2){
+        //compute shape function derivatives
+        elem->partial_xi_basis(basis_derivative_s1,quad_coordinate);
+        elem->partial_eta_basis(basis_derivative_s2,quad_coordinate);
+      }
+      else if(local_surface_id<4){
+        //compute shape function derivatives
+        elem->partial_xi_basis(basis_derivative_s1,quad_coordinate);
+        elem->partial_mu_basis(basis_derivative_s2,quad_coordinate);
+      }
+      else if(local_surface_id<6){
+        //compute shape function derivatives
+        elem->partial_eta_basis(basis_derivative_s1,quad_coordinate);
+        elem->partial_mu_basis(basis_derivative_s2,quad_coordinate);
+      }
+
+      //set values relevant to this surface
+      for(int node_loop=0; node_loop < 4; node_loop++){
+        surf_basis_derivative_s1(node_loop) = basis_derivative_s1(local_nodes[node_loop]);
+        surf_basis_derivative_s2(node_loop) = basis_derivative_s2(local_nodes[node_loop]);
+      }
+
+      //compute derivatives of x,y,z w.r.t the s,t coordinates of this surface; needed to compute dA in surface integral
+      //derivative of x,y,z w.r.t s
+      JT_row1(0) = 0;
+      JT_row1(1) = 0;
+      JT_row1(2) = 0;
+      for(int node_loop=0; node_loop < 4; node_loop++){
+        JT_row1(0) += nodal_positions(node_loop,0)*surf_basis_derivative_s1(node_loop);
+        JT_row1(1) += nodal_positions(node_loop,1)*surf_basis_derivative_s1(node_loop);
+        JT_row1(2) += nodal_positions(node_loop,2)*surf_basis_derivative_s1(node_loop);
+      }
+
+      //derivative of x,y,z w.r.t t
+      JT_row2(0) = 0;
+      JT_row2(1) = 0;
+      JT_row2(2) = 0;
+      for(int node_loop=0; node_loop < 4; node_loop++){
+        JT_row2(0) += nodal_positions(node_loop,0)*surf_basis_derivative_s2(node_loop);
+        JT_row2(1) += nodal_positions(node_loop,1)*surf_basis_derivative_s2(node_loop);
+        JT_row2(2) += nodal_positions(node_loop,2)*surf_basis_derivative_s2(node_loop);
+      }
+      
+
+      //compute jacobian for this surface
+      //compute the determinant of the Jacobian
+      wedge_product = sqrt(pow(JT_row1(1)*JT_row2(2)-JT_row2(1)*JT_row1(2),2)+
+               pow(JT_row1(0)*JT_row2(2)-JT_row2(0)*JT_row1(2),2)+
+               pow(JT_row1(0)*JT_row2(1)-JT_row2(0)*JT_row1(1),2));
+
+      //compute shape functions at this point for the element type
+      elem->basis(basis_values,quad_coordinate);
+
       // loop over nodes of this face and 
       for(int node_count = 0; node_count < 4; node_count++){
             
         int node_gid = mesh->nodes_in_cell(current_element_index, local_nodes[node_count]);
-
-        // Set nodal temp to zero
-        for(int idim = 0; idim < num_dim; idim++)
-          if(force_density[idim]!=0)
-          Nodal_Forces(num_dim*node_gid + idim) = quad_coordinate_weight(0)*quad_coordinate_weight(1)*force_density[idim]*basis_values(local_nodes[node_count]);
         
+        /*
+        //debug print block
+        std::cout << " ------------Element "<< current_element_index + 1 <<"--------------"<<std::endl;
+        std::cout <<  " = , " << " Wedge Product: " << wedge_product << " local node " << local_nodes[node_count] << " node " << node_gid + 1<< " : s " 
+        << quad_coordinate(0) << " t " << quad_coordinate(1) << " w " << quad_coordinate(2) << " basis value  "<< basis_values(local_nodes[node_count])
+        << " Nodal Force value"<< Nodal_Forces(num_dim*node_gid)+wedge_product*quad_coordinate_weight(0)*quad_coordinate_weight(1)*force_density[0]*basis_values(local_nodes[node_count]);
+        
+        std::cout << " }"<< std::endl;
+        //end debug print block
+        */
+
+        // Accumulate force vector contribution from this quadrature point
+        for(int idim = 0; idim < num_dim; idim++){
+          if(force_density[idim]!=0)
+          //Nodal_Forces(num_dim*node_gid + idim) += wedge_product*quad_coordinate_weight(0)*quad_coordinate_weight(1)*force_density[idim]*basis_values(local_nodes[node_count]);
+          Nodal_Forces(num_dim*node_gid + idim) += wedge_product*quad_coordinate_weight(0)*quad_coordinate_weight(1)*force_density[idim]*basis_values(local_nodes[node_count]);
+        }
       }
       }
     }
-  } 
+  }
+  }
 
     //apply line distribution of forces
 
     //apply point forces
+
+    //apply contribution from non-zero displacement boundary conditions
 
 }
 
@@ -2396,10 +2564,14 @@ int Static_Solver::solve(){
    *   [18]
    *   [28]]
    */
-  vec_array Bview_pass = vec_array("Bview", local_nrows,1);
-  //set bview to test data for debug
+  
+  vec_array Bview_pass = vec_array("Bview_pass", local_nrows,1);
+
+  //set bview to force vector data
   for(LO i=0; i < local_nrows; i++)
-    Bview(i) = Nodal_Forces(map->getGlobalElement(i));
+    Bview(i) = Nodal_Forces(map->getGlobalElement(i) + nboundaries);
+
+  //debug block
   //entrycount = 0;
   //for(LO i=0; i < local_nrows; i++){
     //Bview(i) = 0;
@@ -2421,6 +2593,27 @@ int Static_Solver::solve(){
   *fos << "RHS :" << std::endl;
   B->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
+
+  //debug block to print nodal positions corresponding to nodes of reduced system
+  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Node_Positions_View(local_nrows);
+
+  vec_array Node_Positions_pass = vec_array("Node_Positions", local_nrows,1);
+
+  //debug print of nodal positions
+  for(LO i=0; i < local_nrows/num_dim; i++){
+    for (int j =0; j < num_dim; j++)
+    Node_Positions_View(i*num_dim+j) = mesh->node_coords(map->getGlobalElement(i)+nboundaries/num_dim,j);
+  }
+
+  Node_Positions_pass.assign_data(Node_Positions_View.pointer());
+
+  RCP<MV> Node_Positions = rcp(new MV(map, Node_Positions_pass));
+
+  *fos << "Node_Positions :" << std::endl;
+  Node_Positions->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+
+  //end of debug block
 
   // Create solver interface to Superlu with Amesos2 factory method
   RCP<Amesos2::Solver<MAT,MV> > solver = Amesos2::create<MAT,MV>("KLU2", A, X, B);

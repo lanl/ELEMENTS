@@ -56,6 +56,8 @@ public:
 
   void Element_Material_Properties(size_t, real_t &Element_Modulus, real_t &Poisson_Ratio);
 
+  void Displacement_Boundary_Conditions();
+
   void Force_Vector_Construct();
   
   swage::mesh_t *init_mesh;
@@ -77,6 +79,23 @@ public:
   CArray <real_t> Nodal_Forces;
   CArray <size_t> Mass_Matrix_strides;
   CArray <size_t> Graph_Matrix_strides;
+
+  //types of boundary conditions
+  enum bc_type {NONE,DISPLACEMENT_CONDITION, X_DISPLACEMENT_CONDITION,
+   Y_DISPLACEMENT_CONDITION, Z_DISPLACEMENT_CONDITION, LOADING_CONDITION};
+
+  //lists what kind of boundary condition each boundary set is assigned to
+  CArray <size_t> Boundary_Condition_Type_List;
+  //lists what kind of boundary condition this node is subjected to if any
+  CArray <size_t> Node_Boundary_Condition_Type;
+  //stores the displacement value for the boundary condition on this node
+  CArray <real_t> Node_Displacement_Boundary_Conditions;
+  //stores applied point forces on nodes
+  CArray <real_t> Node_Force_Boundary_Conditions;
+  //constant surface force densities corresponding to each boundary set (provide varying field later)
+  CArray <real_t> Boundary_Surface_Force_Densities;
+  //constant displacement condition applied to all nodes on a boundary surface (convenient option to avoid specifying nodes)
+  CArray <real_t> Boundary_Surface_Displacements;
   
 };
 

@@ -28,6 +28,8 @@ class Simulation_Parameters
   int NC; // number of contours
   int NF; // number of fill
   int NB; // number of boundary patch sets to tag
+  int NBSF; //number of surface force density boundary conditions
+  int NBD; //number of displacement boundary conditions
 
 
   // --- Graphics output variables ---

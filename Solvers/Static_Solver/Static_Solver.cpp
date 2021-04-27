@@ -128,7 +128,7 @@ void Static_Solver::run(int argc, char *argv[]){
     //allocate and fill sparse structures needed for global solution
     init_global();
 
-    //assemble the global solution (mass matrix etc. and nodal forces)
+    //assemble the global solution (stiffness matrix etc. and nodal forces)
     assemble();
 
     //debug solve; move later after bcs applies
@@ -420,15 +420,19 @@ void Static_Solver::generate_bcs(){
     int num_bdy_sets = simparam->NB;
     int num_surface_force_sets = simparam->NBSF;
     int num_surface_disp_sets = simparam->NBD;
+    int num_dim = simparam->num_dim;
+    int num_nodes = mesh->num_nodes();
     int current_bdy_id = 0;
     int bdy_set_id;
     int surf_force_set_id = 0;
     int surf_disp_set_id = 0;
 
     mesh->init_bdy_sets(num_bdy_sets);
-    Boundary_Condition_Type_List = CArray<size_t>(num_bdy_sets); 
+    Boundary_Condition_Type_List = CArray<int>(num_bdy_sets); 
     Boundary_Surface_Force_Densities = CArray<real_t>(num_surface_force_sets,3);
     Boundary_Surface_Displacements = CArray<real_t>(num_surface_disp_sets,3);
+    //initialize
+    for(int ibdy=0; ibdy < num_bdy_sets; ibdy++) Boundary_Condition_Type_List(ibdy) = NONE;
     
     // tag the x=0 plane,  (Direction, value, bdy_set)
     std::cout << "tagging x = 0 " << std::endl;
@@ -506,6 +510,15 @@ void Static_Solver::generate_bcs(){
     std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
     std::cout << std::endl;
     */
+
+    //allocate nodal data
+    Node_DOF_Boundary_Condition_Type = CArray<int>(num_nodes *num_dim);
+    Node_DOF_Displacement_Boundary_Conditions = CArray<real_t>(num_nodes *num_dim);
+    Node_DOF_Force_Boundary_Conditions = CArray<real_t>(num_nodes *num_dim);
+
+    //initialize
+    for(int init=0; init < num_nodes*num_dim; init++)
+      Node_DOF_Boundary_Condition_Type(init) = NONE;
 } // end generate_bcs
 
 
@@ -1499,7 +1512,7 @@ void Static_Solver::init_global(){
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
   int nodes_per_elem = mesh->num_nodes_in_elem();
-  Mass_Matrix_strides = CArray <size_t> (num_nodes*num_dim);
+  Stiffness_Matrix_strides = CArray <size_t> (num_nodes*num_dim);
   CArray <int> Graph_Fill = CArray <int> (num_nodes);
   //CArray <int> nodes_in_cell_list_ = mesh->nodes_in_cell_list_;
   CArray <size_t> current_row_nodes_scanned;
@@ -1514,8 +1527,8 @@ void Static_Solver::init_global(){
   CArray <size_t> Graph_Matrix_strides_initial = CArray <size_t> (num_nodes);
   Graph_Matrix_strides = CArray <size_t> (num_nodes);
 
-  //allocate storage for the sparse mass matrix map used in the assembly process
-  Global_Mass_Matrix_Assembly_Map = CArray <size_t> (num_elems,nodes_per_elem,nodes_per_elem);
+  //allocate storage for the sparse stiffness matrix map used in the assembly process
+  Global_Stiffness_Matrix_Assembly_Map = CArray <size_t> (num_elems,nodes_per_elem,nodes_per_elem);
 
   //allocate array used to determine global node repeats in the sparse graph later
   CArray <int> global_nodes_used = CArray <int> (num_nodes);
@@ -1570,7 +1583,7 @@ void Static_Solver::init_global(){
         Element_local_indices(local_node_index,current_column_index,2) = jnode;
 
         //fill forward map
-        Global_Mass_Matrix_Assembly_Map(ielem,lnode,jnode) = current_column_index;
+        Global_Stiffness_Matrix_Assembly_Map(ielem,lnode,jnode) = current_column_index;
       }
       Graph_Fill(local_node_index) += nodes_per_elem;
     }
@@ -1590,7 +1603,7 @@ void Static_Solver::init_global(){
         element_row_index = Element_local_indices(inode,istride,1);
         element_column_index = Element_local_indices(inode,istride,2);
 
-        Global_Mass_Matrix_Assembly_Map(current_element_index,element_row_index, element_column_index) 
+        Global_Stiffness_Matrix_Assembly_Map(current_element_index,element_row_index, element_column_index) 
             = column_index(current_node);   
 
         
@@ -1606,7 +1619,7 @@ void Static_Solver::init_global(){
         element_row_index = Element_local_indices(inode,istride,1);
         element_column_index = Element_local_indices(inode,istride,2);
 
-        Global_Mass_Matrix_Assembly_Map(current_element_index,element_row_index, element_column_index) 
+        Global_Stiffness_Matrix_Assembly_Map(current_element_index,element_row_index, element_column_index) 
             = istride;
 
         //now that the element map information has been copied, copy the global node index and delete the last index
@@ -1642,21 +1655,21 @@ void Static_Solver::init_global(){
   
   /*At this stage the sparse graph should have unique global indices on each row.
     The constructed Assembly map (to the global sparse matrix)
-    is used to loop over each element's local mass matrix in the assembly process.*/
+    is used to loop over each element's local stiffness matrix in the assembly process.*/
   
-  //expand strides for mass matrix by multipling by dim
+  //expand strides for stiffness matrix by multipling by dim
   for(int inode = 0; inode < num_nodes; inode++){
     for (int idim = 0; idim < num_dim; idim++)
-    Mass_Matrix_strides(num_dim*inode + idim) = num_dim*Graph_Matrix_strides(inode);
+    Stiffness_Matrix_strides(num_dim*inode + idim) = num_dim*Graph_Matrix_strides(inode);
   }
 
-  Mass_Matrix = RaggedRightArray <real_t> (Mass_Matrix_strides);
-  DOF_Graph_Matrix = RaggedRightArray <size_t> (Mass_Matrix_strides);
+  Stiffness_Matrix = RaggedRightArray <real_t> (Stiffness_Matrix_strides);
+  DOF_Graph_Matrix = RaggedRightArray <size_t> (Stiffness_Matrix_strides);
 
-  //initialize Mass Matrix entries to 0
+  //initialize stiffness Matrix entries to 0
   for (int idof = 0; idof < num_dim*num_nodes; idof++)
-    for (int istride = 0; istride < Mass_Matrix_strides(idof); istride++){
-      Mass_Matrix(idof,istride) = 0;
+    for (int istride = 0; istride < Stiffness_Matrix_strides(idof); istride++){
+      Stiffness_Matrix(idof,istride) = 0;
       DOF_Graph_Matrix(idof,istride) = Graph_Matrix(idof/num_dim,istride/num_dim)*num_dim + istride%num_dim;
     }
   
@@ -1686,7 +1699,7 @@ void Static_Solver::init_global(){
   }
   
 
-  //debug section; print mass matrix graph and per element map
+  //debug section; print stiffness matrix graph and per element map
   std::cout << " ------------SPARSE GRAPH MATRIX--------------"<<std::endl;
   for (int inode = 0; inode < num_nodes; inode++){
       std::cout << "row: " << inode + 1 << " { ";
@@ -1703,7 +1716,7 @@ void Static_Solver::init_global(){
     for (int lnode = 0; lnode < nodes_per_elem; lnode++){
         std::cout << "{ "<< std::endl;
         for (int jnode = 0; jnode < nodes_per_elem; jnode++){
-          std::cout <<"(" << lnode+1 << "," << jnode+1 << "," << mesh->nodes_in_cell(ielem,lnode)+1 << ")"<< " = " << Global_Mass_Matrix_Assembly_Map(ielem,lnode, jnode) + 1 << " ";
+          std::cout <<"(" << lnode+1 << "," << jnode+1 << "," << mesh->nodes_in_cell(ielem,lnode)+1 << ")"<< " = " << Global_Stiffness_Matrix_Assembly_Map(ielem,lnode, jnode) + 1 << " ";
         }
         std::cout << " }"<< std::endl;
     }
@@ -1714,7 +1727,7 @@ void Static_Solver::init_global(){
 }
 
 /* ----------------------------------------------------------------------
-   Assemble the Sparse Mass Matrix and force vector
+   Assemble the Sparse Stiffness Matrix and force vector
 ------------------------------------------------------------------------- */
 
 void Static_Solver::assemble(){
@@ -1725,38 +1738,42 @@ void Static_Solver::assemble(){
   int current_row_n_nodes_scanned;
   int local_node_index, current_row, current_column;
   int max_stride = 0;
-  CArray <real_t> Local_Mass_Matrix = CArray <real_t> (num_dim*nodes_per_elem,num_dim*nodes_per_elem);
+  CArray <real_t> Local_Stiffness_Matrix = CArray <real_t> (num_dim*nodes_per_elem,num_dim*nodes_per_elem);
 
-  //assemble the global mass matrix
+  //assemble the global stiffness matrix
   for (int ielem = 0; ielem < num_elems; ielem++){
-    //construct local mass matrix for this element
-    local_matrix(ielem, Local_Mass_Matrix);
+    //construct local stiffness matrix for this element
+    local_matrix(ielem, Local_Stiffness_Matrix);
     //assign entries of this local matrix to the sparse global matrix storage;
     for (int inode = 0; inode < nodes_per_elem; inode++){
       current_row = num_dim*mesh->nodes_in_cell_list_(ielem,inode);
       for(int jnode = 0; jnode < nodes_per_elem; jnode++){
         
-        current_column = num_dim*Global_Mass_Matrix_Assembly_Map(ielem,inode,jnode);
+        current_column = num_dim*Global_Stiffness_Matrix_Assembly_Map(ielem,inode,jnode);
         for (int idim = 0; idim < num_dim; idim++){
           for (int jdim = 0; jdim < num_dim; jdim++){
-            if(current_row + idim==15&&current_column + jdim==4)
-            std::cout << " Local Mass matrix contribution for row " << current_row + idim +1 << " and column " << current_column + jdim + 1 << " : " <<
-            Local_Mass_Matrix(num_dim*inode + idim,num_dim*jnode + jdim) << " from " << ielem +1 << " i: " << num_dim*inode+idim+1 << " j: " << num_dim*jnode + jdim +1 << std::endl << std::endl;
-            Mass_Matrix(current_row + idim, current_column + jdim) += Local_Mass_Matrix(num_dim*inode + idim,num_dim*jnode + jdim);
+
+            //debug print
+            //if(current_row + idim==15&&current_column + jdim==4)
+            //std::cout << " Local stiffness matrix contribution for row " << current_row + idim +1 << " and column " << current_column + jdim + 1 << " : " <<
+            //Local_Stiffness_Matrix(num_dim*inode + idim,num_dim*jnode + jdim) << " from " << ielem +1 << " i: " << num_dim*inode+idim+1 << " j: " << num_dim*jnode + jdim +1 << std::endl << std::endl;
+            //end debug
+
+            Stiffness_Matrix(current_row + idim, current_column + jdim) += Local_Stiffness_Matrix(num_dim*inode + idim,num_dim*jnode + jdim);
           }
         }
       }
     }
   }
 
-  //debug print of mass matrix
-  //debug section; print mass matrix graph and per element map
+  //debug print of stiffness matrix
+  //debug section; print stiffness matrix graph and per element map
   /*
-  std::cout << " ------------SPARSE MASS MATRIX--------------"<<std::endl;
+  std::cout << " ------------SPARSE STIFFNESS MATRIX--------------"<<std::endl;
   for (int idof = 0; idof < num_nodes*num_dim; idof++){
       std::cout << "row: " << idof + 1 << " { ";
-    for (int istride = 0; istride < Mass_Matrix_strides(idof); istride++){
-        std::cout << istride + 1 << " = " << Mass_Matrix(idof,istride) << " , " ;
+    for (int istride = 0; istride < Stiffness_Matrix_strides(idof); istride++){
+        std::cout << istride + 1 << " = " << Stiffness_Matrix(idof,istride) << " , " ;
     }
     std::cout << " }"<< std::endl;
   }
@@ -1787,7 +1804,7 @@ void Static_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Mo
 }
 
 /* ----------------------------------------------------------------------
-   Construct the local mass matrix
+   Construct the local stiffness matrix
 ------------------------------------------------------------------------- */
 
 void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
@@ -1844,7 +1861,7 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
   Shear_Term = 0.5-Poisson_Ratio;
   Pressure_Term = 1 - Poisson_Ratio;
 
-  //initialize local mass matrix storage
+  //initialize local stiffness matrix storage
   for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
       for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++)
       Local_Matrix(ifill,jfill) = 0;
@@ -1923,7 +1940,7 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
         basis_index_x = ifill/num_dim;
         basis_index_y = jfill/num_dim;
 
-        //compute mass matrix terms involving derivatives of the shape function and cofactor determinants from cramers rule
+        //compute stiffness matrix terms involving derivatives of the shape function and cofactor determinants from cramers rule
         if(index_x==0&&index_y==0){
           matrix_subterm1 = Pressure_Term*(basis_derivative_s1(basis_index_x)*
           (JT_row2(1)*JT_row3(2)-JT_row3(1)*JT_row2(2))-
@@ -2061,7 +2078,7 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
 
           /* debug print block
           if(iquad==0&&((jfill==4&&ifill==0)||(jfill==0&&ifill==4))){
-           std::cout << " ------------LOCAL MASS MATRIX "<< ielem + 1 <<"--------------"<<std::endl;
+           std::cout << " ------------LOCAL STIFFNESS MATRIX "<< ielem + 1 <<"--------------"<<std::endl;
            std::cout << "row: " << ifill + 1 << " { ";
            std::cout << jfill + 1 << " = " << matrix_subterm2 << " , " << " bi:JT11 "<<JT_row1(0) << " bi:JT12 " <<  JT_row1(1) << " bi:JT13 " << JT_row1(2)
            <<  " bi:JT21 "<<JT_row2(0) << " bi:JT22 " <<  JT_row2(1) << " bi:JT23 " << JT_row2(2) <<  " bi:JT31 "<<JT_row3(0) << " bi:JT32 " <<  JT_row3(1) << " bi:JT33 " << JT_row3(2);
@@ -2131,9 +2148,9 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
       
     }
 
-    //debug print of local mass matrix
+    //debug print of local stiffness matrix
       /*
-      std::cout << " ------------LOCAL MASS MATRIX "<< ielem + 1 <<"--------------"<<std::endl;
+      std::cout << " ------------LOCAL STIFFNESS MATRIX "<< ielem + 1 <<"--------------"<<std::endl;
       for (int idof = 0; idof < num_dim*nodes_per_elem; idof++){
         std::cout << "row: " << idof + 1 << " { ";
         for (int istride = 0; istride < num_dim*nodes_per_elem; istride++){
@@ -2151,12 +2168,109 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
 
 void Static_Solver::Displacement_Boundary_Conditions(){
   int num_bdy_patches_in_set;
-  int current_node_index;
+  int warning_flag = 0;
+  int current_node_index, patch_gid, current_node_id;
+  int num_nodes = mesh->num_nodes();
   int num_bdy_sets = mesh->num_bdy_sets();
+  int surface_disp_set_id = 0;
+  int num_dim = simparam->num_dim;
+  int bc_option, bc_dim_set[3];
+  CArray<real_t> displacement(num_dim);
+  CArray<size_t> Displacement_Conditions(num_dim);
+  CArray<size_t> first_condition_per_node(num_nodes*num_dim);
+  Number_DOF_BCS = 0;
+  Displacement_Conditions(0) = X_DISPLACEMENT_CONDITION;
+  Displacement_Conditions(1) = Y_DISPLACEMENT_CONDITION;
+  Displacement_Conditions(2) = Z_DISPLACEMENT_CONDITION;
+
+  //initialize to -1 (DO NOT make -1 an index for bdy sets)
+  for(int inode = 0 ; inode < num_nodes*num_dim; inode++)
+    first_condition_per_node(inode) = -1;
+  
+  //scan for surface method of setting fixed nodal displacements
   for(int iboundary = 0; iboundary < num_bdy_sets; iboundary++){
-    if(Boundary_Condition_Type_List(iboundary)!=
-      DISPLACEMENT_CONDITION||X_DISPLACEMENT_CONDITION||Y_DISPLACEMENT_CONDITION||Z_DISPLACEMENT_CONDITION) continue;
+    
+    if(Boundary_Condition_Type_List(iboundary)==DISPLACEMENT_CONDITION){bc_option=3;}
+    else if(Boundary_Condition_Type_List(iboundary)==X_DISPLACEMENT_CONDITION){bc_option=0;}
+    else if(Boundary_Condition_Type_List(iboundary)==Y_DISPLACEMENT_CONDITION){bc_option=1;}
+    else if(Boundary_Condition_Type_List(iboundary)==Z_DISPLACEMENT_CONDITION){bc_option=2;}
+    else{
+      continue;
+    }
+      
+      //debug print of surface conditions
+      //std::cout << " Surface BC types " << Boundary_Condition_Type_List(iboundary) <<std::endl;
+
+      num_bdy_patches_in_set = mesh->num_bdy_patches_in_set(iboundary);
+      if(bc_option==0) {
+        bc_dim_set[0]=1;
+        displacement(0) = Boundary_Surface_Displacements(surface_disp_set_id,0);
+      }
+      else if(bc_option==1) {
+        bc_dim_set[1]=1;
+        displacement(1) = Boundary_Surface_Displacements(surface_disp_set_id,1);
+      }
+      else if(bc_option==2) {
+        bc_dim_set[2]=1;
+        displacement(2) = Boundary_Surface_Displacements(surface_disp_set_id,2);
+      }
+      else if(bc_option==3) {
+        bc_dim_set[0]=1;
+        bc_dim_set[1]=1;
+        bc_dim_set[2]=1;
+        displacement(0) = Boundary_Surface_Displacements(surface_disp_set_id,0);
+        displacement(1) = Boundary_Surface_Displacements(surface_disp_set_id,1);
+        displacement(2) = Boundary_Surface_Displacements(surface_disp_set_id,2);
+      }
+      surface_disp_set_id++;
+      
+      //loop over boundary set patches for their respective nodes
+      for (int bdy_patch_gid = 0; bdy_patch_gid < num_bdy_patches_in_set; bdy_patch_gid++){
+        // get the global id for this boundary patch
+        patch_gid = mesh->bdy_patches_in_set(iboundary, bdy_patch_gid);
+        for(int inode = 0; inode < 4; inode++){
+          current_node_id = mesh->node_in_patch(patch_gid, inode);
+          
+          /*
+          //debug print of nodal bc settings
+          std::cout << " Node BC types " << Node_DOF_Boundary_Condition_Type(current_node_id);
+          std::cout << " node: " << inode << " { ";
+          for (int istride = 0; istride < num_dim; istride++){
+            std::cout << mesh->node_coords(current_node_id,istride) << " , ";
+          }
+          std::cout << " }"<< std::endl;
+          */
+
+          for(int idim=0; idim < num_dim; idim++){
+          //warning for reapplied a displacement boundary condition (For now there is an output flag being set that triggers output later)
+          if(Node_DOF_Boundary_Condition_Type(current_node_id*num_dim + idim)==DISPLACEMENT_CONDITION||
+          Node_DOF_Boundary_Condition_Type(current_node_id*num_dim + idim)==Displacement_Conditions(idim)){
+            //if overlap is just due to the loop over patches, a warning is not needed
+            if(first_condition_per_node(current_node_id*num_dim + idim)!=iboundary) warning_flag = 1;
+          }
+          else{
+            if(bc_dim_set[idim]){
+              first_condition_per_node(current_node_id*num_dim + idim) = iboundary;
+              Node_DOF_Boundary_Condition_Type(current_node_id*num_dim+idim) = Boundary_Condition_Type_List(iboundary);
+              Node_DOF_Displacement_Boundary_Conditions(current_node_id*num_dim+idim) = displacement(idim);
+              Number_DOF_BCS++;
+            }
+          }
+          }
+        }
+      }
   }
+
+  //scan for direct setting of nodal displacements from input
+  //indices for nodal BC settings referred to here start at num_bdy_sets
+
+  //debug print of nodal bc settings
+  for(int inode=0; inode < num_nodes*num_dim; inode++)
+  std::cout << " Node BC types " << Node_DOF_Boundary_Condition_Type(inode) <<std::endl;
+
+  //print warning for overlapping boundary conditions
+  if(warning_flag)
+  std::cout << std::endl << "One or more displacement boundary conditions overlap on a subset of nodes; please revise input" << std::endl << std::endl;
 
 }
 
@@ -2197,7 +2311,7 @@ void Static_Solver::Force_Vector_Construct(){
   are assumed to be additive*/
   for(int iboundary = 0; iboundary < num_bdy_sets; iboundary++){
     if(Boundary_Condition_Type_List(iboundary)!=LOADING_CONDITION) continue;
-    std::cout << "I REACHED THE LOADING BOUNDARY CONDITION" <<std::endl;
+    //std::cout << "I REACHED THE LOADING BOUNDARY CONDITION" <<std::endl;
     num_bdy_patches_in_set = mesh->num_bdy_patches_in_set(iboundary);
     
     force_density[0] = Boundary_Surface_Force_Densities(surface_force_set_id,0);
@@ -2431,7 +2545,6 @@ int Static_Solver::solve(){
   using vec_map_type = Tpetra::Map<LO, GO>;
   using vec_device_type = typename vec_map_type::device_type;
   typedef Kokkos::DualView<Scalar**, Kokkos::LayoutLeft, device_type>::t_dev vec_array;
-  //typedef Tpetra::dual_view_type::t_dev vec_array;
 
   // Before we do anything, check that KLU2 is enabled
   if( !Amesos2::query("KLU2") ){
@@ -2453,187 +2566,188 @@ int Static_Solver::solve(){
   global_size_t nrows = num_nodes*num_dim;
  
   //check for number of boundary conditions on this mpi rank
-  global_size_t nboundaries = 9;
+  global_size_t nboundaries = Number_DOF_BCS;
   global_size_t nrows_reduced = nrows - nboundaries;
 
-  // create a Map
+  //Rebalance distribution of the global stiffness matrix rows here since
+  //bc rows and columns are being removed.
+  // create a Map for the global stiffness matrix (move this up in the code later)
   RCP<Tpetra::Map<LO,GO,node_type> > map
-    = rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced,0,comm) );
-
+    = rcp( new Tpetra::Map<LO,GO,node_type>(nrows,0,comm) );
+  
   global_size_t local_nrows = map->getNodeNumElements();
-
-  global_size_t *entries_per_row = new global_size_t[local_nrows];
-  row_pointers row_offsets = row_pointers("row_offsets", local_nrows+1);
   
   //populate local row offset data from global data
   global_size_t min_gid = map->getMinGlobalIndex();
   global_size_t max_gid = map->getMaxGlobalIndex();
   global_size_t index_base = map->getIndexBase();
 
+  global_size_t *entries_per_row = new global_size_t[local_nrows];
+  row_pointers row_offsets = row_pointers("row_offsets", local_nrows+1);
+
   //init row_offsets
   for(int i=0; i < local_nrows+1; i++){
     row_offsets(i) = 0;
   }
-  
-  //count entries per row
+
+  //allocate upper bound storage for global indices this task owns for the reduced stiffness matrix
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> my_reduced_global_indices_buffer(local_nrows);
+
+  //find out which rows to remove from the global stiffness matrix due to boundary conditions
+  size_t index_counter = 0;
   for(LO i=0; i < local_nrows; i++){
     global_index = map->getGlobalElement(i);
+    //change to local index access when rowmap moves up i.e. Node_DOF_Boundary_Condition_Type stores local node data
+    if((Node_DOF_Boundary_Condition_Type(global_index)!=DISPLACEMENT_CONDITION)&&
+       (Node_DOF_Boundary_Condition_Type(global_index)!=X_DISPLACEMENT_CONDITION)&&
+       (Node_DOF_Boundary_Condition_Type(global_index)!=Y_DISPLACEMENT_CONDITION)&&
+       (Node_DOF_Boundary_Condition_Type(global_index)!=Z_DISPLACEMENT_CONDITION))
+    my_reduced_global_indices_buffer(index_counter++) = global_index;
+  }
+
+  //allocate storage with no extra spaces for global indices this task owns for the reduced stiffness matrix
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> my_reduced_global_indices(index_counter);
+
+  //copy values from buffer to compressed array
+  for(int ifill=0; ifill < index_counter; ifill++)
+    my_reduced_global_indices(ifill) = my_reduced_global_indices_buffer(ifill);
+  
+  //debug print of nodal bc settings
+  //for(int inode=0; inode < index_counter; inode++)
+  //std::cout << " my_reduced_global_indices " << my_reduced_global_indices(inode) <<std::endl;
+  
+  // create a Map for the reduced global stiffness matrix (BC rows removed)
+  RCP<Tpetra::Map<LO,GO,node_type> > reduced_map
+    = rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced,my_reduced_global_indices.get_kokkos_view(),0,comm) );
+  
+  //local rows for the reduced stiffness matrix
+  global_size_t local_nrows_reduced = reduced_map->getNodeNumElements();
+
+  global_size_t *reduced_entries_per_row = new global_size_t[local_nrows_reduced];
+  row_pointers reduced_row_offsets = row_pointers("reduced_row_offsets", local_nrows_reduced+1);
+
+  //init row_offsets
+  for(int i=0; i < local_nrows_reduced+1; i++){
+    reduced_row_offsets(i) = 0;
+  }
+  
+  //count entries per row (doesn't count nodal indices that correspond to displacement boundary conditions)
+  for(LO i=0; i < local_nrows_reduced; i++){
+    global_index = reduced_map->getGlobalElement(i);
     reduced_row_count = 0;
-    entries_per_row[i] = Mass_Matrix_strides(global_index);
-    for(LO j=0; j < Mass_Matrix_strides(global_index); j++){
-      if(DOF_Graph_Matrix(global_index,j)<nrows_reduced){
+    reduced_entries_per_row[i] = Stiffness_Matrix_strides(global_index);
+    for(LO j=0; j < reduced_entries_per_row[i]; j++){
+      if((Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=X_DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=Y_DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=Z_DISPLACEMENT_CONDITION)){
         reduced_row_count++;
       }
     }
-    row_offsets(i+1) = reduced_row_count + row_offsets(i);
+    reduced_row_offsets(i+1) = reduced_row_count + reduced_row_offsets(i);
   }
   
   //remove number of boundary conditions
-  global_size_t nnz = row_offsets(local_nrows);
+  global_size_t nnz = reduced_row_offsets(local_nrows_reduced);
 
   //indices_array all_indices = indices_array("indices_array",nnz);
   //values_array all_values = values_array("values_array",nnz);
   CArrayKokkos<GO, array_layout, device_type, memory_traits> all_global_indices(nnz);
   CArrayKokkos<LO, array_layout, device_type, memory_traits> all_indices(nnz);
   CArrayKokkos<Scalar, Kokkos::LayoutRight, device_type, memory_traits> all_values(nnz);
-  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Bview(local_nrows);
-  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Xview(local_nrows);
+  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Bview(local_nrows_reduced);
+  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Xview(local_nrows_reduced);
 
   //set Kokkos view data
   LO entrycount = 0;
-  for(LO i=0; i < local_nrows; i++){
-    for(LO j=0; j < entries_per_row[i]; j++){
-    if(DOF_Graph_Matrix(map->getGlobalElement(i),j)<nrows_reduced){
-    all_global_indices(entrycount) = DOF_Graph_Matrix(map->getGlobalElement(i),j);
-    all_values(entrycount) = Mass_Matrix(map->getGlobalElement(i),j);
-    entrycount++;
-    }
+  for(LO i=0; i < local_nrows_reduced; i++){
+    global_index = reduced_map->getGlobalElement(i);
+    for(LO j=0; j < reduced_entries_per_row[i]; j++){
+      if((Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=X_DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=Y_DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=Z_DISPLACEMENT_CONDITION)){
+        all_global_indices(entrycount) = DOF_Graph_Matrix(reduced_map->getGlobalElement(i),j);
+        all_values(entrycount) = Stiffness_Matrix(reduced_map->getGlobalElement(i),j);
+        entrycount++;
+      }
     }
   }
   
   //build column map
   RCP<const Tpetra::Map<LO,GO,node_type> > colmap;
-  const RCP<const Tpetra::Map<LO,GO,node_type> > dommap = map;
+  const RCP<const Tpetra::Map<LO,GO,node_type> > dommap = reduced_map;
 
   Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,all_global_indices.get_kokkos_view(), nullptr);
 
   //convert global indices to local indices using column map
   entrycount = 0;
-  for(LO i=0; i < local_nrows; i++){
-    for(LO j=0; j < row_offsets(i+1) - row_offsets(i); j++){
+  for(LO i=0; i < local_nrows_reduced; i++){
+    for(LO j=0; j < reduced_row_offsets(i+1) - reduced_row_offsets(i); j++){
     all_indices(entrycount) = colmap->getLocalElement(all_global_indices(entrycount));
     entrycount++;
     }
   }
 
-  RCP<MAT> A = rcp( new MAT(map, colmap, row_offsets, all_indices.get_kokkos_view(), all_values.get_kokkos_view()) ); // max of three entries in a row
+  RCP<MAT> A = rcp( new MAT(reduced_map, colmap, reduced_row_offsets, all_indices.get_kokkos_view(), all_values.get_kokkos_view()) );
 
-  /*
-   * We will solve a system with a known solution, for which we will be using
-   * the following matrix:
-   *
-   * [ [ 7,  0,  -3, 0,  -1, 0 ]
-   *   [ 2,  8,  0,  0,  0,  0 ]
-   *   [ 0,  0,  1,  0,  0,  0 ]
-   *   [ -3, 0,  0,  5,  0,  0 ]
-   *   [ 0,  -1, 0,  0,  4,  0 ]
-   *   [ 0,  0,  0,  -2, 0,  6 ] ]
-   *
-   */
    RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
   A->fillComplete();
-  
+  //This completes the setup for A matrix of the linear system
+
+  //debug print of A matrix
   *fos << "Matrix :" << std::endl;
   A->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
-
-  // Create random X
-  vec_array Xview_pass = vec_array("Xview_pass", local_nrows,1);
+  
+  // Create random X vector
+  vec_array Xview_pass = vec_array("Xview_pass", local_nrows_reduced,1);
   Xview_pass.assign_data(Xview.pointer());
-  RCP<MV> X = rcp(new MV(map, Xview_pass));
+  RCP<MV> X = rcp(new MV(reduced_map, Xview_pass));
   X->randomize();
 
-  /* Create B
-   *
-   * Use RHS:
-   *
-   *  [[-7]
-   *   [18]
-   *   [ 3]
-   *   [17]
-   *   [18]
-   *   [28]]
-   */
-  
-  vec_array Bview_pass = vec_array("Bview_pass", local_nrows,1);
+  // Create Kokkos view of RHS B vector (Force Vector)  
+  vec_array Bview_pass = vec_array("Bview_pass", local_nrows_reduced,1);
 
   //set bview to force vector data
-  for(LO i=0; i < local_nrows; i++)
-    Bview(i) = Nodal_Forces(map->getGlobalElement(i) + nboundaries);
-
-  //debug block
-  //entrycount = 0;
-  //for(LO i=0; i < local_nrows; i++){
-    //Bview(i) = 0;
-    //for(LO j=0; j < row_offsets(i+1) - row_offsets(i); j++){
-      //Bview(i) += all_values(entrycount++);
-    //}
-  //}
+  for(LO i=0; i < local_nrows_reduced; i++)
+    Bview(i) = Nodal_Forces(reduced_map->getGlobalElement(i));
   
   Bview_pass.assign_data(Bview.pointer());
 
-  RCP<MV> B = rcp(new MV(map, Bview_pass));
-
-  //for( int i = 0; i < 6; ++i ){
-    //if( B->getMap()->isNodeGlobalElement(i) ){
-      //B->replaceGlobalValue(i,0,data[i]);
-    //}
-  //}
+  RCP<MV> B = rcp(new MV(reduced_map, Bview_pass));
 
   *fos << "RHS :" << std::endl;
   B->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
 
   //debug block to print nodal positions corresponding to nodes of reduced system
-  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Node_Positions_View(local_nrows);
+  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Node_Positions_View(local_nrows_reduced);
 
-  vec_array Node_Positions_pass = vec_array("Node_Positions", local_nrows,1);
+  vec_array Node_Positions_pass = vec_array("Node_Positions", local_nrows_reduced,1);
 
-  //debug print of nodal positions
-  for(LO i=0; i < local_nrows/num_dim; i++){
+  //print the nodal positions
+  for(LO i=0; i < local_nrows_reduced/num_dim; i++){
     for (int j =0; j < num_dim; j++)
-    Node_Positions_View(i*num_dim+j) = mesh->node_coords(map->getGlobalElement(i)+nboundaries/num_dim,j);
+    Node_Positions_View(i*num_dim+j) = mesh->node_coords(reduced_map->getGlobalElement(i),j);
   }
 
   Node_Positions_pass.assign_data(Node_Positions_View.pointer());
 
-  RCP<MV> Node_Positions = rcp(new MV(map, Node_Positions_pass));
+  RCP<MV> Node_Positions = rcp(new MV(reduced_map, Node_Positions_pass));
 
   *fos << "Node_Positions :" << std::endl;
   Node_Positions->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
-
   //end of debug block
 
-  // Create solver interface to Superlu with Amesos2 factory method
+  // Create solver interface to KLU2 with Amesos2 factory method
   RCP<Amesos2::Solver<MAT,MV> > solver = Amesos2::create<MAT,MV>("KLU2", A, X, B);
-
+  
+  //Solve the system
   solver->symbolicFactorization().numericFactorization().solve();
-
-
-  /* Print the solution
-   *
-   * Should be:
-   *
-   *  [[1]
-   *   [2]
-   *   [3]
-   *   [4]
-   *   [5]
-   *   [6]]
-   */
   
-  
+  //Print solution vector
   *fos << "Solution :" << std::endl;
   X->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;

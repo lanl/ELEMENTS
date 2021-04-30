@@ -477,12 +477,12 @@ void Static_Solver::generate_bcs(){
 
     std::cout << "tagging x = 2 " << std::endl;
     bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-    value = 2.0;
+    value = 1.0;
     bdy_set_id = current_bdy_id++;
     mesh->tag_bdys(bc_tag, value, bdy_set_id);
     Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-    Boundary_Surface_Force_Densities(surf_force_set_id,0) = 2;
-    Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
+    Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
+    Boundary_Surface_Force_Densities(surf_force_set_id,1) = 2;
     Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
     surf_force_set_id++;
     std::cout << "tagged a set " << std::endl;
@@ -1743,7 +1743,7 @@ void Static_Solver::assemble(){
   //assemble the global stiffness matrix
   for (int ielem = 0; ielem < num_elems; ielem++){
     //construct local stiffness matrix for this element
-    local_matrix(ielem, Local_Stiffness_Matrix);
+    local_matrix_multiply(ielem, Local_Stiffness_Matrix);
     //assign entries of this local matrix to the sparse global matrix storage;
     for (int inode = 0; inode < nodes_per_elem; inode++){
       current_row = num_dim*mesh->nodes_in_cell_list_(ielem,inode);
@@ -1768,7 +1768,7 @@ void Static_Solver::assemble(){
 
   //debug print of stiffness matrix
   //debug section; print stiffness matrix graph and per element map
-  /*
+  
   std::cout << " ------------SPARSE STIFFNESS MATRIX--------------"<<std::endl;
   for (int idof = 0; idof < num_nodes*num_dim; idof++){
       std::cout << "row: " << idof + 1 << " { ";
@@ -1777,7 +1777,7 @@ void Static_Solver::assemble(){
     }
     std::cout << " }"<< std::endl;
   }
-  */
+  
   //force vector construction
   
   //initialize
@@ -2088,7 +2088,7 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
         }
 
         if((index_x==0&&index_y==2)||(index_x==2&&index_y==0)){
-          if(index_x==2&&index_y==0){
+          if(index_x==2&index_y==0){
             swap1 = basis_index_x;
             swap2 = basis_index_y;
           }
@@ -2159,6 +2159,334 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
         std::cout << " }"<< std::endl;
         }
       */
+}
+
+/* ----------------------------------------------------------------------
+   Construct the local stiffness matrix
+------------------------------------------------------------------------- */
+
+void Static_Solver::local_matrix_multiply(int ielem, CArray <real_t> &Local_Matrix){
+  int num_dim = simparam->num_dim;
+  int num_elems = mesh->num_elems();
+  int num_nodes = mesh->num_nodes();
+  int nodes_per_elem = elem->num_basis();
+  int num_gauss_points = simparam->num_gauss_points;
+  int z_quad,y_quad,x_quad, direct_product_count;
+
+  direct_product_count = std::pow(num_gauss_points,num_dim);
+  real_t Elastic_Constant, Shear_Term, Pressure_Term, matrix_term;
+  real_t matrix_subterm1, matrix_subterm2, matrix_subterm3, Jacobian;
+  real_t Element_Modulus, Poisson_Ratio;
+  CArray<real_t> legendre_nodes_1D(num_gauss_points);
+  CArray<real_t> legendre_weights_1D(num_gauss_points);
+  real_t pointer_quad_coordinate[num_dim];
+  real_t pointer_quad_coordinate_weight[num_dim];
+  real_t pointer_interpolated_point[num_dim];
+  real_t pointer_JT_row1[num_dim];
+  real_t pointer_JT_row2[num_dim];
+  real_t pointer_JT_row3[num_dim];
+  ViewCArray<real_t> quad_coordinate(pointer_quad_coordinate,num_dim);
+  ViewCArray<real_t> quad_coordinate_weight(pointer_quad_coordinate_weight,num_dim);
+  ViewCArray<real_t> interpolated_point(pointer_interpolated_point,num_dim);
+  ViewCArray<real_t> JT_row1(pointer_JT_row1,num_dim);
+  ViewCArray<real_t> JT_row2(pointer_JT_row2,num_dim);
+  ViewCArray<real_t> JT_row3(pointer_JT_row3,num_dim);
+
+  real_t pointer_basis_values[elem->num_basis()];
+  real_t pointer_basis_derivative_s1[elem->num_basis()];
+  real_t pointer_basis_derivative_s2[elem->num_basis()];
+  real_t pointer_basis_derivative_s3[elem->num_basis()];
+  ViewCArray<real_t> basis_values(pointer_basis_values,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s1(pointer_basis_derivative_s1,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
+  CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
+  size_t Brows;
+  if(num_dim==2) Brows = 3;
+  if(num_dim==3) Brows = 6;
+  CArray<real_t> B_matrix_contribution(Brows,num_dim*elem->num_basis());
+  CArray<real_t> B_matrix(Brows,num_dim*elem->num_basis());
+  CArray<real_t> CB_matrix_contribution(Brows,num_dim*elem->num_basis());
+  CArray<real_t> CB_matrix(Brows,num_dim*elem->num_basis());
+  CArray<real_t> C_matrix(Brows,Brows);
+
+  //initialize weights
+  elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
+  elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
+
+  //acquire set of nodes for this local element
+  for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+    nodal_positions(node_loop,0) = mesh->node_coords((mesh->nodes_in_cell_list_(ielem, node_loop)),0);
+    nodal_positions(node_loop,1) = mesh->node_coords((mesh->nodes_in_cell_list_(ielem, node_loop)),1);
+    nodal_positions(node_loop,2) = mesh->node_coords((mesh->nodes_in_cell_list_(ielem, node_loop)),2);
+  }
+
+  //look up element material properties
+  Element_Material_Properties((size_t) ielem,Element_Modulus,Poisson_Ratio);
+  Elastic_Constant = Element_Modulus/(1+Poisson_Ratio)/(1-2*Poisson_Ratio);
+  Shear_Term = 0.5-Poisson_Ratio;
+  Pressure_Term = 1 - Poisson_Ratio;
+
+  //initialize C matrix
+  for(int irow = 0; irow < Brows; irow++)
+    for(int icol = 0; icol < Brows; icol++)
+      C_matrix(irow,icol) = 0;
+
+  //compute Elastic (C) matrix
+  if(num_dim==2){
+  C_matrix(0,0) = Pressure_Term;
+  C_matrix(1,1) = Pressure_Term;
+  C_matrix(0,1) = Poisson_Ratio;
+  C_matrix(1,0) = Poisson_Ratio;
+  C_matrix(2,2) = Shear_Term;
+  }
+  if(num_dim==3){
+  C_matrix(0,0) = Pressure_Term;
+  C_matrix(1,1) = Pressure_Term;
+  C_matrix(2,2) = Pressure_Term;
+  C_matrix(0,1) = Poisson_Ratio;
+  C_matrix(0,2) = Poisson_Ratio;
+  C_matrix(1,0) = Poisson_Ratio;
+  C_matrix(1,2) = Poisson_Ratio;
+  C_matrix(2,0) = Poisson_Ratio;
+  C_matrix(2,1) = Poisson_Ratio;
+  C_matrix(3,3) = Shear_Term;
+  C_matrix(4,4) = Shear_Term;
+  C_matrix(5,5) = Shear_Term;
+  }
+
+  //debug print of elasticity matrix
+  std::cout << " ------------ELASTICITY MATRIX "<< ielem + 1 <<"--------------"<<std::endl;
+  for (int idof = 0; idof < Brows; idof++){
+    std::cout << "row: " << idof + 1 << " { ";
+    for (int istride = 0; istride < Brows; istride++){
+      std::cout << istride + 1 << " = " << C_matrix(idof,istride) << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+  }
+  //end debug block
+      
+
+  //initialize local stiffness matrix storage
+  for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
+      for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++)
+      Local_Matrix(ifill,jfill) = 0;
+
+  //B matrix initialization
+  for(int irow=0; irow < Brows; irow++)
+      for(int icol=0; icol < num_dim*nodes_per_elem; icol++){
+        CB_matrix(irow,icol) = B_matrix(irow,icol) = 0;
+      }
+
+  //loop over quadrature points
+  for(int iquad=0; iquad < direct_product_count; iquad++){
+
+    //set current quadrature point
+    if(num_dim==3) z_quad = iquad/(num_gauss_points*num_gauss_points);
+    y_quad = (iquad % (num_gauss_points*num_gauss_points))/num_gauss_points;
+    x_quad = iquad % num_gauss_points;
+    quad_coordinate(0) = legendre_nodes_1D(x_quad);
+    quad_coordinate(1) = legendre_nodes_1D(y_quad);
+    if(num_dim==3)
+    quad_coordinate(2) = legendre_nodes_1D(z_quad);
+
+    //set current quadrature weight
+    quad_coordinate_weight(0) = legendre_weights_1D(x_quad);
+    quad_coordinate_weight(1) = legendre_weights_1D(y_quad);
+    if(num_dim==3)
+    quad_coordinate_weight(2) = legendre_weights_1D(z_quad);
+
+    //compute shape functions at this point for the element type
+    elem->basis(basis_values,quad_coordinate);
+
+    //compute all the necessary coordinates and derivatives at this point
+
+    //compute shape function derivatives
+    elem->partial_xi_basis(basis_derivative_s1,quad_coordinate);
+    elem->partial_eta_basis(basis_derivative_s2,quad_coordinate);
+    elem->partial_mu_basis(basis_derivative_s3,quad_coordinate);
+
+    //compute derivatives of x,y,z w.r.t the s,t,w isoparametric space needed by JT (Transpose of the Jacobian)
+    //derivative of x,y,z w.r.t s
+    JT_row1(0) = 0;
+    JT_row1(1) = 0;
+    JT_row1(2) = 0;
+    for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+      JT_row1(0) += nodal_positions(node_loop,0)*basis_derivative_s1(node_loop);
+      JT_row1(1) += nodal_positions(node_loop,1)*basis_derivative_s1(node_loop);
+      JT_row1(2) += nodal_positions(node_loop,2)*basis_derivative_s1(node_loop);
+    }
+
+    //derivative of x,y,z w.r.t t
+    JT_row2(0) = 0;
+    JT_row2(1) = 0;
+    JT_row2(2) = 0;
+    for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+      JT_row2(0) += nodal_positions(node_loop,0)*basis_derivative_s2(node_loop);
+      JT_row2(1) += nodal_positions(node_loop,1)*basis_derivative_s2(node_loop);
+      JT_row2(2) += nodal_positions(node_loop,2)*basis_derivative_s2(node_loop);
+    }
+
+    //derivative of x,y,z w.r.t w
+    JT_row3(0) = 0;
+    JT_row3(1) = 0;
+    JT_row3(2) = 0;
+    for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+      JT_row3(0) += nodal_positions(node_loop,0)*basis_derivative_s3(node_loop);
+      JT_row3(1) += nodal_positions(node_loop,1)*basis_derivative_s3(node_loop);
+      JT_row3(2) += nodal_positions(node_loop,2)*basis_derivative_s3(node_loop);
+    }
+
+    //compute the determinant of the Jacobian
+    Jacobian = JT_row1(0)*(JT_row2(1)*JT_row3(2)-JT_row3(1)*JT_row2(2))-
+               JT_row1(1)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
+               JT_row1(2)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1));
+    if(Jacobian<0) Jacobian = -Jacobian;
+
+    //compute the contributions of this quadrature point to the B matrix
+    if(num_dim==2)
+    for(int ishape=0; ishape < nodes_per_elem; ishape++){
+      B_matrix_contribution(0,ishape*num_dim) = (basis_derivative_s1(ishape)*(JT_row2(1)*JT_row3(2)-JT_row3(1)*JT_row2(2))-
+          basis_derivative_s2(ishape)*(JT_row1(1)*JT_row3(2)-JT_row3(1)*JT_row1(2))+
+          basis_derivative_s3(ishape)*(JT_row1(1)*JT_row2(2)-JT_row2(1)*JT_row1(2)));
+      B_matrix_contribution(1,ishape*num_dim) = 0;
+      B_matrix_contribution(2,ishape*num_dim) = 0;
+      B_matrix_contribution(3,ishape*num_dim) = (-basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(2)-JT_row3(0)*JT_row1(2))-
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(2)-JT_row2(0)*JT_row1(2)));
+      B_matrix_contribution(4,ishape*num_dim) = (basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1))-
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(1)-JT_row3(0)*JT_row1(1))+
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(1)-JT_row2(0)*JT_row1(1)));
+      B_matrix_contribution(5,ishape*num_dim) = 0;
+      B_matrix_contribution(0,ishape*num_dim+1) = 0;
+      B_matrix_contribution(1,ishape*num_dim+1) = (-basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(2)-JT_row3(0)*JT_row1(2))-
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(2)-JT_row2(0)*JT_row1(2)));
+      B_matrix_contribution(2,ishape*num_dim+1) = 0;
+      B_matrix_contribution(3,ishape*num_dim+1) = (basis_derivative_s1(ishape)*(JT_row2(1)*JT_row3(2)-JT_row3(1)*JT_row2(2))-
+          basis_derivative_s2(ishape)*(JT_row1(1)*JT_row3(2)-JT_row3(1)*JT_row1(2))+
+          basis_derivative_s3(ishape)*(JT_row1(1)*JT_row2(2)-JT_row2(1)*JT_row1(2)));
+      B_matrix_contribution(4,ishape*num_dim+1) = 0;
+      B_matrix_contribution(5,ishape*num_dim+1) = (basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1))-
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(1)-JT_row3(0)*JT_row1(1))+
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(1)-JT_row2(0)*JT_row1(1)));
+      B_matrix_contribution(0,ishape*num_dim+2) = 0;
+      B_matrix_contribution(1,ishape*num_dim+2) = 0;
+      B_matrix_contribution(2,ishape*num_dim+2) = (basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1))-
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(1)-JT_row3(0)*JT_row1(1))+
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(1)-JT_row2(0)*JT_row1(1)));
+      B_matrix_contribution(3,ishape*num_dim+2) = 0;
+      B_matrix_contribution(4,ishape*num_dim+2) = (basis_derivative_s1(ishape)*(JT_row2(1)*JT_row3(2)-JT_row3(1)*JT_row2(2))-
+          basis_derivative_s2(ishape)*(JT_row1(1)*JT_row3(2)-JT_row3(1)*JT_row1(2))+
+          basis_derivative_s3(ishape)*(JT_row1(1)*JT_row2(2)-JT_row2(1)*JT_row1(2)));
+      B_matrix_contribution(5,ishape*num_dim+2) = (-basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(2)-JT_row3(0)*JT_row1(2))-
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(2)-JT_row2(0)*JT_row1(2)));
+    }
+    if(num_dim==3)
+    for(int ishape=0; ishape < nodes_per_elem; ishape++){
+      B_matrix_contribution(0,ishape*num_dim) = (basis_derivative_s1(ishape)*(JT_row2(1)*JT_row3(2)-JT_row3(1)*JT_row2(2))-
+          basis_derivative_s2(ishape)*(JT_row1(1)*JT_row3(2)-JT_row3(1)*JT_row1(2))+
+          basis_derivative_s3(ishape)*(JT_row1(1)*JT_row2(2)-JT_row2(1)*JT_row1(2)));
+      B_matrix_contribution(1,ishape*num_dim) = 0;
+      B_matrix_contribution(2,ishape*num_dim) = 0;
+      B_matrix_contribution(3,ishape*num_dim) = (-basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(2)-JT_row3(0)*JT_row1(2))-
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(2)-JT_row2(0)*JT_row1(2)));
+      B_matrix_contribution(4,ishape*num_dim) = (basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1))-
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(1)-JT_row3(0)*JT_row1(1))+
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(1)-JT_row2(0)*JT_row1(1)));
+      B_matrix_contribution(5,ishape*num_dim) = 0;
+      B_matrix_contribution(0,ishape*num_dim+1) = 0;
+      B_matrix_contribution(1,ishape*num_dim+1) = (-basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(2)-JT_row3(0)*JT_row1(2))-
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(2)-JT_row2(0)*JT_row1(2)));
+      B_matrix_contribution(2,ishape*num_dim+1) = 0;
+      B_matrix_contribution(3,ishape*num_dim+1) = (basis_derivative_s1(ishape)*(JT_row2(1)*JT_row3(2)-JT_row3(1)*JT_row2(2))-
+          basis_derivative_s2(ishape)*(JT_row1(1)*JT_row3(2)-JT_row3(1)*JT_row1(2))+
+          basis_derivative_s3(ishape)*(JT_row1(1)*JT_row2(2)-JT_row2(1)*JT_row1(2)));
+      B_matrix_contribution(4,ishape*num_dim+1) = 0;
+      B_matrix_contribution(5,ishape*num_dim+1) = (basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1))-
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(1)-JT_row3(0)*JT_row1(1))+
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(1)-JT_row2(0)*JT_row1(1)));
+      B_matrix_contribution(0,ishape*num_dim+2) = 0;
+      B_matrix_contribution(1,ishape*num_dim+2) = 0;
+      B_matrix_contribution(2,ishape*num_dim+2) = (basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1))-
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(1)-JT_row3(0)*JT_row1(1))+
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(1)-JT_row2(0)*JT_row1(1)));
+      B_matrix_contribution(3,ishape*num_dim+2) = 0;
+      B_matrix_contribution(4,ishape*num_dim+2) = (basis_derivative_s1(ishape)*(JT_row2(1)*JT_row3(2)-JT_row3(1)*JT_row2(2))-
+          basis_derivative_s2(ishape)*(JT_row1(1)*JT_row3(2)-JT_row3(1)*JT_row1(2))+
+          basis_derivative_s3(ishape)*(JT_row1(1)*JT_row2(2)-JT_row2(1)*JT_row1(2)));
+      B_matrix_contribution(5,ishape*num_dim+2) = (-basis_derivative_s1(ishape)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
+          basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(2)-JT_row3(0)*JT_row1(2))-
+          basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(2)-JT_row2(0)*JT_row1(2)));
+    }
+    
+    //debug print of B matrix per quadrature point
+    std::cout << " ------------B MATRIX QUADRATURE CONTRIBUTION"<< ielem + 1 <<"--------------"<<std::endl;
+    for (int idof = 0; idof < Brows; idof++){
+      std::cout << "row: " << idof + 1 << " { ";
+      for (int istride = 0; istride < nodes_per_elem*num_dim; istride++){
+        std::cout << istride + 1 << " = " << B_matrix_contribution(idof,istride) << " , " ;
+      }
+      std::cout << " }"<< std::endl;
+    }
+    //end debug block
+    
+    //accumulate B matrix
+    for(int irow=0; irow < Brows; irow++)
+      for(int icol=0; icol < num_dim*nodes_per_elem; icol++)
+      B_matrix(irow,icol) += B_matrix_contribution(irow,icol);
+
+    //compute the previous multiplied by the Elastic (C) Matrix
+    for(int irow=0; irow < Brows; irow++){
+      for(int icol=0; icol < num_dim*nodes_per_elem; icol++){
+        CB_matrix_contribution(irow,icol) = 0;
+        for(int span=0; span < Brows; span++){
+          CB_matrix_contribution(irow,icol) += C_matrix(irow,span)*B_matrix_contribution(span,icol);
+        }
+      }
+    }
+
+    //accumulate CB matrix
+    for(int irow=0; irow < Brows; irow++)
+      for(int icol=0; icol < num_dim*nodes_per_elem; icol++)
+      CB_matrix(irow,icol) += CB_matrix_contribution(irow,icol);
+
+    //compute the contributions of this quadrature point to all the local stiffness matrix elements
+    for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
+      for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++){
+        matrix_term = 0;
+        for(int span = 0; span < Brows; span++){
+          matrix_term += B_matrix_contribution(span,ifill)*CB_matrix_contribution(span,jfill);
+        }
+        Local_Matrix(ifill,jfill) += Elastic_Constant*quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*matrix_term/Jacobian;
+      }
+      
+    }
+
+    //debug print of B matrix per quadrature point
+    std::cout << " ------------B MATRIX"<< ielem + 1 <<"--------------"<<std::endl;
+    for (int idof = 0; idof < Brows; idof++){
+      std::cout << "row: " << idof + 1 << " { ";
+      for (int istride = 0; istride < nodes_per_elem*num_dim; istride++){
+        std::cout << istride + 1 << " = " << B_matrix(idof,istride) << " , " ;
+      }
+      std::cout << " }"<< std::endl;
+    }
+    //end debug block
+
+    //debug print of B matrix per quadrature point
+    std::cout << " ------------CB MATRIX"<< ielem + 1 <<"--------------"<<std::endl;
+    for (int idof = 0; idof < Brows; idof++){
+      std::cout << "row: " << idof + 1 << " { ";
+      for (int istride = 0; istride < nodes_per_elem*num_dim; istride++){
+        std::cout << istride + 1 << " = " << CB_matrix(idof,istride) << " , " ;
+      }
+      std::cout << " }"<< std::endl;
+    }
+    //end debug block
 }
 
 /* ----------------------------------------------------------------------
@@ -2265,8 +2593,10 @@ void Static_Solver::Displacement_Boundary_Conditions(){
   //indices for nodal BC settings referred to here start at num_bdy_sets
 
   //debug print of nodal bc settings
+  std::cout << " ------------NODE BC SETTINGS--------------"<<std::endl;
   for(int inode=0; inode < num_nodes*num_dim; inode++)
   std::cout << " Node BC types " << Node_DOF_Boundary_Condition_Type(inode) <<std::endl;
+  //end debug block
 
   //print warning for overlapping boundary conditions
   if(warning_flag)
@@ -2496,6 +2826,11 @@ void Static_Solver::Force_Vector_Construct(){
 
     //apply contribution from non-zero displacement boundary conditions
 
+    //debug print of force vector
+    std::cout << "---------FORCE VECTOR-------------" << std::endl;
+    for(int iforce=0; iforce < num_nodes*num_dim; iforce++)
+      std::cout << " DOF: "<< iforce+1 << ", "<< Nodal_Forces(iforce) << std::endl;
+
 }
 
 /* ----------------------------------------------------------------------
@@ -2604,7 +2939,7 @@ int Static_Solver::solve(){
        (Node_DOF_Boundary_Condition_Type(global_index)!=Z_DISPLACEMENT_CONDITION))
     my_reduced_global_indices_buffer(index_counter++) = global_index;
   }
-
+  
   //allocate storage with no extra spaces for global indices this task owns for the reduced stiffness matrix
   CArrayKokkos<GO, array_layout, device_type, memory_traits> my_reduced_global_indices(index_counter);
 
@@ -2700,6 +3035,42 @@ int Static_Solver::solve(){
   A->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
   
+  
+  //Matlab compatible debug print (checks solver result)
+  std::cout << "Matlab A matrix" << std::endl;
+  CArray<real_t> row_set(local_nrows_reduced);
+  int column_index;
+  
+  for(int irow = 0 ; irow < local_nrows_reduced; irow++){
+    global_index = reduced_map->getGlobalElement(irow);
+    //initialize
+    for(int icol = 0 ; icol < local_nrows_reduced; icol++) row_set(icol) = 0;
+    //set non-zero elements
+    for(int istride=0; istride < reduced_entries_per_row[irow]; istride++){
+      if((Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,istride))!=DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,istride))!=X_DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,istride))!=Y_DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,istride))!=Z_DISPLACEMENT_CONDITION)){
+      column_index = colmap->getLocalElement(DOF_Graph_Matrix(reduced_map->getGlobalElement(irow),istride));
+      //std::cout << "COLUMN INDEX " << column_index << std::endl;
+      row_set(column_index) = istride+1;
+      }
+    }
+
+    for(int icol = 0 ; icol < local_nrows_reduced; icol++){
+      if(row_set(icol))
+      std::cout << Stiffness_Matrix(reduced_map->getGlobalElement(irow),row_set(icol)-1)<<" " ;
+      else
+      std::cout << " 0" ;
+
+      if(icol<local_nrows_reduced-1) std::cout << " ,";
+    }
+    std::cout << " ; " <<std::endl;
+  }
+
+  //end debug print
+  
+  
   // Create random X vector
   vec_array Xview_pass = vec_array("Xview_pass", local_nrows_reduced,1);
   Xview_pass.assign_data(Xview.pointer());
@@ -2727,9 +3098,8 @@ int Static_Solver::solve(){
   vec_array Node_Positions_pass = vec_array("Node_Positions", local_nrows_reduced,1);
 
   //print the nodal positions
-  for(LO i=0; i < local_nrows_reduced/num_dim; i++){
-    for (int j =0; j < num_dim; j++)
-    Node_Positions_View(i*num_dim+j) = mesh->node_coords(reduced_map->getGlobalElement(i),j);
+  for(LO i=0; i < local_nrows_reduced; i++){
+    Node_Positions_View(i) = mesh->node_coords(reduced_map->getGlobalElement(i)/num_dim,reduced_map->getGlobalElement(i)%num_dim);
   }
 
   Node_Positions_pass.assign_data(Node_Positions_View.pointer());
@@ -2741,6 +3111,8 @@ int Static_Solver::solve(){
   *fos << std::endl;
   //end of debug block
 
+  std::fflush(stdout);
+  std::cout << " PRINT BEFORE ERROR " << std::endl;
   // Create solver interface to KLU2 with Amesos2 factory method
   RCP<Amesos2::Solver<MAT,MV> > solver = Amesos2::create<MAT,MV>("KLU2", A, X, B);
   

@@ -34,6 +34,8 @@ public:
 
   void local_matrix(int ielem, CArray <real_t> &Local_Matrix);
 
+  void local_matrix_multiply(int ielem, CArray <real_t> &Local_Matrix);
+
   void generate_bcs();
 
   void allocate_state();

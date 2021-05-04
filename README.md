@@ -30,7 +30,7 @@ mkdir build
 Then create a configuration script like, for example,
 ```
 #!/bin/bash
-ELEMENTS_DIR = ..  # relative path of ELEMENTS repository
+ELEMENTS_DIR=..  # relative path of ELEMENTS repository
 cmake \
   -DCMAKE_INSTALL_PREFIX=`pwd` \
   -DCMAKE_CXX_FLAGS=-g \
@@ -51,3 +51,5 @@ at the command line.
 This will copy the ELEMENTS libraries to the directory specified by the `CMAKE_INSTALL_PREFIX` variable.
 In particular, the libraries will be copied to a `lib/` subdirectory and the header files will be copied to a `include/` subdirectory.
 If the install prefix is not specified in a configuration file, CMake will use the default, which on Linux is `/usr/local/` and the copy will require administrative privileges.
+
+Warning: if linking against the `libelements` library, you must define a global variable `elem` that specifies the class of element.

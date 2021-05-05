@@ -71,8 +71,7 @@ num_cells in element = (p_order*2)^3
 #include "header.h"
 #include "state.h"
 #include "Simulation_Parameters.h"
-#include "Static_Solver.h"
-#include "Teuchos_RCP.hpp"
+#include "Static_Solver_Parallel.h"
 #include "Amesos2_Version.hpp"
 #include "Amesos2.hpp"
 
@@ -86,7 +85,7 @@ each surface to use for hammering metal into to form it.
 
 */
 
-Static_Solver::Static_Solver() : Solver(){
+Static_Solver_Parallel::Static_Solver_Parallel() : Solver(){
   //create parameter object
     simparam = new Simulation_Parameters();
   //create ref element object
@@ -98,7 +97,7 @@ Static_Solver::Static_Solver() : Solver(){
     element_select = new elements::element_selector();
 }
 
-Static_Solver::~Static_Solver(){
+Static_Solver_Parallel::~Static_Solver_Parallel(){
    delete simparam;
    delete ref_elem;
    delete init_mesh;
@@ -111,9 +110,12 @@ Static_Solver::~Static_Solver(){
 //==============================================================================
 
 
-void Static_Solver::run(int argc, char *argv[]){
+void Static_Solver_Parallel::run(int argc, char *argv[]){
     
     std::cout << "Running Static Solver Example" << std::endl;
+
+    //initialize Trilinos communicator class
+    comm = Tpetra::getDefaultComm();
 
     // ---- Read input file, define state and boundary conditions ---- //
     simparam->input();
@@ -233,185 +235,172 @@ void Static_Solver::run(int argc, char *argv[]){
 
 
 // Input and setup
-void Static_Solver::read_mesh(char *MESH){
+void Static_Solver_Parallel::read_mesh(char *MESH){
 
-    FILE *in;
-    char ch;
-    int num_dim = simparam->num_dim;
-    int p_order = simparam->p_order;
+  FILE *in;
+  char ch;
+  int num_dim = simparam->num_dim;
+  int p_order = simparam->p_order;
 
-    //read the mesh    WARNING: assumes an ensight .geo file
-    in = fopen(MESH,"r");  
+  //read the mesh    WARNING: assumes an ensight .geo file
+  in = fopen(MESH,"r");  
     
-    //skip 8 lines
-    for (int j = 1; j <= 8; j++) {
-        int i=0;
-        while ((ch=(char)fgetc(in))!='\n') {
-            i++;
-            printf("%c",ch);
-        }
-        printf("\n");
-    }  
+  //skip 8 lines
+  for (int j = 1; j <= 8; j++) {
+    int i=0;
+      while ((ch=(char)fgetc(in))!='\n') {
+        i++;
+          printf("%c",ch);
+      }
+      printf("\n");
+  }  
 
-    int num_nodes;
+  int num_nodes;
 
-    // --- Read the number of vertices in the mesh --- //
-    fscanf(in,"%d",&num_nodes);
-    printf("%d\n" , num_nodes);
+  // --- Read the number of vertices in the mesh --- //
+  fscanf(in,"%d",&num_nodes);
+  printf("%d\n" , num_nodes);
 
-    // set the vertices in the mesh read in
-    int rk_init = 1;
-    init_mesh->init_nodes(num_nodes); // add 1 for index starting at 1
+  //construct contiguous parallel row map now that we know the number of nodes
+  map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes*num_dim,0,comm));
+
+  // set the vertices in the mesh read in
+  int rk_init = 1;
+  init_mesh->init_nodes(num_nodes); // add 1 for index starting at 1
     
-    std::cout << "Num points read in = " << init_mesh->num_nodes() << std::endl;
+  std::cout << "Num points read in = " << init_mesh->num_nodes() << std::endl;
 
 
-    // read the initial mesh coordinates
-    // x-coords
-    for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
-        fscanf(in,"%le", &init_mesh->node_coords(node_gid, 0));
-        //std::cout<<" "<< init_mesh->node_coords(node_gid, 0)<<std::endl;
-    }
+  // read the initial mesh coordinates
+  // x-coords
+  for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
+    fscanf(in,"%le", &init_mesh->node_coords(node_gid, 0));
+    //std::cout<<" "<< init_mesh->node_coords(node_gid, 0)<<std::endl;
+  }
     
-    if(num_dim>1)
-    // y-coords
-    for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
-        fscanf(in,"%le", &init_mesh->node_coords(node_gid, 1));
-        //std::cout<<" "<< init_mesh->node_coords(node_gid, 1)<<std::endl;
-    }  
+  if(num_dim>1)
+  // y-coords
+  for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
+    fscanf(in,"%le", &init_mesh->node_coords(node_gid, 1));
+    //std::cout<<" "<< init_mesh->node_coords(node_gid, 1)<<std::endl;
+  }  
 
-    // z-coords
-    if(num_dim>2)
-    for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
-        fscanf(in,"%le", &init_mesh->node_coords(node_gid, 2));
-        //std::cout<<" "<< init_mesh->node_coords(node_gid, 2)<<std::endl;
-    }
+  // z-coords
+  if(num_dim>2)
+  for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
+    fscanf(in,"%le", &init_mesh->node_coords(node_gid, 2));
+    //std::cout<<" "<< init_mesh->node_coords(node_gid, 2)<<std::endl;
+  }
 
-    /*
-    ch = (char)fgetc(in);
-    printf("%c",ch);
-
-    //skip 1 line
-    for (int j=1; j<=1; j++) {
-        int i=0;
-        while ((ch=(char)fgetc(in))!='\n') {
-            i++;
-            printf("%c",ch);
-        }
-        printf("\n");
-    }
-    */
-    char skip_string[20];
-    fscanf(in,"%s",skip_string);
-    std::cout << skip_string <<std::endl;
-    int num_elem = 0;
+  char skip_string[20];
+  fscanf(in,"%s",skip_string);
+  std::cout << skip_string <<std::endl;
+  int num_elem = 0;
     
-    // --- read the number of cells in the mesh ---
-    fscanf(in,"%d",&num_elem);
-    printf("Num elements read in %d\n" , num_elem);
+  // --- read the number of cells in the mesh ---
+  fscanf(in,"%d",&num_elem);
+  printf("Num elements read in %d\n" , num_elem);
 
-    std::cout<<"before initial mesh initialization"<<std::endl;
+  std::cout<<"before initial mesh initialization"<<std::endl;
 
-    init_mesh->init_element(0, 3, num_elem);
-    init_mesh->init_cells(num_elem);
+  init_mesh->init_element(0, 3, num_elem);
+  init_mesh->init_cells(num_elem);
 
-    Element_Types = CArray<size_t>(num_elem); 
+  Element_Types = CArray<size_t>(num_elem); 
 
 
 
-    // for each cell read the list of associated nodes
-    for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
-        for (int node_lid = 0; node_lid < 8; node_lid++){
+  // for each cell read the list of associated nodes
+  for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
+    for (int node_lid = 0; node_lid < 8; node_lid++){
             
-            fscanf(in,"%d",&init_mesh->nodes_in_cell(cell_gid, node_lid));
-            //std::cout<<" "<< init_mesh->nodes_in_cell(cell_gid, node_lid);
-            // shift to start vertex index space at 0
-            init_mesh->nodes_in_cell(cell_gid,node_lid) = init_mesh->nodes_in_cell(cell_gid, node_lid) - 1;
-        }
-        //std::cout<<" "<<std::endl;
-        Element_Types(cell_gid) = 4; //Hex8 default
+      fscanf(in,"%d",&init_mesh->nodes_in_cell(cell_gid, node_lid));
+      //std::cout<<" "<< init_mesh->nodes_in_cell(cell_gid, node_lid);
+      // shift to start vertex index space at 0
+      init_mesh->nodes_in_cell(cell_gid,node_lid) = init_mesh->nodes_in_cell(cell_gid, node_lid) - 1;
     }
+    //std::cout<<" "<<std::endl;
+    Element_Types(cell_gid) = 4; //Hex8 default
+  }
 
-    //element type selection (subject to change)
-    // ---- Set Element Type ---- //
-    // allocate element type memory
-    elements::elem_type_t* elem_choice;
+  //element type selection (subject to change)
+  // ---- Set Element Type ---- //
+  // allocate element type memory
+  elements::elem_type_t* elem_choice;
 
-    int NE = 1; // number of element types in problem
-    elem_choice = new elements::elem_type_t[NE];
+  int NE = 1; // number of element types in problem
+  elem_choice = new elements::elem_type_t[NE];
     
-    //current default
-    elem_choice->type = elements::elem_types::elem_type::Hex8;
+  //current default
+  elem_choice->type = elements::elem_types::elem_type::Hex8;
     
-    //set base type pointer to one of the existing derived type object references
-    if(simparam->num_dim==2)
-    element_select->choose_2Delem_type(elem_choice[0], elem2D);
-    else if(simparam->num_dim==3)
-    element_select->choose_3Delem_type(elem_choice[0], elem);
+  //set base type pointer to one of the existing derived type object references
+  if(simparam->num_dim==2)
+  element_select->choose_2Delem_type(elem_choice[0], elem2D);
+  else if(simparam->num_dim==3)
+  element_select->choose_3Delem_type(elem_choice[0], elem);
 
-    // Convert ijk index system to the finite element numbering convention
-    // for vertices in cell
-    int convert_ensight_to_ijk[8];
-    convert_ensight_to_ijk[0] = 0;
-    convert_ensight_to_ijk[1] = 1;
-    convert_ensight_to_ijk[2] = 3;
-    convert_ensight_to_ijk[3] = 2;
-    convert_ensight_to_ijk[4] = 4;
-    convert_ensight_to_ijk[5] = 5;
-    convert_ensight_to_ijk[6] = 7;
-    convert_ensight_to_ijk[7] = 6;
+  // Convert ijk index system to the finite element numbering convention
+  // for vertices in cell
+  int convert_ensight_to_ijk[8];
+  convert_ensight_to_ijk[0] = 0;
+  convert_ensight_to_ijk[1] = 1;
+  convert_ensight_to_ijk[2] = 3;
+  convert_ensight_to_ijk[3] = 2;
+  convert_ensight_to_ijk[4] = 4;
+  convert_ensight_to_ijk[5] = 5;
+  convert_ensight_to_ijk[6] = 7;
+  convert_ensight_to_ijk[7] = 6;
     
-    int tmp_ijk_indx[8];
+  int tmp_ijk_indx[8];
 
-    for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
-        for (int node_lid = 0; node_lid < 8; node_lid++){
-    
-            tmp_ijk_indx[node_lid] = init_mesh->nodes_in_cell(cell_gid, convert_ensight_to_ijk[node_lid]);
-        }   
+  for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
+    for (int node_lid = 0; node_lid < 8; node_lid++){
+      tmp_ijk_indx[node_lid] = init_mesh->nodes_in_cell(cell_gid, convert_ensight_to_ijk[node_lid]);
+    }   
         
-        for (int node_lid = 0; node_lid < 8; node_lid++){
-
-            init_mesh->nodes_in_cell(cell_gid, node_lid) = tmp_ijk_indx[node_lid];
-        }
+    for (int node_lid = 0; node_lid < 8; node_lid++){
+      init_mesh->nodes_in_cell(cell_gid, node_lid) = tmp_ijk_indx[node_lid];
     }
+  }
 
-    // Build all connectivity in initial mesh
-    std::cout<<"Before initial mesh connectivity"<<std::endl;
+  // Build all connectivity in initial mesh
+  std::cout<<"Before initial mesh connectivity"<<std::endl;
 
-    if(num_elem < 0) std::cout << "ERROR, NO ELEMENTS IN MESH" << std::endl;
-    if(num_elem > 1) {
+  if(num_elem < 0) std::cout << "ERROR, NO ELEMENTS IN MESH" << std::endl;
+  if(num_elem > 1) {
 
-        // -- NODE TO CELL CONNECTIVITY -- //
-        init_mesh->build_node_cell_connectivity(); 
+    // -- NODE TO CELL CONNECTIVITY -- //
+    init_mesh->build_node_cell_connectivity(); 
 
-        // -- CORNER CONNECTIVITY -- //
-        init_mesh->build_corner_connectivity(); 
+    // -- CORNER CONNECTIVITY -- //
+    init_mesh->build_corner_connectivity(); 
 
-        // -- CELL TO CELL CONNECTIVITY -- //
-        init_mesh->build_cell_cell_connectivity(); 
+    // -- CELL TO CELL CONNECTIVITY -- //
+    init_mesh->build_cell_cell_connectivity(); 
 
-        // -- PATCHES -- //
-        init_mesh->build_patch_connectivity(); 
-    }
+    // -- PATCHES -- //
+    init_mesh->build_patch_connectivity(); 
+  }
 
-    std::cout<<"refine mesh"<<std::endl;
+  std::cout<<"refine mesh"<<std::endl;
 
-    // refine subcell mesh to desired order
-    swage::refine_mesh(*init_mesh, *mesh, 0, num_dim);
-    std::cout<<"done refining"<< simparam->num_dim <<std::endl;
-    // Close mesh input file
-    fclose(in);
+  // refine subcell mesh to desired order
+  swage::refine_mesh(*init_mesh, *mesh, 0, num_dim);
+  std::cout<<"done refining"<< simparam->num_dim <<std::endl;
+  // Close mesh input file
+  fclose(in);
     
-    // Create reference element
-    ref_elem->init(p_order, num_dim, elem->num_basis());
-    std::cout<<"done with ref elem"<<std::endl;
+  // Create reference element
+  ref_elem->init(p_order, num_dim, elem->num_basis());
+  std::cout<<"done with ref elem"<<std::endl;
      
-    std::cout << "number of patches = " << mesh->num_patches() << std::endl;
-    std::cout << "End of setup " << std::endl;     
+  std::cout << "number of patches = " << mesh->num_patches() << std::endl;
+  std::cout << "End of setup " << std::endl;     
 } // end read_mesh
 
 
-void Static_Solver::generate_bcs(){
+void Static_Solver_Parallel::generate_bcs(){
     
     // build boundary mesh patches
     mesh->build_bdy_patches();
@@ -524,7 +513,7 @@ void Static_Solver::generate_bcs(){
 } // end generate_bcs
 
 
-void Static_Solver::allocate_state(){
+void Static_Solver_Parallel::allocate_state(){
 
     int rk_storage = simparam->rk_storage;
     int num_dim = simparam->num_dim;
@@ -547,7 +536,7 @@ void Static_Solver::allocate_state(){
 } // end allocate_state
 
 
-void Static_Solver::initialize_state(){
+void Static_Solver_Parallel::initialize_state(){
     int NF = simparam->NF;
     mat_pt_t *mat_pt = simparam->mat_pt;
     mat_fill_t *mat_fill = simparam->mat_fill;
@@ -640,7 +629,7 @@ void Static_Solver::initialize_state(){
 } // end initialize_state
 
 
-void Static_Solver::calculate_ref_elem(){
+void Static_Solver_Parallel::calculate_ref_elem(){
     int num_dim = simparam->num_dim;
 
     real_t partial_xia[elem->num_basis()];
@@ -729,7 +718,7 @@ void Static_Solver::calculate_ref_elem(){
 
 // Runtime Functions
 
-void Static_Solver::apply_boundary(){
+void Static_Solver_Parallel::apply_boundary(){
 
     node_t *node = simparam->node;
 
@@ -769,7 +758,7 @@ void Static_Solver::apply_boundary(){
 }
 
 
-void Static_Solver::smooth_cells(){
+void Static_Solver_Parallel::smooth_cells(){
     mat_pt_t *mat_pt = simparam->mat_pt;
     mat_fill_t *mat_fill = simparam->mat_fill;
     node_t *node = simparam->node;
@@ -817,7 +806,7 @@ void Static_Solver::smooth_cells(){
 }
 
 
-void Static_Solver::smooth_element(){
+void Static_Solver_Parallel::smooth_element(){
     mat_pt_t *mat_pt = simparam->mat_pt;
     mat_fill_t *mat_fill = simparam->mat_fill;
     node_t *node = simparam->node;
@@ -876,7 +865,7 @@ void Static_Solver::smooth_element(){
     }// end loop over elements
 }
 
-void Static_Solver::get_nodal_jacobian(){
+void Static_Solver_Parallel::get_nodal_jacobian(){
   mat_pt_t *mat_pt = simparam->mat_pt;
   mat_fill_t *mat_fill = simparam->mat_fill;
   int num_dim = simparam->num_dim;
@@ -1008,7 +997,7 @@ void Static_Solver::get_nodal_jacobian(){
 
 // Output writers
 
-void Static_Solver::vtk_writer(){
+void Static_Solver_Parallel::vtk_writer(){
     int graphics_id = simparam->graphics_id;
     int num_dim = simparam->num_dim;
 
@@ -1210,7 +1199,7 @@ void Static_Solver::vtk_writer(){
 } // end vtk_writer
 
 
-void Static_Solver::ensight(){
+void Static_Solver_Parallel::ensight(){
     mat_pt_t *mat_pt = simparam->mat_pt;
     int &graphics_id = simparam->graphics_id;
     real_t *graphics_times = simparam->graphics_times;
@@ -1508,7 +1497,7 @@ void Static_Solver::ensight(){
    Initialize global vectors and array maps needed for matrix assembly
 ------------------------------------------------------------------------- */
 
-void Static_Solver::init_global(){
+void Static_Solver_Parallel::init_global(){
 
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
@@ -1732,7 +1721,7 @@ void Static_Solver::init_global(){
    Assemble the Sparse Stiffness Matrix and force vector
 ------------------------------------------------------------------------- */
 
-void Static_Solver::assemble(){
+void Static_Solver_Parallel::assemble(){
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
@@ -1798,7 +1787,7 @@ void Static_Solver::assemble(){
    Retrieve material properties associated with a finite element
 ------------------------------------------------------------------------- */
 
-void Static_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Modulus, real_t &Poisson_Ratio){
+void Static_Solver_Parallel::Element_Material_Properties(size_t ielem, real_t &Element_Modulus, real_t &Poisson_Ratio){
 
   Element_Modulus = simparam->Elastic_Modulus;
   Poisson_Ratio = simparam->Poisson_Ratio;
@@ -1809,7 +1798,7 @@ void Static_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Mo
    Construct the local stiffness matrix
 ------------------------------------------------------------------------- */
 
-void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
+void Static_Solver_Parallel::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
@@ -2167,7 +2156,7 @@ void Static_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
    Construct the local stiffness matrix
 ------------------------------------------------------------------------- */
 
-void Static_Solver::local_matrix_multiply(int ielem, CArray <real_t> &Local_Matrix){
+void Static_Solver_Parallel::local_matrix_multiply(int ielem, CArray <real_t> &Local_Matrix){
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
@@ -2499,7 +2488,7 @@ void Static_Solver::local_matrix_multiply(int ielem, CArray <real_t> &Local_Matr
    necessary rows and columns from the assembled linear system
 ------------------------------------------------------------------------- */
 
-void Static_Solver::Displacement_Boundary_Conditions(){
+void Static_Solver_Parallel::Displacement_Boundary_Conditions(){
   int num_bdy_patches_in_set;
   int warning_flag = 0;
   int current_node_index, patch_gid, current_node_id;
@@ -2615,7 +2604,7 @@ void Static_Solver::Displacement_Boundary_Conditions(){
    Construct the global applied force vector
 ------------------------------------------------------------------------- */
 
-void Static_Solver::Force_Vector_Construct(){
+void Static_Solver_Parallel::Force_Vector_Construct(){
 
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
@@ -2846,28 +2835,7 @@ void Static_Solver::Force_Vector_Construct(){
    Solve the FEA linear system
 ------------------------------------------------------------------------- */
 
-int Static_Solver::solve(){
-
-  typedef double Scalar;
-  typedef Tpetra::Map<>::local_ordinal_type LO;
-  typedef Tpetra::Map<>::global_ordinal_type GO;
-
-  typedef Tpetra::CrsMatrix<Scalar,LO,GO> MAT;
-  typedef Tpetra::MultiVector<Scalar,LO,GO> MV;
-
-  typedef Kokkos::ViewTraits<LO*, Kokkos::LayoutLeft, void, void>::size_type SizeType;
-  typedef Tpetra::Details::DefaultTypes::node_type node_type;
-  using traits = Kokkos::ViewTraits<LO*, Kokkos::LayoutLeft, void, void>;
-  
-  using array_layout    = typename traits::array_layout;
-  using execution_space = typename traits::execution_space;
-  using device_type     = typename traits::device_type;
-  using memory_traits   = typename traits::memory_traits;
-
-  using Tpetra::global_size_t;
-  using Teuchos::tuple;
-  using Teuchos::RCP;
-  using Teuchos::rcp;
+int Static_Solver_Parallel::solve(){
 
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
@@ -2877,18 +2845,6 @@ int Static_Solver::solve(){
   int local_node_index, current_row, current_column;
   int max_stride = 0;
   global_size_t global_index, reduced_row_count;
-
-  Teuchos::RCP<const Teuchos::Comm<int> > comm =
-  Tpetra::getDefaultComm();
-  
-  typedef Kokkos::View<Scalar*, Kokkos::LayoutRight, device_type, memory_traits> values_array;
-  typedef Kokkos::View<GO*, array_layout, device_type, memory_traits> global_indices_array;
-  typedef Kokkos::View<LO*, array_layout, device_type, memory_traits> indices_array;
-  typedef Kokkos::View<SizeType*, array_layout, device_type, memory_traits> row_pointers;
- 
-  using vec_map_type = Tpetra::Map<LO, GO>;
-  using vec_device_type = typename vec_map_type::device_type;
-  typedef Kokkos::DualView<Scalar**, Kokkos::LayoutLeft, device_type>::t_dev vec_array;
 
   // Before we do anything, check that KLU2 is enabled
   if( !Amesos2::query("KLU2") ){
@@ -2915,10 +2871,6 @@ int Static_Solver::solve(){
 
   //Rebalance distribution of the global stiffness matrix rows here later since
   //rows and columns are being removed.
-
-  // create a Map for the global stiffness matrix (move this up in the code later)
-  RCP<Tpetra::Map<LO,GO,node_type> > map
-    = rcp( new Tpetra::Map<LO,GO,node_type>(nrows,0,comm) );
   
   global_size_t local_nrows = map->getNodeNumElements();
   
@@ -2962,8 +2914,8 @@ int Static_Solver::solve(){
   //std::cout << " my_reduced_global_indices " << my_reduced_global_indices(inode) <<std::endl;
   
   // create a Map for the reduced global stiffness matrix (BC rows removed)
-  RCP<Tpetra::Map<LO,GO,node_type> > reduced_map
-    = rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced,my_reduced_global_indices.get_kokkos_view(),0,comm) );
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > reduced_map
+    = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced,my_reduced_global_indices.get_kokkos_view(),0,comm) );
   
   //local rows for the reduced stiffness matrix
   global_size_t local_nrows_reduced = reduced_map->getNodeNumElements();
@@ -2999,9 +2951,9 @@ int Static_Solver::solve(){
   //values_array all_values = values_array("values_array",nnz);
   CArrayKokkos<GO, array_layout, device_type, memory_traits> all_global_indices(nnz);
   CArrayKokkos<LO, array_layout, device_type, memory_traits> all_indices(nnz);
-  CArrayKokkos<Scalar, Kokkos::LayoutRight, device_type, memory_traits> all_values(nnz);
-  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Bview(local_nrows_reduced);
-  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Xview(local_nrows_reduced);
+  CArrayKokkos<real_t, Kokkos::LayoutRight, device_type, memory_traits> all_values(nnz);
+  CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Bview(local_nrows_reduced);
+  CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Xview(local_nrows_reduced);
 
   //set Kokkos view data
   LO entrycount = 0;
@@ -3020,8 +2972,8 @@ int Static_Solver::solve(){
   }
   
   //build column map
-  RCP<const Tpetra::Map<LO,GO,node_type> > colmap;
-  const RCP<const Tpetra::Map<LO,GO,node_type> > dommap = reduced_map;
+  Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > colmap;
+  const Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > dommap = reduced_map;
   
   Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,all_global_indices.get_kokkos_view(), nullptr);
 
@@ -3055,9 +3007,9 @@ int Static_Solver::solve(){
   std::cout << std::endl;
   //end debug print
   
-  RCP<MAT> A = rcp( new MAT(reduced_map, colmap, reduced_row_offsets, all_indices.get_kokkos_view(), all_values.get_kokkos_view()) );
+  Teuchos::RCP<MAT> A = Teuchos::rcp( new MAT(reduced_map, colmap, reduced_row_offsets, all_indices.get_kokkos_view(), all_values.get_kokkos_view()) );
   
-   RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
   A->fillComplete();
   //This completes the setup for A matrix of the linear system
 
@@ -3106,7 +3058,7 @@ int Static_Solver::solve(){
   // Create random X vector
   vec_array Xview_pass = vec_array("Xview_pass", local_nrows_reduced,1);
   Xview_pass.assign_data(Xview.pointer());
-  RCP<MV> X = rcp(new MV(reduced_map, Xview_pass));
+  Teuchos::RCP<MV> X = Teuchos::rcp(new MV(reduced_map, Xview_pass));
   X->randomize();
   
   //print allocation of the solution vector to check distribution
@@ -3123,14 +3075,14 @@ int Static_Solver::solve(){
   
   Bview_pass.assign_data(Bview.pointer());
   
-  RCP<MV> B = rcp(new MV(reduced_map, Bview_pass));
+  Teuchos::RCP<MV> B = Teuchos::rcp(new MV(reduced_map, Bview_pass));
 
   *fos << "RHS :" << std::endl;
   B->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
   
   //debug block to print nodal positions corresponding to nodes of reduced system
-  CArrayKokkos<Scalar, Kokkos::LayoutLeft, device_type, memory_traits> Node_Positions_View(local_nrows_reduced);
+  CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Node_Positions_View(local_nrows_reduced);
 
   vec_array Node_Positions_pass = vec_array("Node_Positions", local_nrows_reduced,1);
 
@@ -3141,7 +3093,7 @@ int Static_Solver::solve(){
 
   Node_Positions_pass.assign_data(Node_Positions_View.pointer());
 
-  RCP<MV> Node_Positions = rcp(new MV(reduced_map, Node_Positions_pass));
+  Teuchos::RCP<MV> Node_Positions = Teuchos::rcp(new MV(reduced_map, Node_Positions_pass));
 
   *fos << "Node_Positions :" << std::endl;
   Node_Positions->describe(*fos,Teuchos::VERB_EXTREME);
@@ -3151,7 +3103,7 @@ int Static_Solver::solve(){
   //std::fflush(stdout);
   //std::cout << " PRINT BEFORE ERROR " << std::endl;
   // Create solver interface to KLU2 with Amesos2 factory method
-  RCP<Amesos2::Solver<MAT,MV> > solver = Amesos2::create<MAT,MV>("KLU2", A, X, B);
+  Teuchos::RCP<Amesos2::Solver<MAT,MV> > solver = Amesos2::create<MAT,MV>("KLU2", A, X, B);
   
   //declare non-contiguous map
   // Create a Teuchos::ParameterList to hold solver parameters

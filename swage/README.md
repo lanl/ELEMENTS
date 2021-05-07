@@ -18,7 +18,10 @@ The index spaces in SWAGE are:
 Connectivity data structures exist to map from from an index to another index space (e.g., all nodes in an element) and to walk over neighboring mesh entities (e.g., all sub-cells around a sub-cell).  The SWAGE library is stitched together with the elements library in the geometry library.  
 
 ### Index naming conventions
-The index spaces for the mesh are denoted with a _gid_ (global index on the rank) and the index spaces for local mesh entities are denoted with a _lid_ (local index).  For example, walking over all the elements in the mesh and then over all the sub-cells in the element would be, 
+The global index spaces for the mesh (but local to a rank) are denoted with a _gid_.  The index spaces for the local mesh entities, relative to a _gid_, are denoted with a _lid_.  The index spaces in a reference element, which comes from the elements library and are not in SWAGE, are denoted with a _rid_.  A local refernce index, relative to a _rid_, is denoted with a _rlid_.
+
+## Usage
+To walking over all the elements in the mesh and then over all the sub-cells in the element would be, 
 ```
 for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
    for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){ 
@@ -85,7 +88,7 @@ for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
 } // end for loop over nodes
 ```
 
-SWAGE supports undstructured meshes so the number of corners aournd a node various across the mesh.  SWAGE offers many ways to access index neighbors.  One example is accessing all nieghboring cells to a cell,
+SWAGE supports unstructured meshes so the number of corners around a node can vary across the mesh.  SWAGE offers many ways to access index neighbors.  One example is accessing all nieghboring cells to a cell,
 
 ```
 for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
@@ -96,6 +99,8 @@ for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
 }   
 ```
 
-The index spaces in a reference element, which comes from the elements library and are not in SWAGE, is denoted with a _rid_ (reference index) and the indices local that index are denoted with a _rlid_ (reference local index). 
+The datastructures in SWAGE like mesh.cells_in_cell(cell_gid, neighbor_lid) and mesh.corners_in_node(node_gid, corn_lid) access the data in a contiguous manner to deliver optiminal runtime performance.  
+
+ 
 
 

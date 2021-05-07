@@ -1,5 +1,5 @@
 # SWAGE
-The **sw**ift L**ag**rangian to **E**ulerian (SWAGE) library is quit general and allows users to implement a large range of methods on unstructured arbitrary-order 3D meshes.  This library supports connectivity data structures and index spaces needed to implement low-order or high-order numerical methods.  SWAGE is designed to work with the elements library that contains e.g., quadrature sets, basis functions, Jacobian matrices, etc.  The SWAGE library has unique index spaces to support arbitrary-order Lagrangian material dynamic methods that solve the governing equations for motion on an arbitrary-order mesh that moves with the material.  The SWAGE library also allows code developers to create high-order Eulerian fluid-dynamic codes using high-order meshes that are conformal to a curved boundary (e.g., a wing). 
+The **sw**ift L**ag**rangian to **E**ulerian (SWAGE) library is very general and allows users to implement a large range of numerical methods on unstructured arbitrary-order 3D meshes.  This library supports connectivity data structures and index spaces needed to implement either low-order or high-order numerical methods.  SWAGE is designed to work with the elements library that contains e.g., quadrature sets, basis functions, Jacobian matrices, etc.  The SWAGE library has unique index spaces to support arbitrary-order Lagrangian material dynamic methods that solve the governing equations for motion on an arbitrary-order mesh that moves with the material.  The SWAGE library also allows code developers to create high-order Eulerian fluid dynamics codes using high-order meshes that are conformal to a curved boundary (e.g., a wing). 
 
 ## Descriptions
 The index spaces in SWAGE are:
@@ -99,7 +99,7 @@ for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
 }   
 ```
 
-The datastructures in SWAGE like mesh.cells_in_cell(cell_gid, neighbor_lid) and mesh.corners_in_node(node_gid, corn_lid) access the data in a contiguous manner to deliver optiminal runtime performance.  
+The data structures in SWAGE like mesh.cells_in_cell(cell_gid, neighbor_lid) and mesh.corners_in_node(node_gid, corn_lid) access the data in a contiguous manner to deliver optiminal runtime performance.  
 
  
 

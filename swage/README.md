@@ -18,7 +18,7 @@ The index spaces in SWAGE are:
 Connectivity data structures exist to map from from an index to another index space (e.g., all nodes in an element) and to walk over neighboring mesh entities (e.g., all sub-cells around a sub-cell).  The SWAGE library is stitched together with the elements library in the geometry library.  
 
 ### Index naming conventions
-The index spaces for the mesh are denoted with a _gid_ and the index spaces for local mesh entities are denoted with a _lid_.  For example, walking over all the elements in the mesh and then over all the sub-cells in the element would be, 
+The index spaces for the mesh are denoted with a _gid_ (global index on the rank) and the index spaces for local mesh entities are denoted with a _lid_ (local index).  For example, walking over all the elements in the mesh and then over all the sub-cells in the element would be, 
 ```
 for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
    for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){ 
@@ -79,12 +79,22 @@ Then, to walk over all the corners in a node would be,
 ```
 for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
    for(int corn_lid = 0; corn_lid < mesh.num_corners_in_node(node_gid); corn_lid++){
-      int corner_gid = mesh.corners_in_node(node_gid, corn_lid);
+      int corner_gid = mesh.corners_in_node(node_gid, corn_lid);  // access the corner mesh index
       // ...
    }   
 } // end for loop over nodes
 ```
 
-The index spaces in a reference element, which comes from the elements library and are not in SWAGE, is denoted with a _rid_ and the indices local that index are denoted with a _rlid_. 
+SWAGE offers many ways to access index neighbors.  One example is accessing all nieghboring cells to a cell,
+
+```
+for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
+   for (int neighbor_lid = 0; neighbor_lid < mesh.num_cells_in_cell(cell_gid); neighbor_lid++){
+      int neighbor_cell_gid = mesh.cells_in_cell(cell_gid, neighbor_lid);  // Get mesh index for the neighboring cell
+   }
+}   
+```
+
+The index spaces in a reference element, which comes from the elements library and are not in SWAGE, is denoted with a _rid_ (reference index) and the indices local that index are denoted with a _rlid_ (reference local index). 
 
 

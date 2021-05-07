@@ -22,27 +22,43 @@ The index spaces for the mesh are denoted with a _gid_ and the index spaces for 
 ```
 for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
    for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){ 
-   
       int cell_gid = mesh.cells_in_elem(elem_gid, cell_lid);  // access the cell mesh index 
       // ...
-      
    }
 }
 ```
 
-To walk over all the corners in a sub-cell or all the nodes in a sub-cell would be 
+Then, to walk over all the corners in a sub-cell or all the nodes in a sub-cell would be, 
 
 ```
 for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
    for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){
-   
       int cell_gid = mesh.cells_in_elem(elem_gid, cell_lid);
       
       for(int node_lid = 0; node_lid < 8; node_lid++){
-      
          int node_gid = mesh.nodes_in_cell(cell_gid, node_lid);  // access the node mesh index
          int corner_gid = mesh.corners_in_cell(cell_gid, node_lid);  // access the corner mesh index
          // ...
+      }
+      
+   }   
+}
+```
+
+Then, to walk over all the surface facets in a corner would be,
+
+```
+for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
+   for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){
+      int cell_gid = mesh.cells_in_elem(elem_gid, cell_lid);
+      
+      for(int node_lid = 0; node_lid < 8; node_lid++){
+         int node_gid = mesh.nodes_in_cell(cell_gid, node_lid);  // access the node mesh index
+         int corner_gid = mesh.corners_in_cell(cell_gid, node_lid);  // access the corner mesh index
+         
+         for(int facet_lid = 0; facet_lid < 3; facet_lid++){
+            // ...
+         }
          
       }
       
@@ -50,13 +66,22 @@ for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
 }
 ```
 
-To walk over all the nodes in the mesh
+There are many ways to walk over or access an index space. To just walk over all the nodes in the mesh, the coding is,
 
 ```
 for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
-
    // ...
-   
+} // end for loop over nodes
+```
+
+Then, to walk over all the corners in a node would be,
+
+```
+for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
+   for(int corn_lid = 0; corn_lid < mesh.num_corners_in_node(node_gid); corn_lid++){
+      int corner_gid = mesh.corners_in_node(node_gid, corn_lid);
+      // ...
+   }   
 } // end for loop over nodes
 ```
 

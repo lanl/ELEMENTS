@@ -71,6 +71,10 @@ class Simulation_Parameters
   // --- Dimensional and mesh constants ---
   int num_dim;
   int p_order;
+
+  //file input parameters 
+  int words_per_line;
+  char *format_specification;  //per line file format when reading dofs
 };
 
 #endif // end HEADER_H

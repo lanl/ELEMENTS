@@ -260,7 +260,6 @@ void Static_Solver::read_mesh(char *MESH){
     printf("%d\n" , num_nodes);
 
     // set the vertices in the mesh read in
-    int rk_init = 1;
     init_mesh->init_nodes(num_nodes); // add 1 for index starting at 1
     
     std::cout << "Num points read in = " << init_mesh->num_nodes() << std::endl;

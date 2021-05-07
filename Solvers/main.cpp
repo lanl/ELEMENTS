@@ -6,6 +6,7 @@
 #include "Solver.h"
 #include "Pseudo_Laplacian.h"
 #include "Static_Solver.h"
+#include "Static_Solver_Parallel.h"
 
 //==============================================================================
 //    Main
@@ -24,7 +25,7 @@ int main(int argc, char *argv[]){
   Solver *solver;
   
   //set base pointer to the chosen solver
-  solver = new Static_Solver();
+  solver = new Static_Solver_Parallel();
   //solver = new Pseudo_Laplacian();
 
   //checks for optional solver routines

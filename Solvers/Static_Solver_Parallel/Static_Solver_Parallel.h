@@ -143,9 +143,25 @@ public:
   //number of displacement boundary conditions acting on nodes; used to size the reduced global stiffness map
   size_t Number_DOF_BCS;
 
+  //MPI data
+  int myrank; //index of this mpi rank in the world communicator
+  int nranks; //number of mpi ranks in the world communicator
+  MPI_Comm world; //stores the default communicator object (MPI_COMM_WORLD)
+
   //Parallel map for the global set of nodes (before removing BCS)
   Teuchos::RCP<const Teuchos::Comm<int> > comm;
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map;
+
+  //Pertains to local mesh information being stored as prescribed by the row map
+  global_size_t local_nrows;
+  global_size_t min_gid;
+  global_size_t max_gid;
+  global_size_t index_base;
+
+  //file readin variables
+  std::ifstream *in;
+  CArray <char> read_buffer;
+  int words_per_line;
   
 };
 

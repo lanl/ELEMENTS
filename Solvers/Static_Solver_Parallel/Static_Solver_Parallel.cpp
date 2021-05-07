@@ -39,6 +39,9 @@ num_cells in element = (p_order*2)^3
 
 
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h> 
 #include <math.h>  // fmin, fmax, abs note: fminl is long
@@ -74,6 +77,9 @@ num_cells in element = (p_order*2)^3
 #include "Static_Solver_Parallel.h"
 #include "Amesos2_Version.hpp"
 #include "Amesos2.hpp"
+
+#define BUFFER_LINES 1000
+#define MAX_WORD 30
 
 using namespace utils;
 
@@ -113,6 +119,10 @@ Static_Solver_Parallel::~Static_Solver_Parallel(){
 void Static_Solver_Parallel::run(int argc, char *argv[]){
     
     std::cout << "Running Static Solver Example" << std::endl;
+    //MPI info
+    world = MPI_COMM_WORLD; //used for convenience to represent all the ranks in the job
+    MPI_Comm_rank(world,&myrank);
+    MPI_Comm_size(world,&nranks);
 
     //initialize Trilinos communicator class
     comm = Tpetra::getDefaultComm();
@@ -122,8 +132,9 @@ void Static_Solver_Parallel::run(int argc, char *argv[]){
 
     // ---- Read intial mesh, refine, and build connectivity ---- //
     read_mesh(argv[1]);
+    return;
     std::cout << "Num elements = " << mesh->num_elems() << std::endl;
-
+    
     // ---- Find Boundaries on mesh ---- //
     generate_bcs();
     
@@ -237,69 +248,262 @@ void Static_Solver_Parallel::run(int argc, char *argv[]){
 // Input and setup
 void Static_Solver_Parallel::read_mesh(char *MESH){
 
-  FILE *in;
   char ch;
   int num_dim = simparam->num_dim;
   int p_order = simparam->p_order;
+  std::string skip_line, read_line, substring;
+  std::stringstream line_parse;
 
   //read the mesh    WARNING: assumes an ensight .geo file
-  in = fopen(MESH,"r");  
+  //task 0 reads file
+  if(myrank==0){
+  in->open(MESH);  
     
   //skip 8 lines
   for (int j = 1; j <= 8; j++) {
-    int i=0;
-      while ((ch=(char)fgetc(in))!='\n') {
-        i++;
-          printf("%c",ch);
-      }
-      printf("\n");
-  }  
+    getline(*in, skip_line);
+    std::cout << skip_line << std::endl;
+  }
+  }
 
   int num_nodes;
 
-  // --- Read the number of vertices in the mesh --- //
-  fscanf(in,"%d",&num_nodes);
-  printf("%d\n" , num_nodes);
+  // --- Read the number of nodes in the mesh --- //
+  if(myrank==0){
+    getline(*in, read_line);
+    line_parse.str(read_line);
+    line_parse >> num_nodes;
+    std::cout << "declared node count: " << num_nodes << std::endl;
+  }
+  
+  //broadcast number of nodes
+  MPI_Bcast(&num_nodes,1,MPI_INT,0,world);
 
   //construct contiguous parallel row map now that we know the number of nodes
   map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes*num_dim,0,comm));
 
   // set the vertices in the mesh read in
-  int rk_init = 1;
-  init_mesh->init_nodes(num_nodes); // add 1 for index starting at 1
+  global_size_t local_nrows = map->getNodeNumElements();
+  
+  //populate local row offset data from global data
+  global_size_t min_gid = map->getMinGlobalIndex();
+  global_size_t max_gid = map->getMaxGlobalIndex();
+  global_size_t index_base = map->getIndexBase();
+
+  //allocate mesh to the number of local rows
+  init_mesh->init_nodes(local_nrows); // add 1 for index starting at 1
     
   std::cout << "Num points read in = " << init_mesh->num_nodes() << std::endl;
 
 
   // read the initial mesh coordinates
   // x-coords
-  for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
-    fscanf(in,"%le", &init_mesh->node_coords(node_gid, 0));
-    //std::cout<<" "<< init_mesh->node_coords(node_gid, 0)<<std::endl;
-  }
+  /*only task 0 reads in nodes and elements from the input file
+  stores node data in a buffer and communicates once the buffer cap is reached
+  or the data ends*/
+
+  words_per_line = simparam->words_per_line;
+
+  //allocate read buffer
+  read_buffer = CArray<char>(BUFFER_LINES,words_per_line,MAX_WORD);
+
+  //depends on file input format; this is for ensight
+  int dof_limit = num_nodes;
+  int buffer_iterations = dof_limit/BUFFER_LINES;
+  int buffer_loop, buffer_iteration, scan_loop;
+  int total_chars = 0;
+  size_t read_node_start, node_gid, node_rid;
+  real_t dof_value;
+  if(dof_limit%BUFFER_LINES!=0) buffer_iterations++;
+  
+  //x-coords
+  read_node_start = 0;
+  for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
+    read_node_start+=BUFFER_LINES;
+    //pack buffer on rank 0
+    if(myrank==0&&buffer_iteration<buffer_iterations-1){
+      for (buffer_loop = 0; buffer_loop < BUFFER_LINES; buffer_loop++) {
+        getline(*in,read_line);
+        line_parse.str(read_line);
+        for(int iword = 0; iword < words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+      }
+    }
+    else if(myrank==0){
+      buffer_loop=0;
+      while(buffer_iteration*BUFFER_LINES+buffer_loop < num_nodes) {
+        getline(*in,read_line);
+        line_parse.str(read_line);
+        for(int iword = 0; iword < words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+        buffer_loop++;
+        //std::cout<<" "<< init_mesh->node_coords(node_gid, 0)<<std::endl;
+      }
+    }
+
+    //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
+    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    //broadcast how many nodes were read into this buffer iteration
+    MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
+
+    //determine which data to store in the swage mesh members (the local node data)
+    //loop through read buffer
+    for(scan_loop = 0; scan_loop < buffer_loop; scan_loop++){
+      //set global node id (ensight specific order)
+      node_gid = read_node_start + scan_loop;
+      //let map decide if this node id belongs locally; if yes store data
+      if(map->isNodeGlobalElement(node_gid)){
+        //set local node index in this mpi rank
+        node_rid = map->getLocalElement(node_gid);
+        //extract nodal position from the read buffer
+        //for ensight format this is just one coordinate per line
+        dof_value = atof(&read_buffer(buffer_loop,0,0));
+        init_mesh->node_coords(node_rid, 0) = dof_value;
+      }
+    }
     
-  if(num_dim>1)
+  }
+  
   // y-coords
-  for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
-    fscanf(in,"%le", &init_mesh->node_coords(node_gid, 1));
-    //std::cout<<" "<< init_mesh->node_coords(node_gid, 1)<<std::endl;
-  }  
+  read_node_start = 0;
+  for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
+    read_node_start+=BUFFER_LINES;
+    //pack buffer on rank 0
+    if(myrank==0&&buffer_iteration<buffer_iterations-1){
+      for (buffer_loop = 0; buffer_loop < BUFFER_LINES; buffer_loop++) {
+        getline(*in,read_line);
+        line_parse.str(read_line);
+        for(int iword = 0; iword < words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+      }
+    }
+    else if(myrank==0){
+      buffer_loop=0;
+      while(buffer_iteration*BUFFER_LINES+buffer_loop < num_nodes) {
+        getline(*in,read_line);
+        line_parse.str(read_line);
+        for(int iword = 0; iword < words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+        buffer_loop++;
+        //std::cout<<" "<< init_mesh->node_coords(node_gid, 0)<<std::endl;
+      }
+    }
+
+    //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
+    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    //broadcast how many nodes were read into this buffer iteration
+    MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
+
+    //determine which data to store in the swage mesh members (the local node data)
+    //loop through read buffer
+    for(scan_loop = 0; scan_loop < buffer_loop; scan_loop++){
+      //set global node id (ensight specific order)
+      node_gid = read_node_start + scan_loop;
+      //let map decide if this node id belongs locally; if yes store data
+      if(map->isNodeGlobalElement(node_gid)){
+        //set local node index in this mpi rank
+        node_rid = map->getLocalElement(node_gid);
+        //extract nodal position from the read buffer
+        //for ensight format this is just one coordinate per line
+        dof_value = atof(&read_buffer(buffer_loop,0,0));
+        init_mesh->node_coords(node_rid, 1) = dof_value;
+      }
+    }
+    
+  }
 
   // z-coords
-  if(num_dim>2)
-  for (int node_gid = 0; node_gid < init_mesh->num_nodes(); node_gid++) {
-    fscanf(in,"%le", &init_mesh->node_coords(node_gid, 2));
-    //std::cout<<" "<< init_mesh->node_coords(node_gid, 2)<<std::endl;
+  read_node_start = 0;
+  for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
+    read_node_start+=BUFFER_LINES;
+    //pack buffer on rank 0
+    if(myrank==0&&buffer_iteration<buffer_iterations-1){
+      for (buffer_loop = 0; buffer_loop < BUFFER_LINES; buffer_loop++) {
+        getline(*in,read_line);
+        line_parse.str(read_line);
+        for(int iword = 0; iword < words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+      }
+    }
+    else if(myrank==0){
+      buffer_loop=0;
+      while(buffer_iteration*BUFFER_LINES+buffer_loop < num_nodes) {
+        getline(*in,read_line);
+        line_parse.str(read_line);
+        for(int iword = 0; iword < words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+        buffer_loop++;
+        //std::cout<<" "<< init_mesh->node_coords(node_gid, 0)<<std::endl;
+      }
+    }
+
+    //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
+    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    //broadcast how many nodes were read into this buffer iteration
+    MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
+
+    //determine which data to store in the swage mesh members (the local node data)
+    //loop through read buffer
+    for(scan_loop = 0; scan_loop < buffer_loop; scan_loop++){
+      //set global node id (ensight specific order)
+      node_gid = read_node_start + scan_loop;
+      //let map decide if this node id belongs locally; if yes store data
+      if(map->isNodeGlobalElement(node_gid)){
+        //set local node index in this mpi rank
+        node_rid = map->getLocalElement(node_gid);
+        //extract nodal position from the read buffer
+        //for ensight format this is just one coordinate per line
+        dof_value = atof(&read_buffer(buffer_loop,0,0));
+        init_mesh->node_coords(node_rid, 2) = dof_value;
+      }
+    }
+    
   }
 
-  char skip_string[20];
-  fscanf(in,"%s",skip_string);
-  std::cout << skip_string <<std::endl;
+  //check that local assignments match global total
   int num_elem = 0;
+
+  if(myrank==0){
+  //skip element type name line
+    getline(*in, skip_line);
+    std::cout << skip_line << std::endl;
+  }
     
   // --- read the number of cells in the mesh ---
-  fscanf(in,"%d",&num_elem);
-  printf("Num elements read in %d\n" , num_elem);
+  // --- Read the number of vertices in the mesh --- //
+  if(myrank==0){
+    getline(*in, read_line);
+    line_parse.str(read_line);
+    line_parse >> num_elem;
+    std::cout << "declared element count: " << num_elem << std::endl;
+  }
+  
+  //broadcast number of nodes
+  MPI_Bcast(&num_elem,1,MPI_INT,0,world);
 
   std::cout<<"before initial mesh initialization"<<std::endl;
 
@@ -314,7 +518,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
     for (int node_lid = 0; node_lid < 8; node_lid++){
             
-      fscanf(in,"%d",&init_mesh->nodes_in_cell(cell_gid, node_lid));
+      //fscanf(in,"%d",&init_mesh->nodes_in_cell(cell_gid, node_lid));
       //std::cout<<" "<< init_mesh->nodes_in_cell(cell_gid, node_lid);
       // shift to start vertex index space at 0
       init_mesh->nodes_in_cell(cell_gid,node_lid) = init_mesh->nodes_in_cell(cell_gid, node_lid) - 1;
@@ -389,7 +593,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   swage::refine_mesh(*init_mesh, *mesh, 0, num_dim);
   std::cout<<"done refining"<< simparam->num_dim <<std::endl;
   // Close mesh input file
-  fclose(in);
+  in->close();
     
   // Create reference element
   ref_elem->init(p_order, num_dim, elem->num_basis());
@@ -2853,8 +3057,6 @@ int Static_Solver_Parallel::solve(){
                                 // failure, which it isn't really
   }
 
-  size_t myRank = comm->getRank();
-
   std::ostream &out = std::cout;
 
   out << Amesos2::version() << std::endl << std::endl;
@@ -2871,13 +3073,6 @@ int Static_Solver_Parallel::solve(){
 
   //Rebalance distribution of the global stiffness matrix rows here later since
   //rows and columns are being removed.
-  
-  global_size_t local_nrows = map->getNodeNumElements();
-  
-  //populate local row offset data from global data
-  global_size_t min_gid = map->getMinGlobalIndex();
-  global_size_t max_gid = map->getMaxGlobalIndex();
-  global_size_t index_base = map->getIndexBase();
 
   global_size_t *entries_per_row = new global_size_t[local_nrows];
   row_pointers row_offsets = row_pointers("row_offsets", local_nrows+1);

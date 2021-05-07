@@ -8,8 +8,8 @@ The index spaces in SWAGE are:
 * vertices (kinematic degrees of freedom for an element)
 * nodes (a continuous space that coincides with the Lobatto point locations)
 * gauss points (a discontinuous space that are the Lobatto point locations)
-* sub-cells (a decomposition of an element using the nodes)
-* sub-zones (a decomposition of an element using the vertices)
+* sub-cells (a decomposition of an element using the nodes), abbreviated as cells
+* sub-zones (a decomposition of an element using the vertices), abbreviated as zones
 * surface (a surface of the element)
 * patch (a portion of the element surface that coincides with the surface of a sub-cell)
 * facet (a portion of a patch)
@@ -22,7 +22,20 @@ The index spaces for the mesh are denoted with a _gid_ and the index spaces for 
 ```
 for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
    for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){ 
-      
+      int cell_gid = mesh.cells_in_elem(elem_gid, cell_lid);  // access the mesh index 
+      // ...
    }
 }
 ```
+To walk over all the corners in a sub-cell or all the nodes in a sub-cell would be 
+
+```
+for(int node_lid = 0; node_lid < elem->num_verts(); node_lid++){
+   int node_gid = mesh.nodes_in_cell(elem_gid, node_lid);
+   int corner_gid = mesh.corners_in_cell(cell_gid, node_lid);  // node_lid = corner_lid
+   // ...
+}
+```
+The index spaces in a reference element, which comes from the elements library and are not in SWAGE, is denoted with a _rid_ or a _rlid_. 
+
+

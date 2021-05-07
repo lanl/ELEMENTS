@@ -17,6 +17,9 @@ The index spaces in SWAGE are:
 
 Connectivity data structures exist to map from from an index to another index space (e.g., all nodes in an element) and to walk over neighboring mesh entities (e.g., all sub-cells around a sub-cell).  The SWAGE library is stitched together with the elements library in the geometry library.  
 
+<p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/swage/Data-structures-ELEMENTS.png" width="800">
+
+
 ### Index naming conventions
 The global index spaces for the mesh (but local to a rank) are denoted with a _gid_.  The index spaces for the local mesh entities, relative to a _gid_, are denoted with a _lid_.  The index spaces in a reference element, which comes from the elements library and are not in SWAGE, are denoted with a _rid_.  A local refernce index, relative to a _rid_, is denoted with a _rlid_.
 

@@ -17,7 +17,7 @@ The index spaces in SWAGE are:
 * facet (a portion of a patch)
 * corner (a corner of a sub-cell)
 
-Connectivity data structures exist to map from from an index to another index space (e.g., all nodes in an element) and to walk over neighboring mesh entities (e.g., all sub-cells around a sub-cell).  The SWAGE library is stitched together with the elements library in the geometry library.  
+Connectivity data structures exist to map from from an index to another index space (e.g., all nodes in an element) and to walk over neighboring mesh entities (e.g., all sub-cells around a sub-cell).  The SWAGE library is stitched together with the elements library in the geometry library to support arbitrary-order meshes (i.e., elements with linear or curved edges) and diverse numerical schemes including continuous and discontinuous finite element methods and finite volume methods.  
 
 <p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/swage/Data-structures-ELEMENTS.png" width="800">
 

@@ -85,12 +85,13 @@ for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
 } // end for loop over nodes
 ```
 
-SWAGE offers many ways to access index neighbors.  One example is accessing all nieghboring cells to a cell,
+SWAGE supports undstructured meshes so the number of corners aournd a node various across the mesh.  SWAGE offers many ways to access index neighbors.  One example is accessing all nieghboring cells to a cell,
 
 ```
 for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
    for (int neighbor_lid = 0; neighbor_lid < mesh.num_cells_in_cell(cell_gid); neighbor_lid++){
       int neighbor_cell_gid = mesh.cells_in_cell(cell_gid, neighbor_lid);  // Get mesh index for the neighboring cell
+      // ...
    }
 }   
 ```

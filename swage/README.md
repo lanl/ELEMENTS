@@ -11,13 +11,14 @@ The index spaces in SWAGE are:
 * sub-cells (a decomposition of an element using the nodes)
 * sub-zones (a decomposition of an element using the vertices)
 * surface (a surface of the element)
-* patch (a portion of the surface that coincides with the surface of a sub-cell)
+* patch (a portion of the element surface that coincides with the surface of a sub-cell)
 * facet (a portion of a patch)
 * corner (a corner of a sub-cell)
 
 Connectivity data structures exist to map from from an index to another index space (e.g., all nodes in an element) and to walk over neighboring mesh entities (e.g., all sub-cells around a sub-cell).  The SWAGE library is stitched together with the elements library in the geometry library.  
 
-The index spaces for the mesh are denoted with a gid and the index spaces for local mesh entities are denoted with a lid.  For example, walking over all the elements in the mesh and then over all the sub-cells in the element would be, 
+### Index naming conventions
+The index spaces for the mesh are denoted with a _gid_ and the index spaces for local mesh entities are denoted with a _lid_.  For example, walking over all the elements in the mesh and then over all the sub-cells in the element would be, 
 ```
 for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
    for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){ 

@@ -17,11 +17,10 @@ The index spaces in SWAGE are:
 
 Connectivity data structures exist to map from from an index to another index space (e.g., all nodes in an element) and to walk over neighboring mesh entities (e.g., all sub-cells around a sub-cell).  The SWAGE library is stitched together with the elements library in the geometry library.  
 
-The index spaces for the mesh are denoted with a gid and the index spaces for local mesh entities are denoted with a lid.  For example, walking over all the sub-cells in the mesh and then all the nodes in the sub-cell would be, 
+The index spaces for the mesh are denoted with a gid and the index spaces for local mesh entities are denoted with a lid.  For example, walking over all the elements in the mesh and then over all the sub-cells in the element would be, 
 ```
-for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
-   // a loop over all the 
-   for (int node_lid = 0; node_lid < 8; node_lid++){
+for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
+   for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){ 
       
    }
 }

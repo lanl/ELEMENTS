@@ -53,3 +53,18 @@ In particular, the libraries will be copied to a `lib/` subdirectory and the hea
 If the install prefix is not specified in a configuration file, CMake will use the default, which on Linux is `/usr/local/` and the copy will require administrative privileges.
 
 Warning: if linking against the `libelements` library, you must define a global variable `elem` that specifies the class of element.
+
+# Citation
+```
+@article{MOORE2019100257,
+title = {ELEMENTS: A high-order finite element library in C++},
+journal = {SoftwareX},
+volume = {10},
+pages = {100257},
+year = {2019},
+issn = {2352-7110},
+doi = {https://doi.org/10.1016/j.softx.2019.100257},
+url = {https://www.sciencedirect.com/science/article/pii/S235271101930113X},
+author = {Jacob L. Moore and Nathaniel R. Morgan and Mark F. Horstemeyer},
+keywords = {Element Library, C++, High-order elements, Spectral elements, Serendipity elements}
+```

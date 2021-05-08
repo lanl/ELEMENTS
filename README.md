@@ -1,13 +1,16 @@
 # ELEMENTS
 
-ELEMENTS is a library of mathematical functions for supporting a very broad range of element types including: 
+The C++ ELEMENTS library is a collection of libraries to support implementing a diverse range of numerical methods on low and high-order meshes.  The ELEMENTS library can be used for research and development of both continuous and discontinuous finite element methods as well as finite volume methods to solve a diverse range of partial differential equations. The ELEMENTS library includes the following libraries:  **MATAR** contains the routines to support dense and sparse **mat**rices and **ar**rays, **SLAM** contains the interfaces to **s**olvers, **l**inear **a**lgebra, and **m**athematics routines or external packages,  **elements** contains the mathematical functions to support a large range of elements types including serendiptiy elements, **SWAGE** contains the routines and data-structures to support unstructured arbitrary-order 3D meshes that move or remain stationary, and **geometry** combines SWAGE with elements.  
+
+# elements
+The **elements** library contains the mathematical functions to support a very broad range of element types including: 
 
 * linear, quadratic, and cubic serendipity elements in 2D and 3D; 
+* arbitrary-order tensor product elements in 2D and 3D;
 * high-order spectral elements; and 
 * a linear 4D element. 
 
-The ELEMENTS library can be used for research and development of both continuous and discontinuous finite element methods for solving a diverse range of partial differential equations. 
-The library has functions for calculating quantities that are commonly used in finite element methods such as the gradient of a basis function, the Jacobi matrix, the inverse Jacobi matrix, the determinant of the Jacobi matrix, and a physical position inside the element, to name a few examples. 
+The elements library has functions for calculating quantities that are commonly used in finite element methods such as the gradient of a basis function, the Jacobi matrix, the inverse Jacobi matrix, the determinant of the Jacobi matrix, and a physical position inside the element, to name a few examples. 
 The library also supports both Gauss-Legendre and Gauss-Lobatto quadrature rules up to 8 quadrature points in each coordinate direction. 
 The examples and discussions in this paper will focus on Lagrangian solid mechanics and dynamics, but ELEMENTS can be used for many other applications.  
 

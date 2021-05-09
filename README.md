@@ -3,7 +3,8 @@
 The C++ **ELEMENTS** library is a collection of libraries to support implementing a diverse range of numerical methods on low and high-order meshes.  The **ELEMENTS** library can be used for research and development of both continuous and discontinuous finite element methods, as well as, finite volume methods to solve a diverse range of partial differential equations. The **ELEMENTS** library includes the following libraries:  **MATAR** contains the routines to support dense and sparse **mat**rices and **ar**rays, **SLAM** contains the interfaces to **s**olvers, **l**inear **a**lgebra, and **m**athematical routines or external packages (e.g., Trilinos),  **elements** contains the mathematical functions to support a large range of elements types including serendiptiy elements, **SWAGE** contains the routines and data-structures to support unstructured arbitrary-order 3D meshes that move or remain stationary, and **geometry** combines **SWAGE** with **elements**.  The **ELEMENTS** libary is designed to support Lagrangian (mesh moves) solid dynamics and mechanics codes, Eulerian (mesh is stationary) fluid dynamics codes, and many other code applications.  
 
 <p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/codeStructureELEMENTS.png" width="400">
-  
+<p align="center">Fig. Code structure layout
+
 ## MATAR
 The **MATAR** library is designed for dense and sparse data representations, and follows the data-oriented programming approach for highly efficient calculations.  **MATAR** leverages **Kokkos** for performance portability over diverse architectures. The data representations developed in **MATAR** and the numerical tools in **ELEMENTS** are designed for performance, portability, and productivity (i.e., ease of use).  **MATAR** is stored in a separate repository as it can aid many applications, as such, it is included as a GitHub submodule in the **ELEMENTS** repository.
 
@@ -26,7 +27,8 @@ The **elements** library has functions to calculate quantities that are commonly
 ## SWAGE
 The **SWAGE** library contains a large suite of mesh data structures, a rich set of index spaces for different geometric entities, and many connectivity arrays between the various index spaces.  This library supports both unstructured linear and arbitrary-order meshes.  **SWAGE** is designed to support a diverse range of methods that arise in computational physics and engineering.
 
-<p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/CurvyP3Mesh.png" width="200"></p><p align="center">Fig. Cubic elements
+<p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/CurvyP3Mesh.png" width="200">
+<p align="center">Fig. A mesh with cubic serendipity elements
   
 
 ## geometry

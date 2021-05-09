@@ -29,7 +29,7 @@ The **SWAGE** library contains a large suite of mesh data structures, a rich set
 The **geometry** library combines **SWAGE** with **elements** to deliver the required capabilities to implement a large range of numerical methods on unstructured linear or high-order meshes.
 
 ## examples
-The example code in the examples folder does a simple average from cells to nodes and then back.  
+The examples folder contains a simple code to calculate an average from the cells to nodes and then back.  A figures folder within the examples folder contains diagrams to illustrate, for instance, the code project layout, geometric index spaces, and various capabilties supported by the **ELEMENTS** library.  
 
 
 ## Building & Installation

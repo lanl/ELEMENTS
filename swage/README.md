@@ -1,10 +1,10 @@
 # SWAGE
-The **sw**ift L**ag**rangian to **E**ulerian (SWAGE) mesh library is very general and allows users to implement a large range of numerical methods on unstructured arbitrary-order 3D meshes.  This library supports connectivity data structures and index spaces needed to implement either low-order or high-order numerical methods.  SWAGE is designed to work with the elements library that contains e.g., quadrature sets, basis functions, Jacobian matrices, etc.  The SWAGE mesh library has unique index spaces to support arbitrary-order Lagrangian material dynamics codes that solve the governing equations for motion on an arbitrary-order mesh that moves with the material.  The SWAGE mesh library also allows code developers to create high-order Eulerian fluid dynamics codes using high-order meshes that are conformal to a curved boundary (e.g., a wing).  SWAGE relies on the MATAR library to access multidimensional data and couples with the elements library inside the geometry library.     
+The **sw**ift L**ag**rangian to **E**ulerian (**SWAGE**) mesh library is very general and allows users to implement a large range of numerical methods on unstructured arbitrary-order 3D meshes.  This library supports connectivity data structures and index spaces needed to implement either low-order or high-order numerical methods.  **SWAGE** is designed to work with the **elements** library that contains e.g., quadrature sets, basis functions, Jacobian matrices, etc.  The **SWAGE** mesh library has unique index spaces to support arbitrary-order Lagrangian material dynamics codes that solve the governing equations for motion on an arbitrary-order mesh that moves with the material.  The **SWAGE** mesh library also allows code developers to create high-order Eulerian fluid dynamics codes using high-order meshes that are conformal to a curved boundary (e.g., a wing).  **SWAGE** relies on the **MATAR** library to access multidimensional data and couples with the elements library inside the geometry library.     
 
 <p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/swage/codeStructureSWAGE.png" width="300">
 
 ## Descriptions
-The index spaces in SWAGE are:
+The index spaces in **SWAGE** are:
 
 * elements (the computational mesh is decomposed into non-overlapping elements)
 * vertices (kinematic degrees of freedom for an element)
@@ -17,13 +17,13 @@ The index spaces in SWAGE are:
 * facet (a portion of a patch)
 * corner (a corner of a sub-cell)
 
-Connectivity data structures exist to map from from an index to another index space (e.g., all nodes in an element) and to walk over neighboring mesh entities (e.g., all sub-cells around a sub-cell).  The SWAGE library is stitched together with the elements library in the geometry library to support arbitrary-order meshes (i.e., elements with linear or curved edges) and diverse numerical schemes including continuous and discontinuous finite element methods, and finite volume methods.  
+Connectivity data structures exist to map from from an index to another index space (e.g., all nodes in an element) and to walk over neighboring mesh entities (e.g., all sub-cells around a sub-cell).  The **SWAGE** library is stitched together with the elements library in the geometry library to support arbitrary-order meshes (i.e., elements with linear or curved edges) and diverse numerical schemes including continuous and discontinuous finite element methods, and finite volume methods.  
 
 <p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/swage/Data-structures-ELEMENTS.png" width="800">
 
 
 ### Index naming conventions
-The global index spaces for the mesh (but local to a rank) are denoted with a _gid_.  The index spaces for the local mesh entities, relative to a _gid_, are denoted with a _lid_.  The index spaces in a reference element, which comes from the elements library and are not in SWAGE, are denoted with a _rid_.  A local refernce index, relative to a _rid_, is denoted with a _rlid_.
+The global index spaces for the mesh (but local to a rank) are denoted with a _gid_.  The index spaces for the local mesh entities, relative to a _gid_, are denoted with a _lid_.  The index spaces in a reference element, which comes from the elements library and are not in **SWAGE**, are denoted with a _rid_.  A local refernce index, relative to a _rid_, is denoted with a _rlid_.
 
 ## Usage
 To code to walk over all the elements in the mesh and then over all the sub-cells in the element would be, 
@@ -93,7 +93,7 @@ for (int node_gid = 0; node_gid < mesh.num_nodes(); node_gid++) {
 } // end for loop over nodes
 ```
 
-SWAGE supports unstructured meshes so the number of corners around a node can vary across the mesh.  SWAGE offers many ways to access index neighbors.  One example is accessing all nieghboring cells to a cell,
+**SWAGE** supports unstructured meshes so the number of corners around a node can vary across the mesh.  **SWAGE** offers many ways to access index neighbors.  One example is accessing all nieghboring cells to a cell,
 
 ```
 for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
@@ -104,7 +104,7 @@ for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
 }   
 ```
 
-The data structures in SWAGE like mesh.cells_in_cell(cell_gid, neighbor_lid) and mesh.corners_in_node(node_gid, corn_lid) access the data in a contiguous manner to deliver optiminal runtime performance.  
+The data structures in **SWAGE** like mesh.cells_in_cell(cell_gid, neighbor_lid) and mesh.corners_in_node(node_gid, corn_lid) access the data in a contiguous manner to deliver optiminal runtime performance.  
 
  
 

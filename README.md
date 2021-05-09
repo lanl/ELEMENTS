@@ -26,7 +26,7 @@ The **elements** library has functions to calculate quantities that are commonly
 The **SWAGE** library contains a large suite of mesh data structures, a rich set of index spaces for different geometric entities, and many connectivity arrays between the various index spaces.  This library supports both unstructured linear and arbitrary-order meshes.  **SWAGE** is designed to support diverse range of methods that arise in computational physics and engineering.
 
 # geometry
-The **geometry** library combines **SWAGE** with **elements** to deliver the required capbilities to implement methods on unstructured linear or high-order meshes.
+The **geometry** library combines **SWAGE** with **elements** to deliver the required capabilities to implement a large range of numerical methods on unstructured linear or high-order meshes.
 
 # examples
 The example code in the examples folder does a simple average from cells to nodes and then back.  

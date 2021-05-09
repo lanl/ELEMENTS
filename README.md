@@ -74,7 +74,7 @@ Warning: if linking against the `libelements` library, you must define a global 
 ## Citation
 ```
 @article{MOORE2019100257,
-title = {ELEMENTS: A high-order finite element library in C++},
+title = "{ELEMENTS: A high-order finite element library in C++}",
 journal = {SoftwareX},
 volume = {10},
 pages = {100257},

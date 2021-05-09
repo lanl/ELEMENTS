@@ -1,21 +1,25 @@
 # ELEMENTS
 
-The C++ ELEMENTS library is a collection of libraries to support implementing a diverse range of numerical methods on low and high-order meshes.  The ELEMENTS library can be used for research and development of both continuous and discontinuous finite element methods as well as finite volume methods to solve a diverse range of partial differential equations. The ELEMENTS library includes the following libraries:  **MATAR** contains the routines to support dense and sparse **mat**rices and **ar**rays, **SLAM** contains the interfaces to **s**olvers, **l**inear **a**lgebra, and **m**athematics routines or external packages,  **elements** contains the mathematical functions to support a large range of elements types including serendiptiy elements, **SWAGE** contains the routines and data-structures to support unstructured arbitrary-order 3D meshes that move or remain stationary, and **geometry** combines SWAGE with elements.  
+The C++ ELEMENTS library is a collection of libraries to support implementing a diverse range of numerical methods on low and high-order meshes.  The ELEMENTS library can be used for research and development of both continuous and discontinuous finite element methods as well as finite volume methods to solve a diverse range of partial differential equations. The ELEMENTS library includes the following libraries:  **MATAR** contains the routines to support dense and sparse **mat**rices and **ar**rays, **SLAM** contains the interfaces to **s**olvers, **l**inear **a**lgebra, and **m**athematical routines or external packages,  **elements** contains the mathematical functions to support a large range of elements types including serendiptiy elements, **SWAGE** contains the routines and data-structures to support unstructured arbitrary-order 3D meshes that move or remain stationary, and **geometry** combines SWAGE with elements.  The **ELEMENTS** libary is designed to support Lagrangian (mesh moves) solid dynamics and mechanics codes, Eulerian (mesh is stationary) fluid dynamics codes, and many other applications.  
+
+# MATAR
+The **MATAR** library is designed for dense and sparse data representations. The **MATAR** library follows the data-oriented programming approach for highly efficient calculations.  **MATAR** leverages **Kokkos** for performance portability over diverse architectures. The data representations developed in **MATAR** and the numerical tools in **ELEMENTS** are designed for performance, portability, and productivity (i.e., ease of use).  **MATAR** is stored in a separate repository as it can aid many applications, as such, it is included as a GitHub submodule in the **ELEMENTS** repository.
+
 
 # elements
-The **elements** library contains the mathematical functions to support a very broad range of element types including: 
+A mesh is composed of non-overlapping elements, where the **elements** library contains the mathematical functions to support a very broad range of element types including: 
 
 * linear, quadratic, and cubic serendipity elements in 2D and 3D; 
 * arbitrary-order tensor product elements in 2D and 3D;
 * high-order spectral elements; and 
 * a linear 4D element. 
 
-The elements library has functions for calculating quantities that are commonly used in finite element methods such as the gradient of a basis function, the Jacobi matrix, the inverse Jacobi matrix, the determinant of the Jacobi matrix, and a physical position inside the element, to name a few examples. 
-The library also supports both Gauss-Legendre and Gauss-Lobatto quadrature rules up to 8 quadrature points in each coordinate direction. 
-The examples and discussions in this paper will focus on Lagrangian solid mechanics and dynamics, but ELEMENTS can be used for many other applications.  
+The **elements** library has functions to calculate quantities that are commonly used in finite element methods such as a basis function, gradient of a basis function, the Jacobian matrix, the inverse Jacobian matrix, the determinant of the Jacobiam matrix, and a physical position inside the element, to name a few examples. The elements library also supports both Gauss-Legendre and Gauss-Lobatto quadrature rules up to 8 quadrature points in each coordinate direction. 
 
-On top of supporting multiple types of discretization, ELEMENTS contains a rather extensive library for creating mesh structures to map between multiple different index spaces that are commonly required for solving problems in computational physics.
+# SWAGE
+The **SWAGE** library contains a large suite of mesh data structures, a rich set of index spaces, and many connectivity arrays between the various index spaces.  This library supports both unstructured linear and arbitrary-order meshes.  **SWAGE** is designed to support diverse range of methods that arise in computational physics and engineering.
 
+# examples
 The example code in the examples folder does a simple average from cells to nodes and then back.  
 
 ## Building & Installation

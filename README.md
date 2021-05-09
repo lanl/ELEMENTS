@@ -19,12 +19,14 @@ A mesh is composed of non-overlapping elements, where the **elements** library c
 * high-order spectral elements; and 
 * a linear 4D element. 
 
-The **elements** library has functions to calculate quantities that are commonly used in finite element methods such as a basis function, gradient of a basis function, the Jacobian matrix, the inverse Jacobian matrix, the determinant of the Jacobiam matrix, and a physical position inside the element, to name a few examples. The elements library also supports both Gauss-Legendre and Gauss-Lobatto quadrature rules up to 8 quadrature points in each coordinate direction. 
+The **elements** library has functions to calculate quantities that are commonly used in finite element methods (both continuous and discontinous) such as a basis function, gradient of a basis function, the Jacobian matrix, the inverse Jacobian matrix, the determinant of the Jacobiam matrix, and a physical position inside the element, to name a few examples. The **elements** library also supports both Gauss-Legendre and Gauss-Lobatto quadrature rules up to 8 quadrature points in each coordinate direction. 
 
 
 # SWAGE
 The **SWAGE** library contains a large suite of mesh data structures, a rich set of index spaces for different geometric entities, and many connectivity arrays between the various index spaces.  This library supports both unstructured linear and arbitrary-order meshes.  **SWAGE** is designed to support diverse range of methods that arise in computational physics and engineering.
 
+# geometry
+The **geometry** library combines **SWAGE** with **elements** to deliver the required capbilities to implement methods on unstructured linear or high-order meshes.
 
 # examples
 The example code in the examples folder does a simple average from cells to nodes and then back.  

@@ -26,7 +26,7 @@ The **elements** library has functions to calculate quantities that are commonly
 ## SWAGE
 The **SWAGE** library contains a large suite of mesh data structures, a rich set of index spaces for different geometric entities, and many connectivity arrays between the various index spaces.  This library supports both unstructured linear and arbitrary-order meshes.  **SWAGE** is designed to support diverse range of methods that arise in computational physics and engineering.
 
-<p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/CurvyP3Mesh.png" width="200">
+<p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/CurvyP3Mesh.png" width="200"></p><p align="center">Fig. Cubic elements
   
 
 ## geometry

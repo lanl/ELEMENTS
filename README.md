@@ -5,7 +5,7 @@ The C++ **ELEMENTS** library is a collection of sub-libraries to support impleme
 <p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/codeStructureELEMENTS.png" width="400">
 <p align="center">Fig. Code structure layout
   
-<p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/TaylorGreenVortex-t0.png" width="350"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/TaylorGreenVortex-tEnd.png" width="350">
+<p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/TaylorGreenVortex-t0.png" width="400"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/TaylorGreenVortex-tEnd.png" width="400">
 <p align="center">Fig. A high-order 3D mesh deforming in the Taylor-Green vortex
 
 ## MATAR

@@ -4,6 +4,9 @@ The C++ **ELEMENTS** library is a collection of sub-libraries to support impleme
 
 <p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/codeStructureELEMENTS.png" width="400">
 <p align="center">Fig. Code structure layout
+  
+<p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/TaylorGreenVortex-t0.png" width="450"><img src="https://github.com/lanl/ELEMENTS/blob/master/examples/figures/TaylorGreenVortex-tEnd.png" width="450">
+<p align="center">Fig. A high-order 3D mesh deforming in the Taylor-Green vortex
 
 ## MATAR
 The **MATAR** sub-library is designed for dense and sparse data representations, and follows the data-oriented programming approach for highly efficient calculations.  **MATAR** leverages **Kokkos** for performance portability over diverse architectures. The data representations developed in **MATAR** and the numerical tools in **ELEMENTS** are designed for performance, portability, and productivity (i.e., ease of use).  **MATAR** is stored in a separate repository as it can aid many applications, as such, it is included as a GitHub submodule in the **ELEMENTS** repository.

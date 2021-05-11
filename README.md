@@ -41,19 +41,30 @@ The **geometry** sub-library combines **SWAGE** with **elements** to deliver the
 The examples folder contains a simple code to calculate an average from the cells to nodes and then back.  A figures folder within the examples folder contains diagrams to illustrate, for instance, the code project layout, geometric index spaces, and various capabilties supported by the **ELEMENTS** library.  
 
 
-## Building & Installation
+## Cloning, Building, and Installation
+
+To clone the **ELEMENTS** repository, enter
+```
+git clone https://github.com/lanl/ELEMENTS.git
+```
+at the command line.
+Next, make sure to pull the **MATAR** submodule by entering
+```
+git submodule update --init
+```
 
 To build **ELEMENTS** in place, simply enter
 ```
-cmake ..; make
+cmake .; make
 ```
-at the command line.
+at the command line from the top-level directory in your local **ELEMENTS** repository.
 
-To build **ELEMENTS** in a separate build directory, create the build directory somewhere in your filesystem.
+To build **ELEMENTS** in a separate build directory, create the build directory somewhere in your filesystem. 
+For example, you might enter
 ```
-mkdir build
+mkdir build; cd build
 ```
-Then create a configuration script like, for example,
+You might also create a configuration script like, for example,
 ```
 #!/bin/bash
 ELEMENTS_DIR=..  # relative path of ELEMENTS repository
@@ -62,7 +73,7 @@ cmake \
   -DCMAKE_CXX_FLAGS=-g \
   ${ELEMENTS_DIR}
 ```
-where the installation directory is configured to be the directory in which the configuration script is run.
+where the CMake installation directory is configured to be the directory in which the configuration script is run (in this example, the `build/` directory created above).
 Then enter
 ```
 ./my_config.sh; make

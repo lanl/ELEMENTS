@@ -31,12 +31,20 @@ set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${VECTOR_Fortran
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${VECTOR_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 
+# MATAR submodule
+# (Note: the way the MATAR submodule is handled may need to change in the
+# future. Currently, it is deployed as a header-only library, which is why it
+# seemed sufficient to simply include the MATAR header. However, the
+# requirements of linking Kokkos and other parts of Trilinos may change this.
+# Please update this as needed.)
+add_subdirectory(matar)
+include_directories(matar/src)
+
 # Includes
 include_directories(elements)
 include_directories(geometry)
 include_directories(swage)
 include_directories(utilities)
-include_directories(matar)
 
 # Libraries
 add_subdirectory(elements)
@@ -46,14 +54,15 @@ add_subdirectory(swage)
 # Examples
 add_subdirectory(examples)
 
-# Install headers in include/ subdirectory of install directory
-#file(GLOB ELEMENTS_INCLUDE ${PROJECT_SOURCE_DIR}/Elements/*.h)
-#install(FILES ${ELEMENTS_INCLUDE} DESTINATION include)
-#install(FILES Utilities/utilities.h DESTINATION include)
+# Install headers in include/ subdirectory of the specified install directory
+# (Note: This is an inelegant way of installing the headers. Resursing through
+# subdirectories looking for anything that matches the pattern "*.h" is
+# indiscriminate, and the resulting include/ directory isn't affected by
+# distclean. If there's a better way to do this, please introduce it here.)
 file(GLOB_RECURSE ALL_HEADERS *.h)
 install(FILES ${ALL_HEADERS} DESTINATION include)
 
-# Install libraries in lib/ subdirectory of install directory
+# Install libraries in lib/ subdirectory of the specified install directory
 install(TARGETS elements DESTINATION lib)
 install(TARGETS geometry DESTINATION lib)
 install(TARGETS swage DESTINATION lib)

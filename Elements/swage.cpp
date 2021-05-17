@@ -46,6 +46,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>  // std::cout etc.
 #include <cmath>
 
+#include "Simulation_Parameters.h"
 #include "swage.h"
 
 namespace swage{
@@ -53,8 +54,9 @@ namespace swage{
 // Mesh_t function definitions  //
 //******************************//
 
-mesh_t::mesh_t () {
+mesh_t::mesh_t (Simulation_Parameters *simparam) {
   local_index_set_flag = 0;
+  num_dim_ = simparam->num_dim;
 }
 
 // ==== MESH CONSTANTS ==== // 

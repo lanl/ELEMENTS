@@ -82,7 +82,7 @@ public:
 private:
     
     // ---- GENERAL INFORMATION ---- //
-    const int num_dim_ = 3;
+    const int num_dim_;
     const int num_nodes_hex_ = 8;
     const int num_patches_hex_ = 6;
     

@@ -53,9 +53,15 @@ void Simulation_Parameters::input(){
   NF = 2; // number of fills
     
   mat_fill = (mat_fill_t *) malloc((size_t)(NF*sizeof(mat_fill_t)));
+  
+  //Static isotropic parameters to move into a child class later
+  Elastic_Modulus = 10000;
+  Poisson_Ratio = 0;
+  words_per_line = 1;
+  elem_words_per_line = 8;
 
-  Elastic_Modulus = 100;
-  Poisson_Ratio = 0.1;
+  //ensight file readin for Isotropical elasticity
+
   num_gauss_points = 2;
     
   // Global instructions
@@ -78,7 +84,10 @@ void Simulation_Parameters::input(){
   mat_fill[1].field2 = 0.0;   // some other field
 
   // ---- boundary conditions ---- //
-  NB = 6; // number of boundaries
+  NB = 2; // number of boundaries
+  NBSF = 1; //number of surface density force conditions
+  NBD = 1; //number of surface sets used to specify a fixed displacement on nodes belonging to respective surfaces
+           //note this only implies a fixed displacement on the surface if no other basis functions have support on the surface
     
   // allocate boundary memory
   boundary = (boundary_t *) malloc((size_t)(NB*sizeof(boundary_t)));
@@ -88,28 +97,8 @@ void Simulation_Parameters::input(){
   boundary[0].value = 0.0;
   boundary[0].thermal_bc = bdy::isothermal;
     
-  // Tag Y=0 plane
-  boundary[1].surface = bdy::y_plane;
-  boundary[1].value = 0.0;
+  // Tag X=2 plane
+  boundary[1].surface = bdy::x_plane; // planes, cylinder, spheres, or a files
+  boundary[1].value = 2.0;
   boundary[1].thermal_bc = bdy::isothermal;
-    
-  // Tag Z=0 plane
-  boundary[2].surface = bdy::z_plane;
-  boundary[2].value = 0.0;
-  boundary[2].thermal_bc = bdy::isothermal;
-    
-  // Tag X=0 plane
-  boundary[3].surface = bdy::x_plane; // planes, cylinder, spheres, or a files
-  boundary[3].value = 2.0;
-  boundary[3].thermal_bc = bdy::isothermal;
-    
-  // Tag Y=0 plane
-  boundary[4].surface = bdy::y_plane;
-  boundary[4].value = 2.0;
-  boundary[4].thermal_bc = bdy::isothermal;
-    
-  // Tag Z=0 plane
-  boundary[5].surface = bdy::z_plane;
-  boundary[5].value = 2.0;
-  boundary[5].thermal_bc = bdy::isothermal; 
 }

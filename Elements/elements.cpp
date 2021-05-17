@@ -2215,9 +2215,9 @@ as follows
 */
 
 Quad4::Quad4() : Element2D(){
-
+  nsurfaces = 4;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(4,2);
+  surface_to_dof_lid = CArray<int>(nsurfaces,2);
   surface_to_dof_lid(0,0) = 0;
   surface_to_dof_lid(0,1) = 1;
 
@@ -2382,9 +2382,9 @@ int Quad4::vert_node_map(const int vert_lid){
 */
 
 Quad8::Quad8() : Element2D(){
-
+  nsurfaces = 4;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(4,3);
+  surface_to_dof_lid = CArray<int>(nsurfaces,3);
 
   surface_to_dof_lid(0,0) = 0;
   surface_to_dof_lid(0,1) = 4;
@@ -2629,9 +2629,9 @@ as follows
 */
 
 Quad12::Quad12() : Element2D(){
-
+  nsurfaces = 4;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(4,4);
+  surface_to_dof_lid = CArray<int>(nsurfaces,4);
   surface_to_dof_lid(0,0) = 0;
   surface_to_dof_lid(0,1) = 4;
   surface_to_dof_lid(0,2) = 5;
@@ -3163,9 +3163,9 @@ void QuadN::basis_partials (
 */
 
 Hex8::Hex8() : Element3D(){
-
+  nsurfaces = 6;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(6,4);
+  surface_to_dof_lid = CArray<int>(nsurfaces,4);
 
   //st planes first
   surface_to_dof_lid(0,0) = 0;
@@ -3417,9 +3417,9 @@ as follows
 */
 
 Hex20::Hex20() : Element3D(){
-
+  nsurfaces = 6;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(6,8);
+  surface_to_dof_lid = CArray<int>(nsurfaces,8);
 
   //st planes first
   surface_to_dof_lid(0,0) = 0;
@@ -3845,9 +3845,9 @@ shown below
 
 
 Hex32::Hex32() : Element3D(){
-
+  nsurfaces = 6;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(6,12);
+  surface_to_dof_lid = CArray<int>(nsurfaces,12);
 
   //st planes first
   surface_to_dof_lid(0,0) = 0;

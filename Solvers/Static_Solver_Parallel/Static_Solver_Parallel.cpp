@@ -64,19 +64,17 @@ num_cells in element = (p_order*2)^3
 #include "Tpetra_Details_DefaultTypes.hpp"
 #include <set>
 
-#include "Amesos2.hpp"
-#include "Amesos2_Version.hpp"
-
 #include "elements.h"
 #include "swage.h"
 #include "matar.h"
 #include "utilities.h"
 #include "header.h"
 #include "state.h"
+#include "node_combination.h"
 #include "Simulation_Parameters.h"
-#include "Static_Solver_Parallel.h"
 #include "Amesos2_Version.hpp"
 #include "Amesos2.hpp"
+#include "Static_Solver_Parallel.h"
 
 #define BUFFER_LINES 1000
 #define MAX_WORD 30
@@ -97,8 +95,8 @@ Static_Solver_Parallel::Static_Solver_Parallel() : Solver(){
   //create ref element object
     ref_elem = new elements::ref_element();
   //create mesh objects
-    init_mesh = new swage::mesh_t();
-    mesh = new swage::mesh_t();
+    init_mesh = new swage::mesh_t(simparam);
+    mesh = new swage::mesh_t(simparam);
 
     element_select = new elements::element_selector();
 }
@@ -253,8 +251,14 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   int p_order = simparam->p_order;
   std::string skip_line, read_line, substring;
   std::stringstream line_parse;
+  CArray <char> read_buffer;
+  //Nodes_Per_Element_Type =  elements::elem_types::Nodes_Per_Element_Type;
 
-  //read the mesh    WARNING: assumes an ensight .geo file
+  //read the mesh
+  //PLACEHOLDER: ensight_format(MESH);
+  // abaqus_format(MESH);
+  // vtk_format(MESH)
+
   //task 0 reads file
   if(myrank==0){
   in->open(MESH);  
@@ -280,7 +284,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   MPI_Bcast(&num_nodes,1,MPI_INT,0,world);
 
   //construct contiguous parallel row map now that we know the number of nodes
-  map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes*num_dim,0,comm));
+  map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes,0,comm));
 
   // set the vertices in the mesh read in
   global_size_t local_nrows = map->getNodeNumElements();
@@ -295,7 +299,6 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     
   std::cout << "Num points read in = " << init_mesh->num_nodes() << std::endl;
 
-
   // read the initial mesh coordinates
   // x-coords
   /*only task 0 reads in nodes and elements from the input file
@@ -303,23 +306,24 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   or the data ends*/
 
   words_per_line = simparam->words_per_line;
+  elem_words_per_line = simparam->elem_words_per_line;
 
   //allocate read buffer
   read_buffer = CArray<char>(BUFFER_LINES,words_per_line,MAX_WORD);
 
   //depends on file input format; this is for ensight
   int dof_limit = num_nodes;
-  int buffer_iterations = dof_limit/BUFFER_LINES;
   int buffer_loop, buffer_iteration, scan_loop;
   int total_chars = 0;
-  size_t read_node_start, node_gid, node_rid;
+  size_t read_index_start, node_gid, node_rid, elem_gid;
   real_t dof_value;
+  int buffer_iterations = dof_limit/BUFFER_LINES;
   if(dof_limit%BUFFER_LINES!=0) buffer_iterations++;
   
   //x-coords
-  read_node_start = 0;
+  read_index_start = 0;
   for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
-    read_node_start+=BUFFER_LINES;
+    read_index_start+=BUFFER_LINES;
     //pack buffer on rank 0
     if(myrank==0&&buffer_iteration<buffer_iterations-1){
       for (buffer_loop = 0; buffer_loop < BUFFER_LINES; buffer_loop++) {
@@ -358,7 +362,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     //loop through read buffer
     for(scan_loop = 0; scan_loop < buffer_loop; scan_loop++){
       //set global node id (ensight specific order)
-      node_gid = read_node_start + scan_loop;
+      node_gid = read_index_start + scan_loop;
       //let map decide if this node id belongs locally; if yes store data
       if(map->isNodeGlobalElement(node_gid)){
         //set local node index in this mpi rank
@@ -373,9 +377,9 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   }
   
   // y-coords
-  read_node_start = 0;
+  read_index_start = 0;
   for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
-    read_node_start+=BUFFER_LINES;
+    read_index_start+=BUFFER_LINES;
     //pack buffer on rank 0
     if(myrank==0&&buffer_iteration<buffer_iterations-1){
       for (buffer_loop = 0; buffer_loop < BUFFER_LINES; buffer_loop++) {
@@ -414,7 +418,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     //loop through read buffer
     for(scan_loop = 0; scan_loop < buffer_loop; scan_loop++){
       //set global node id (ensight specific order)
-      node_gid = read_node_start + scan_loop;
+      node_gid = read_index_start + scan_loop;
       //let map decide if this node id belongs locally; if yes store data
       if(map->isNodeGlobalElement(node_gid)){
         //set local node index in this mpi rank
@@ -429,9 +433,9 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   }
 
   // z-coords
-  read_node_start = 0;
+  read_index_start = 0;
   for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
-    read_node_start+=BUFFER_LINES;
+    read_index_start+=BUFFER_LINES;
     //pack buffer on rank 0
     if(myrank==0&&buffer_iteration<buffer_iterations-1){
       for (buffer_loop = 0; buffer_loop < BUFFER_LINES; buffer_loop++) {
@@ -470,7 +474,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     //loop through read buffer
     for(scan_loop = 0; scan_loop < buffer_loop; scan_loop++){
       //set global node id (ensight specific order)
-      node_gid = read_node_start + scan_loop;
+      node_gid = read_index_start + scan_loop;
       //let map decide if this node id belongs locally; if yes store data
       if(map->isNodeGlobalElement(node_gid)){
         //set local node index in this mpi rank
@@ -485,7 +489,13 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   }
 
   //check that local assignments match global total
+  
+  //read in element info (ensight file format is organized in element type sections)
+  //loop over this later for several element type sections
+
   int num_elem = 0;
+  int rnum_elem = 0;
+  CArray<int> node_store(elem_words_per_line);
 
   if(myrank==0){
   //skip element type name line
@@ -502,35 +512,109 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     std::cout << "declared element count: " << num_elem << std::endl;
   }
   
-  //broadcast number of nodes
+  //broadcast number of elements
   MPI_Bcast(&num_elem,1,MPI_INT,0,world);
 
   std::cout<<"before initial mesh initialization"<<std::endl;
+  
+  //read in element connectivity
+  //we're gonna reallocate for the words per line expected for the element connectivity
+  read_buffer = CArray<char>(BUFFER_LINES,elem_words_per_line,MAX_WORD);
 
-  init_mesh->init_element(0, 3, num_elem);
-  init_mesh->init_cells(num_elem);
+  //calculate buffer iterations to read number of lines
+  buffer_iterations = num_elem/BUFFER_LINES;
+  int assign_flag;
+  //dynamic buffer used to store elements before we know how many this rank needs
+  std::vector<real_t> element_temp(BUFFER_LINES*elem_words_per_line);
+  if(num_elem%BUFFER_LINES!=0) buffer_iterations++;
 
-  Element_Types = CArray<size_t>(num_elem); 
-
-
-
-  // for each cell read the list of associated nodes
-  for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
-    for (int node_lid = 0; node_lid < 8; node_lid++){
-            
-      //fscanf(in,"%d",&init_mesh->nodes_in_cell(cell_gid, node_lid));
-      //std::cout<<" "<< init_mesh->nodes_in_cell(cell_gid, node_lid);
-      // shift to start vertex index space at 0
-      init_mesh->nodes_in_cell(cell_gid,node_lid) = init_mesh->nodes_in_cell(cell_gid, node_lid) - 1;
+  read_index_start = 0;
+  for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
+    read_index_start+=BUFFER_LINES;
+    //pack buffer on rank 0
+    if(myrank==0&&buffer_iteration<buffer_iterations-1){
+      for (buffer_loop = 0; buffer_loop < BUFFER_LINES; buffer_loop++) {
+        getline(*in,read_line);
+        line_parse.str(read_line);
+        for(int iword = 0; iword < elem_words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+      }
     }
-    //std::cout<<" "<<std::endl;
-    Element_Types(cell_gid) = 4; //Hex8 default
+    else if(myrank==0){
+      buffer_loop=0;
+      while(buffer_iteration*BUFFER_LINES+buffer_loop < num_nodes) {
+        getline(*in,read_line);
+        line_parse.str(read_line);
+        for(int iword = 0; iword < words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+        buffer_loop++;
+        //std::cout<<" "<< init_mesh->node_coords(node_gid, 0)<<std::endl;
+      }
+    }
+
+    //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
+    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*elem_words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    //broadcast how many nodes were read into this buffer iteration
+    MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
+    
+    //determine which data to store in the swage mesh members (the local element data)
+    //loop through read buffer
+    rnum_elem = 0;
+    
+    for(scan_loop = 0; scan_loop < buffer_loop; scan_loop++){
+      //set global node id (ensight specific order)
+      elem_gid = read_index_start + scan_loop;
+      //add this element to the local list if any of its nodes belong to this rank according to the map
+      //get list of nodes for each element line and check if they belong to the map
+      assign_flag = 0;
+      for(int inode = 0; inode < elem_words_per_line; inode++){
+        //as we loop through the nodes belonging to this element we store them
+        //if any of these nodes belongs to this rank this list is used to store the element locally
+        node_gid = atoi(&read_buffer(buffer_loop,inode,0));
+        node_store(inode) = node_gid - 1; //subtract 1 since file index start is 1 but code expects 0
+        //first we add the elements to a dynamically allocated list
+        if(map->isNodeGlobalElement(node_gid)){
+          assign_flag = 1;
+          rnum_elem++;
+        }
+      }
+
+      if(assign_flag)
+      for(int inode = 0; inode < elem_words_per_line; inode++){
+        if((rnum_elem-1)*elem_words_per_line + inode>=BUFFER_LINES) 
+          element_temp.resize((rnum_elem-1)*elem_words_per_line + inode+BUFFER_LINES);
+        element_temp[(rnum_elem-1)*elem_words_per_line + inode] = node_store(inode); 
+      }
+    }
+    
   }
+  
+  //copy temporary element storage to swage arrays
+  init_mesh->init_element(0, 3, rnum_elem);
+  init_mesh->init_cells(rnum_elem);
+  Element_Types = CArray<size_t>(rnum_elem);
+  for(int ielem = 0; ielem < rnum_elem; ielem++)
+    for(int inode = 0; inode < elem_words_per_line; inode++)
+      init_mesh->nodes_in_cell(ielem, inode) = element_temp[ielem*elem_words_per_line + inode];
+
+  //delete temporary element connectivity
+  element_temp.~vector();
+
+  for(int ielem = 0; ielem < rnum_elem; ielem++)
+    Element_Types(ielem) = 4;
 
   //element type selection (subject to change)
   // ---- Set Element Type ---- //
   // allocate element type memory
-  elements::elem_type_t* elem_choice;
+  //elements::elem_type_t* elem_choice;
 
   int NE = 1; // number of element types in problem
   elem_choice = new elements::elem_type_t[NE];
@@ -540,31 +624,36 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     
   //set base type pointer to one of the existing derived type object references
   if(simparam->num_dim==2)
-  element_select->choose_2Delem_type(elem_choice[0], elem2D);
+  element_select->choose_2Delem_type(Element_Types(0), elem2D);
   else if(simparam->num_dim==3)
-  element_select->choose_3Delem_type(elem_choice[0], elem);
+  element_select->choose_3Delem_type(Element_Types(0), elem);
 
   // Convert ijk index system to the finite element numbering convention
   // for vertices in cell
-  int convert_ensight_to_ijk[8];
-  convert_ensight_to_ijk[0] = 0;
-  convert_ensight_to_ijk[1] = 1;
-  convert_ensight_to_ijk[2] = 3;
-  convert_ensight_to_ijk[3] = 2;
-  convert_ensight_to_ijk[4] = 4;
-  convert_ensight_to_ijk[5] = 5;
-  convert_ensight_to_ijk[6] = 7;
-  convert_ensight_to_ijk[7] = 6;
+  max_nodes_per_element = 8;
+  CArray<size_t> convert_ensight_to_ijk(max_nodes_per_element);
+  CArray<size_t> tmp_ijk_indx(max_nodes_per_element);
+  convert_ensight_to_ijk(0) = 0;
+  convert_ensight_to_ijk(1) = 1;
+  convert_ensight_to_ijk(2) = 3;
+  convert_ensight_to_ijk(3) = 2;
+  convert_ensight_to_ijk(4) = 4;
+  convert_ensight_to_ijk(5) = 5;
+  convert_ensight_to_ijk(6) = 7;
+  convert_ensight_to_ijk(7) = 6;
     
-  int tmp_ijk_indx[8];
-
-  for (int cell_gid = 0; cell_gid < num_elem; cell_gid++) {
-    for (int node_lid = 0; node_lid < 8; node_lid++){
-      tmp_ijk_indx[node_lid] = init_mesh->nodes_in_cell(cell_gid, convert_ensight_to_ijk[node_lid]);
+  int nodes_per_element;
+  
+  for (int cell_gid = 0; cell_gid < rnum_elem; cell_gid++) {
+    //set nodes per element
+    //nodes_per_element = Nodes_Per_Element_Type(Element_Types(cell_gid));
+    nodes_per_element = 8;
+    for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
+      tmp_ijk_indx(node_lid) = init_mesh->nodes_in_cell(cell_gid, convert_ensight_to_ijk(node_lid));
     }   
         
-    for (int node_lid = 0; node_lid < 8; node_lid++){
-      init_mesh->nodes_in_cell(cell_gid, node_lid) = tmp_ijk_indx[node_lid];
+    for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
+      init_mesh->nodes_in_cell(cell_gid, node_lid) = tmp_ijk_indx(node_lid);
     }
   }
 
@@ -578,13 +667,13 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     init_mesh->build_node_cell_connectivity(); 
 
     // -- CORNER CONNECTIVITY -- //
-    init_mesh->build_corner_connectivity(); 
+    //init_mesh->build_corner_connectivity(); 
 
     // -- CELL TO CELL CONNECTIVITY -- //
-    init_mesh->build_cell_cell_connectivity(); 
+    //init_mesh->build_cell_cell_connectivity(); 
 
     // -- PATCHES -- //
-    init_mesh->build_patch_connectivity(); 
+    //init_mesh->build_patch_connectivity(); 
   }
 
   std::cout<<"refine mesh"<<std::endl;
@@ -603,11 +692,45 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   std::cout << "End of setup " << std::endl;     
 } // end read_mesh
 
+/* ----------------------------------------------------------------------
+   Find boundary surface segments that belong to this MPI rank
+------------------------------------------------------------------------- */
+
+void Static_Solver_Parallel::Boundary_Patches(){
+  size_t npatches_repeat, element_npatches;
+  int num_dim = simparam->num_dim;
+
+  //compute the number of patches in this MPI rank with repeats for adjacent cells
+  npatches_repeat = 0;
+  for(int ielem = 0; ielem < num_elem; ielem++){
+    if(num_dim==2){
+      element_select->choose_2Delem_type(Element_Types(0), elem2D);
+      element_npatches = elem2D.nsurfaces;
+    }
+    else if(num_dim==3){
+      element_select->choose_3Delem_type(Element_Types(0), elem);
+      element_npatches = elem.nsurfaces;
+    }
+    npatches_repeat += element_npatches;
+  }
+
+  Patch_Nodes = CArray<Node_Combination>(npatches_repeat);
+
+  //declare set of nodal combinations to find boundary set
+  //boundary patches will not try to add nodal combinations twice
+
+}
+
+/* ----------------------------------------------------------------------
+   Assign sets of element boundary surfaces corresponding to user BCs
+------------------------------------------------------------------------- */
 
 void Static_Solver_Parallel::generate_bcs(){
     
     // build boundary mesh patches
-    mesh->build_bdy_patches();
+    //mesh->build_bdy_patches();
+    Boundary_Patches();
+
     std::cout << "number of boundary patches = " << mesh->num_bdy_patches() << std::endl;
     std::cout << "building boundary sets " << std::endl;
     // set the number of boundary sets

@@ -79,6 +79,8 @@ public:
 
   void generate_bcs();
 
+  void Boundary_Patches();
+
   void allocate_state();
 
   void initialize_state();
@@ -115,6 +117,7 @@ public:
   class Simulation_Parameters *simparam;
   
   CArray <size_t> Element_Types;
+  CArray <size_t> Nodes_Per_Element_Type;
   CArray <size_t> Global_Stiffness_Matrix_Assembly_Map;
   RaggedRightArray <size_t> Graph_Matrix;
   RaggedRightArray <size_t> DOF_Graph_Matrix;
@@ -122,6 +125,8 @@ public:
   CArray <real_t> Nodal_Forces;
   CArray <size_t> Stiffness_Matrix_strides;
   CArray <size_t> Graph_Matrix_strides;
+  CArray <Nodal_Combination> Patch_Nodes;
+  size_t max_nodes_per_element;
 
   //types of boundary conditions
   enum bc_type {NONE,DISPLACEMENT_CONDITION, X_DISPLACEMENT_CONDITION,
@@ -160,8 +165,7 @@ public:
 
   //file readin variables
   std::ifstream *in;
-  CArray <char> read_buffer;
-  int words_per_line;
+  int words_per_line, elem_words_per_line;
   
 };
 

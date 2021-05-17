@@ -319,6 +319,7 @@ class ref_element{
         
         //list of local ids to basis functions needed to interpolate throughout a given element surface
         CArray<int> surface_to_dof_lid;
+        int nsurfaces;
 
         // calculate a physical position in an element for a given xi,eta
         virtual void physical_position(
@@ -359,6 +360,7 @@ class ref_element{
 
         //list of local ids to basis functions needed to interpolate throughout a given element surface
         CArray<int> surface_to_dof_lid;
+        int nsurfaces;
 
         // calculate a physical position in an element for a given xi,eta,mu
         virtual void physical_position(
@@ -1213,6 +1215,25 @@ namespace elem_types
         // add tesseract element
 
     };
+
+    //Nodes per each element type
+    //CArray<size_t> Nodes_Per_Element_Type(8);
+    //Quad4
+    //Nodes_Per_Element_Type(0) = 4;
+    //Quad8
+    //Nodes_Per_Element_Type(1) = 8;
+    //Quad12
+    //Nodes_Per_Element_Type(2) = 12;
+    //QuadN has to be set on a casewise base
+    //Nodes_Per_Element_Type(3) = 0;
+    //Hex8
+    //Nodes_Per_Element_Type(4) = 8;
+    //Hex20
+    //Nodes_Per_Element_Type(5) = 20;
+    //Hex32
+    //Nodes_Per_Element_Type(6) = 32;
+    //HexN set on a casewise basis
+    //Nodes_Per_Element_Type(7) = 0;
 
 } // end of elem_type namespace
 

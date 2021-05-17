@@ -1,12 +1,17 @@
 cmake_minimum_required (VERSION 3.17)
 project (Elements)
-add_compile_options(-std=c++11 -g)
+#add_compile_options(-std=c++11 -g -O0)
 #set (CMAKE_CXX_STANDARD 14)
 
 find_package(MPI REQUIRED)
 SET(CMAKE_PREFIX_PATH ./Trilinos/build/lib/cmake/Trilinos ${CMAKE_PREFIX_PATH})
 #SET(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH})
 FIND_PACKAGE(Trilinos 13.1 REQUIRED)
+
+# Make sure to use same compilers and flags as Trilinos
+SET(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER} )
+SET(CMAKE_C_COMPILER ${Trilinos_C_COMPILER} )
+SET(CMAKE_Fortran_COMPILER ${Trilinos_Fortran_COMPILER} )
 
 # Echo trilinos build info just for fun
 MESSAGE("\nFound Trilinos!  Here are the details: ")
@@ -22,11 +27,6 @@ MESSAGE("   Trilinos_TPL_LIBRARIES = ${Trilinos_TPL_LIBRARIES}")
 MESSAGE("   Trilinos_TPL_LIBRARY_DIRS = ${Trilinos_TPL_LIBRARY_DIRS}")
 MESSAGE("   Trilinos_BUILD_SHARED_LIBS = ${Trilinos_BUILD_SHARED_LIBS}")
 MESSAGE("End of Trilinos details\n")
-
-# Make sure to use same compilers and flags as Trilinos
-SET(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER} )
-SET(CMAKE_C_COMPILER ${Trilinos_C_COMPILER} )
-SET(CMAKE_Fortran_COMPILER ${Trilinos_Fortran_COMPILER} )
 
 include_directories(MATAR)
 include_directories(Include)

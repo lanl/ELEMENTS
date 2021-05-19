@@ -1,4 +1,4 @@
 [submodule "matar"]
 	path = matar
-	url = https://github.com/jfkiviaho/MATAR.git
-	branch = fix-elements_submodule_compatibility
+	url = https://github.com/lanl/MATAR.git
+	branch = main

@@ -1,5 +1,5 @@
 set(Solver_SRC_H ../Include/header.h ../Include/state.h ../Include/utilities.h ../Include/math_util.h)
-set(Class_SRC Solver.h ../Include/Simulation_Parameters.h ../include/Simulation_Parameters.cpp)
+set(Class_SRC Solver.h ../Include/Simulation_Parameters.h ../Include/Simulation_Parameters.cpp ../Include/node_combination.h ../Include/node_combination.cpp)
 set(Laplace_SRC Pseudo_Laplace/Pseudo_Laplacian.h Pseudo_Laplace/Pseudo_Laplacian.cpp)
 set(Static_SRC Static_Solver/Static_Solver.h Static_Solver/Static_Solver.cpp)
 set(Static_Parallel_SRC Static_Solver_Parallel/Static_Solver_Parallel.h Static_Solver_Parallel/Static_Solver_Parallel.cpp)

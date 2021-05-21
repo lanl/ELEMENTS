@@ -2,15 +2,23 @@
 #define NODE_COMBINATION_H  
 
 #include "matar.h"
+#include "utilities.h"
 
 using namespace utils;
+class Node_Combination;
+bool operator< (const Node_Combination &object1, const Node_Combination &object2);
 
 class Node_Combination {
 
 public:
     
   CArray<size_t> node_set;
-  //Constructor
+  size_t patch_gid;
+
+  //Default Constructor
+  Node_Combination(){}
+
+  //Constructor with initialization
   Node_Combination(CArray<size_t> &nodes_init) {
     node_set = nodes_init;
   }
@@ -44,37 +52,12 @@ public:
     
   }
 
-  //overload < operator
-  bool operator< (Node_Combination &not_this){
-    int this_size = this->node_set.size();
-    //check if this node combination is identical
-    //first check size of the combination; if smaller evaluate to true
-    //the set using this is then ordered first according to size of the combinations
-    if(this_size<not_this.node_set.size())
-      return true;
-    
-    //This part sorts for segments of the set where combinations have the same size
-    //define < using the sort of both combinations. If the first nonequal element of the lhs combination, w.r.t to 
-    //the corresponding element of the rhs, is less than the respective element of the rhs < evaluates to true
-    std::sort(this->node_set.get_pointer(),this->node_set.get_pointer()+this->node_set.size());
-    std::sort(not_this.node_set.get_pointer(),not_this.node_set.get_pointer()+not_this.node_set.size());\
-
-    //loop through the sorted nodes to check for <
-    for(int i = 0; i < this_size; i++){
-      if(this->node_set(i)<not_this.node_set(i)) return true;
-      else if(this->node_set(i)==not_this.node_set(i)) continue;
-      else break;
-    }
-
-    return false;
-    
-  }
+  
     
 
 private:
     int num_dim_;
 
 };
-
 
 #endif // end STATE_H

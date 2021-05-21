@@ -92,8 +92,8 @@ Static_Solver::Static_Solver() : Solver(){
   //create ref element object
     ref_elem = new elements::ref_element();
   //create mesh objects
-    init_mesh = new swage::mesh_t();
-    mesh = new swage::mesh_t();
+    init_mesh = new swage::mesh_t(simparam);
+    mesh = new swage::mesh_t(simparam);
 
     element_select = new elements::element_selector();
 }
@@ -328,25 +328,23 @@ void Static_Solver::read_mesh(char *MESH){
             init_mesh->nodes_in_cell(cell_gid,node_lid) = init_mesh->nodes_in_cell(cell_gid, node_lid) - 1;
         }
         //std::cout<<" "<<std::endl;
-        Element_Types(cell_gid) = 4; //Hex8 default
+        Element_Types(cell_gid) = elements::elem_types::Hex8; //Hex8 default
     }
 
     //element type selection (subject to change)
     // ---- Set Element Type ---- //
     // allocate element type memory
-    elements::elem_type_t* elem_choice;
+    elements::elem_types::elem_type elem_choice;
+    
+    elem_choice = elements::elem_types::Hex8;
 
     int NE = 1; // number of element types in problem
-    elem_choice = new elements::elem_type_t[NE];
-    
-    //current default
-    elem_choice->type = elements::elem_types::elem_type::Hex8;
     
     //set base type pointer to one of the existing derived type object references
     if(simparam->num_dim==2)
-    element_select->choose_2Delem_type(elem_choice[0], elem2D);
+    element_select->choose_2Delem_type(elem_choice, elem2D);
     else if(simparam->num_dim==3)
-    element_select->choose_3Delem_type(elem_choice[0], elem);
+    element_select->choose_3Delem_type(elem_choice, elem);
 
     // Convert ijk index system to the finite element numbering convention
     // for vertices in cell

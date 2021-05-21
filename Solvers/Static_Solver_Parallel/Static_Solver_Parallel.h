@@ -4,6 +4,8 @@
 #include "utilities.h"
 #include "../Solver.h"
 #include "matar.h"
+#include "elements.h"
+#include "node_combination.h"
 #include <Teuchos_ScalarTraits.hpp>
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_oblackholestream.hpp>
@@ -79,7 +81,7 @@ public:
 
   void generate_bcs();
 
-  void Boundary_Patches();
+  void Get_Boundary_Patches();
 
   void allocate_state();
 
@@ -116,17 +118,19 @@ public:
 
   class Simulation_Parameters *simparam;
   
-  CArray <size_t> Element_Types;
-  CArray <size_t> Nodes_Per_Element_Type;
-  CArray <size_t> Global_Stiffness_Matrix_Assembly_Map;
-  RaggedRightArray <size_t> Graph_Matrix;
-  RaggedRightArray <size_t> DOF_Graph_Matrix;
-  RaggedRightArray <real_t> Stiffness_Matrix;
-  CArray <real_t> Nodal_Forces;
-  CArray <size_t> Stiffness_Matrix_strides;
-  CArray <size_t> Graph_Matrix_strides;
-  CArray <Nodal_Combination> Patch_Nodes;
+  CArray<elements::elem_types::elem_type> Element_Types;
+  CArray<size_t> Nodes_Per_Element_Type;
+  CArray<size_t> Global_Stiffness_Matrix_Assembly_Map;
+  RaggedRightArray<size_t> Graph_Matrix;
+  RaggedRightArray<size_t> DOF_Graph_Matrix;
+  RaggedRightArray<real_t> Stiffness_Matrix;
+  CArray<real_t> Nodal_Forces;
+  CArray<size_t> Stiffness_Matrix_strides;
+  CArray<size_t> Graph_Matrix_strides;
+  //CArray <Nodal_Combination> Patch_Nodes;
+  CArray<Node_Combination> Boundary_Patches;
   size_t max_nodes_per_element;
+  int rnum_elem;
 
   //types of boundary conditions
   enum bc_type {NONE,DISPLACEMENT_CONDITION, X_DISPLACEMENT_CONDITION,
@@ -156,6 +160,18 @@ public:
   //Parallel map for the global set of nodes (before removing BCS)
   Teuchos::RCP<const Teuchos::Comm<int> > comm;
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map;
+
+  //Ghost node indices and the ranks that own them
+  size_t nghost_nodes;
+  CArrayKokkos<GO, Kokkos::LayoutLeft, node_type::device_type> ghost_nodes;
+  CArrayKokkos<int, array_layout, device_type, memory_traits> ghost_node_ranks;
+  Teuchos::ArrayView<const GO> ghost_nodes_pass;
+  Teuchos::ArrayView<int> ghost_node_ranks_pass;
+  //! mapping used to get local ghost index from the global ID.
+  typedef ::Tpetra::Details::FixedHashTable<GO, LO, Kokkos::HostSpace::device_type>
+    global_to_local_table_host_type;
+
+  global_to_local_table_host_type global2local_map;
 
   //Pertains to local mesh information being stored as prescribed by the row map
   global_size_t local_nrows;

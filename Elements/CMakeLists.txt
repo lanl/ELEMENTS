@@ -1,8 +1,11 @@
-add_library(elements elements.cpp elements.h)
-add_library(swage swage.cpp swage.h)
-
 include_directories(../Include)
 include_directories(../MATAR/src)
+
+set(Param_SRC_H ../Include/Simulation_Parameters.h ../Include/Simulation_Parameters.cpp)
+set(Include_SRC_H ../Include/header.h ../Include/state.h ../Include/utilities.h ../Include/math_util.h)
+
+add_library(elements elements.cpp elements.h)
+add_library(swage swage.cpp swage.h ${Include_SRC_H} ${Param_SRC_H})
 
 target_link_libraries(elements matar)
 target_link_libraries(swage matar)

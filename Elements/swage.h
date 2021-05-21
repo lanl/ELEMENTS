@@ -10,6 +10,7 @@
 
 #include "utilities.h"
 #include "matar.h"
+#include "Simulation_Parameters.h"
 
 
 using namespace utils;
@@ -66,7 +67,7 @@ patch 6: [1,3,7,5]
 class mesh_t {
 public:
     // constructor
-    mesh_t ( );
+    mesh_t (Simulation_Parameters *simparam);
     // deconstructor
     ~mesh_t ( );
     
@@ -82,7 +83,7 @@ public:
 private:
     
     // ---- GENERAL INFORMATION ---- //
-    const int num_dim_;
+    int num_dim_;
     const int num_nodes_hex_ = 8;
     const int num_patches_hex_ = 6;
     

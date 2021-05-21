@@ -62,6 +62,7 @@ num_cells in element = (p_order*2)^3
 #include <Kokkos_Parallel_Reduce.hpp>
 #include "Tpetra_Details_makeColMap.hpp"
 #include "Tpetra_Details_DefaultTypes.hpp"
+#include "Tpetra_Details_FixedHashTable.hpp"
 #include <set>
 
 #include "elements.h"
@@ -494,7 +495,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //loop over this later for several element type sections
 
   int num_elem = 0;
-  int rnum_elem = 0;
+  rnum_elem = 0;
   CArray<int> node_store(elem_words_per_line);
 
   if(myrank==0){
@@ -510,6 +511,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     line_parse.str(read_line);
     line_parse >> num_elem;
     std::cout << "declared element count: " << num_elem << std::endl;
+    if(num_elem <= 0) std::cout << "ERROR, NO ELEMENTS IN MESH" << std::endl;
   }
   
   //broadcast number of elements
@@ -600,16 +602,17 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //copy temporary element storage to swage arrays
   init_mesh->init_element(0, 3, rnum_elem);
   init_mesh->init_cells(rnum_elem);
-  Element_Types = CArray<size_t>(rnum_elem);
+  Element_Types = CArray<elements::elem_types::elem_type>(rnum_elem);
   for(int ielem = 0; ielem < rnum_elem; ielem++)
     for(int inode = 0; inode < elem_words_per_line; inode++)
       init_mesh->nodes_in_cell(ielem, inode) = element_temp[ielem*elem_words_per_line + inode];
 
   //delete temporary element connectivity
   element_temp.~vector();
-
+ 
+  //simplified for now
   for(int ielem = 0; ielem < rnum_elem; ielem++)
-    Element_Types(ielem) = 4;
+    Element_Types(ielem) = elements::elem_types::Hex8;
 
   //element type selection (subject to change)
   // ---- Set Element Type ---- //
@@ -617,10 +620,6 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //elements::elem_type_t* elem_choice;
 
   int NE = 1; // number of element types in problem
-  elem_choice = new elements::elem_type_t[NE];
-    
-  //current default
-  elem_choice->type = elements::elem_types::elem_type::Hex8;
     
   //set base type pointer to one of the existing derived type object references
   if(simparam->num_dim==2)
@@ -644,24 +643,38 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     
   int nodes_per_element;
   
-  for (int cell_gid = 0; cell_gid < rnum_elem; cell_gid++) {
+  if(num_dim==2)
+  for (int cell_rid = 0; cell_rid < rnum_elem; cell_rid++) {
     //set nodes per element
-    //nodes_per_element = Nodes_Per_Element_Type(Element_Types(cell_gid));
-    nodes_per_element = 8;
+    element_select->choose_2Delem_type(Element_Types(cell_rid), elem2D);
+    nodes_per_element = elem2D->num_nodes();
     for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
-      tmp_ijk_indx(node_lid) = init_mesh->nodes_in_cell(cell_gid, convert_ensight_to_ijk(node_lid));
+      tmp_ijk_indx(node_lid) = init_mesh->nodes_in_cell(cell_rid, convert_ensight_to_ijk(node_lid));
     }   
         
     for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
-      init_mesh->nodes_in_cell(cell_gid, node_lid) = tmp_ijk_indx(node_lid);
+      init_mesh->nodes_in_cell(cell_rid, node_lid) = tmp_ijk_indx(node_lid);
+    }
+  }
+
+  if(num_dim==3)
+  for (int cell_rid = 0; cell_rid < rnum_elem; cell_rid++) {
+    //set nodes per element
+    element_select->choose_3Delem_type(Element_Types(cell_rid), elem);
+    nodes_per_element = elem->num_nodes();
+    for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
+      tmp_ijk_indx(node_lid) = init_mesh->nodes_in_cell(cell_rid, convert_ensight_to_ijk(node_lid));
+    }   
+        
+    for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
+      init_mesh->nodes_in_cell(cell_rid, node_lid) = tmp_ijk_indx(node_lid);
     }
   }
 
   // Build all connectivity in initial mesh
   std::cout<<"Before initial mesh connectivity"<<std::endl;
 
-  if(num_elem < 0) std::cout << "ERROR, NO ELEMENTS IN MESH" << std::endl;
-  if(num_elem > 1) {
+  if(rnum_elem > 1) {
 
     // -- NODE TO CELL CONNECTIVITY -- //
     init_mesh->build_node_cell_connectivity(); 
@@ -673,7 +686,71 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     //init_mesh->build_cell_cell_connectivity(); 
 
     // -- PATCHES -- //
-    //init_mesh->build_patch_connectivity(); 
+    //init_mesh->build_patch_connectivity();
+
+    //Construct set of ghost nodes; start with a buffer with upper limit
+    size_t buffer_limit = 0;
+    if(num_dim==2)
+    for(int ielem = 0; ielem < rnum_elem; ielem++){
+      element_select->choose_2Delem_type(Element_Types(ielem), elem2D);
+      buffer_limit += elem2D->num_nodes();
+    }
+
+    if(num_dim==3)
+    for(int ielem = 0; ielem < rnum_elem; ielem++){
+      element_select->choose_3Delem_type(Element_Types(ielem), elem);
+      buffer_limit += elem->num_nodes();
+    }
+
+    CArray<size_t> ghost_node_buffer(buffer_limit);
+    std::set<GO> ghost_node_set;
+
+    //search through local elements for global node indices not owned by this MPI rank
+    if(num_dim==2)
+    for (int cell_rid = 0; cell_rid < rnum_elem; cell_rid++) {
+      //set nodes per element
+      element_select->choose_2Delem_type(Element_Types(cell_rid), elem2D);
+      nodes_per_element = elem2D->num_nodes();  
+      for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
+        node_gid = init_mesh->nodes_in_cell(cell_rid, node_lid);
+        if(!map->isNodeGlobalElement(node_gid)) ghost_node_set.insert(node_gid);
+      }
+    }
+
+    if(num_dim==3)
+    for (int cell_rid = 0; cell_rid < rnum_elem; cell_rid++) {
+      //set nodes per element
+      element_select->choose_3Delem_type(Element_Types(cell_rid), elem);
+      nodes_per_element = elem->num_nodes();  
+      for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
+        node_gid = init_mesh->nodes_in_cell(cell_rid, node_lid);
+        if(!map->isNodeGlobalElement(node_gid)) ghost_node_set.insert(node_gid);
+      }
+    }
+
+    //by now the set contains, with no repeats, all the global node indices that are ghosts for this rank
+    //now pass the contents of the set over to a CArray, then create a map to find local ghost indices from global ghost indices
+    nghost_nodes = ghost_node_set.size();
+    ghost_nodes = CArrayKokkos<GO, Kokkos::LayoutLeft, node_type::device_type>(nghost_nodes);
+    ghost_node_ranks = CArrayKokkos<int, array_layout, device_type, memory_traits>(nghost_nodes);
+    int ighost = 0;
+    auto it = ghost_node_set.begin();
+    while(it!=ghost_node_set.end()){
+      ghost_nodes(ighost++) = *it;
+      it++;
+    }
+    //create map object
+    global_to_local_table_host_type temp(ghost_nodes.get_kokkos_view());
+
+    //copy over to member (no deep copy operator was defined for it in Trilinos)
+    global2local_map = temp;
+
+    //find which mpi rank each ghost node belongs to and store the information in a CArray
+    //allocate Teuchos Views since they are the only input available at the moment in the map definitions
+    ghost_nodes_pass = Teuchos::ArrayView<GO>(ghost_nodes.get_kokkos_view().data(), nghost_nodes);
+    ghost_node_ranks_pass = Teuchos::ArrayView<int>(ghost_node_ranks.get_kokkos_view().data(), nghost_nodes);
+    map->getRemoteIndexList(ghost_nodes_pass, ghost_node_ranks_pass);
+
   }
 
   std::cout<<"refine mesh"<<std::endl;
@@ -696,28 +773,144 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
    Find boundary surface segments that belong to this MPI rank
 ------------------------------------------------------------------------- */
 
-void Static_Solver_Parallel::Boundary_Patches(){
-  size_t npatches_repeat, element_npatches;
+void Static_Solver_Parallel::Get_Boundary_Patches(){
+  size_t npatches_repeat, npatches, element_npatches, num_nodes_in_patch, node_gid;
+  size_t nboundary_patches;
+  int local_node_id;
   int num_dim = simparam->num_dim;
-
+  CArray<size_t> Surface_Nodes;
+  std::set<Node_Combination> my_patches;
+  //inititializes type for the pair variable (finding the iterator type is annoying)
+  std::pair<std::set<Node_Combination>::iterator, bool> current_combination;
+  std::set<Node_Combination>::iterator it;
+  
   //compute the number of patches in this MPI rank with repeats for adjacent cells
   npatches_repeat = 0;
-  for(int ielem = 0; ielem < num_elem; ielem++){
-    if(num_dim==2){
-      element_select->choose_2Delem_type(Element_Types(0), elem2D);
-      element_npatches = elem2D.nsurfaces;
-    }
-    else if(num_dim==3){
-      element_select->choose_3Delem_type(Element_Types(0), elem);
-      element_npatches = elem.nsurfaces;
-    }
+
+  if(num_dim==2)
+  for(int ielem = 0; ielem < rnum_elem; ielem++){
+    element_select->choose_2Delem_type(Element_Types(ielem), elem2D);
+    element_npatches = elem2D->nsurfaces;
+    npatches_repeat += element_npatches;
+  }
+  
+  else if(num_dim==3)
+  for(int ielem = 0; ielem < rnum_elem; ielem++){
+    element_select->choose_3Delem_type(Element_Types(ielem), elem);
+    element_npatches = elem->nsurfaces;
     npatches_repeat += element_npatches;
   }
 
-  Patch_Nodes = CArray<Node_Combination>(npatches_repeat);
+  CArray<Node_Combination> Patch_Nodes(npatches_repeat);
+  CArray<size_t> Patch_Boundary_Flags(npatches_repeat);
+  
+  //initialize boundary patch flags
+  for(int init = 0; init < npatches_repeat; init++)
+    Patch_Boundary_Flags(init) = 1;
 
-  //declare set of nodal combinations to find boundary set
+  //use set of nodal combinations to find boundary set
   //boundary patches will not try to add nodal combinations twice
+  //loop through elements in this rank to find boundary patches
+  npatches_repeat = 0;
+  if(num_dim==2)
+  for(int ielem = 0; ielem < rnum_elem; ielem++){
+    element_select->choose_2Delem_type(Element_Types(ielem), elem2D);
+    element_npatches = elem2D->nsurfaces;
+    //loop through local surfaces
+    for(int isurface = 0; isurface < element_npatches; isurface++){
+      num_nodes_in_patch = elem2D->surface_to_dof_lid.stride(isurface);
+      Surface_Nodes = CArray<size_t>(num_nodes_in_patch);
+      for(int inode = 0; inode < num_nodes_in_patch; inode++){
+        local_node_id = elem2D->surface_to_dof_lid(isurface,inode);
+        Surface_Nodes(inode) = init_mesh->nodes_in_cell(ielem, local_node_id);
+      }
+      Node_Combination temp(Surface_Nodes);
+      //construct Node Combination object for this surface
+      Patch_Nodes(npatches_repeat) = temp;
+      Patch_Nodes(npatches_repeat).patch_gid = npatches_repeat;
+      //test if this patch has already been added; if yes set boundary flags to 0
+      current_combination = my_patches.insert(Patch_Nodes(npatches_repeat));
+      //if the set determines this is a duplicate access the original element's patch id and set flag to 0
+      if(current_combination.second==false){
+      //set original element flag to 0
+      Patch_Boundary_Flags((*current_combination.first).patch_gid) = 0;
+      //set this current flag to 0 for the duplicate as well
+      Patch_Boundary_Flags(npatches_repeat) = 0;
+      npatches_repeat++;
+      }
+
+    }
+  }
+
+  if(num_dim==3)
+  for(int ielem = 0; ielem < rnum_elem; ielem++){
+    element_select->choose_3Delem_type(Element_Types(ielem), elem);
+    element_npatches = elem->nsurfaces;
+    //loop through local surfaces
+    for(int isurface = 0; isurface < element_npatches; isurface++){
+      num_nodes_in_patch = elem->surface_to_dof_lid.stride(isurface);
+      Surface_Nodes = CArray<size_t>(num_nodes_in_patch);
+      for(int inode = 0; inode < num_nodes_in_patch; inode++){
+        local_node_id = elem->surface_to_dof_lid(isurface,inode);
+        Surface_Nodes(inode) = init_mesh->nodes_in_cell(ielem, local_node_id);
+      }
+      Node_Combination temp(Surface_Nodes);
+      //construct Node Combination object for this surface
+      Patch_Nodes(npatches_repeat) = temp;
+      Patch_Nodes(npatches_repeat).patch_gid = npatches_repeat;
+      //test if this patch has already been added; if yes set boundary flags to 0
+      current_combination = my_patches.insert(Patch_Nodes(npatches_repeat));
+      //if the set determines this is a duplicate access the original element's patch id and set flag to 0
+      if(current_combination.second==false){
+      //set original element flag to 0
+      Patch_Boundary_Flags((*current_combination.first).patch_gid) = 0;
+      //set this current flag to 0 for the duplicate as well
+      Patch_Boundary_Flags(npatches_repeat) = 0;
+      npatches_repeat++;
+      }
+
+    }
+  }
+
+  //loop through patch boundary flags to isolate boundary patches
+  nboundary_patches = 0;
+  for(int iflags = 0 ; iflags < npatches_repeat; iflags++){
+    if(Patch_Boundary_Flags(iflags)) nboundary_patches++;
+  }
+  //upper bound that is not much larger
+  Boundary_Patches = CArray<Node_Combination>(nboundary_patches);
+  nboundary_patches = 0;
+  bool my_rank_flag;
+  size_t remote_count;
+  for(int ipatch = 0 ; ipatch < npatches_repeat; ipatch++){
+    if(Patch_Boundary_Flags(ipatch)){
+      /*check if Nodes in the combination for this patch belong to this MPI rank.
+        If all are local then this is a boundary patch belonging to this rank.
+        If all nodes are remote then another rank must decide if that patch is a boundary.
+        If only a subset of the nodes are local it must be a boundary patch; this
+        case assigns the patch to the lowest mpi rank index the nodes in this patch belong to */
+      num_nodes_in_patch = Patch_Nodes(ipatch).node_set.size();
+      my_rank_flag = true;
+      remote_count = 0;
+
+      //test if local mpi rank is smaller than the rank of remote nodes in the patch
+      for(int inode = 0; inode < num_nodes_in_patch; inode++){
+        node_gid = Patch_Nodes(ipatch).node_set(inode);
+        if(!map->isNodeGlobalElement(node_gid)){
+          if(ghost_node_ranks(global2local_map.get(node_gid))<myrank)
+          my_rank_flag = false;
+          remote_count++;
+          //test
+        } 
+      }
+      //all nodes were remote
+      if(remote_count == num_nodes_in_patch) my_rank_flag = false;
+
+      //if all nodes were not local
+      if(my_rank_flag)
+        Boundary_Patches(nboundary_patches++) = Patch_Nodes(ipatch);
+    }
+  }
 
 }
 
@@ -729,7 +922,7 @@ void Static_Solver_Parallel::generate_bcs(){
     
     // build boundary mesh patches
     //mesh->build_bdy_patches();
-    Boundary_Patches();
+    Get_Boundary_Patches();
 
     std::cout << "number of boundary patches = " << mesh->num_bdy_patches() << std::endl;
     std::cout << "building boundary sets " << std::endl;
@@ -873,7 +1066,7 @@ void Static_Solver_Parallel::initialize_state(){
     //--- apply the fill instructions ---//
     for (int f_id = 0; f_id < NF; f_id++){
         
-        for (int cell_gid = 0; cell_gid < mesh->num_cells(); cell_gid++) {
+        for (int cell_rid = 0; cell_rid < mesh->num_cells(); cell_rid++) {
             
             // calculate the coordinates and radius of the cell
             real_t cell_coords_x = 0.0;
@@ -883,7 +1076,7 @@ void Static_Solver_Parallel::initialize_state(){
             for (int node_lid = 0; node_lid < 8; node_lid++){
                 
                 // increment the number of cells attached to this vertex
-                int vert_gid = mesh->nodes_in_cell(cell_gid, node_lid); // get the global_id
+                int vert_gid = mesh->nodes_in_cell(cell_rid, node_lid); // get the global_id
                 
                 cell_coords_x += mesh->node_coords(vert_gid, 0);
                 cell_coords_y += mesh->node_coords(vert_gid, 1);
@@ -897,9 +1090,9 @@ void Static_Solver_Parallel::initialize_state(){
 
             // Material points at cell center
 
-            mat_pt->coords(rk_stage, cell_gid, 0) = cell_coords_x;
-            mat_pt->coords(rk_stage, cell_gid, 1) = cell_coords_y;
-            mat_pt->coords(rk_stage, cell_gid, 2) = cell_coords_z;
+            mat_pt->coords(rk_stage, cell_rid, 0) = cell_coords_x;
+            mat_pt->coords(rk_stage, cell_rid, 1) = cell_coords_y;
+            mat_pt->coords(rk_stage, cell_rid, 2) = cell_coords_z;
 
             
             // spherical radius
@@ -945,7 +1138,7 @@ void Static_Solver_Parallel::initialize_state(){
 
             if (fill_this == 1){    
                 
-                mat_pt->field(cell_gid) = mat_fill[f_id].field2;
+                mat_pt->field(cell_rid) = mat_fill[f_id].field2;
 
 
             } // end if fill volume
@@ -1091,7 +1284,7 @@ void Static_Solver_Parallel::smooth_cells(){
     node_t *node = simparam->node;
 
     // Walk over cells 
-    for(int cell_gid = 0; cell_gid < mesh->num_cells(); cell_gid++){
+    for(int cell_rid = 0; cell_rid < mesh->num_cells(); cell_rid++){
 
         // Temporary holder variable
         real_t temp_avg = 0.0;
@@ -1100,14 +1293,14 @@ void Static_Solver_Parallel::smooth_cells(){
         for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
 
             // Get global index of the node
-            int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
+            int node_gid = mesh->nodes_in_cell(cell_rid, node_lid);
 
             temp_avg += node->field(node_gid)/8.0;
 
         }
 
         // Save average to material point at cell center
-        mat_pt->field(cell_gid) = temp_avg;
+        mat_pt->field(cell_rid) = temp_avg;
 
     } // end of loop over cells
 
@@ -1120,9 +1313,9 @@ void Static_Solver_Parallel::smooth_cells(){
         for(int cell_lid = 0; cell_lid < mesh->num_cells_in_node(node_gid); cell_lid++){
 
             // Get global index of the cell
-            int cell_gid = mesh->cells_in_node(node_gid, cell_lid);
+            int cell_rid = mesh->cells_in_node(node_gid, cell_lid);
 
-            temp_avg += mat_pt->field(cell_gid)/ (real_t)mesh->num_cells_in_node(node_gid);
+            temp_avg += mat_pt->field(cell_rid)/ (real_t)mesh->num_cells_in_node(node_gid);
         
         }
 
@@ -1145,7 +1338,7 @@ void Static_Solver_Parallel::smooth_element(){
         for(int cell_lid = 0; cell_lid < mesh->num_cells_in_elem(); cell_lid++){
 
             // Get the global ID of the cell
-            int cell_gid = mesh->cells_in_elem(elem_gid, cell_lid);
+            int cell_rid = mesh->cells_in_elem(elem_gid, cell_lid);
 
             real_t temp_avg = 0.0;
 
@@ -1153,14 +1346,14 @@ void Static_Solver_Parallel::smooth_element(){
             for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
 
                 // Get global ID for this node
-                int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
+                int node_gid = mesh->nodes_in_cell(cell_rid, node_lid);
 
                 temp_avg += node->field(node_gid)/mesh->num_nodes_in_cell();
 
             }
 
             // Save averaged values to cell centered material point
-            mat_pt->field(cell_gid) = temp_avg;
+            mat_pt->field(cell_rid) = temp_avg;
         }// end loop over nodes
     }// end loop over elements
 
@@ -1180,9 +1373,9 @@ void Static_Solver_Parallel::smooth_element(){
             for(int cell_lid = 0; cell_lid < mesh->num_cells_in_node(node_gid); cell_lid++){
 
                 // Get globa ID for the cell
-                int cell_gid = mesh->cells_in_node(node_gid, cell_lid);
+                int cell_rid = mesh->cells_in_node(node_gid, cell_lid);
 
-                temp_avg += mat_pt->field(cell_gid)/ (real_t)mesh->num_cells_in_node(node_gid);
+                temp_avg += mat_pt->field(cell_rid)/ (real_t)mesh->num_cells_in_node(node_gid);
             }
 
             // Save averaged field to node
@@ -1203,12 +1396,12 @@ void Static_Solver_Parallel::get_nodal_jacobian(){
         
         for(int cell_lid = 0; cell_lid < mesh->num_cells_in_elem(); cell_lid++){ // 1 for linear elements
 
-            int cell_gid = mesh->cells_in_elem(elem_gid, cell_lid);
+            int cell_rid = mesh->cells_in_elem(elem_gid, cell_lid);
 
             // Loop over nodes in cell and initialize jacobian to zero
             for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
 
-                int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
+                int node_gid = mesh->nodes_in_cell(cell_rid, node_lid);
                 
                 for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
                     for(int dim_j = 0; dim_j < mesh->num_dim(); dim_j++){
@@ -1221,7 +1414,7 @@ void Static_Solver_Parallel::get_nodal_jacobian(){
             // Calculate the actual jacobian for that node
             for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
                 
-                int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
+                int node_gid = mesh->nodes_in_cell(cell_rid, node_lid);
 
 
 
@@ -1231,7 +1424,7 @@ void Static_Solver_Parallel::get_nodal_jacobian(){
                         // Sum over the basis functions and nodes where they are defined
                         for(int basis_id = 0; basis_id < mesh->num_nodes_in_cell(); basis_id++){
 
-                            int ref_node_gid = mesh->nodes_in_cell(cell_gid, basis_id);
+                            int ref_node_gid = mesh->nodes_in_cell(cell_rid, basis_id);
 
                             mesh->node_jacobian(node_gid, dim_i, dim_j) += 
                                 mesh->node_coords(ref_node_gid , dim_i) * ref_elem->ref_nodal_gradient(node_lid, basis_id, dim_j);
@@ -1258,18 +1451,18 @@ void Static_Solver_Parallel::get_nodal_jacobian(){
 
     }
 
-    for(int cell_gid = 0; cell_gid < mesh->num_cells(); cell_gid++){
+    for(int cell_rid = 0; cell_rid < mesh->num_cells(); cell_rid++){
 
-        mat_pt->volume(cell_gid) = 0;
+        mat_pt->volume(cell_rid) = 0;
 
         for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
 
-            int node_gid = mesh->nodes_in_cell(cell_gid, node_lid);
+            int node_gid = mesh->nodes_in_cell(cell_rid, node_lid);
 
-            mat_pt->volume(cell_gid) += mesh->node_det_j(node_gid);
+            mat_pt->volume(cell_rid) += mesh->node_det_j(node_gid);
         }
 
-        std::cout<< "Volume for cell  "<< cell_gid << " = "<< mat_pt->volume(cell_gid) << std::endl;
+        std::cout<< "Volume for cell  "<< cell_rid << " = "<< mat_pt->volume(cell_rid) << std::endl;
     }
 
     // NOTE: Invert and save J^inverse here!
@@ -1341,7 +1534,7 @@ void Static_Solver_Parallel::vtk_writer(){
     };
 
     const char cell_var_names[num_vec_vars][15] = {
-        "cell_gid"
+        "cell_rid"
     };
     //  ---------------------------------------------------------------------------
     //  Setup of file and directoring for exporting
@@ -1405,9 +1598,9 @@ void Static_Solver_Parallel::vtk_writer(){
         
         fprintf(out[0],"<DataArray type=\"Float64\" Name=\"%s\" Format=\"ascii\">\n", cell_var_names[cell_var]);
         
-        for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+        for (int cell_rid = 0; cell_rid < num_cells; cell_rid++){
             
-            fprintf(out[0],"%f\n",(float) cell_gid);
+            fprintf(out[0],"%f\n",(float) cell_rid);
 
         } // end for k over cells
     }
@@ -1453,10 +1646,10 @@ void Static_Solver_Parallel::vtk_writer(){
     fprintf(out[0],"<DataArray type=\"Int64\" Name=\"connectivity\">\n");
 
     // write nodes in a cell
-    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+    for (int cell_rid = 0; cell_rid < num_cells; cell_rid++){
         
         for(int node = 0; node < 8; node++){
-            fprintf(out[0],"%i  ", mesh->nodes_in_cell(cell_gid, node));
+            fprintf(out[0],"%i  ", mesh->nodes_in_cell(cell_rid, node));
         }
 
         fprintf(out[0],"\n");
@@ -1467,15 +1660,15 @@ void Static_Solver_Parallel::vtk_writer(){
 
 
     fprintf(out[0],"<DataArray type=\"Int64\" Name=\"offsets\">\n");
-    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
-        fprintf(out[0],"%i  \n", 8*(cell_gid+1));
+    for (int cell_rid = 0; cell_rid < num_cells; cell_rid++){
+        fprintf(out[0],"%i  \n", 8*(cell_rid+1));
     } // end for k over cells
     fprintf(out[0],"</DataArray> \n");
     fprintf(out[0],"\n");
 
 
     fprintf(out[0],"<DataArray type=\"UInt64\" Name=\"types\">\n");
-    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+    for (int cell_rid = 0; cell_rid < num_cells; cell_rid++){
         fprintf(out[0],"%i  \n", 42);
     } // end for k over cells
     fprintf(out[0],"</DataArray> \n");
@@ -1484,14 +1677,14 @@ void Static_Solver_Parallel::vtk_writer(){
 
     fprintf(out[0],"<DataArray type=\"Int64\" Name=\"faces\">\n");
     
-    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+    for (int cell_rid = 0; cell_rid < num_cells; cell_rid++){
         fprintf(out[0],"%i  \n", 6);
 
         for(int patch_lid = 0; patch_lid < 6; patch_lid++){
 
             fprintf(out[0],"4  ");
             for(int node_lid = 0; node_lid < 4; node_lid++){
-                fprintf(out[0],"%i  ", mesh->node_in_patch_in_cell(cell_gid, patch_lid, node_lid));
+                fprintf(out[0],"%i  ", mesh->node_in_patch_in_cell(cell_rid, patch_lid, node_lid));
             }
 
             fprintf(out[0],"\n");
@@ -1505,8 +1698,8 @@ void Static_Solver_Parallel::vtk_writer(){
 
     int faceoffsets = 31;
     fprintf(out[0],"<DataArray type=\"Int64\" Name=\"faceoffsets\">\n");
-    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
-        fprintf(out[0],"%i  \n", faceoffsets*(cell_gid+1));
+    for (int cell_rid = 0; cell_rid < num_cells; cell_rid++){
+        fprintf(out[0],"%i  \n", faceoffsets*(cell_rid+1));
     } // end for k over cells
     
     fprintf(out[0],"</DataArray> \n");
@@ -1566,8 +1759,8 @@ void Static_Solver_Parallel::ensight(){
     int elem_val = 1;
 
 
-    for (int cell_gid=0; cell_gid<num_cells; cell_gid++){
-        cell_fields(cell_gid, 0) = mat_pt->field(cell_gid);    
+    for (int cell_rid=0; cell_rid<num_cells; cell_rid++){
+        cell_fields(cell_rid, 0) = mat_pt->field(cell_rid);    
     } // end for k over cells
 
     int num_elem = mesh->num_elems();
@@ -1618,9 +1811,9 @@ void Static_Solver_Parallel::ensight(){
     }
 
     // Use average temp from each node as cell temp
-    for (int cell_gid = 0; cell_gid < num_cells; cell_gid++){
+    for (int cell_rid = 0; cell_rid < num_cells; cell_rid++){
 
-        cell_fields(cell_gid, 3) = mat_pt->field(cell_gid);    
+        cell_fields(cell_rid, 3) = mat_pt->field(cell_rid);    
 
     } // end for k over cells
 
@@ -1698,11 +1891,11 @@ void Static_Solver_Parallel::ensight(){
     int this_index;
     
     // write all global point numbers for this cell
-    for (int cell_gid = 0; cell_gid<num_cells; cell_gid++) {
+    for (int cell_rid = 0; cell_rid<num_cells; cell_rid++) {
 
         for (int j=0; j<8; j++){
             this_index = convert_vert_list_ord_Ensight(j);
-            fprintf(out[0],"%10d\t",mesh->nodes_in_cell(cell_gid, this_index)+1); // note node_gid starts at 1
+            fprintf(out[0],"%10d\t",mesh->nodes_in_cell(cell_rid, this_index)+1); // note node_gid starts at 1
 
         }
         fprintf(out[0],"\n");
@@ -1728,8 +1921,8 @@ void Static_Solver_Parallel::ensight(){
         
         fprintf(out[0],"hexa8\n");  // e.g., hexa8
         
-        for (int cell_gid=0; cell_gid<num_cells; cell_gid++) {
-            fprintf(out[0],"%12.5e\n", cell_fields(cell_gid, var));
+        for (int cell_rid=0; cell_rid<num_cells; cell_rid++) {
+            fprintf(out[0],"%12.5e\n", cell_fields(cell_rid, var));
         }
         
         fclose(out[0]);

@@ -1,6 +1,7 @@
 #ifndef ELEMENTS_SIMULATION_PARAMETERS_H
 #define ELEMENTS_SIMULATION_PARAMETERS_H
 
+#include "utilities.h"
 using namespace utils;
 
 class Simulation_Parameters

@@ -2216,8 +2216,11 @@ as follows
 
 Quad4::Quad4() : Element2D(){
   nsurfaces = 4;
+  CArray<size_t> strides(nsurfaces);
+  for(int istride=0; istride < nsurfaces; istride++)
+    strides(istride) = 2;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(nsurfaces,2);
+  surface_to_dof_lid = RaggedRightArray<int>(strides);
   surface_to_dof_lid(0,0) = 0;
   surface_to_dof_lid(0,1) = 1;
 
@@ -2383,8 +2386,11 @@ int Quad4::vert_node_map(const int vert_lid){
 
 Quad8::Quad8() : Element2D(){
   nsurfaces = 4;
+  CArray<size_t> strides(nsurfaces);
+  for(int istride=0; istride < nsurfaces; istride++)
+    strides(istride) = 3;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(nsurfaces,3);
+  surface_to_dof_lid = RaggedRightArray<int>(strides);
 
   surface_to_dof_lid(0,0) = 0;
   surface_to_dof_lid(0,1) = 4;
@@ -2630,8 +2636,11 @@ as follows
 
 Quad12::Quad12() : Element2D(){
   nsurfaces = 4;
+  CArray<size_t> strides(nsurfaces);
+  for(int istride=0; istride < nsurfaces; istride++)
+    strides(istride) = 4;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(nsurfaces,4);
+  surface_to_dof_lid = RaggedRightArray<int>(strides);
   surface_to_dof_lid(0,0) = 0;
   surface_to_dof_lid(0,1) = 4;
   surface_to_dof_lid(0,2) = 5;
@@ -3164,8 +3173,11 @@ void QuadN::basis_partials (
 
 Hex8::Hex8() : Element3D(){
   nsurfaces = 6;
+  CArray<size_t> strides(nsurfaces);
+  for(int istride=0; istride < nsurfaces; istride++)
+    strides(istride) = 4;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(nsurfaces,4);
+  surface_to_dof_lid = RaggedRightArray<int>(strides);
 
   //st planes first
   surface_to_dof_lid(0,0) = 0;
@@ -3418,8 +3430,11 @@ as follows
 
 Hex20::Hex20() : Element3D(){
   nsurfaces = 6;
+  CArray<size_t> strides(nsurfaces);
+  for(int istride=0; istride < nsurfaces; istride++)
+    strides(istride) = 8;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(nsurfaces,8);
+  surface_to_dof_lid = RaggedRightArray<int>(strides);
 
   //st planes first
   surface_to_dof_lid(0,0) = 0;
@@ -3846,8 +3861,11 @@ shown below
 
 Hex32::Hex32() : Element3D(){
   nsurfaces = 6;
+  CArray<size_t> strides(nsurfaces);
+  for(int istride=0; istride < nsurfaces; istride++)
+    strides(istride) = 12;
   //list of local ids to basis functions needed to interpolate throughout a given element surface
-  surface_to_dof_lid = CArray<int>(nsurfaces,12);
+  surface_to_dof_lid = RaggedRightArray<int>(strides);
 
   //st planes first
   surface_to_dof_lid(0,0) = 0;
@@ -4829,9 +4847,9 @@ void Tess16::partial_tau_basis(
    choose the current 3D element type in the calculation
 ------------------------------------------------------------------------- */
 
-void element_selector::choose_3Delem_type(elem_type_t elem_type, Element3D *&elem){
+void element_selector::choose_3Delem_type(elem_types::elem_type element_type, Element3D *&elem){
 
-    switch(elem_type.type)
+    switch(element_type)
     {
         
         // 3D element types
@@ -4886,9 +4904,9 @@ void element_selector::choose_3Delem_type(elem_type_t elem_type, Element3D *&ele
    choose the current 2D element type in the calculation
 ------------------------------------------------------------------------- */
 
-void element_selector::choose_2Delem_type(elem_type_t elem_type, Element2D *&elem2D){
+void element_selector::choose_2Delem_type(elem_types::elem_type element_type, Element2D *&elem2D){
 
-    switch(elem_type.type)
+    switch(element_type)
     {
         // 2D element types
         // WARNING: DEFAULTS TO 3D Quad4

@@ -318,7 +318,7 @@ class ref_element{
         virtual int num_basis() = 0;
         
         //list of local ids to basis functions needed to interpolate throughout a given element surface
-        CArray<int> surface_to_dof_lid;
+        RaggedRightArray<int> surface_to_dof_lid;
         int nsurfaces;
 
         // calculate a physical position in an element for a given xi,eta
@@ -359,7 +359,7 @@ class ref_element{
         virtual int num_basis() = 0;
 
         //list of local ids to basis functions needed to interpolate throughout a given element surface
-        CArray<int> surface_to_dof_lid;
+        RaggedRightArray<int> surface_to_dof_lid;
         int nsurfaces;
 
         // calculate a physical position in an element for a given xi,eta,mu
@@ -1258,8 +1258,8 @@ class element_selector{
     Hex32 Hex32_Object;
     HexN HexN_Object;
 
-    void choose_3Delem_type(elem_type_t elem_type, Element3D *&elem);
-    void choose_2Delem_type(elem_type_t elem_type, Element2D *&elem2D);
+    void choose_3Delem_type(elem_types::elem_type element_type, Element3D *&elem);
+    void choose_2Delem_type(elem_types::elem_type element_type, Element2D *&elem2D);
 };
 
 

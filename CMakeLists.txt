@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.17)
 project (Elements)
-#add_compile_options(-std=c++11 -g -O0)
+add_compile_options(-g -O0)
 #set (CMAKE_CXX_STANDARD 14)
 
 find_package(MPI REQUIRED)

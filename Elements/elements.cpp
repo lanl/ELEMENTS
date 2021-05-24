@@ -4857,7 +4857,7 @@ void element_selector::choose_3Delem_type(elem_types::elem_type element_type, El
         {
             elem = &Hex8_Object;
 
-            std::cout<<"Hex8 Chosen"<<std::endl;
+            //std::cout<<"Hex8 Chosen"<<std::endl;
 
             break;
         }
@@ -4866,7 +4866,7 @@ void element_selector::choose_3Delem_type(elem_types::elem_type element_type, El
         {
             elem = &Hex20_Object;
 
-            std::cout<<"Hex20 Chosen"<<std::endl;
+            //std::cout<<"Hex20 Chosen"<<std::endl;
 
             break;
         }
@@ -4875,7 +4875,7 @@ void element_selector::choose_3Delem_type(elem_types::elem_type element_type, El
         {
             elem = &Hex32_Object;
 
-            std::cout<<"Hex32 Chosen"<<std::endl;
+            //std::cout<<"Hex32 Chosen"<<std::endl;
 
             break;
         }
@@ -4884,7 +4884,7 @@ void element_selector::choose_3Delem_type(elem_types::elem_type element_type, El
         {
             // elem = &HexN_elem;
             
-            std::cout<<"HexN Chosen"<<std::endl;
+            //std::cout<<"HexN Chosen"<<std::endl;
 
             break;
         }
@@ -4893,7 +4893,7 @@ void element_selector::choose_3Delem_type(elem_types::elem_type element_type, El
         {
             elem = &Hex8_Object;
 
-            std::cout<<"Default Hex8 Chosen"<<std::endl;
+            //std::cout<<"Default Hex8 Chosen"<<std::endl;
 
             break;
         }
@@ -4914,7 +4914,7 @@ void element_selector::choose_2Delem_type(elem_types::elem_type element_type, El
         {   
             elem2D = &Quad4_Object;
 
-            std::cout<<"Quad4 Chosen"<<std::endl;
+            //std::cout<<"Quad4 Chosen"<<std::endl;
 
             break; 
         }
@@ -4923,7 +4923,7 @@ void element_selector::choose_2Delem_type(elem_types::elem_type element_type, El
         {
             elem2D = &Quad8_Object;
 
-            std::cout<<"Quad8 Chosen"<<std::endl;
+            //std::cout<<"Quad8 Chosen"<<std::endl;
 
             break;
         }
@@ -4932,7 +4932,7 @@ void element_selector::choose_2Delem_type(elem_types::elem_type element_type, El
         {
             elem2D = &Quad12_Object;
 
-            std::cout<<"Quad12 Chosen"<<std::endl;
+            //std::cout<<"Quad12 Chosen"<<std::endl;
 
             break;
         }
@@ -4941,7 +4941,7 @@ void element_selector::choose_2Delem_type(elem_types::elem_type element_type, El
         {
             // elem = &QuadN_elem;
 
-            std::cout<<"QuadN Chosen"<<std::endl;
+            //std::cout<<"QuadN Chosen"<<std::endl;
 
 
             break;
@@ -4951,7 +4951,7 @@ void element_selector::choose_2Delem_type(elem_types::elem_type element_type, El
         {
             elem2D = &Quad4_Object;
 
-            std::cout<<"Quad4 Chosen"<<std::endl;
+            //std::cout<<"Quad4 Chosen"<<std::endl;
 
             break; 
         }

@@ -38,6 +38,8 @@ int main(int argc, char *argv[]){
   //invoke optional finalize function
   if(solver->finalize_flag) solver->finalize();
 
+  delete solver;
+
   MPI_Barrier(MPI_COMM_WORLD);
   MPI_Finalize();
 

@@ -608,7 +608,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
         node_gid = atoi(&read_buffer(scan_loop,inode,0));
         node_store(inode) = node_gid - 1; //subtract 1 since file index start is 1 but code expects 0
         //first we add the elements to a dynamically allocated list
-        if(map->isNodeGlobalElement(node_gid)&&!assign_flag){
+        if(map->isNodeGlobalElement(node_gid-1)&&!assign_flag){
           assign_flag = 1;
           rnum_elem++;
         }
@@ -616,9 +616,10 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
 
       if(assign_flag)
       for(int inode = 0; inode < elem_words_per_line; inode++){
-        if((rnum_elem-1)*elem_words_per_line + inode>=BUFFER_LINES) 
-          element_temp.resize((rnum_elem-1)*elem_words_per_line + inode+BUFFER_LINES);
+        if((rnum_elem-1)*elem_words_per_line + inode>=BUFFER_LINES*elem_words_per_line) 
+          element_temp.resize((rnum_elem-1)*elem_words_per_line + inode + BUFFER_LINES*elem_words_per_line);
         element_temp[(rnum_elem-1)*elem_words_per_line + inode] = node_store(inode); 
+        //std::cout << "VECTOR STORAGE FOR ELEM " << rnum_elem << " ON TASK " << myrank << " NODE " << inode+1 << " IS " << node_store(inode) + 1 << std::endl;
       }
     }
     read_index_start+=BUFFER_LINES;
@@ -637,7 +638,6 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //element_temp.~vector();
 
   //debug print element edof
-  
   std::cout << " ------------ELEMENT EDOF ON TASK " << myrank << " --------------"<<std::endl;
 
   for (int ielem = 0; ielem < rnum_elem; ielem++){

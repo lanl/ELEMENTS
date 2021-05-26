@@ -133,9 +133,9 @@ void Static_Solver_Parallel::run(int argc, char *argv[]){
     read_mesh(argv[1]);
     
     std::cout << "Num elements = " << mesh->num_elems() << std::endl;
-    return;
     // ---- Find Boundaries on mesh ---- //
     generate_bcs();
+    return;
     
     //allocate and fill sparse structures needed for global solution
     init_global();
@@ -361,9 +361,9 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
 
     //debug_print
-        for(int iprint=0; iprint < local_nrows; iprint++)
-        std::cout<<"buffer packing: " << std::string(&read_buffer(iprint,0,0)) << std::endl;
-    std::cout << "NODE BUFFER LOOP IS: " << buffer_loop << std::endl;
+    //for(int iprint=0; iprint < local_nrows; iprint++)
+      //std::cout<<"buffer packing: " << std::string(&read_buffer(iprint,0,0)) << std::endl;
+    //std::cout << "NODE BUFFER LOOP IS: " << buffer_loop << std::endl;
 
     //determine which data to store in the swage mesh members (the local node data)
     //loop through read buffer
@@ -549,7 +549,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   buffer_iterations = num_elem/BUFFER_LINES;
   int assign_flag;
   //dynamic buffer used to store elements before we know how many this rank needs
-  std::vector<real_t> element_temp(BUFFER_LINES*elem_words_per_line);
+  std::vector<size_t> element_temp(BUFFER_LINES*elem_words_per_line);
   if(num_elem%BUFFER_LINES!=0) buffer_iterations++;
 
   read_index_start = 0;
@@ -636,6 +636,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
 
   //delete temporary element connectivity
   //element_temp.~vector();
+  std::vector<size_t>().swap(element_temp);
 
   //debug print element edof
   std::cout << " ------------ELEMENT EDOF ON TASK " << myrank << " --------------"<<std::endl;
@@ -716,7 +717,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   // Build all connectivity in initial mesh
   std::cout<<"Before initial mesh connectivity"<<std::endl;
 
-  if(rnum_elem > 1) {
+  if(rnum_elem >= 1) {
 
     // -- NODE TO CELL CONNECTIVITY -- //
     //mesh->build_node_cell_connectivity(); 
@@ -892,6 +893,8 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
     //loop through local surfaces
     for(int isurface = 0; isurface < element_npatches; isurface++){
       num_nodes_in_patch = elem->surface_to_dof_lid.stride(isurface);
+      //debug print
+      //std::cout << "NUMBER OF PATCH NODES FOR ELEMENT " << ielem+1 << " ON LOCAL SURFACE " << isurface+1 << " IS " << elem->surface_to_dof_lid.start_index_[isurface+1] << std::endl;
       Surface_Nodes = CArray<size_t>(num_nodes_in_patch);
       for(int inode = 0; inode < num_nodes_in_patch; inode++){
         local_node_id = elem->surface_to_dof_lid(isurface,inode);

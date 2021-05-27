@@ -25,6 +25,18 @@ Connectivity data structures exist to map from from an index to another index sp
 ### Index naming conventions
 The global index spaces for the mesh (but local to a rank) are denoted with a _gid_.  The index spaces for the local mesh entities, relative to a _gid_, are denoted with a _lid_.  The index spaces in a reference element, which comes from the elements library and are not in **SWAGE**, are denoted with a _rid_.  A local refernce index, relative to a _rid_, is denoted with a _rlid_.
 
+### Connectivity functions naming conventions
+The general form of all connectivity structures, in terms an arbitrary mesh entity, is,
+
+```
+// entity is generic (i.e., for illustrative purposes) and can be cell, element, node, etc.
+for (int neighbor_lid = 0; neighbor_lid < mesh.num_entities_in_entity(cell_gid); neighbor_lid++){
+   int neighbor_entity_gid = mesh.entities_in_entity(entity_gid, neighbor_lid);  // Get mesh index for the neighboring cell
+   // ...
+}
+``` 
+                                                                                
+                                                                                
 ## Usage
 To code to walk over all the elements in the mesh and then over all the sub-cells in the element would be, 
 ```
@@ -105,7 +117,8 @@ for(int cell_gid = 0; cell_gid < mesh.num_cells(); cell_gid++){
 ```
 
 The data structures in **SWAGE** like mesh.cells_in_cell(cell_gid, neighbor_lid) and mesh.corners_in_node(node_gid, corn_lid) access the data in a contiguous manner to deliver optiminal runtime performance.  
-
- 
-
+   
+*nodes 
+nodes_in_elem (int elem_gid, int node_lid)
+   
 

@@ -28,6 +28,15 @@ The global index spaces for the mesh (but local to a rank) are denoted with a _g
 ### Connectivity functions naming conventions
 The general form of all connectivity structures, in terms an arbitrary mesh entity, is,
 
+```
+// entity is generic for illustrative purposes and can be cell, element, node, etc.
+for (int neighbor_lid = 0; neighbor_lid < mesh.num_entities_in_entity(cell_gid); neighbor_lid++){
+   // Get mesh index for the neighboring cell
+   int neighbor_entity_gid = mesh.entities_in_entity(entity_gid, neighbor_lid); 
+   // ...
+}
+```
+
 
 ## Usage
 To code to walk over all the elements in the mesh and then over all the sub-cells in the element would be, 

@@ -29,10 +29,11 @@ The global index spaces for the mesh (but local to a rank) are denoted with a _g
 The general form of all connectivity structures, in terms an arbitrary mesh entity, is,
 
 ```
-// entity is generic for illustrative purposes and can be cell, element, node, etc.
-for (int neighbor_lid = 0; neighbor_lid < mesh.num_entities_in_entity(cell_gid); neighbor_lid++){
-   // Get mesh index for the neighboring cell
-   int neighbor_entity_gid = mesh.entities_in_entity(entity_gid, neighbor_lid); 
+// entity is generic for illustrative purposes and can be cell, element, node, etc., 
+// likewise, something is generic for illustrative purposes and is some mesh entity 
+for (int something_lid = 0; something_lid < mesh.num_something_in_entity(entity_gid); something_lid++){
+   // Get mesh index for the neighboring cell 
+   int something_gid = mesh.something_in_entity(entity_gid, something_lid); 
    // ...
 }
 ```

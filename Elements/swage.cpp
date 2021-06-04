@@ -195,6 +195,14 @@ void mesh_t::init_nodes (int num_nodes) {
     node_det_j_ = CArray <real_t> (num_nodes_);
 }
 
+// ---- GHOST NODES ---- //
+void mesh_t::init_ghost_nodes (int num_ghost_nodes) {
+  
+    num_nodes_ = num_ghost_nodes;
+    
+    ghost_node_coords_   = CArray <real_t> (num_nodes_, num_dim_);
+}
+
 
 // ---- GAUSS LOBATTO POINTS ---- //
 void mesh_t::init_gauss_pts (){
@@ -637,7 +645,13 @@ real_t& mesh_t::node_coords(int node_gid, int this_dim) const
     return node_coords_(node_gid, this_dim);
 }
 
-
+// ---- GHOST NODES ---- //
+// return the node coordinates
+real_t& mesh_t::ghost_node_coords(int node_gid, int this_dim) const
+{
+    //DANreturn node_coords_[node_gid*num_dim_ + this_dim];
+    return ghost_node_coords_(node_gid, this_dim);
+}
 
 
 // ---- QUADRATURE POINTS ---- //

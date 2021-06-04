@@ -1941,7 +1941,6 @@ public:
 template <typename T>
 CArray<T>::CArray() {
     array_ = NULL;
-    array_ = NULL;
     length_ = order_ = 0;
 }
 
@@ -2223,7 +2222,10 @@ inline CArray<T>& CArray<T>::operator= (const CArray& temp)
         dims_[6] = temp.dims_[6];
         order_  = temp.order_;
         length_ = temp.length_;
+        if(array_!=NULL)
         delete[] array_;
+        array_ = NULL;
+        if(length_!=0)
         array_ = new T[length_];
         //copy contents
         for(int iter = 0; iter < length_; iter++)
@@ -6268,17 +6270,17 @@ public:
     // GPU Method
     // Method that returns size
     KOKKOS_FUNCTION
-    size_t size();
+    size_t size() const;
 
     // Host Method
     // Method that returns size
-    size_t extent();
+    size_t extent() const;
 
     // Methods returns the raw pointer (most likely GPU) of the Kokkos View
-    T* pointer();
+    T* pointer() const;
     
     //return the view
-    TArray1D get_kokkos_view();
+    TArray1D get_kokkos_view() const;
 
     // Deconstructor
     KOKKOS_FUNCTION
@@ -6496,23 +6498,23 @@ CArrayKokkos<T,Layout,ExecSpace,MemoryTraits>& CArrayKokkos<T,Layout,ExecSpace,M
 // Return size
 template <typename T, typename Layout, typename ExecSpace, typename MemoryTraits>
 KOKKOS_FUNCTION
-size_t CArrayKokkos<T,Layout,ExecSpace,MemoryTraits>::size() {
+size_t CArrayKokkos<T,Layout,ExecSpace,MemoryTraits>::size() const {
     return length_;
 }
 
 template <typename T, typename Layout, typename ExecSpace, typename MemoryTraits>
-size_t CArrayKokkos<T,Layout,ExecSpace,MemoryTraits>::extent() {
+size_t CArrayKokkos<T,Layout,ExecSpace,MemoryTraits>::extent() const {
     return length_;
 }
 
 template <typename T, typename Layout, typename ExecSpace, typename MemoryTraits>
-T* CArrayKokkos<T,Layout,ExecSpace,MemoryTraits>::pointer() {
+T* CArrayKokkos<T,Layout,ExecSpace,MemoryTraits>::pointer() const {
     return this_array_.data();
 }
 
 //return the stored Kokkos view
 template <typename T, typename Layout, typename ExecSpace, typename MemoryTraits>
-Kokkos::View<T*, Layout, ExecSpace, MemoryTraits> CArrayKokkos<T,Layout,ExecSpace,MemoryTraits>::get_kokkos_view() {
+Kokkos::View<T*, Layout, ExecSpace, MemoryTraits> CArrayKokkos<T,Layout,ExecSpace,MemoryTraits>::get_kokkos_view() const {
     return this_array_;
 }
 

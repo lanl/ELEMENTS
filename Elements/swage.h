@@ -193,6 +193,9 @@ private:
     CArray <real_t> node_jacobian_inverse_;
     CArray <real_t> node_det_j_; 
 
+    // ---- GHOST NODE INFO ---- //
+    CArray <real_t> ghost_node_coords_;
+
     // ---- QUADRATURE POINTS ---- //
     CArray <real_t> jacobians_;
     CArray <real_t> jacobian_determinant_;
@@ -207,6 +210,7 @@ public:
     void init_element (int e_order, int dim, int num_elem);
     void init_cells (int ncells);
     void init_nodes (int num_nodes);
+    void init_ghost_nodes (int num_ghost_nodes);
     void init_gauss_pts ();
     void init_bdy_sets (int num_sets);
 
@@ -389,6 +393,8 @@ public:
     // return the node coordinates
     real_t& node_coords(int node_gid, int this_dim) const;
 
+    // return the node coordinates
+    real_t& ghost_node_coords(int node_gid, int this_dim) const;
 
 
     // ---- QUADRATURE POINTS ---- //

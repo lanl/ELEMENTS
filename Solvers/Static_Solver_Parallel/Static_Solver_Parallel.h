@@ -118,6 +118,8 @@ public:
 
   class Simulation_Parameters *simparam;
   
+  //Local FEA data
+  vec_array node_data;
   CArray<elements::elem_types::elem_type> Element_Types;
   CArray<size_t> Nodes_Per_Element_Type;
   CArray<size_t> Global_Stiffness_Matrix_Assembly_Map;
@@ -127,8 +129,12 @@ public:
   CArray<real_t> Nodal_Forces;
   CArray<size_t> Stiffness_Matrix_strides;
   CArray<size_t> Graph_Matrix_strides;
+
+  //Distributed FEA data
+  Teuchos::RCP<MV> node_data_distributed;
+
   //CArray <Nodal_Combination> Patch_Nodes;
-  CArray<Node_Combination> Boundary_Patches;
+  CArrayKokkos<Node_Combination, array_layout, device_type, memory_traits> Boundary_Patches;
   size_t max_nodes_per_element;
   int rnum_elem;
 
@@ -159,10 +165,13 @@ public:
 
   //Parallel map for the global set of nodes (before removing BCS)
   Teuchos::RCP<const Teuchos::Comm<int> > comm;
-  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map;
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map; //map of node indices
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_node_map; //map of node indices
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_dof_map; //map of local dofs (typically num_node_local*num_dim)
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_dof_map; //map of local and ghost dofs (typically num_node_all*num_dim)
 
   //Ghost node indices and the ranks that own them
-  size_t nghost_nodes;
+  size_t nghost_nodes, nall_nodes, nlocal_nodes;
   CArrayKokkos<GO, Kokkos::LayoutLeft, node_type::device_type> ghost_nodes;
   CArrayKokkos<int, array_layout, device_type, memory_traits> ghost_node_ranks;
   Teuchos::ArrayView<const GO> ghost_nodes_pass;
@@ -172,6 +181,7 @@ public:
     global_to_local_table_host_type;
 
   global_to_local_table_host_type global2local_map;
+  CArrayKokkos<int, Kokkos::LayoutLeft, Kokkos::HostSpace::device_type> active_ranks;
 
   //Pertains to local mesh information being stored as prescribed by the row map
   global_size_t local_nrows;

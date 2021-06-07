@@ -63,7 +63,8 @@ public:
  
   using vec_map_type = Tpetra::Map<LO, GO>;
   using vec_device_type = typename vec_map_type::device_type;
-  typedef Kokkos::DualView<real_t**, Kokkos::LayoutLeft, device_type>::t_dev vec_array;
+  //typedef Kokkos::DualView<real_t**, Kokkos::LayoutLeft, device_type>::t_dev vec_array;
+  typedef MV::dual_view_type::t_dev vec_array;
 
   void run(int argc, char *argv[]);
 
@@ -130,8 +131,12 @@ public:
   CArray<size_t> Stiffness_Matrix_strides;
   CArray<size_t> Graph_Matrix_strides;
 
+  //Local FEA data including ghosts
+  vec_array all_node_data;
+
   //Distributed FEA data
   Teuchos::RCP<MV> node_data_distributed;
+  Teuchos::RCP<MV> all_node_data_distributed;
 
   //CArray <Nodal_Combination> Patch_Nodes;
   CArrayKokkos<Node_Combination, array_layout, device_type, memory_traits> Boundary_Patches;

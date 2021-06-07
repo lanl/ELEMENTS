@@ -518,6 +518,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //debug print of nodal data
   
   //debug print nodal positions and indices
+  /*
   std::cout << " ------------NODAL POSITIONS ON TASK " << myrank << " --------------"<<std::endl;
   for (int inode = 0; inode < local_nrows; inode++){
       std::cout << "node: " << map->getGlobalElement(inode) + 1 << " { ";
@@ -526,6 +527,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     }
     std::cout << " }"<< std::endl;
   }
+  */
 
   //check that local assignments match global total
 
@@ -659,6 +661,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   std::vector<size_t>().swap(element_temp);
 
   //debug print element edof
+  /*
   std::cout << " ------------ELEMENT EDOF ON TASK " << myrank << " --------------"<<std::endl;
 
   for (int ielem = 0; ielem < rnum_elem; ielem++){
@@ -671,7 +674,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     }
     std::cout << std::endl;
   }
-  
+  */
  
   //simplified for now
   for(int ielem = 0; ielem < rnum_elem; ielem++)
@@ -844,7 +847,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   CArrayKokkos<GO, array_layout, device_type, memory_traits> all_node_indices(nlocal_nodes + nghost_nodes);
   for(int i = 0; i < nlocal_nodes + nghost_nodes; i++){
     if(i<nlocal_nodes) all_node_indices(i) = map->getGlobalElement(i);
-    else all_node_indices(i) = ghost_nodes(i);
+    else all_node_indices(i) = ghost_nodes(i-nlocal_nodes);
   }
   
   //debug print of node indices
@@ -855,14 +858,26 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     
   all_node_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes,all_node_indices.get_kokkos_view(),0,comm) );
 
-  //create local dof map for multivector of local node data
-
-  //create distributed multivector of the local node data
-  node_data_distributed = Teuchos::rcp(new MV(map, node_data));
-  
+  //debug print of map
   //debug print
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  if(myrank==0)
+  *fos << "Ghost Node Map :" << std::endl;
+  all_node_map->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  std::fflush(stdout);
+
+  //create local dof map for multivector of local node data
+
+  //create distributed multivector of the local node data and all (local + ghost) node storage
+  node_data_distributed = Teuchos::rcp(new MV(map, node_data));
+  all_node_data_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
+  
+  //debug print
+  //std::ostream &out = std::cout;
+  //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  if(myrank==0)
   *fos << "Node Data :" << std::endl;
   node_data_distributed->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
@@ -870,6 +885,30 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
 
   //create import object using local node indices map and all indices map
   Tpetra::Import<LO, GO> importer(map, all_node_map);
+
+  //comms to get ghosts
+  all_node_data_distributed->doImport(*node_data_distributed, importer, Tpetra::INSERT);
+
+  //debug print
+  //std::ostream &out = std::cout;
+  //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  if(myrank==0)
+  *fos << "Node Data with Ghosts :" << std::endl;
+  all_node_data_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  std::fflush(stdout);
+
+  //get view of all node data (local + ghost) on the device (multivector function forces sync of dual view)
+
+  all_node_data = all_node_data_distributed->getLocalView<device_type> (Tpetra::Access::ReadWrite);
+
+  //debug print of views node indices
+  std::cout << "Local View of All Nodes on Task " << myrank <<std::endl;
+  for(int inode=0; inode < all_node_map->getNodeNumElements(); inode++){
+    std::cout << "node "<<all_node_map->getGlobalElement(inode) << " } " ;
+    std::cout << all_node_data(inode,0) << " " << all_node_data(inode,1) << " " << all_node_data(inode,2) << " " << std::endl;
+  }
+
 
   //set of tasks to receive and send from is the same since elements with ghosts belonging to a task
   //must also possess ghosts of that task
@@ -992,6 +1031,7 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
   }
 
   //debug print of all patches
+  /*
   std::cout << " ALL PATCHES " << npatches_repeat <<std::endl;
   for(int iprint = 0; iprint < npatches_repeat; iprint++){
     std::cout << "Patch " << iprint + 1 << " ";
@@ -999,6 +1039,7 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
       std::cout << Patch_Nodes(iprint).node_set(j) << " ";
     std::cout << std::endl;
   }
+  */
 
   //loop through patch boundary flags to isolate boundary patches
   nboundary_patches = 0;

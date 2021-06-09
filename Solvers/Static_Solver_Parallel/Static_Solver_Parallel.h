@@ -65,6 +65,8 @@ public:
   using vec_device_type = typename vec_map_type::device_type;
   //typedef Kokkos::DualView<real_t**, Kokkos::LayoutLeft, device_type>::t_dev vec_array;
   typedef MV::dual_view_type::t_dev vec_array;
+  typedef MV::dual_view_type::t_host host_vec_array;
+  typedef MV::dual_view_type dual_vec_array;
 
   void run(int argc, char *argv[]);
 
@@ -120,7 +122,7 @@ public:
   class Simulation_Parameters *simparam;
   
   //Local FEA data
-  vec_array node_data;
+  dual_vec_array dual_node_data;
   CArray<elements::elem_types::elem_type> Element_Types;
   CArray<size_t> Nodes_Per_Element_Type;
   CArray<size_t> Global_Stiffness_Matrix_Assembly_Map;
@@ -132,7 +134,7 @@ public:
   CArray<size_t> Graph_Matrix_strides;
 
   //Local FEA data including ghosts
-  vec_array all_node_data;
+  dual_vec_array dual_all_node_data;
 
   //Distributed FEA data
   Teuchos::RCP<MV> node_data_distributed;

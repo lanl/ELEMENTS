@@ -301,8 +301,13 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   global_size_t max_gid = map->getMaxGlobalIndex();
   global_size_t index_base = map->getIndexBase();
 
-  //allocate node storage
-  node_data = vec_array("node_data", nlocal_nodes,num_dim);
+  //allocate node storage with dual view
+  dual_node_data = dual_vec_array("dual_node_data", nlocal_nodes,num_dim);
+
+  //local variable for host view in the dual view
+  host_vec_array node_data = dual_node_data.view_host();
+  //notify that the host view is going to be modified in the file readin
+  dual_node_data.modify_host();
 
   //old swage method
   //mesh->init_nodes(local_nrows); // add 1 for index starting at 1
@@ -836,6 +841,9 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   // Close mesh input file
   if(myrank==0)
   in->close();
+
+  //synchronize device data
+  dual_node_data.sync_device();
     
   // Create reference element
   ref_elem->init(p_order, num_dim, elem->num_basis());
@@ -871,7 +879,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //create local dof map for multivector of local node data
 
   //create distributed multivector of the local node data and all (local + ghost) node storage
-  node_data_distributed = Teuchos::rcp(new MV(map, node_data));
+  node_data_distributed = Teuchos::rcp(new MV(map, dual_node_data));
   all_node_data_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
   
   //debug print
@@ -900,13 +908,17 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
 
   //get view of all node data (local + ghost) on the device (multivector function forces sync of dual view)
 
-  all_node_data = all_node_data_distributed->getLocalView<device_type> (Tpetra::Access::ReadWrite);
+  vec_array all_node_data_device = all_node_data_distributed->getLocalView<device_type> (Tpetra::Access::ReadWrite);
+  host_vec_array all_node_data_host = all_node_data_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+
+  //allocate node storage with dual view
+  dual_all_node_data = dual_vec_array(all_node_data_device, all_node_data_host);
 
   //debug print of views node indices
   std::cout << "Local View of All Nodes on Task " << myrank <<std::endl;
   for(int inode=0; inode < all_node_map->getNodeNumElements(); inode++){
     std::cout << "node "<<all_node_map->getGlobalElement(inode) << " } " ;
-    std::cout << all_node_data(inode,0) << " " << all_node_data(inode,1) << " " << all_node_data(inode,2) << " " << std::endl;
+    std::cout << dual_all_node_data.view_host()(inode,0) << " " << dual_all_node_data.view_host()(inode,1) << " " << dual_all_node_data.view_host()(inode,2) << " " << std::endl;
   }
 
 
@@ -1062,12 +1074,13 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
       my_rank_flag = true;
       remote_count = 0;
 
-      //test if local mpi rank is smaller than the rank of remote nodes in the patch
+      //assign as a local boundary patch if any of the nodes on the patch are local
+      //only the local nodes on the patch will contribute to the equation assembly on this rank
       for(int inode = 0; inode < num_nodes_in_patch; inode++){
         node_gid = Patch_Nodes(ipatch).node_set(inode);
         if(!map->isNodeGlobalElement(node_gid)){
-          if(ghost_node_ranks(global2local_map.get(node_gid))<myrank)
-          my_rank_flag = false;
+          //if(ghost_node_ranks(global2local_map.get(node_gid))<myrank)
+          //my_rank_flag = false;
           remote_count++;
           //test
         } 
@@ -1213,7 +1226,8 @@ void Static_Solver_Parallel::generate_bcs(){
 
 
 void Static_Solver_Parallel::allocate_state(){
-
+    //local variable for host view in the dual view
+    host_vec_array node_data = dual_node_data.view_host();
     int rk_storage = simparam->rk_storage;
     int num_dim = simparam->num_dim;
     node_t *node = simparam->node;
@@ -1236,6 +1250,8 @@ void Static_Solver_Parallel::allocate_state(){
 
 
 void Static_Solver_Parallel::initialize_state(){
+  //local variable for host view in the dual view
+  host_vec_array node_data = dual_node_data.view_host();
     int NF = simparam->NF;
     mat_pt_t *mat_pt = simparam->mat_pt;
     mat_fill_t *mat_fill = simparam->mat_fill;
@@ -1565,6 +1581,8 @@ void Static_Solver_Parallel::smooth_element(){
 }
 
 void Static_Solver_Parallel::get_nodal_jacobian(){
+  //local variable for host view in the dual view
+  host_vec_array node_data = dual_node_data.view_host();
   mat_pt_t *mat_pt = simparam->mat_pt;
   mat_fill_t *mat_fill = simparam->mat_fill;
   int num_dim = simparam->num_dim;
@@ -1697,6 +1715,8 @@ void Static_Solver_Parallel::get_nodal_jacobian(){
 // Output writers
 
 void Static_Solver_Parallel::vtk_writer(){
+    //local variable for host view in the dual view
+    host_vec_array node_data = dual_node_data.view_host();
     int graphics_id = simparam->graphics_id;
     int num_dim = simparam->num_dim;
 
@@ -1899,6 +1919,8 @@ void Static_Solver_Parallel::vtk_writer(){
 
 
 void Static_Solver_Parallel::ensight(){
+    //local variable for host view in the dual view
+    host_vec_array node_data = dual_node_data.view_host();
     mat_pt_t *mat_pt = simparam->mat_pt;
     int &graphics_id = simparam->graphics_id;
     real_t *graphics_times = simparam->graphics_times;
@@ -2498,6 +2520,8 @@ void Static_Solver_Parallel::Element_Material_Properties(size_t ielem, real_t &E
 ------------------------------------------------------------------------- */
 
 void Static_Solver_Parallel::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
+  //local variable for host view in the dual view
+  host_vec_array node_data = dual_node_data.view_host();
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
@@ -2856,6 +2880,8 @@ void Static_Solver_Parallel::local_matrix(int ielem, CArray <real_t> &Local_Matr
 ------------------------------------------------------------------------- */
 
 void Static_Solver_Parallel::local_matrix_multiply(int ielem, CArray <real_t> &Local_Matrix){
+  //local variable for host view in the dual view
+  host_vec_array node_data = dual_node_data.view_host();
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
@@ -3304,7 +3330,8 @@ void Static_Solver_Parallel::Displacement_Boundary_Conditions(){
 ------------------------------------------------------------------------- */
 
 void Static_Solver_Parallel::Force_Vector_Construct(){
-
+  //local variable for host view in the dual view
+  host_vec_array node_data = dual_node_data.view_host();
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
@@ -3535,7 +3562,8 @@ void Static_Solver_Parallel::Force_Vector_Construct(){
 ------------------------------------------------------------------------- */
 
 int Static_Solver_Parallel::solve(){
-
+  //local variable for host view in the dual view
+  host_vec_array node_data = dual_node_data.view_host();
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();

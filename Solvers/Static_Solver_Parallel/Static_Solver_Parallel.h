@@ -109,6 +109,12 @@ public:
   void Displacement_Boundary_Conditions();
 
   void Force_Vector_Construct();
+
+  void init_boundary_sets(int num_boundary_sets);
+
+  void tag_boundaries(int this_bc_tag, real_t val, int bdy_set);
+
+  int check_boundary(Node_Combination &Patch_Nodes, int this_bc_tag, real_t val);
   
   swage::mesh_t *init_mesh;
   swage::mesh_t *mesh;
@@ -122,7 +128,8 @@ public:
   class Simulation_Parameters *simparam;
   
   //Local FEA data
-  dual_vec_array dual_node_data;
+  size_t nlocal_nodes;
+  dual_vec_array dual_node_data; //first three indices of second dim should be positions
   CArray<elements::elem_types::elem_type> Element_Types;
   CArray<size_t> Nodes_Per_Element_Type;
   CArray<size_t> Global_Stiffness_Matrix_Assembly_Map;
@@ -133,15 +140,35 @@ public:
   CArray<size_t> Stiffness_Matrix_strides;
   CArray<size_t> Graph_Matrix_strides;
 
-  //Local FEA data including ghosts
-  dual_vec_array dual_all_node_data;
+  //Ghost data on this MPI rank
+  size_t nghost_nodes;
+  CArrayKokkos<GO, Kokkos::LayoutLeft, node_type::device_type> ghost_nodes;
+  CArrayKokkos<int, array_layout, device_type, memory_traits> ghost_node_ranks;
+  Teuchos::ArrayView<const GO> ghost_nodes_pass;
+  Teuchos::ArrayView<int> ghost_node_ranks_pass;
 
-  //Distributed FEA data
+  //Local FEA data including ghosts
+  size_t nall_nodes;
+  dual_vec_array dual_all_node_data; //first three indices of second dim should be positions
+
+  //Global FEA data
+  size_t num_nodes;
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map; //map of node indices
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_node_map; //map of node indices with ghosts on each rank
   Teuchos::RCP<MV> node_data_distributed;
   Teuchos::RCP<MV> all_node_data_distributed;
-
+  
+  //Boundary Conditions Data
   //CArray <Nodal_Combination> Patch_Nodes;
+  size_t nboundary_patches;
+  size_t num_boundary_conditions;
   CArrayKokkos<Node_Combination, array_layout, device_type, memory_traits> Boundary_Patches;
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Boundary_Condition_Patches; //set of patches corresponding to each boundary condition
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> NBoundary_Condition_Patches;
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Boundary_Condition_Patches_strides;
+
+
+  //element selection parameters and data
   size_t max_nodes_per_element;
   int rnum_elem;
 
@@ -172,17 +199,9 @@ public:
 
   //Parallel map for the global set of nodes (before removing BCS)
   Teuchos::RCP<const Teuchos::Comm<int> > comm;
-  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map; //map of node indices
-  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_node_map; //map of node indices
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_dof_map; //map of local dofs (typically num_node_local*num_dim)
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_dof_map; //map of local and ghost dofs (typically num_node_all*num_dim)
 
-  //Ghost node indices and the ranks that own them
-  size_t nghost_nodes, nall_nodes, nlocal_nodes;
-  CArrayKokkos<GO, Kokkos::LayoutLeft, node_type::device_type> ghost_nodes;
-  CArrayKokkos<int, array_layout, device_type, memory_traits> ghost_node_ranks;
-  Teuchos::ArrayView<const GO> ghost_nodes_pass;
-  Teuchos::ArrayView<int> ghost_node_ranks_pass;
   //! mapping used to get local ghost index from the global ID.
   typedef ::Tpetra::Details::FixedHashTable<GO, LO, Kokkos::HostSpace::device_type>
     global_to_local_table_host_type;

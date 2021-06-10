@@ -277,8 +277,6 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   }
   }
 
-  int num_nodes;
-
   // --- Read the number of nodes in the mesh --- //
   if(myrank==0){
     getline(*in, read_line);
@@ -329,7 +327,6 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //depends on file input format; this is for ensight
   int dof_limit = num_nodes;
   int buffer_loop, buffer_iteration, scan_loop;
-  int total_chars = 0;
   size_t read_index_start, node_gid, node_rid, elem_gid;
   real_t dof_value;
   int buffer_iterations = dof_limit/BUFFER_LINES;
@@ -833,11 +830,6 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
 
   }
 
-  //std::cout<<"refine mesh"<<std::endl;
-
-  // refine subcell mesh to desired order
-  //swage::refine_mesh(*mesh, *mesh, 0, num_dim);
-  //std::cout<<"done refining"<< simparam->num_dim <<std::endl;
   // Close mesh input file
   if(myrank==0)
   in->close();
@@ -920,17 +912,6 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     std::cout << "node "<<all_node_map->getGlobalElement(inode) << " } " ;
     std::cout << dual_all_node_data.view_host()(inode,0) << " " << dual_all_node_data.view_host()(inode,1) << " " << dual_all_node_data.view_host()(inode,2) << " " << std::endl;
   }
-
-
-  //set of tasks to receive and send from is the same since elements with ghosts belonging to a task
-  //must also possess ghosts of that task
-  
-  //find how many ranks this rank communicates with
-  
-
-  //tally the number of nodes that this rank expects to receive from other mpi ranks
-
-  //send the expected receive count to the respective sending rank
      
   //std::cout << "number of patches = " << mesh->num_patches() << std::endl;
   std::cout << "End of setup " << std::endl;
@@ -942,7 +923,6 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
 
 void Static_Solver_Parallel::Get_Boundary_Patches(){
   size_t npatches_repeat, npatches, element_npatches, num_nodes_in_patch, node_gid;
-  size_t nboundary_patches;
   int local_node_id;
   int num_dim = simparam->num_dim;
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Surface_Nodes;
@@ -1116,33 +1096,32 @@ void Static_Solver_Parallel::generate_bcs(){
     //mesh->build_bdy_patches();
     Get_Boundary_Patches();
 
-    std::cout << "number of boundary patches = " << mesh->num_bdy_patches() << std::endl;
+    std::cout << "number of boundary patches on task " << myrank << " = " << nboundary_patches << std::endl;
     std::cout << "building boundary sets " << std::endl;
     // set the number of boundary sets
     
-    int num_bdy_sets = simparam->NB;
+    int num_boundary_sets = simparam->NB;
     int num_surface_force_sets = simparam->NBSF;
     int num_surface_disp_sets = simparam->NBD;
     int num_dim = simparam->num_dim;
-    int num_nodes = mesh->num_nodes();
     int current_bdy_id = 0;
     int bdy_set_id;
     int surf_force_set_id = 0;
     int surf_disp_set_id = 0;
 
-    mesh->init_bdy_sets(num_bdy_sets);
-    Boundary_Condition_Type_List = CArray<int>(num_bdy_sets); 
+    init_boundary_sets(num_boundary_sets);
+    Boundary_Condition_Type_List = CArray<int>(num_boundary_sets); 
     Boundary_Surface_Force_Densities = CArray<real_t>(num_surface_force_sets,3);
     Boundary_Surface_Displacements = CArray<real_t>(num_surface_disp_sets,3);
     //initialize
-    for(int ibdy=0; ibdy < num_bdy_sets; ibdy++) Boundary_Condition_Type_List(ibdy) = NONE;
+    for(int ibdy=0; ibdy < num_boundary_sets; ibdy++) Boundary_Condition_Type_List(ibdy) = NONE;
     
     // tag the x=0 plane,  (Direction, value, bdy_set)
     std::cout << "tagging x = 0 " << std::endl;
     int bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
     real_t value = 0.0;
     bdy_set_id = current_bdy_id++;
-    mesh->tag_bdys(bc_tag, value, bdy_set_id);
+    tag_boundaries(bc_tag, value, bdy_set_id);
     Boundary_Condition_Type_List(bdy_set_id) = DISPLACEMENT_CONDITION;
     Boundary_Surface_Displacements(surf_disp_set_id,0) = 0;
     Boundary_Surface_Displacements(surf_disp_set_id,1) = 0;
@@ -1150,7 +1129,7 @@ void Static_Solver_Parallel::generate_bcs(){
     surf_disp_set_id++;
     
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
     std::cout << std::endl;
     /*
     //This part should be changed so it interfaces with simparam to handle multiple input cases
@@ -1180,16 +1159,17 @@ void Static_Solver_Parallel::generate_bcs(){
 
     std::cout << "tagging x = 2 " << std::endl;
     bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-    value = 1.0;
+    value = 2.0;
     bdy_set_id = current_bdy_id++;
-    mesh->tag_bdys(bc_tag, value, bdy_set_id);
+    //find boundary patches this BC corresponds to
+    tag_boundaries(bc_tag, value, bdy_set_id);
     Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
     Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
     Boundary_Surface_Force_Densities(surf_force_set_id,1) = 2;
     Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
     surf_force_set_id++;
     std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+    std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
     std::cout << std::endl;
 
     /*
@@ -1215,15 +1195,137 @@ void Static_Solver_Parallel::generate_bcs(){
     */
 
     //allocate nodal data
-    Node_DOF_Boundary_Condition_Type = CArray<int>(num_nodes *num_dim);
-    Node_DOF_Displacement_Boundary_Conditions = CArray<real_t>(num_nodes *num_dim);
-    Node_DOF_Force_Boundary_Conditions = CArray<real_t>(num_nodes *num_dim);
+    Node_DOF_Boundary_Condition_Type = CArray<int>(nlocal_nodes *num_dim);
+    Node_DOF_Displacement_Boundary_Conditions = CArray<real_t>(nlocal_nodes *num_dim);
+    Node_DOF_Force_Boundary_Conditions = CArray<real_t>(nlocal_nodes *num_dim);
 
     //initialize
-    for(int init=0; init < num_nodes*num_dim; init++)
+    for(int init=0; init < nlocal_nodes*num_dim; init++)
       Node_DOF_Boundary_Condition_Type(init) = NONE;
 } // end generate_bcs
 
+/* ----------------------------------------------------------------------
+   initialize storage for element boundary surfaces corresponding to user BCs
+------------------------------------------------------------------------- */
+
+void Static_Solver_Parallel::init_boundary_sets (int num_sets){
+    
+  num_boundary_conditions = num_sets;
+  if(num_sets == 0){
+    std::cout << " Warning: number of boundary conditions = 0";
+    return;
+  }
+  Boundary_Condition_Patches_strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_sets);
+  NBoundary_Condition_Patches = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_sets);
+  Boundary_Condition_Patches = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_sets, nboundary_patches);
+
+  //initialize data
+  for(int iset = 0; iset < num_sets; iset++) NBoundary_Condition_Patches(iset) = 0;
+}
+
+/* ----------------------------------------------------------------------
+   find which boundary patches correspond to the given BC.
+   bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+   val = plane value, cylinder radius, shell radius
+------------------------------------------------------------------------- */
+
+void Static_Solver_Parallel::tag_boundaries(int bc_tag, real_t val, int bdy_set){
+  
+  int num_boundary_sets = simparam->NB;
+  int is_on_set;
+  /*
+  if (bdy_set == num_bdy_sets_){
+    std::cout << " ERROR: number of boundary sets must be increased by "
+      << bdy_set-num_bdy_sets_+1 << std::endl;
+    exit(0);
+  }
+  */
+    
+  // save the boundary vertices to this set that are on the plane
+  int counter = 0;
+  for (int iboundary_patch = 0; iboundary_patch < nboundary_patches; iboundary_patch++) {
+
+    // check to see if this patch is on the specified plane
+    is_on_set = check_boundary(Boundary_Patches(iboundary_patch), bc_tag, val); // no=0, yes=1
+        
+    if (is_on_set == 1){
+      Boundary_Condition_Patches(bdy_set,counter) = iboundary_patch;
+      counter ++;
+    }
+  } // end for bdy_patch
+    
+  // save the number of bdy patches in the set
+  NBoundary_Condition_Patches(bdy_set) = counter;
+    
+  std::cout << " tagged boundary patches " << std::endl;
+}
+
+/* ----------------------------------------------------------------------
+   routine for checking to see if a patch is on a boundary set
+   bc_tag = 0 xplane, 1 yplane, 3 zplane, 4 cylinder, 5 is shell
+   val = plane value, radius, radius
+------------------------------------------------------------------------- */
+
+
+int Static_Solver_Parallel::check_boundary(Node_Combination &Patch_Nodes, int bc_tag, real_t val){
+  
+  int is_on_set = 1;
+  vec_array all_node_data = dual_all_node_data.view_device();
+
+  //Nodes on the Patch
+  auto node_list = Patch_Nodes.node_set;
+  size_t nnodes = node_list.size();
+  size_t node_rid;
+  real_t node_coord;
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> node_on_flags(nnodes);
+
+  //initialize
+  for(int inode = 0; inode < nnodes; inode++) node_on_flags(inode) = 0;
+    
+  //test for planes
+  if(bc_tag < 3)
+  for(int inode = 0; inode < nnodes; inode++){
+
+    node_rid = all_node_map->getLocalElement(node_list(inode));
+    node_coord = all_node_data(node_rid,bc_tag);
+    if ( fabs(node_coord - val) <= 1.0e-8 ) node_on_flags(inode) = 1;
+    //debug print of node id and node coord
+    //std::cout << "node coords on task " << myrank << " for node " << node_rid << std::endl;
+    //std::cout << "coord " <<node_coord << " flag " << node_on_flags(inode) << " bc_tag " << bc_tag << std::endl;
+  }
+    
+    /*
+    // cylinderical shell where radius = sqrt(x^2 + y^2)
+    else if (this_bc_tag == 3){
+        
+        real_t R = sqrt(these_patch_coords[0]*these_patch_coords[0] +
+                        these_patch_coords[1]*these_patch_coords[1]);
+        
+        if ( fabs(R - val) <= 1.0e-8 ) is_on_bdy = 1;
+
+        
+    }// end if on type
+    
+    // spherical shell where radius = sqrt(x^2 + y^2 + z^2)
+    else if (this_bc_tag == 4){
+        
+        real_t R = sqrt(these_patch_coords[0]*these_patch_coords[0] +
+                        these_patch_coords[1]*these_patch_coords[1] +
+                        these_patch_coords[2]*these_patch_coords[2]);
+        
+        if ( fabs(R - val) <= 1.0e-8 ) is_on_bdy = 1;
+        
+    } // end if on type
+    */
+    //check if all nodes lie on the boundary set
+  for(int inode = 0; inode < nnodes; inode++)
+    if(!node_on_flags(inode)) is_on_set = 0;
+  
+  //debug print of return flag
+  //std::cout << "patch flag on task " << myrank << " is " << is_on_set << std::endl;
+  return is_on_set;
+    
+} // end method to check bdy
 
 void Static_Solver_Parallel::allocate_state(){
     //local variable for host view in the dual view
@@ -3218,7 +3320,7 @@ void Static_Solver_Parallel::Displacement_Boundary_Conditions(){
   int warning_flag = 0;
   int current_node_index, patch_gid, current_node_id;
   int num_nodes = mesh->num_nodes();
-  int num_bdy_sets = mesh->num_bdy_sets();
+  int num_boundary_sets = num_boundary_conditions;
   int surface_disp_set_id = 0;
   int num_dim = simparam->num_dim;
   int bc_option, bc_dim_set[3];
@@ -3235,7 +3337,7 @@ void Static_Solver_Parallel::Displacement_Boundary_Conditions(){
     first_condition_per_node(inode) = -1;
   
   //scan for surface method of setting fixed nodal displacements
-  for(int iboundary = 0; iboundary < num_bdy_sets; iboundary++){
+  for(int iboundary = 0; iboundary < num_boundary_sets; iboundary++){
     
     if(Boundary_Condition_Type_List(iboundary)==DISPLACEMENT_CONDITION){bc_option=3;}
     else if(Boundary_Condition_Type_List(iboundary)==X_DISPLACEMENT_CONDITION){bc_option=0;}
@@ -3309,7 +3411,7 @@ void Static_Solver_Parallel::Displacement_Boundary_Conditions(){
   }
 
   //scan for direct setting of nodal displacements from input
-  //indices for nodal BC settings referred to here start at num_bdy_sets
+  //indices for nodal BC settings referred to here start at num_boundary_sets
 
   //debug print of nodal bc settings
   /*
@@ -3355,13 +3457,13 @@ void Static_Solver_Parallel::Force_Vector_Construct(){
 
   int num_bdy_patches_in_set;
   int current_node_index;
-  int num_bdy_sets = mesh->num_bdy_sets();
+  int num_boundary_sets = num_boundary_conditions;
   int surface_force_set_id = 0;
 
   /*Loop through boundary sets and check if they apply surface forces.
   These sets can have overlapping nodes since applied loading conditions
   are assumed to be additive*/
-  for(int iboundary = 0; iboundary < num_bdy_sets; iboundary++){
+  for(int iboundary = 0; iboundary < num_boundary_sets; iboundary++){
     if(Boundary_Condition_Type_List(iboundary)!=LOADING_CONDITION) continue;
     //std::cout << "I REACHED THE LOADING BOUNDARY CONDITION" <<std::endl;
     num_bdy_patches_in_set = mesh->num_bdy_patches_in_set(iboundary);

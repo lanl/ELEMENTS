@@ -133,8 +133,8 @@ public:
   CArray<elements::elem_types::elem_type> Element_Types;
   CArray<size_t> Nodes_Per_Element_Type;
   CArray<size_t> Global_Stiffness_Matrix_Assembly_Map;
-  RaggedRightArray<size_t> Graph_Matrix;
-  RaggedRightArray<size_t> DOF_Graph_Matrix;
+  RaggedRightArray<size_t> Graph_Matrix; //stores global indices
+  RaggedRightArray<size_t> DOF_Graph_Matrix; //stores global indices
   RaggedRightArray<real_t> Stiffness_Matrix;
   CArray<real_t> Nodal_Forces;
   CArray<size_t> Stiffness_Matrix_strides;
@@ -149,10 +149,11 @@ public:
 
   //Local FEA data including ghosts
   size_t nall_nodes;
+  size_t rnum_elem;
   dual_vec_array dual_all_node_data; //first three indices of second dim should be positions
 
   //Global FEA data
-  size_t num_nodes;
+  size_t num_nodes, num_elem;
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map; //map of node indices
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_node_map; //map of node indices with ghosts on each rank
   Teuchos::RCP<MV> node_data_distributed;
@@ -170,7 +171,6 @@ public:
 
   //element selection parameters and data
   size_t max_nodes_per_element;
-  int rnum_elem;
 
   //types of boundary conditions
   enum bc_type {NONE,DISPLACEMENT_CONDITION, X_DISPLACEMENT_CONDITION,

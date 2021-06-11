@@ -80,6 +80,7 @@ num_cells in element = (p_order*2)^3
 
 #define BUFFER_LINES 1000
 #define MAX_WORD 30
+#define MAX_ELEM_NODES 8
 
 using namespace utils;
 
@@ -537,7 +538,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //read in element info (ensight file format is organized in element type sections)
   //loop over this later for several element type sections
 
-  int num_elem = 0;
+  num_elem = 0;
   rnum_elem = 0;
   CArray<int> node_store(elem_words_per_line);
 
@@ -697,7 +698,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
 
   // Convert ijk index system to the finite element numbering convention
   // for vertices in cell
-  max_nodes_per_element = 8;
+  max_nodes_per_element = MAX_ELEM_NODES;
   CArray<size_t> convert_ensight_to_ijk(max_nodes_per_element);
   CArray<size_t> tmp_ijk_indx(max_nodes_per_element);
   convert_ensight_to_ijk(0) = 0;
@@ -2325,54 +2326,78 @@ void Static_Solver_Parallel::init_global(){
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
-  int nodes_per_elem = mesh->num_nodes_in_elem();
-  Stiffness_Matrix_strides = CArray <size_t> (num_nodes*num_dim);
-  CArray <int> Graph_Fill = CArray <int> (num_nodes);
+  Stiffness_Matrix_strides = CArray <size_t> (nlocal_nodes*num_dim);
+  CArray <int> Graph_Fill = CArray <int> (nall_nodes);
   //CArray <int> nodes_in_cell_list_ = mesh->nodes_in_cell_list_;
   CArray <size_t> current_row_nodes_scanned;
   int current_row_n_nodes_scanned;
-  int local_node_index, current_column_index;
+  int local_node_index, global_node_index, current_column_index;
   int max_stride = 0;
+  size_t nodes_per_element;
 
   //allocate right hand side vector of nodal forces
-  Nodal_Forces = CArray <real_t> (num_nodes*num_dim);
+  Nodal_Forces = CArray <real_t> (nlocal_nodes*num_dim);
   
   //allocate stride arrays
-  CArray <size_t> Graph_Matrix_strides_initial = CArray <size_t> (num_nodes);
-  Graph_Matrix_strides = CArray <size_t> (num_nodes);
+  CArray <size_t> Graph_Matrix_strides_initial = CArray <size_t> (nlocal_nodes);
+  Graph_Matrix_strides = CArray <size_t> (nlocal_nodes);
 
   //allocate storage for the sparse stiffness matrix map used in the assembly process
-  Global_Stiffness_Matrix_Assembly_Map = CArray <size_t> (num_elems,nodes_per_elem,nodes_per_elem);
+  Global_Stiffness_Matrix_Assembly_Map = CArray <size_t> (rnum_elem,max_nodes_per_element,max_nodes_per_element);
 
   //allocate array used to determine global node repeats in the sparse graph later
-  CArray <int> global_nodes_used = CArray <int> (num_nodes);
+  CArray <int> node_indices_used = CArray <int> (nall_nodes);
 
-  /*allocate array that stores which column the global node index occured on for the current row
+  /*allocate array that stores which column the node index occured on for the current row
     when removing repeats*/
-  CArray <size_t> column_index = CArray <size_t> (num_nodes);
+  CArray <size_t> column_index = CArray <size_t> (nall_nodes);
   
-  //initialize stride arrays
-  for(int inode = 0; inode < num_nodes; inode++){
-      Graph_Matrix_strides_initial(inode) = 0;
-      Graph_Matrix_strides(inode) = 0;
-      global_nodes_used(inode) = 0;
-      column_index(inode) = 0;
-      Graph_Fill(inode) = 0;
+  //initialize nlocal arrays
+  for(int inode = 0; inode < nlocal_nodes; inode++){
+    Graph_Matrix_strides_initial(inode) = 0;
+    Graph_Matrix_strides(inode) = 0;
+  }
+
+  //initialize nall arrays
+  for(int inode = 0; inode < nlocal_nodes; inode++){
+    node_indices_used(inode) = 0;
+    column_index(inode) = 0;
+    Graph_Fill(inode) = 0;
   }
   
-  //count strides for Sparse Pattern Graph with global repeats
-  for (int ielem = 0; ielem < num_elems; ielem++)
-    for (int lnode = 0; lnode < nodes_per_elem; lnode++){
-      local_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
-      Graph_Matrix_strides_initial(local_node_index) += nodes_per_elem;
+  //count upper bound of strides for Sparse Pattern Graph by allowing repeats due to connectivity
+  if(num_dim == 2)
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
+    element_select->choose_2Delem_type(Element_Types(ielem), elem2D);
+    nodes_per_element = elem2D->num_nodes();
+    for (int lnode = 0; lnode < nodes_per_element; lnode++){
+      global_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
+      if(map->isNodeGlobalElement(global_node_index)){
+        local_node_index = map->getLocalElement(global_node_index);
+        Graph_Matrix_strides_initial(local_node_index) += nodes_per_element;
+      }
     }
-  
+  }
+
+  if(num_dim == 3)
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
+    element_select->choose_3Delem_type(Element_Types(ielem), elem);
+    nodes_per_element = elem->num_nodes();
+    for (int lnode = 0; lnode < nodes_per_element; lnode++){
+      global_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
+      if(map->isNodeGlobalElement(global_node_index)){
+        local_node_index = map->getLocalElement(global_node_index);
+        Graph_Matrix_strides_initial(local_node_index) += nodes_per_element;
+      }
+    }
+  }
+
   //equate strides for later
-  for(int inode = 0; inode < num_nodes; inode++)
+  for(int inode = 0; inode < nlocal_nodes; inode++)
     Graph_Matrix_strides(inode) = Graph_Matrix_strides_initial(inode);
   
   //compute maximum stride
-  for(int inode = 0; inode < num_nodes; inode++)
+  for(int inode = 0; inode < nlocal_nodes; inode++)
     if(Graph_Matrix_strides_initial(inode) > max_stride) max_stride = Graph_Matrix_strides_initial(inode);
   
   //allocate array used in the repeat removal process
@@ -2380,43 +2405,74 @@ void Static_Solver_Parallel::init_global(){
 
   //allocate sparse graph with node repeats
   RaggedRightArray <size_t> Repeat_Graph_Matrix = RaggedRightArray <size_t> (Graph_Matrix_strides_initial);
-  RaggedRightArrayofVectors <size_t> Element_local_indices = RaggedRightArrayofVectors <size_t> (Graph_Matrix_strides_initial,3);
+  RaggedRightArrayofVectors <size_t> Element_local_indices = RaggedRightArrayofVectors <size_t> (Graph_Matrix_strides_initial,num_dim);
   
   //Fill the initial Graph with repeats
-  
-  for (int ielem = 0; ielem < num_elems; ielem++)
-    for (int lnode = 0; lnode < nodes_per_elem; lnode++){
-      local_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
-      for (int jnode = 0; jnode < nodes_per_elem; jnode++){
-        current_column_index = Graph_Fill(local_node_index)+jnode;
-        Repeat_Graph_Matrix(local_node_index, current_column_index) = mesh->nodes_in_cell_list_(ielem,jnode);
+  if(num_dim == 2)
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
+    element_select->choose_2Delem_type(Element_Types(ielem), elem2D);
+    nodes_per_element = elem2D->num_nodes();
+    for (int lnode = 0; lnode < nodes_per_element; lnode++){
+      global_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
+      if(map->isNodeGlobalElement(global_node_index)){
+        local_node_index = map->getLocalElement(global_node_index);
+        for (int jnode = 0; jnode < nodes_per_element; jnode++){
+          current_column_index = Graph_Fill(local_node_index)+jnode;
+          Repeat_Graph_Matrix(local_node_index, current_column_index) = mesh->nodes_in_cell_list_(ielem,jnode);
 
-        //fill inverse map
-        Element_local_indices(local_node_index,current_column_index,0) = ielem;
-        Element_local_indices(local_node_index,current_column_index,1) = lnode;
-        Element_local_indices(local_node_index,current_column_index,2) = jnode;
+          //fill inverse map
+          Element_local_indices(local_node_index,current_column_index,0) = ielem;
+          Element_local_indices(local_node_index,current_column_index,1) = lnode;
+          Element_local_indices(local_node_index,current_column_index,2) = jnode;
 
-        //fill forward map
-        Global_Stiffness_Matrix_Assembly_Map(ielem,lnode,jnode) = current_column_index;
+          //fill forward map
+          Global_Stiffness_Matrix_Assembly_Map(ielem,lnode,jnode) = current_column_index;
+        }
       }
-      Graph_Fill(local_node_index) += nodes_per_elem;
+      Graph_Fill(local_node_index) += nodes_per_element;
     }
+  }
+
+  if(num_dim == 3)
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
+    element_select->choose_3Delem_type(Element_Types(ielem), elem);
+    nodes_per_element = elem->num_nodes();
+    for (int lnode = 0; lnode < nodes_per_element; lnode++){
+      global_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
+      if(map->isNodeGlobalElement(global_node_index)){
+        local_node_index = map->getLocalElement(global_node_index);
+        for (int jnode = 0; jnode < nodes_per_element; jnode++){
+          current_column_index = Graph_Fill(local_node_index)+jnode;
+          Repeat_Graph_Matrix(local_node_index, current_column_index) = mesh->nodes_in_cell_list_(ielem,jnode);
+
+          //fill inverse map
+          Element_local_indices(local_node_index,current_column_index,0) = ielem;
+          Element_local_indices(local_node_index,current_column_index,1) = lnode;
+          Element_local_indices(local_node_index,current_column_index,2) = jnode;
+
+          //fill forward map
+          Global_Stiffness_Matrix_Assembly_Map(ielem,lnode,jnode) = current_column_index;
+        }
+      }
+      Graph_Fill(local_node_index) += nodes_per_element;
+    }
+  }
   
   //debug statement
   //std::cout << "started run" << std::endl;
 
   //remove repeats from the inital graph setup
   int current_node, current_element_index, element_row_index, element_column_index, current_stride;
-  for (int inode = 0; inode < num_nodes; inode++){
+  for (int inode = 0; inode < nlocal_nodes; inode++){
     current_row_n_nodes_scanned = 0;
     for (int istride = 0; istride < Graph_Matrix_strides(inode); istride++){
-      current_node = Repeat_Graph_Matrix(inode,istride);
-      if(global_nodes_used(current_node)){
-        //set forward map index to the index where this global node was first found
+      //convert global index in graph to its local index for the flagging array
+      current_node = all_node_map->getLocalElement(Repeat_Graph_Matrix(inode,istride));
+      if(node_indices_used(current_node)){
+        //set global assembly map index to the location in the graph matrix where this global node was first found
         current_element_index = Element_local_indices(inode,istride,0);
         element_row_index = Element_local_indices(inode,istride,1);
         element_column_index = Element_local_indices(inode,istride,2);
-
         Global_Stiffness_Matrix_Assembly_Map(current_element_index,element_row_index, element_column_index) 
             = column_index(current_node);   
 
@@ -2447,7 +2503,7 @@ void Static_Solver_Parallel::init_global(){
         /*this node hasn't shown up in the row before; add it to the list of nodes
           that have been scanned uniquely. Use this list to reset the flag array
           afterwards without having to loop over all the nodes in the system*/
-        global_nodes_used(current_node) = 1;
+        node_indices_used(current_node) = 1;
         column_index(current_node) = istride;
         current_row_nodes_scanned(current_row_n_nodes_scanned) = current_node;
         current_row_n_nodes_scanned++;
@@ -2455,13 +2511,13 @@ void Static_Solver_Parallel::init_global(){
     }
     //reset nodes used list for the next row of the sparse list
     for(int node_reset = 0; node_reset < current_row_n_nodes_scanned; node_reset++)
-      global_nodes_used(current_row_nodes_scanned(node_reset)) = 0;
+      node_indices_used(current_row_nodes_scanned(node_reset)) = 0;
 
   }
   
   //copy reduced content to non_repeat storage
   Graph_Matrix = RaggedRightArray <size_t> (Graph_Matrix_strides);
-  for(int inode = 0; inode < num_nodes; inode++)
+  for(int inode = 0; inode < nlocal_nodes; inode++)
     for(int istride = 0; istride < Graph_Matrix_strides(inode); istride++)
       Graph_Matrix(inode,istride) = Repeat_Graph_Matrix(inode,istride);
 
@@ -2472,7 +2528,7 @@ void Static_Solver_Parallel::init_global(){
     is used to loop over each element's local stiffness matrix in the assembly process.*/
   
   //expand strides for stiffness matrix by multipling by dim
-  for(int inode = 0; inode < num_nodes; inode++){
+  for(int inode = 0; inode < nlocal_nodes; inode++){
     for (int idim = 0; idim < num_dim; idim++)
     Stiffness_Matrix_strides(num_dim*inode + idim) = num_dim*Graph_Matrix_strides(inode);
   }
@@ -2481,7 +2537,7 @@ void Static_Solver_Parallel::init_global(){
   DOF_Graph_Matrix = RaggedRightArray <size_t> (Stiffness_Matrix_strides);
 
   //initialize stiffness Matrix entries to 0
-  for (int idof = 0; idof < num_dim*num_nodes; idof++)
+  for (int idof = 0; idof < num_dim*nlocal_nodes; idof++)
     for (int istride = 0; istride < Stiffness_Matrix_strides(idof); istride++){
       Stiffness_Matrix(idof,istride) = 0;
       DOF_Graph_Matrix(idof,istride) = Graph_Matrix(idof/num_dim,istride/num_dim)*num_dim + istride%num_dim;
@@ -2548,18 +2604,21 @@ void Static_Solver_Parallel::assemble(){
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
-  int nodes_per_elem = mesh->num_nodes_in_elem();
+  int nodes_per_element;
   int current_row_n_nodes_scanned;
-  int local_node_index, current_row, current_column;
+  int local_dof_index, global_node_index, current_row, current_column;
   int max_stride = 0;
   CArray <real_t> Local_Stiffness_Matrix = CArray <real_t> (num_dim*nodes_per_elem,num_dim*nodes_per_elem);
 
   //assemble the global stiffness matrix
+  if(num_dim==2)
   for (int ielem = 0; ielem < num_elems; ielem++){
+    element_select->choose_2Delem_type(Element_Types(ielem), elem2D);
+    nodes_per_element = elem2D->num_nodes();
     //construct local stiffness matrix for this element
     local_matrix_multiply(ielem, Local_Stiffness_Matrix);
     //assign entries of this local matrix to the sparse global matrix storage;
-    for (int inode = 0; inode < nodes_per_elem; inode++){
+    for (int inode = 0; inode < nodes_per_element; inode++){
       current_row = num_dim*mesh->nodes_in_cell_list_(ielem,inode);
       for(int jnode = 0; jnode < nodes_per_elem; jnode++){
         
@@ -2595,7 +2654,7 @@ void Static_Solver_Parallel::assemble(){
   //force vector construction
   
   //initialize
-  for(int i=0; i < num_dim*num_nodes; i++)
+  for(int i=0; i < num_dim*nlocal_nodes; i++)
     Nodal_Forces(i) = 0;
   
   //Tag nodes for Boundary conditions such as displacements

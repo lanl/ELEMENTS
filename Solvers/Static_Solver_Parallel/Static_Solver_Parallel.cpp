@@ -2608,7 +2608,7 @@ void Static_Solver_Parallel::assemble(){
   int current_row_n_nodes_scanned;
   int local_dof_index, global_node_index, current_row, current_column;
   int max_stride = 0;
-  CArray <real_t> Local_Stiffness_Matrix = CArray <real_t> (num_dim*nodes_per_elem,num_dim*nodes_per_elem);
+  CArray <real_t> Local_Stiffness_Matrix = CArray <real_t> (num_dim*max_nodes_per_element,num_dim*max_nodes_per_element);
 
   //assemble the global stiffness matrix
   if(num_dim==2)
@@ -2619,8 +2619,44 @@ void Static_Solver_Parallel::assemble(){
     local_matrix_multiply(ielem, Local_Stiffness_Matrix);
     //assign entries of this local matrix to the sparse global matrix storage;
     for (int inode = 0; inode < nodes_per_element; inode++){
-      current_row = num_dim*mesh->nodes_in_cell_list_(ielem,inode);
-      for(int jnode = 0; jnode < nodes_per_elem; jnode++){
+      //see if this node is local
+      global_node_index = mesh->nodes_in_cell_list_(ielem,inode);
+      if(!map->isNodeGlobalElement(global_node_index)) continue;
+      //set dof row start index
+      current_row = num_dim*global_node_index;
+      for(int jnode = 0; jnode < nodes_per_element; jnode++){
+        
+        current_column = num_dim*Global_Stiffness_Matrix_Assembly_Map(ielem,inode,jnode);
+        for (int idim = 0; idim < num_dim; idim++){
+          for (int jdim = 0; jdim < num_dim; jdim++){
+
+            //debug print
+            //if(current_row + idim==15&&current_column + jdim==4)
+            //std::cout << " Local stiffness matrix contribution for row " << current_row + idim +1 << " and column " << current_column + jdim + 1 << " : " <<
+            //Local_Stiffness_Matrix(num_dim*inode + idim,num_dim*jnode + jdim) << " from " << ielem +1 << " i: " << num_dim*inode+idim+1 << " j: " << num_dim*jnode + jdim +1 << std::endl << std::endl;
+            //end debug
+
+            Stiffness_Matrix(current_row + idim, current_column + jdim) += Local_Stiffness_Matrix(num_dim*inode + idim,num_dim*jnode + jdim);
+          }
+        }
+      }
+    }
+  }
+
+  if(num_dim==3)
+  for (int ielem = 0; ielem < num_elems; ielem++){
+    element_select->choose_3Delem_type(Element_Types(ielem), elem);
+    nodes_per_element = elem->num_nodes();
+    //construct local stiffness matrix for this element
+    local_matrix_multiply(ielem, Local_Stiffness_Matrix);
+    //assign entries of this local matrix to the sparse global matrix storage;
+    for (int inode = 0; inode < nodes_per_element; inode++){
+      //see if this node is local
+      global_node_index = mesh->nodes_in_cell_list_(ielem,inode);
+      if(!map->isNodeGlobalElement(global_node_index)) continue;
+      //set dof row start index
+      current_row = num_dim*global_node_index;
+      for(int jnode = 0; jnode < nodes_per_element; jnode++){
         
         current_column = num_dim*Global_Stiffness_Matrix_Assembly_Map(ielem,inode,jnode);
         for (int idim = 0; idim < num_dim; idim++){

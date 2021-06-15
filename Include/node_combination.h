@@ -30,7 +30,7 @@ private:
 public:
     
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> node_set;
-  size_t patch_gid;
+  size_t patch_id, element_id, local_patch_id;
 
   //Default Constructor
   Node_Combination(){}
@@ -46,7 +46,9 @@ public:
   //overload = operator
   Node_Combination& operator= (const Node_Combination &not_this){
     node_set = not_this.node_set;
-    patch_gid = not_this.patch_gid;
+    patch_id = not_this.patch_id;
+    element_id = not_this.element_id;
+    local_patch_id = not_this.local_patch_id;
     return *this;
   }
 

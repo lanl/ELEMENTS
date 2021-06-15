@@ -141,14 +141,14 @@ void Static_Solver_Parallel::run(int argc, char *argv[]){
     
     // ---- Find Boundaries on mesh ---- //
     generate_bcs();
-    return;
+    
     
     //allocate and fill sparse structures needed for global solution
     init_global();
 
     //assemble the global solution (stiffness matrix etc. and nodal forces)
     assemble();
-
+    return;
     //debug solve; move later after bcs applies
     int solver_exit = solve();
     if(solver_exit == EXIT_SUCCESS) return;
@@ -845,8 +845,9 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //communicate ghost node positions; construct multivector distributed object using local node data
 
   //construct array for all indices (ghost + local)
-  CArrayKokkos<GO, array_layout, device_type, memory_traits> all_node_indices(nlocal_nodes + nghost_nodes);
-  for(int i = 0; i < nlocal_nodes + nghost_nodes; i++){
+  nall_nodes = nlocal_nodes + nghost_nodes;
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> all_node_indices(nall_nodes);
+  for(int i = 0; i < nall_nodes; i++){
     if(i<nlocal_nodes) all_node_indices(i) = map->getGlobalElement(i);
     else all_node_indices(i) = ghost_nodes(i-nlocal_nodes);
   }
@@ -856,7 +857,6 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //std::cout << " my_reduced_global_indices " << my_reduced_global_indices(inode) <<std::endl;
   
   // create a Map for all the node indices (ghost + local)
-    
   all_node_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes,all_node_indices.get_kokkos_view(),0,comm) );
 
   //debug print of map
@@ -977,13 +977,15 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
       Node_Combination temp(Surface_Nodes);
       //construct Node Combination object for this surface
       Patch_Nodes(npatches_repeat) = temp;
-      Patch_Nodes(npatches_repeat).patch_gid = npatches_repeat;
+      Patch_Nodes(npatches_repeat).patch_id = npatches_repeat;
+      Patch_Nodes(npatches_repeat).element_id = ielem;
+      Patch_Nodes(npatches_repeat).local_patch_id = isurface;
       //test if this patch has already been added; if yes set boundary flags to 0
       current_combination = my_patches.insert(Patch_Nodes(npatches_repeat));
       //if the set determines this is a duplicate access the original element's patch id and set flag to 0
       if(current_combination.second==false){
       //set original element flag to 0
-      Patch_Boundary_Flags((*current_combination.first).patch_gid) = 0;
+      Patch_Boundary_Flags((*current_combination.first).patch_id) = 0;
       //set this current flag to 0 for the duplicate as well
       Patch_Boundary_Flags(npatches_repeat) = 0;
       npatches_repeat++;
@@ -1009,13 +1011,15 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
       Node_Combination temp(Surface_Nodes);
       //construct Node Combination object for this surface
       Patch_Nodes(npatches_repeat) = temp;
-      Patch_Nodes(npatches_repeat).patch_gid = npatches_repeat;
+      Patch_Nodes(npatches_repeat).patch_id = npatches_repeat;
+      Patch_Nodes(npatches_repeat).element_id = ielem;
+      Patch_Nodes(npatches_repeat).local_patch_id = isurface;
       //test if this patch has already been added; if yes set boundary flags to 0
       current_combination = my_patches.insert(Patch_Nodes(npatches_repeat));
       //if the set determines this is a duplicate access the original element's patch id and set flag to 0
       if(current_combination.second==false){
         //set original element flag to 0
-        Patch_Boundary_Flags((*current_combination.first).patch_gid) = 0;
+        Patch_Boundary_Flags((*current_combination.first).patch_id) = 0;
         //set this current flag to 0 for the duplicate as well
         Patch_Boundary_Flags(npatches_repeat) = 0;
       }
@@ -1196,12 +1200,12 @@ void Static_Solver_Parallel::generate_bcs(){
     */
 
     //allocate nodal data
-    Node_DOF_Boundary_Condition_Type = CArray<int>(nlocal_nodes *num_dim);
-    Node_DOF_Displacement_Boundary_Conditions = CArray<real_t>(nlocal_nodes *num_dim);
-    Node_DOF_Force_Boundary_Conditions = CArray<real_t>(nlocal_nodes *num_dim);
+    Node_DOF_Boundary_Condition_Type = CArray<int>(nall_nodes*num_dim);
+    Node_DOF_Displacement_Boundary_Conditions = CArray<real_t>(nall_nodes*num_dim);
+    Node_DOF_Force_Boundary_Conditions = CArray<real_t>(nall_nodes*num_dim);
 
     //initialize
-    for(int init=0; init < nlocal_nodes*num_dim; init++)
+    for(int init=0; init < nall_nodes*num_dim; init++)
       Node_DOF_Boundary_Condition_Type(init) = NONE;
 } // end generate_bcs
 
@@ -2623,7 +2627,7 @@ void Static_Solver_Parallel::assemble(){
       global_node_index = mesh->nodes_in_cell_list_(ielem,inode);
       if(!map->isNodeGlobalElement(global_node_index)) continue;
       //set dof row start index
-      current_row = num_dim*global_node_index;
+      current_row = num_dim*map->getLocalElement(global_node_index);
       for(int jnode = 0; jnode < nodes_per_element; jnode++){
         
         current_column = num_dim*Global_Stiffness_Matrix_Assembly_Map(ielem,inode,jnode);
@@ -2655,7 +2659,7 @@ void Static_Solver_Parallel::assemble(){
       global_node_index = mesh->nodes_in_cell_list_(ielem,inode);
       if(!map->isNodeGlobalElement(global_node_index)) continue;
       //set dof row start index
-      current_row = num_dim*global_node_index;
+      current_row = num_dim*map->getLocalElement(global_node_index);
       for(int jnode = 0; jnode < nodes_per_element; jnode++){
         
         current_column = num_dim*Global_Stiffness_Matrix_Assembly_Map(ielem,inode,jnode);
@@ -3411,9 +3415,9 @@ void Static_Solver_Parallel::local_matrix_multiply(int ielem, CArray <real_t> &L
 ------------------------------------------------------------------------- */
 
 void Static_Solver_Parallel::Displacement_Boundary_Conditions(){
-  int num_bdy_patches_in_set;
+  int num_bdy_patches_in_set, patch_id;
   int warning_flag = 0;
-  int current_node_index, patch_gid, current_node_id;
+  int current_node_index, current_node_id;
   int num_nodes = mesh->num_nodes();
   int num_boundary_sets = num_boundary_conditions;
   int surface_disp_set_id = 0;
@@ -3421,14 +3425,15 @@ void Static_Solver_Parallel::Displacement_Boundary_Conditions(){
   int bc_option, bc_dim_set[3];
   CArray<real_t> displacement(num_dim);
   CArray<size_t> Displacement_Conditions(num_dim);
-  CArray<size_t> first_condition_per_node(num_nodes*num_dim);
+  CArray<size_t> first_condition_per_node(nall_nodes*num_dim);
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Surface_Nodes;
   Number_DOF_BCS = 0;
   Displacement_Conditions(0) = X_DISPLACEMENT_CONDITION;
   Displacement_Conditions(1) = Y_DISPLACEMENT_CONDITION;
   Displacement_Conditions(2) = Z_DISPLACEMENT_CONDITION;
 
   //initialize to -1 (DO NOT make -1 an index for bdy sets)
-  for(int inode = 0 ; inode < num_nodes*num_dim; inode++)
+  for(int inode = 0 ; inode < nlocal_nodes*num_dim; inode++)
     first_condition_per_node(inode) = -1;
   
   //scan for surface method of setting fixed nodal displacements
@@ -3445,7 +3450,7 @@ void Static_Solver_Parallel::Displacement_Boundary_Conditions(){
       //debug print of surface conditions
       //std::cout << " Surface BC types " << Boundary_Condition_Type_List(iboundary) <<std::endl;
 
-      num_bdy_patches_in_set = mesh->num_bdy_patches_in_set(iboundary);
+      num_bdy_patches_in_set = NBoundary_Condition_Patches(iboundary);
       if(bc_option==0) {
         bc_dim_set[0]=1;
         displacement(0) = Boundary_Surface_Displacements(surface_disp_set_id,0);
@@ -3470,10 +3475,12 @@ void Static_Solver_Parallel::Displacement_Boundary_Conditions(){
       
       //loop over boundary set patches for their respective nodes
       for (int bdy_patch_gid = 0; bdy_patch_gid < num_bdy_patches_in_set; bdy_patch_gid++){
-        // get the global id for this boundary patch
-        patch_gid = mesh->bdy_patches_in_set(iboundary, bdy_patch_gid);
-        for(int inode = 0; inode < 4; inode++){
-          current_node_id = mesh->node_in_patch(patch_gid, inode);
+        //get number
+        patch_id = Boundary_Condition_Patches(iboundary, bdy_patch_gid);
+        Surface_Nodes = Boundary_Patches(patch_id).node_set;
+        for(int inode = 0; inode < Surface_Nodes.size(); inode++){
+          current_node_id = Surface_Nodes(inode);
+          current_node_id = all_node_map->getLocalElement(current_node_id);
           
           /*
           //debug print of nodal bc settings
@@ -3529,6 +3536,10 @@ void Static_Solver_Parallel::Displacement_Boundary_Conditions(){
 void Static_Solver_Parallel::Force_Vector_Construct(){
   //local variable for host view in the dual view
   host_vec_array node_data = dual_node_data.view_host();
+  int num_bdy_patches_in_set;
+  size_t current_node_index, node_id, patch_id;
+  int num_boundary_sets = num_boundary_conditions;
+  int surface_force_set_id = 0;
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
@@ -3545,15 +3556,11 @@ void Static_Solver_Parallel::Force_Vector_Construct(){
   ViewCArray<real_t> quad_coordinate_weight(pointer_quad_coordinate_weight,num_dim);
   ViewCArray<real_t> interpolated_point(pointer_interpolated_point,num_dim);
   real_t force_density[3], wedge_product;
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Surface_Nodes;
   
   CArray<real_t> JT_row1(num_dim);
   CArray<real_t> JT_row2(num_dim);
   CArray<real_t> JT_row3(num_dim);
-
-  int num_bdy_patches_in_set;
-  int current_node_index;
-  int num_boundary_sets = num_boundary_conditions;
-  int surface_force_set_id = 0;
 
   /*Loop through boundary sets and check if they apply surface forces.
   These sets can have overlapping nodes since applied loading conditions
@@ -3561,7 +3568,7 @@ void Static_Solver_Parallel::Force_Vector_Construct(){
   for(int iboundary = 0; iboundary < num_boundary_sets; iboundary++){
     if(Boundary_Condition_Type_List(iboundary)!=LOADING_CONDITION) continue;
     //std::cout << "I REACHED THE LOADING BOUNDARY CONDITION" <<std::endl;
-    num_bdy_patches_in_set = mesh->num_bdy_patches_in_set(iboundary);
+    num_bdy_patches_in_set = NBoundary_Condition_Patches(iboundary);
     
     force_density[0] = Boundary_Surface_Force_Densities(surface_force_set_id,0);
     force_density[1] = Boundary_Surface_Force_Densities(surface_force_set_id,1);
@@ -3580,11 +3587,14 @@ void Static_Solver_Parallel::Force_Vector_Construct(){
     for (int bdy_patch_gid = 0; bdy_patch_gid < num_bdy_patches_in_set; bdy_patch_gid++){
                 
     // get the global id for this boundary patch
-    int patch_gid = mesh->bdy_patches_in_set(iboundary, bdy_patch_gid);
-    current_element_index = mesh->cells_in_patch(patch_gid,0);
-    if(current_element_index==-1) current_element_index = mesh->cells_in_patch(patch_gid,1);
-    local_surface_id = mesh->cells_in_patch_local_id(patch_gid,0);
-    if(local_surface_id==-1) local_surface_id = mesh->cells_in_patch_local_id(patch_gid,1);
+    patch_id = Boundary_Condition_Patches(iboundary, bdy_patch_gid);
+    Surface_Nodes = Boundary_Patches(patch_id).node_set;
+    //find element index this boundary patch is on
+    current_element_index = Boundary_Patches(patch_id).element_id;
+    local_surface_id = Boundary_Patches(patch_id).local_patch_id;
+    //debug print of local surface ids
+    //std::cout << " LOCAL SURFACE IDS " << std::endl;
+    //std::cout << local_surface_id << std::endl;
 
     //loop over quadrature points if this is a distributed force
     for(int iquad=0; iquad < direct_product_count; iquad++){
@@ -3652,7 +3662,8 @@ void Static_Solver_Parallel::Force_Vector_Construct(){
 
       //acquire set of nodes for this face
       for(int node_loop=0; node_loop < 4; node_loop++){
-        current_node_index = mesh->nodes_in_cell(current_element_index, local_nodes[node_loop]);
+        current_node_index = Surface_Nodes(node_loop);
+        current_node_index = all_node_map->getLocalElement(current_node_index);
         nodal_positions(node_loop,0) = node_data(current_node_index,0);
         nodal_positions(node_loop,1) = node_data(current_node_index,1);
         nodal_positions(node_loop,2) = node_data(current_node_index,2);
@@ -3714,7 +3725,10 @@ void Static_Solver_Parallel::Force_Vector_Construct(){
       // loop over nodes of this face and 
       for(int node_count = 0; node_count < 4; node_count++){
             
-        int node_gid = mesh->nodes_in_cell(current_element_index, local_nodes[node_count]);
+        node_id = mesh->nodes_in_cell(current_element_index, local_nodes[node_count]);
+        //check if node is local to alter Nodal Forces vector
+        if(!map->isNodeGlobalElement(node_id)) continue;
+        node_id = map->getLocalElement(node_id);
         
         /*
         //debug print block
@@ -3731,7 +3745,7 @@ void Static_Solver_Parallel::Force_Vector_Construct(){
         for(int idim = 0; idim < num_dim; idim++){
           if(force_density[idim]!=0)
           //Nodal_Forces(num_dim*node_gid + idim) += wedge_product*quad_coordinate_weight(0)*quad_coordinate_weight(1)*force_density[idim]*basis_values(local_nodes[node_count]);
-          Nodal_Forces(num_dim*node_gid + idim) += wedge_product*quad_coordinate_weight(0)*quad_coordinate_weight(1)*force_density[idim]*basis_values(local_nodes[node_count]);
+          Nodal_Forces(num_dim*node_id + idim) += wedge_product*quad_coordinate_weight(0)*quad_coordinate_weight(1)*force_density[idim]*basis_values(local_nodes[node_count]);
         }
       }
       }

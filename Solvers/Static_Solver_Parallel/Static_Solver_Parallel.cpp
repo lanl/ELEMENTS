@@ -142,10 +142,9 @@ void Static_Solver_Parallel::run(int argc, char *argv[]){
     // ---- Find Boundaries on mesh ---- //
     generate_bcs();
     
-    
     //allocate and fill sparse structures needed for global solution
     init_global();
-
+    
     //assemble the global solution (stiffness matrix etc. and nodal forces)
     assemble();
     return;
@@ -2360,13 +2359,13 @@ void Static_Solver_Parallel::init_global(){
   for(int inode = 0; inode < nlocal_nodes; inode++){
     Graph_Matrix_strides_initial(inode) = 0;
     Graph_Matrix_strides(inode) = 0;
+    Graph_Fill(inode) = 0;
   }
 
   //initialize nall arrays
-  for(int inode = 0; inode < nlocal_nodes; inode++){
+  for(int inode = 0; inode < nall_nodes; inode++){
     node_indices_used(inode) = 0;
     column_index(inode) = 0;
-    Graph_Fill(inode) = 0;
   }
   
   //count upper bound of strides for Sparse Pattern Graph by allowing repeats due to connectivity
@@ -2395,7 +2394,7 @@ void Static_Solver_Parallel::init_global(){
       }
     }
   }
-
+  
   //equate strides for later
   for(int inode = 0; inode < nlocal_nodes; inode++)
     Graph_Matrix_strides(inode) = Graph_Matrix_strides_initial(inode);
@@ -2432,11 +2431,11 @@ void Static_Solver_Parallel::init_global(){
           //fill forward map
           Global_Stiffness_Matrix_Assembly_Map(ielem,lnode,jnode) = current_column_index;
         }
+        Graph_Fill(local_node_index) += nodes_per_element;
       }
-      Graph_Fill(local_node_index) += nodes_per_element;
     }
   }
-
+  
   if(num_dim == 3)
   for (int ielem = 0; ielem < rnum_elem; ielem++){
     element_select->choose_3Delem_type(Element_Types(ielem), elem);
@@ -2457,14 +2456,17 @@ void Static_Solver_Parallel::init_global(){
           //fill forward map
           Global_Stiffness_Matrix_Assembly_Map(ielem,lnode,jnode) = current_column_index;
         }
+        Graph_Fill(local_node_index) += nodes_per_element;
       }
-      Graph_Fill(local_node_index) += nodes_per_element;
     }
   }
   
   //debug statement
   //std::cout << "started run" << std::endl;
-
+  //std::cout << "Graph Matrix Strides Repeat on task " << myrank << std::endl;
+  //for (int inode = 0; inode < nlocal_nodes; inode++)
+    //std::cout << Graph_Matrix_strides(inode) << std::endl;
+  
   //remove repeats from the inital graph setup
   int current_node, current_element_index, element_row_index, element_column_index, current_stride;
   for (int inode = 0; inode < nlocal_nodes; inode++){
@@ -2472,6 +2474,10 @@ void Static_Solver_Parallel::init_global(){
     for (int istride = 0; istride < Graph_Matrix_strides(inode); istride++){
       //convert global index in graph to its local index for the flagging array
       current_node = all_node_map->getLocalElement(Repeat_Graph_Matrix(inode,istride));
+      //debug
+      //if(current_node==-1)
+      //std::cout << "Graph Matrix node access on task " << myrank << std::endl;
+      //std::cout << Repeat_Graph_Matrix(inode,istride) << std::endl;
       if(node_indices_used(current_node)){
         //set global assembly map index to the location in the graph matrix where this global node was first found
         current_element_index = Element_local_indices(inode,istride,0);
@@ -2518,7 +2524,7 @@ void Static_Solver_Parallel::init_global(){
       node_indices_used(current_row_nodes_scanned(node_reset)) = 0;
 
   }
-  
+
   //copy reduced content to non_repeat storage
   Graph_Matrix = RaggedRightArray <size_t> (Graph_Matrix_strides);
   for(int inode = 0; inode < nlocal_nodes; inode++)

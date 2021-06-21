@@ -133,12 +133,13 @@ public:
   CArray<elements::elem_types::elem_type> Element_Types;
   CArray<size_t> Nodes_Per_Element_Type;
   CArray<size_t> Global_Stiffness_Matrix_Assembly_Map;
-  RaggedRightArray<size_t> Graph_Matrix; //stores global indices
-  RaggedRightArray<size_t> DOF_Graph_Matrix; //stores global indices
-  RaggedRightArray<real_t> Stiffness_Matrix;
-  CArray<real_t> Nodal_Forces;
-  CArray<size_t> Stiffness_Matrix_strides;
-  CArray<size_t> Graph_Matrix_strides;
+  RaggedRightArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Matrix; //stores global indices
+  RaggedRightArrayKokkos<GO, array_layout, device_type, memory_traits> DOF_Graph_Matrix; //stores global indices
+  RaggedRightArrayKokkos<real_t, Kokkos::LayoutRight, device_type, memory_traits, array_layout> Stiffness_Matrix;
+  CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Nodal_Forces;
+  CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Nodal_Results; //result of linear solve; typically displacements and densities
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Stiffness_Matrix_strides;
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Matrix_strides;
 
   //Ghost data on this MPI rank
   size_t nghost_nodes;
@@ -158,6 +159,11 @@ public:
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_node_map; //map of node indices with ghosts on each rank
   Teuchos::RCP<MV> node_data_distributed;
   Teuchos::RCP<MV> all_node_data_distributed;
+  Teuchos::RCP<MAT> Global_Stiffness_Matrix;
+  Teuchos::RCP<MV> Global_Nodal_Forces;
+  Teuchos::RCP<MAT> A;
+  Teuchos::RCP<MV> B;
+  Teuchos::RCP<MV> X;
   
   //Boundary Conditions Data
   //CArray <Nodal_Combination> Patch_Nodes;

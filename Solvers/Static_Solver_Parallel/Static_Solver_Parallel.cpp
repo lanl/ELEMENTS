@@ -150,8 +150,10 @@ void Static_Solver_Parallel::run(int argc, char *argv[]){
     return;
     //debug solve; move later after bcs applies
     int solver_exit = solve();
-    if(solver_exit == EXIT_SUCCESS) return;
-    std::cout << "Before free pointer  " << std::endl <<std::flush;
+    if(solver_exit == EXIT_SUCCESS){
+      std::cout << "Before free pointer" << std::endl <<std::flush;
+      return;
+    }
     //debug return to avoid printing further
     return;
 
@@ -2329,31 +2331,31 @@ void Static_Solver_Parallel::init_global(){
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
-  Stiffness_Matrix_strides = CArray <size_t> (nlocal_nodes*num_dim);
-  CArray <int> Graph_Fill = CArray <int> (nall_nodes);
+  Stiffness_Matrix_strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits> (nlocal_nodes*num_dim);
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Fill(nall_nodes);
   //CArray <int> nodes_in_cell_list_ = mesh->nodes_in_cell_list_;
-  CArray <size_t> current_row_nodes_scanned;
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> current_row_nodes_scanned;
   int current_row_n_nodes_scanned;
   int local_node_index, global_node_index, current_column_index;
   int max_stride = 0;
   size_t nodes_per_element;
 
   //allocate right hand side vector of nodal forces
-  Nodal_Forces = CArray <real_t> (nlocal_nodes*num_dim);
+  Nodal_Forces = CArrayKokkos <real_t, Kokkos::LayoutLeft, device_type, memory_traits> (nlocal_nodes*num_dim);
   
   //allocate stride arrays
-  CArray <size_t> Graph_Matrix_strides_initial = CArray <size_t> (nlocal_nodes);
-  Graph_Matrix_strides = CArray <size_t> (nlocal_nodes);
+  CArrayKokkos <size_t, array_layout, device_type, memory_traits> Graph_Matrix_strides_initial(nlocal_nodes);
+  Graph_Matrix_strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(nlocal_nodes);
 
   //allocate storage for the sparse stiffness matrix map used in the assembly process
   Global_Stiffness_Matrix_Assembly_Map = CArray <size_t> (rnum_elem,max_nodes_per_element,max_nodes_per_element);
 
   //allocate array used to determine global node repeats in the sparse graph later
-  CArray <int> node_indices_used = CArray <int> (nall_nodes);
+  CArrayKokkos <int, array_layout, device_type, memory_traits> node_indices_used(nall_nodes);
 
   /*allocate array that stores which column the node index occured on for the current row
     when removing repeats*/
-  CArray <size_t> column_index = CArray <size_t> (nall_nodes);
+  CArrayKokkos <size_t, array_layout, device_type, memory_traits> column_index(nall_nodes);
   
   //initialize nlocal arrays
   for(int inode = 0; inode < nlocal_nodes; inode++){
@@ -2404,11 +2406,11 @@ void Static_Solver_Parallel::init_global(){
     if(Graph_Matrix_strides_initial(inode) > max_stride) max_stride = Graph_Matrix_strides_initial(inode);
   
   //allocate array used in the repeat removal process
-  current_row_nodes_scanned = CArray <size_t> (max_stride);
+  current_row_nodes_scanned = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(max_stride);
 
   //allocate sparse graph with node repeats
-  RaggedRightArray <size_t> Repeat_Graph_Matrix = RaggedRightArray <size_t> (Graph_Matrix_strides_initial);
-  RaggedRightArrayofVectors <size_t> Element_local_indices = RaggedRightArrayofVectors <size_t> (Graph_Matrix_strides_initial,num_dim);
+  RaggedRightArrayKokkos<size_t, array_layout, device_type, memory_traits> Repeat_Graph_Matrix(Graph_Matrix_strides_initial);
+  RaggedRightArrayofVectorsKokkos<size_t, array_layout, device_type, memory_traits> Element_local_indices(Graph_Matrix_strides_initial,num_dim);
   
   //Fill the initial Graph with repeats
   if(num_dim == 2)
@@ -2526,7 +2528,7 @@ void Static_Solver_Parallel::init_global(){
   }
 
   //copy reduced content to non_repeat storage
-  Graph_Matrix = RaggedRightArray <size_t> (Graph_Matrix_strides);
+  Graph_Matrix = RaggedRightArrayKokkos<size_t, array_layout, device_type, memory_traits>(Graph_Matrix_strides);
   for(int inode = 0; inode < nlocal_nodes; inode++)
     for(int istride = 0; istride < Graph_Matrix_strides(inode); istride++)
       Graph_Matrix(inode,istride) = Repeat_Graph_Matrix(inode,istride);
@@ -2543,8 +2545,8 @@ void Static_Solver_Parallel::init_global(){
     Stiffness_Matrix_strides(num_dim*inode + idim) = num_dim*Graph_Matrix_strides(inode);
   }
 
-  Stiffness_Matrix = RaggedRightArray <real_t> (Stiffness_Matrix_strides);
-  DOF_Graph_Matrix = RaggedRightArray <size_t> (Stiffness_Matrix_strides);
+  Stiffness_Matrix = RaggedRightArrayKokkos<real_t, Kokkos::LayoutRight, device_type, memory_traits, array_layout>(Stiffness_Matrix_strides);
+  DOF_Graph_Matrix = RaggedRightArrayKokkos<GO, array_layout, device_type, memory_traits> (Stiffness_Matrix_strides);
 
   //initialize stiffness Matrix entries to 0
   for (int idof = 0; idof < num_dim*nlocal_nodes; idof++)
@@ -2709,6 +2711,36 @@ void Static_Solver_Parallel::assemble(){
   //Construct applied nodal force vector with quadrature
   Force_Vector_Construct();
 
+  //construct distributed stiffness matrix and force vector from local kokkos data
+  
+  //build column map for the global stiffness matrix
+  Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > colmap;
+  const Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > dommap = map;
+  
+  //Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,DOF_Graph_Matrix.get_kokkos_view(), nullptr);
+
+  size_t nnz = DOF_Graph_Matrix.size();
+  
+  //local indices in the graph using the constructed column map
+  CArrayKokkos<LO, array_layout, device_type, memory_traits> stiffness_local_indices(nnz);
+  
+  //row offsets with compatible template arguments
+    row_pointers row_offsets = DOF_Graph_Matrix.start_index_;
+    row_pointers row_offsets_pass = row_pointers("row_offsets", nlocal_nodes+1);
+    for(int ipass = 0; ipass < nlocal_nodes + 1; ipass++){
+      row_offsets_pass(ipass) = row_offsets(ipass);
+    }
+
+  size_t entrycount = 0;
+  for(int irow = 0; irow < nnz; irow++){
+    for(int istride = 0; istride < Stiffness_Matrix_strides(irow); istride++){
+      stiffness_local_indices(entrycount) = colmap->getLocalElement(DOF_Graph_Matrix(irow,istride));
+      entrycount++;
+    }
+  }
+
+  Global_Stiffness_Matrix = Teuchos::rcp( new MAT(map, colmap, row_offsets_pass, stiffness_local_indices.get_kokkos_view(), Stiffness_Matrix.get_kokkos_view()) );
+  
 }
 
 /* ----------------------------------------------------------------------
@@ -3943,7 +3975,7 @@ int Static_Solver_Parallel::solve(){
   std::cout << std::endl;
   //end debug print
   
-  Teuchos::RCP<MAT> A = Teuchos::rcp( new MAT(reduced_map, colmap, reduced_row_offsets, all_indices.get_kokkos_view(), all_values.get_kokkos_view()) );
+  A = Teuchos::rcp( new MAT(reduced_map, colmap, reduced_row_offsets, all_indices.get_kokkos_view(), all_values.get_kokkos_view()) );
   
   
   A->fillComplete();
@@ -3994,7 +4026,7 @@ int Static_Solver_Parallel::solve(){
   // Create random X vector
   vec_array Xview_pass = vec_array("Xview_pass", local_nrows_reduced,1);
   Xview_pass.assign_data(Xview.pointer());
-  Teuchos::RCP<MV> X = Teuchos::rcp(new MV(reduced_map, Xview_pass));
+  X = Teuchos::rcp(new MV(reduced_map, Xview_pass));
   X->randomize();
   
   //print allocation of the solution vector to check distribution
@@ -4011,7 +4043,7 @@ int Static_Solver_Parallel::solve(){
   
   Bview_pass.assign_data(Bview.pointer());
   
-  Teuchos::RCP<MV> B = Teuchos::rcp(new MV(reduced_map, Bview_pass));
+  B = Teuchos::rcp(new MV(reduced_map, Bview_pass));
 
   *fos << "RHS :" << std::endl;
   B->describe(*fos,Teuchos::VERB_EXTREME);

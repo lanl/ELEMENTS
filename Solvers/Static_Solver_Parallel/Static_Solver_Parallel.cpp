@@ -301,6 +301,8 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   global_size_t max_gid = map->getMaxGlobalIndex();
   global_size_t index_base = map->getIndexBase();
 
+  //construct dof map that follows from the node map (used for distributed matrix and vector objects later)
+
   //allocate node storage with dual view
   dual_node_data = dual_vec_array("dual_node_data", nlocal_nodes,num_dim);
 
@@ -2549,11 +2551,18 @@ void Static_Solver_Parallel::init_global(){
   DOF_Graph_Matrix = RaggedRightArrayKokkos<GO, array_layout, device_type, memory_traits> (Stiffness_Matrix_strides);
 
   //initialize stiffness Matrix entries to 0
-  for (int idof = 0; idof < num_dim*nlocal_nodes; idof++)
+  //debug print
+    //std::cout << "DOF GRAPH MATRIX ENTRIES ON TASK " << myrank << std::endl;
+  for (int idof = 0; idof < num_dim*nlocal_nodes; idof++){
     for (int istride = 0; istride < Stiffness_Matrix_strides(idof); istride++){
       Stiffness_Matrix(idof,istride) = 0;
       DOF_Graph_Matrix(idof,istride) = Graph_Matrix(idof/num_dim,istride/num_dim)*num_dim + istride%num_dim;
+      //debug print
+      //std::cout << "{" <<istride + 1 << "," << DOF_Graph_Matrix(idof,istride) << "} ";
     }
+    //debug print
+    //std::cout << std::endl;
+  }
   
   /*
   //debug print nodal positions and indices
@@ -2716,31 +2725,58 @@ void Static_Solver_Parallel::assemble(){
   //build column map for the global stiffness matrix
   Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > colmap;
   const Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > dommap = map;
+
+  //debug print
+    std::cout << "DOF GRAPH MATRIX ENTRIES ON TASK " << myrank << std::endl;
+  for (int idof = 0; idof < num_dim*nlocal_nodes; idof++){
+    for (int istride = 0; istride < Stiffness_Matrix_strides(idof); istride++){
+      //debug print
+      std::cout << "{" <<istride + 1 << "," << DOF_Graph_Matrix(idof,istride) << "} ";
+    }
+    //debug print
+    std::cout << std::endl;
+  }
   
-  //Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,DOF_Graph_Matrix.get_kokkos_view(), nullptr);
+  Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,DOF_Graph_Matrix.get_kokkos_view(), nullptr);
 
   size_t nnz = DOF_Graph_Matrix.size();
+
+  //debug print
+  std::cout << "DOF GRAPH SIZE ON RANK " << myrank << " IS " << nnz << std::endl;
   
   //local indices in the graph using the constructed column map
   CArrayKokkos<LO, array_layout, device_type, memory_traits> stiffness_local_indices(nnz);
   
   //row offsets with compatible template arguments
     row_pointers row_offsets = DOF_Graph_Matrix.start_index_;
-    row_pointers row_offsets_pass = row_pointers("row_offsets", nlocal_nodes+1);
-    for(int ipass = 0; ipass < nlocal_nodes + 1; ipass++){
+    row_pointers row_offsets_pass = row_pointers("row_offsets", nlocal_nodes*num_dim+1);
+    for(int ipass = 0; ipass < nlocal_nodes*num_dim + 1; ipass++){
       row_offsets_pass(ipass) = row_offsets(ipass);
     }
 
   size_t entrycount = 0;
-  for(int irow = 0; irow < nnz; irow++){
+  for(int irow = 0; irow < nlocal_nodes*num_dim; irow++){
     for(int istride = 0; istride < Stiffness_Matrix_strides(irow); istride++){
       stiffness_local_indices(entrycount) = colmap->getLocalElement(DOF_Graph_Matrix(irow,istride));
       entrycount++;
     }
   }
-
-  Global_Stiffness_Matrix = Teuchos::rcp( new MAT(map, colmap, row_offsets_pass, stiffness_local_indices.get_kokkos_view(), Stiffness_Matrix.get_kokkos_view()) );
   
+  Global_Stiffness_Matrix = Teuchos::rcp(new MAT(map, colmap, row_offsets_pass, stiffness_local_indices.get_kokkos_view(), Stiffness_Matrix.get_kokkos_view()));
+
+  Global_Stiffness_Matrix->fillComplete();
+  //This completes the setup for A matrix of the linear system
+  
+  //file to debug print
+  std::ostream &out = std::cout;
+  Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+
+  //debug print of A matrix
+  *fos << "Global Stiffness Matrix :" << std::endl;
+  Global_Stiffness_Matrix->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  /*
+  */
 }
 
 /* ----------------------------------------------------------------------

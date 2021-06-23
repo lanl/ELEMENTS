@@ -132,7 +132,7 @@ public:
   dual_vec_array dual_node_data; //first three indices of second dim should be positions
   CArray<elements::elem_types::elem_type> Element_Types;
   CArray<size_t> Nodes_Per_Element_Type;
-  CArray<size_t> Global_Stiffness_Matrix_Assembly_Map;
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Global_Stiffness_Matrix_Assembly_Map;
   RaggedRightArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Matrix; //stores global indices
   RaggedRightArrayKokkos<GO, array_layout, device_type, memory_traits> DOF_Graph_Matrix; //stores global indices
   RaggedRightArrayKokkos<real_t, Kokkos::LayoutRight, device_type, memory_traits, array_layout> Stiffness_Matrix;
@@ -155,6 +155,7 @@ public:
 
   //Global FEA data
   size_t num_nodes, num_elem;
+  Teuchos::RCP<const Teuchos::Comm<int> > comm;
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map; //map of node indices
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_node_map; //map of node indices with ghosts on each rank
   Teuchos::RCP<MV> node_data_distributed;
@@ -164,6 +165,10 @@ public:
   Teuchos::RCP<MAT> A;
   Teuchos::RCP<MV> B;
   Teuchos::RCP<MV> X;
+  //Parallel map for the global set of nodes (before removing BCS)
+  
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_dof_map; //map of local dofs (typically num_node_local*num_dim)
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_dof_map; //map of local and ghost dofs (typically num_node_all*num_dim)
   
   //Boundary Conditions Data
   //CArray <Nodal_Combination> Patch_Nodes;
@@ -202,11 +207,6 @@ public:
   int myrank; //index of this mpi rank in the world communicator
   int nranks; //number of mpi ranks in the world communicator
   MPI_Comm world; //stores the default communicator object (MPI_COMM_WORLD)
-
-  //Parallel map for the global set of nodes (before removing BCS)
-  Teuchos::RCP<const Teuchos::Comm<int> > comm;
-  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_dof_map; //map of local dofs (typically num_node_local*num_dim)
-  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_dof_map; //map of local and ghost dofs (typically num_node_all*num_dim)
 
   //! mapping used to get local ghost index from the global ID.
   typedef ::Tpetra::Details::FixedHashTable<GO, LO, Kokkos::HostSpace::device_type>

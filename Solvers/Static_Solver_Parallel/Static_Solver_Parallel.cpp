@@ -104,14 +104,17 @@ Static_Solver_Parallel::Static_Solver_Parallel() : Solver(){
     mesh = new swage::mesh_t(simparam);
 
     element_select = new elements::element_selector();
+
+    //initialized to prevent false debugger positives
+    num_nodes = 0;
 }
 
 Static_Solver_Parallel::~Static_Solver_Parallel(){
    delete simparam;
    delete ref_elem;
    delete mesh;
-   delete mesh;
    delete element_select;
+   if(myrank==0)
    delete in;
 }
 
@@ -289,7 +292,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   
   //broadcast number of nodes
   MPI_Bcast(&num_nodes,1,MPI_INT,0,world);
-
+  
   //construct contiguous parallel row map now that we know the number of nodes
   map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes,0,comm));
 
@@ -300,8 +303,16 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   global_size_t min_gid = map->getMinGlobalIndex();
   global_size_t max_gid = map->getMaxGlobalIndex();
   global_size_t index_base = map->getIndexBase();
-
+  //debug print
+  std::cout << "local node count on task: " << " " << nlocal_nodes << std::endl;
   //construct dof map that follows from the node map (used for distributed matrix and vector objects later)
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> all_dof_indices(nlocal_nodes*num_dim, std::string("all_dof_indices"));
+  for(int i = 0; i < nlocal_nodes; i++){
+    for(int j = 0; j < num_dim; j++)
+    all_dof_indices(i*num_dim + j) = map->getGlobalElement(i)*num_dim + j;
+  }
+  
+  local_dof_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes*num_dim,all_dof_indices.get_kokkos_view(),0,comm) );
 
   //allocate node storage with dual view
   dual_node_data = dual_vec_array("dual_node_data", nlocal_nodes,num_dim);
@@ -314,7 +325,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //old swage method
   //mesh->init_nodes(local_nrows); // add 1 for index starting at 1
     
-  std::cout << "Num nodes assignt to task " << myrank << " = " << nlocal_nodes << std::endl;
+  std::cout << "Num nodes assigned to task " << myrank << " = " << nlocal_nodes << std::endl;
 
   // read the initial mesh coordinates
   // x-coords
@@ -745,7 +756,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
 
   // Build all connectivity in initial mesh
   std::cout<<"Before initial mesh connectivity"<<std::endl;
-
+  
   if(rnum_elem >= 1) {
 
     // -- NODE TO CELL CONNECTIVITY -- //
@@ -803,8 +814,8 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     //by now the set contains, with no repeats, all the global node indices that are ghosts for this rank
     //now pass the contents of the set over to a CArray, then create a map to find local ghost indices from global ghost indices
     nghost_nodes = ghost_node_set.size();
-    ghost_nodes = CArrayKokkos<GO, Kokkos::LayoutLeft, node_type::device_type>(nghost_nodes);
-    ghost_node_ranks = CArrayKokkos<int, array_layout, device_type, memory_traits>(nghost_nodes);
+    ghost_nodes = CArrayKokkos<GO, Kokkos::LayoutLeft, node_type::device_type>(nghost_nodes, std::string("ghost_nodes"));
+    ghost_node_ranks = CArrayKokkos<int, array_layout, device_type, memory_traits>(nghost_nodes, std::string("ghost_nodes_ranks"));
     int ighost = 0;
     auto it = ghost_node_set.begin();
     while(it!=ghost_node_set.end()){
@@ -849,7 +860,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
 
   //construct array for all indices (ghost + local)
   nall_nodes = nlocal_nodes + nghost_nodes;
-  CArrayKokkos<GO, array_layout, device_type, memory_traits> all_node_indices(nall_nodes);
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> all_node_indices(nall_nodes, std::string("all_node_indices"));
   for(int i = 0; i < nall_nodes; i++){
     if(i<nlocal_nodes) all_node_indices(i) = map->getGlobalElement(i);
     else all_node_indices(i) = ghost_nodes(i-nlocal_nodes);
@@ -954,8 +965,8 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
   }
   
   //information for all patches on this rank
-  CArrayKokkos<Node_Combination,array_layout, device_type, memory_traits> Patch_Nodes(npatches_repeat);
-  CArrayKokkos<size_t,array_layout, device_type, memory_traits> Patch_Boundary_Flags(npatches_repeat);
+  CArrayKokkos<Node_Combination,array_layout, device_type, memory_traits> Patch_Nodes(npatches_repeat, std::string("Patch_Nodes"));
+  CArrayKokkos<size_t,array_layout, device_type, memory_traits> Patch_Boundary_Flags(npatches_repeat, std::string("Patch_Boundary_Flags"));
   
   //initialize boundary patch flags
   for(int init = 0; init < npatches_repeat; init++)
@@ -972,7 +983,7 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
     //loop through local surfaces
     for(int isurface = 0; isurface < element_npatches; isurface++){
       num_nodes_in_patch = elem2D->surface_to_dof_lid.stride(isurface);
-      Surface_Nodes = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_nodes_in_patch);
+      Surface_Nodes = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_nodes_in_patch, std::string("Surface_Nodes"));
       for(int inode = 0; inode < num_nodes_in_patch; inode++){
         local_node_id = elem2D->surface_to_dof_lid(isurface,inode);
         Surface_Nodes(inode) = mesh->nodes_in_cell(ielem, local_node_id);
@@ -1006,7 +1017,7 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
       num_nodes_in_patch = elem->surface_to_dof_lid.stride(isurface);
       //debug print
       //std::cout << "NUMBER OF PATCH NODES FOR ELEMENT " << ielem+1 << " ON LOCAL SURFACE " << isurface+1 << " IS " << elem->surface_to_dof_lid.start_index_[isurface+1] << std::endl;
-      Surface_Nodes = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_nodes_in_patch);
+      Surface_Nodes = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_nodes_in_patch, std::string("Surface_Nodes"));
       for(int inode = 0; inode < num_nodes_in_patch; inode++){
         local_node_id = elem->surface_to_dof_lid(isurface,inode);
         Surface_Nodes(inode) = mesh->nodes_in_cell(ielem, local_node_id);
@@ -1047,7 +1058,7 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
     if(Patch_Boundary_Flags(iflags)) nboundary_patches++;
   }
   //upper bound that is not much larger
-  Boundary_Patches = CArrayKokkos<Node_Combination, array_layout, device_type, memory_traits>(nboundary_patches);
+  Boundary_Patches = CArrayKokkos<Node_Combination, array_layout, device_type, memory_traits>(nboundary_patches, std::string("Boundary_Patches"));
   nboundary_patches = 0;
   bool my_rank_flag;
   size_t remote_count;
@@ -1223,9 +1234,9 @@ void Static_Solver_Parallel::init_boundary_sets (int num_sets){
     std::cout << " Warning: number of boundary conditions = 0";
     return;
   }
-  Boundary_Condition_Patches_strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_sets);
-  NBoundary_Condition_Patches = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_sets);
-  Boundary_Condition_Patches = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_sets, nboundary_patches);
+  Boundary_Condition_Patches_strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_sets, std::string("Boundary_Condition_Patches_strides"));
+  NBoundary_Condition_Patches = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_sets, std::string("NBoundary_Condition_Patches"));
+  Boundary_Condition_Patches = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(num_sets, nboundary_patches, std::string("Boundary_Condition_Patches"));
 
   //initialize data
   for(int iset = 0; iset < num_sets; iset++) NBoundary_Condition_Patches(iset) = 0;
@@ -1285,7 +1296,7 @@ int Static_Solver_Parallel::check_boundary(Node_Combination &Patch_Nodes, int bc
   size_t nnodes = node_list.size();
   size_t node_rid;
   real_t node_coord;
-  CArrayKokkos<size_t, array_layout, device_type, memory_traits> node_on_flags(nnodes);
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> node_on_flags(nnodes, std::string("node_on_flags"));
 
   //initialize
   for(int inode = 0; inode < nnodes; inode++) node_on_flags(inode) = 0;
@@ -2333,8 +2344,8 @@ void Static_Solver_Parallel::init_global(){
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int num_nodes = mesh->num_nodes();
-  Stiffness_Matrix_strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits> (nlocal_nodes*num_dim);
-  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Fill(nall_nodes);
+  Stiffness_Matrix_strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits> (nlocal_nodes*num_dim, std::string("Stiffness_Matrix_strides"));
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Fill(nall_nodes, std::string("nall_nodes"));
   //CArray <int> nodes_in_cell_list_ = mesh->nodes_in_cell_list_;
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> current_row_nodes_scanned;
   int current_row_n_nodes_scanned;
@@ -2343,21 +2354,22 @@ void Static_Solver_Parallel::init_global(){
   size_t nodes_per_element;
 
   //allocate right hand side vector of nodal forces
-  Nodal_Forces = CArrayKokkos <real_t, Kokkos::LayoutLeft, device_type, memory_traits> (nlocal_nodes*num_dim);
+  Nodal_Forces = CArrayKokkos <real_t, Kokkos::LayoutLeft, device_type, memory_traits> (nlocal_nodes*num_dim, std::string("Nodal_Forces"));
   
   //allocate stride arrays
-  CArrayKokkos <size_t, array_layout, device_type, memory_traits> Graph_Matrix_strides_initial(nlocal_nodes);
-  Graph_Matrix_strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(nlocal_nodes);
+  CArrayKokkos <size_t, array_layout, device_type, memory_traits> Graph_Matrix_strides_initial(nlocal_nodes, std::string("Graph_Matrix_strides_initial"));
+  Graph_Matrix_strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(nlocal_nodes, std::string("Graph_Matrix_strides"));
 
   //allocate storage for the sparse stiffness matrix map used in the assembly process
-  Global_Stiffness_Matrix_Assembly_Map = CArray <size_t> (rnum_elem,max_nodes_per_element,max_nodes_per_element);
+  Global_Stiffness_Matrix_Assembly_Map = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(rnum_elem,
+                                         max_nodes_per_element,max_nodes_per_element, std::string("Global_Stiffness_Matrix_Assembly_Map"));
 
   //allocate array used to determine global node repeats in the sparse graph later
-  CArrayKokkos <int, array_layout, device_type, memory_traits> node_indices_used(nall_nodes);
+  CArrayKokkos <int, array_layout, device_type, memory_traits> node_indices_used(nall_nodes, std::string("node_indices_used"));
 
   /*allocate array that stores which column the node index occured on for the current row
     when removing repeats*/
-  CArrayKokkos <size_t, array_layout, device_type, memory_traits> column_index(nall_nodes);
+  CArrayKokkos <size_t, array_layout, device_type, memory_traits> column_index(nall_nodes, std::string("column_index"));
   
   //initialize nlocal arrays
   for(int inode = 0; inode < nlocal_nodes; inode++){
@@ -2408,7 +2420,7 @@ void Static_Solver_Parallel::init_global(){
     if(Graph_Matrix_strides_initial(inode) > max_stride) max_stride = Graph_Matrix_strides_initial(inode);
   
   //allocate array used in the repeat removal process
-  current_row_nodes_scanned = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(max_stride);
+  current_row_nodes_scanned = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(max_stride, std::string("current_row_nodes_scanned"));
 
   //allocate sparse graph with node repeats
   RaggedRightArrayKokkos<size_t, array_layout, device_type, memory_traits> Repeat_Graph_Matrix(Graph_Matrix_strides_initial);
@@ -2685,8 +2697,8 @@ void Static_Solver_Parallel::assemble(){
 
             //debug print
             //if(current_row + idim==15&&current_column + jdim==4)
-            //std::cout << " Local stiffness matrix contribution for row " << current_row + idim +1 << " and column " << current_column + jdim + 1 << " : " <<
-            //Local_Stiffness_Matrix(num_dim*inode + idim,num_dim*jnode + jdim) << " from " << ielem +1 << " i: " << num_dim*inode+idim+1 << " j: " << num_dim*jnode + jdim +1 << std::endl << std::endl;
+            std::cout << " Local stiffness matrix contribution for row " << current_row + idim +1 << " and column " << current_column + jdim + 1 << " : " <<
+            Local_Stiffness_Matrix(num_dim*inode + idim,num_dim*jnode + jdim) << " from " << ielem +1 << " i: " << num_dim*inode+idim+1 << " j: " << num_dim*jnode + jdim +1 << std::endl << std::endl;
             //end debug
 
             Stiffness_Matrix(current_row + idim, current_column + jdim) += Local_Stiffness_Matrix(num_dim*inode + idim,num_dim*jnode + jdim);
@@ -2696,18 +2708,6 @@ void Static_Solver_Parallel::assemble(){
     }
   }
 
-  //debug print of stiffness matrix
-  //debug section; print stiffness matrix graph and per element map
-  /*
-  std::cout << " ------------SPARSE STIFFNESS MATRIX--------------"<<std::endl;
-  for (int idof = 0; idof < num_nodes*num_dim; idof++){
-      std::cout << "row: " << idof + 1 << " { ";
-    for (int istride = 0; istride < Stiffness_Matrix_strides(idof); istride++){
-        std::cout << istride + 1 << " = " << Stiffness_Matrix(idof,istride) << " , " ;
-    }
-    std::cout << " }"<< std::endl;
-  }
-  */
   //force vector construction
   
   //initialize
@@ -2724,8 +2724,8 @@ void Static_Solver_Parallel::assemble(){
   
   //build column map for the global stiffness matrix
   Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > colmap;
-  const Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > dommap = map;
-
+  const Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > dommap = local_dof_map;
+  
   //debug print
     std::cout << "DOF GRAPH MATRIX ENTRIES ON TASK " << myrank << std::endl;
   for (int idof = 0; idof < num_dim*nlocal_nodes; idof++){
@@ -2736,7 +2736,18 @@ void Static_Solver_Parallel::assemble(){
     //debug print
     std::cout << std::endl;
   }
-  
+
+  //debug print of stiffness matrix
+  /*
+  std::cout << " ------------SPARSE STIFFNESS MATRIX ON TASK"<< myrank << std::endl;
+  for (int idof = 0; idof < num_dim*nlocal_nodes; idof++){
+      std::cout << "row: " << idof + 1 << " { ";
+    for (int istride = 0; istride < Stiffness_Matrix_strides(idof); istride++){
+        std::cout << istride + 1 << " = " << Stiffness_Matrix(idof,istride) << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+  }
+  */
   Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,DOF_Graph_Matrix.get_kokkos_view(), nullptr);
 
   size_t nnz = DOF_Graph_Matrix.size();
@@ -2745,7 +2756,7 @@ void Static_Solver_Parallel::assemble(){
   std::cout << "DOF GRAPH SIZE ON RANK " << myrank << " IS " << nnz << std::endl;
   
   //local indices in the graph using the constructed column map
-  CArrayKokkos<LO, array_layout, device_type, memory_traits> stiffness_local_indices(nnz);
+  CArrayKokkos<LO, array_layout, device_type, memory_traits> stiffness_local_indices(nnz, std::string("stiffness_local_indices"));
   
   //row offsets with compatible template arguments
     row_pointers row_offsets = DOF_Graph_Matrix.start_index_;
@@ -2762,7 +2773,7 @@ void Static_Solver_Parallel::assemble(){
     }
   }
   
-  Global_Stiffness_Matrix = Teuchos::rcp(new MAT(map, colmap, row_offsets_pass, stiffness_local_indices.get_kokkos_view(), Stiffness_Matrix.get_kokkos_view()));
+  Global_Stiffness_Matrix = Teuchos::rcp(new MAT(local_dof_map, colmap, row_offsets_pass, stiffness_local_indices.get_kokkos_view(), Stiffness_Matrix.get_kokkos_view()));
 
   Global_Stiffness_Matrix->fillComplete();
   //This completes the setup for A matrix of the linear system
@@ -2803,6 +2814,7 @@ void Static_Solver_Parallel::local_matrix(int ielem, CArray <real_t> &Local_Matr
   int nodes_per_elem = mesh->num_nodes_in_elem();
   int num_gauss_points = simparam->num_gauss_points;
   int z_quad,y_quad,x_quad, direct_product_count;
+  size_t local_node_id;
 
   direct_product_count = std::pow(num_gauss_points,num_dim);
   real_t Elastic_Constant, Shear_Term, Pressure_Term, matrix_term;
@@ -2839,9 +2851,10 @@ void Static_Solver_Parallel::local_matrix(int ielem, CArray <real_t> &Local_Matr
 
   //acquire set of nodes for this local element
   for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
-    nodal_positions(node_loop,0) = node_data((mesh->nodes_in_cell_list_(ielem, node_loop)),0);
-    nodal_positions(node_loop,1) = node_data((mesh->nodes_in_cell_list_(ielem, node_loop)),1);
-    nodal_positions(node_loop,2) = node_data((mesh->nodes_in_cell_list_(ielem, node_loop)),2);
+    local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
+    nodal_positions(node_loop,0) = node_data(local_node_id,0);
+    nodal_positions(node_loop,1) = node_data(local_node_id,1);
+    nodal_positions(node_loop,2) = node_data(local_node_id,2);
   }
 
   //look up element material properties
@@ -3158,11 +3171,10 @@ void Static_Solver_Parallel::local_matrix_multiply(int ielem, CArray <real_t> &L
   //local variable for host view in the dual view
   host_vec_array node_data = dual_node_data.view_host();
   int num_dim = simparam->num_dim;
-  int num_elems = mesh->num_elems();
-  int num_nodes = mesh->num_nodes();
   int nodes_per_elem = elem->num_basis();
   int num_gauss_points = simparam->num_gauss_points;
   int z_quad,y_quad,x_quad, direct_product_count;
+  size_t local_node_id;
 
   direct_product_count = std::pow(num_gauss_points,num_dim);
   real_t Elastic_Constant, Shear_Term, Pressure_Term, matrix_term;
@@ -3207,9 +3219,11 @@ void Static_Solver_Parallel::local_matrix_multiply(int ielem, CArray <real_t> &L
 
   //acquire set of nodes for this local element
   for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
-    nodal_positions(node_loop,0) = node_data((mesh->nodes_in_cell_list_(ielem, node_loop)),0);
-    nodal_positions(node_loop,1) = node_data((mesh->nodes_in_cell_list_(ielem, node_loop)),1);
-    nodal_positions(node_loop,2) = node_data((mesh->nodes_in_cell_list_(ielem, node_loop)),2);
+    local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
+    nodal_positions(node_loop,0) = node_data(local_node_id,0);
+    nodal_positions(node_loop,1) = node_data(local_node_id,1);
+    nodal_positions(node_loop,2) = node_data(local_node_id,2);
+    //std::cout << local_node_id << " " << mesh->nodes_in_cell_list_(ielem, node_loop) << " " << nodal_positions(node_loop,0) << " " << nodal_positions(node_loop,1) << " "<< nodal_positions(node_loop,2) <<std::endl;
   }
 
   //look up element material properties

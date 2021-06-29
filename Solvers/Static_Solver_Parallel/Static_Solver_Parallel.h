@@ -139,8 +139,8 @@ public:
   RaggedRightArrayKokkos<real_t, Kokkos::LayoutRight, device_type, memory_traits, array_layout> Stiffness_Matrix;
   //CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Nodal_Forces;
   CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Nodal_Results; //result of linear solve; typically displacements and densities
-  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Stiffness_Matrix_strides;
-  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Matrix_strides;
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Stiffness_Matrix_Strides;
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Matrix_Strides;
 
   //Ghost data on this MPI rank
   size_t nghost_nodes;

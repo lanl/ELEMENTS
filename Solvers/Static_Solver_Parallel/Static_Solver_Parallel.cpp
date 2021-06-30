@@ -1192,8 +1192,8 @@ void Static_Solver_Parallel::generate_bcs(){
     //find boundary patches this BC corresponds to
     tag_boundaries(bc_tag, value, bdy_set_id);
     Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-    Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
-    Boundary_Surface_Force_Densities(surf_force_set_id,1) = 2;
+    Boundary_Surface_Force_Densities(surf_force_set_id,0) = 2;
+    Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
     Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
     surf_force_set_id++;
     std::cout << "tagged a set " << std::endl;
@@ -3949,32 +3949,6 @@ int Static_Solver_Parallel::solve(){
   for(int i=0; i < local_nrows_reduced+1; i++){
     reduced_row_offsets_pass(i) = 0;
   }
-
-  /*
-  //allocate upper bound storage for global indices this task owns for the reduced stiffness matrix
-  CArrayKokkos<GO, array_layout, device_type, memory_traits> my_reduced_global_indices_buffer(nlocal_nodes*num_dim);
-  
-  //find out which rows to remove from the global stiffness matrix due to boundary conditions
-  size_t index_counter = 0;
-  for(LO i=0; i < nlocal_nodes*num_dim; i++){
-    //change to local index access when rowmap moves up i.e. Node_DOF_Boundary_Condition_Type stores local node data
-    if((Node_DOF_Boundary_Condition_Type(i)!=DISPLACEMENT_CONDITION)&&
-       (Node_DOF_Boundary_Condition_Type(i)!=X_DISPLACEMENT_CONDITION)&&
-       (Node_DOF_Boundary_Condition_Type(i)!=Y_DISPLACEMENT_CONDITION)&&
-       (Node_DOF_Boundary_Condition_Type(i)!=Z_DISPLACEMENT_CONDITION))
-    my_reduced_global_indices_buffer(index_counter++) = global_index;
-  }
-  
-  //allocate storage with no extra spaces for global indices this task owns for the reduced stiffness matrix
-  CArrayKokkos<GO, array_layout, device_type, memory_traits> my_reduced_global_indices(index_counter);
-
-  //copy values from buffer to compressed array
-  for(int ifill=0; ifill < index_counter; ifill++)
-    my_reduced_global_indices(ifill) = my_reduced_global_indices_buffer(ifill);
-  */
-  //debug print of nodal bc settings
-  //for(int inode=0; inode < index_counter; inode++)
-  //std::cout << " my_reduced_global_indices " << my_reduced_global_indices(inode) <<std::endl;
   
   //stores global indices belonging to this MPI rank from the non-reduced map corresponding to the reduced system
   CArrayKokkos<GO, array_layout, device_type, memory_traits> Free_Indices(local_nrows_reduced,"Free_Indices");
@@ -4006,7 +3980,14 @@ int Static_Solver_Parallel::solve(){
   }
 
   RaggedRightArrayKokkos<GO, array_layout, device_type, memory_traits> Reduced_DOF_Graph_Matrix(Reduced_Stiffness_Matrix_Strides); //stores global dof indices
+  RaggedRightArrayKokkos<LO, array_layout, device_type, memory_traits> Reduced_Local_DOF_Graph_Matrix(Reduced_Stiffness_Matrix_Strides); //stores local dof indices
   RaggedRightArrayKokkos<real_t, Kokkos::LayoutRight, device_type, memory_traits, array_layout> Reduced_Stiffness_Matrix(Reduced_Stiffness_Matrix_Strides);
+
+  //template compatible row offsets (may change to shallow copy later if it works on device types etc.)
+  row_pointers reduced_row_offsets = Reduced_DOF_Graph_Matrix.start_index_;
+    for(int ipass = 0; ipass < local_nrows_reduced+1; ipass++){
+      reduced_row_offsets_pass(ipass) = reduced_row_offsets(ipass);
+    }
 
   //construct maps to define set of global indices for the reduced node set
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_reduced_dof_original_map =
@@ -4015,7 +3996,7 @@ int Static_Solver_Parallel::solve(){
     Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced,local_nrows_reduced,0,comm));
   
   //dual view of the local global index to reduced global index map
-  dual_vec_array dual_reduced_dof_original("dual_reduced_dof_original",nrows_reduced,1);
+  dual_vec_array dual_reduced_dof_original("dual_reduced_dof_original",local_nrows_reduced,1);
 
   //local variable for host view in the dual view
   host_vec_array reduced_dof_original = dual_reduced_dof_original.view_host();
@@ -4026,21 +4007,21 @@ int Static_Solver_Parallel::solve(){
   for(LO i=0; i < local_nrows_reduced; i++){
     reduced_dof_original(i,0) = local_reduced_dof_map->getGlobalElement(i);
   }
-
+  
   //create a multivector where each remaining local index entry stores the new reduced global index associated with each old global index
   Teuchos::RCP<MV> local_reduced_global_indices = Teuchos::rcp(new MV(local_reduced_dof_original_map, dual_reduced_dof_original));
-
+  
   //construct map of all indices including ghosts for the reduced system
   //stores global indices belonging to this MPI rank and ghosts from the non-reduced map corresponding to the reduced system
   size_t all_nrows_reduced = local_nrows_reduced + nghost_nodes*num_dim;
   for(LO i=nlocal_nodes*num_dim; i < nall_nodes*num_dim; i++){
-      if((Node_DOF_Boundary_Condition_Type(row_access_index)==DISPLACEMENT_CONDITION)||
-         (Node_DOF_Boundary_Condition_Type(row_access_index)==X_DISPLACEMENT_CONDITION)||
-         (Node_DOF_Boundary_Condition_Type(row_access_index)==Y_DISPLACEMENT_CONDITION)||
-         (Node_DOF_Boundary_Condition_Type(row_access_index)==Z_DISPLACEMENT_CONDITION))
+      if((Node_DOF_Boundary_Condition_Type(i)==DISPLACEMENT_CONDITION)||
+         (Node_DOF_Boundary_Condition_Type(i)==X_DISPLACEMENT_CONDITION)||
+         (Node_DOF_Boundary_Condition_Type(i)==Y_DISPLACEMENT_CONDITION)||
+         (Node_DOF_Boundary_Condition_Type(i)==Z_DISPLACEMENT_CONDITION))
       all_nrows_reduced--;
   }
-
+  
   CArrayKokkos<GO, array_layout, device_type, memory_traits> All_Free_Indices(all_nrows_reduced,"All_Free_Indices");
 
   reduced_index = 0;
@@ -4052,7 +4033,7 @@ int Static_Solver_Parallel::solve(){
         All_Free_Indices(reduced_index) = all_dof_map->getGlobalElement(i);
         reduced_index++;
       }
-
+  
   //construct map to define set of global indices for the reduced node set including ghosts
   //passing invalid forces the map to count the global elements
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_reduced_dof_original_map =
@@ -4067,144 +4048,105 @@ int Static_Solver_Parallel::solve(){
   //comms to get ghosts
   all_reduced_global_indices->doImport(*local_reduced_global_indices, importer, Tpetra::INSERT);
 
+  //get views from multivector object
+
+  vec_array all_reduced_global_indices_device = all_reduced_global_indices->getLocalView<device_type> (Tpetra::Access::ReadWrite);
+  host_vec_array all_reduced_global_indices_host = all_reduced_global_indices->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+
+  //allocate node storage with dual view
+  dual_vec_array dual_all_reduced_global_indices = dual_vec_array(all_reduced_global_indices_device, all_reduced_global_indices_host);
+
   //debug print
   if(myrank==0)
   *fos << "All reduced global indices :" << std::endl;
   all_reduced_global_indices->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
   std::fflush(stdout);
-  return !EXIT_SUCCESS;
-
-  //store the local indices for the reduced matrix graph
+  
+  //store the new global indices for the reduced matrix graph
+  GO global_dof_index, reduced_local_dof_index;
   for(LO i=0; i < local_nrows_reduced; i++){
-    access_index = Free_Indices(i);
+    access_index = local_dof_map->getLocalElement(Free_Indices(i));
     row_counter = 0;
     for(LO j=0; j < Stiffness_Matrix_Strides(access_index); j++){
-      row_access_index = DOF_Graph_Matrix(access_index,j);
+      global_dof_index = DOF_Graph_Matrix(access_index,j);
+      row_access_index = all_dof_map->getLocalElement(global_dof_index);
       if((Node_DOF_Boundary_Condition_Type(row_access_index)!=DISPLACEMENT_CONDITION)&&
          (Node_DOF_Boundary_Condition_Type(row_access_index)!=X_DISPLACEMENT_CONDITION)&&
          (Node_DOF_Boundary_Condition_Type(row_access_index)!=Y_DISPLACEMENT_CONDITION)&&
          (Node_DOF_Boundary_Condition_Type(row_access_index)!=Z_DISPLACEMENT_CONDITION)){
-        Reduced_DOF_Graph_Matrix(i,row_counter++);
+        reduced_local_dof_index = all_reduced_dof_original_map->getLocalElement(global_dof_index);
+        Reduced_DOF_Graph_Matrix(i,row_counter++) = all_reduced_global_indices_host(reduced_local_dof_index,0);
       }
     }
-    reduced_row_offsets_pass(i+1) = reduced_row_count + reduced_row_offsets_pass(i);
+  }
+
+  //store reduced stiffness matrix values
+  for(LO i=0; i < local_nrows_reduced; i++){
+    access_index = local_dof_map->getLocalElement(Free_Indices(i));
+    row_counter = 0;
+    for(LO j=0; j < Stiffness_Matrix_Strides(access_index); j++){
+      global_dof_index = DOF_Graph_Matrix(access_index,j);
+      row_access_index = all_dof_map->getLocalElement(global_dof_index);
+      if((Node_DOF_Boundary_Condition_Type(row_access_index)!=DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(row_access_index)!=X_DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(row_access_index)!=Y_DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(row_access_index)!=Z_DISPLACEMENT_CONDITION)){
+        reduced_local_dof_index = all_reduced_dof_original_map->getLocalElement(global_dof_index);
+        Reduced_Stiffness_Matrix(i,row_counter++) = Stiffness_Matrix(access_index,j);
+      }
+    }
   }
   
-  //remove number of boundary conditions
-  global_size_t nnz = reduced_row_offsets_pass(local_nrows_reduced);
 
   //indices_array all_indices = indices_array("indices_array",nnz);
   //values_array all_values = values_array("values_array",nnz);
-  CArrayKokkos<GO, array_layout, device_type, memory_traits> all_global_indices(nnz);
-  CArrayKokkos<LO, array_layout, device_type, memory_traits> all_indices(nnz);
-  CArrayKokkos<real_t, Kokkos::LayoutRight, device_type, memory_traits> all_values(nnz);
   CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Bview(local_nrows_reduced);
   CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Xview(local_nrows_reduced);
-
-  //set Kokkos view data
-  LO entrycount = 0;
-  for(LO i=0; i < local_nrows_reduced; i++){
-    //global_index = reduced_map->getGlobalElement(i);
-    for(LO j=0; j < Reduced_Stiffness_Matrix_Strides(i); j++){
-      if((Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=DISPLACEMENT_CONDITION)&&
-         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=X_DISPLACEMENT_CONDITION)&&
-         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=Y_DISPLACEMENT_CONDITION)&&
-         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,j))!=Z_DISPLACEMENT_CONDITION)){
-        all_global_indices(entrycount) = DOF_Graph_Matrix(local_reduced_dof_map->getGlobalElement(i),j);
-        all_values(entrycount) = Stiffness_Matrix(local_reduced_dof_map->getGlobalElement(i),j);
-        entrycount++;
-      }
-    }
-  }
   
-  // create a Map for the reduced global stiffness matrix (BC rows removed)
-  //Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > reduced_map
-    //= Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced,my_reduced_global_indices.get_kokkos_view(),0,comm) );
+  // create a Map for the reduced global stiffness matrix that is evenly distributed amongst mpi ranks
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_balanced_reduced_dof_map = 
+    Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced,0,comm));
 
   //build column map
   Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > colmap;
   const Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > dommap = local_reduced_dof_map;
   
-  Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,all_global_indices.get_kokkos_view(), nullptr);
+  Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,Reduced_DOF_Graph_Matrix.get_kokkos_view(), nullptr);
 
-  //debug print of global indices
-  std::cout << " DEBUG PRINT FOR GLOBAL INDICES" << std::endl;
-  for(int debug = 0; debug < entrycount; debug++)
-  std::cout <<  all_global_indices.get_kokkos_view()(debug) << " ";
-  std::cout << std::endl;
-  //end debug print
-
-  //debug print of reduced row offsets
+  /*//debug print of reduced row offsets
   std::cout << " DEBUG PRINT FOR ROW OFFSETS" << std::endl;
   for(int debug = 0; debug < local_nrows_reduced+1; debug++)
   std::cout <<  reduced_row_offsets_pass(debug) << " ";
   std::cout << std::endl;
   //end debug print
-  
+  */
+
   //convert global indices to local indices using column map
-  entrycount = 0;
-  for(LO i=0; i < local_nrows_reduced; i++){
-    for(LO j=0; j < reduced_row_offsets_pass(i+1) - reduced_row_offsets_pass(i); j++){
-    all_indices(entrycount) = colmap->getLocalElement(all_global_indices(entrycount));
-    entrycount++;
-    }
-  }
+  for(LO i=0; i < local_nrows_reduced; i++)
+    for(LO j=0; j < Reduced_Stiffness_Matrix_Strides(i); j++)
+      Reduced_Local_DOF_Graph_Matrix(i,j) = colmap->getLocalElement(Reduced_DOF_Graph_Matrix(i,j));
+    
+  
 
   //debug print of local indices
   std::cout << " DEBUG PRINT FOR LOCAL INDICES" << std::endl;
-  for(int debug = 0; debug < entrycount; debug++)
-  std::cout <<  all_indices(debug) << " ";
-  std::cout << std::endl;
-  //end debug print
   
-  A = Teuchos::rcp( new MAT(local_reduced_dof_map, colmap, reduced_row_offsets_pass, all_indices.get_kokkos_view(), all_values.get_kokkos_view()) );
-  
+  A = Teuchos::rcp(new MAT(local_reduced_dof_map, colmap, reduced_row_offsets_pass,
+                   Reduced_Local_DOF_Graph_Matrix.get_kokkos_view(), Reduced_Stiffness_Matrix.get_kokkos_view()));
   
   A->fillComplete();
   //This completes the setup for A matrix of the linear system
 
   //debug print of A matrix
-  *fos << "Matrix :" << std::endl;
+  *fos << "Reduced Stiffness Matrix :" << std::endl;
   A->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
-  
-  
-  /*
-  //Matlab compatible debug print (checks solver result)
-  std::cout << "Matlab A matrix" << std::endl;
-  CArray<real_t> row_set(local_nrows_reduced);
-  int column_index;
-  
-  for(int irow = 0 ; irow < local_nrows_reduced; irow++){
-    global_index = reduced_map->getGlobalElement(irow);
-    //initialize
-    for(int icol = 0 ; icol < local_nrows_reduced; icol++) row_set(icol) = 0;
-    //set non-zero elements
-    for(int istride=0; istride < reduced_entries_per_row[irow]; istride++){
-      if((Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,istride))!=DISPLACEMENT_CONDITION)&&
-         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,istride))!=X_DISPLACEMENT_CONDITION)&&
-         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,istride))!=Y_DISPLACEMENT_CONDITION)&&
-         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(global_index,istride))!=Z_DISPLACEMENT_CONDITION)){
-      column_index = colmap->getLocalElement(DOF_Graph_Matrix(reduced_map->getGlobalElement(irow),istride));
-      //std::cout << "COLUMN INDEX " << column_index << std::endl;
-      row_set(column_index) = istride+1;
-      }
-    }
+  return !EXIT_SUCCESS;
 
-    for(int icol = 0 ; icol < local_nrows_reduced; icol++){
-      if(row_set(icol))
-      std::cout << Stiffness_Matrix(reduced_map->getGlobalElement(irow),row_set(icol)-1)<<" " ;
-      else
-      std::cout << " 0" ;
-
-      if(icol<local_nrows_reduced-1) std::cout << " ,";
-    }
-    std::cout << " ; " <<std::endl;
-  }
-
-  //end debug print
-  */
+  //communicate reduced stiffness matrix entries for better load balancing
+  //create import object using the unbalanced map and the balanced map
+  Tpetra::Import<LO, GO> matrix_importer(local_reduced_dof_map, local_balanced_reduced_dof_map);
   
   // Create random X vector
   vec_array Xview_pass = vec_array("Xview_pass", local_nrows_reduced,1);

@@ -3909,14 +3909,14 @@ int Static_Solver_Parallel::solve(){
   size_t reduced_index;
   int max_stride = 0;
   global_size_t global_index, reduced_row_count;
-
+  
   // Before we do anything, check that KLU2 is enabled
   if( !Amesos2::query("KLU2") ){
     std::cerr << "KLU2 not enabled in this run.  Exiting..." << std::endl;
     return EXIT_SUCCESS;        // Otherwise CTest will pick it up as
                                 // failure, which it isn't really
   }
-
+  
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
 
@@ -3962,23 +3962,26 @@ int Static_Solver_Parallel::solve(){
         reduced_index++;
       }
     
-
+  
   //compute reduced matrix strides
   size_t access_index, row_access_index, row_counter;
+  GO global_dof_index, reduced_local_dof_index;
   for(LO i=0; i < local_nrows_reduced; i++){
     access_index = local_dof_map->getLocalElement(Free_Indices(i));
     reduced_row_count = 0;
     for(LO j=0; j < Stiffness_Matrix_Strides(access_index); j++){
-      if((Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(access_index,j))!=DISPLACEMENT_CONDITION)&&
-         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(access_index,j))!=X_DISPLACEMENT_CONDITION)&&
-         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(access_index,j))!=Y_DISPLACEMENT_CONDITION)&&
-         (Node_DOF_Boundary_Condition_Type(DOF_Graph_Matrix(access_index,j))!=Z_DISPLACEMENT_CONDITION)){
+      global_dof_index = DOF_Graph_Matrix(access_index,j);
+      row_access_index = all_dof_map->getLocalElement(global_dof_index);
+      if((Node_DOF_Boundary_Condition_Type(row_access_index)!=DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(row_access_index)!=X_DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(row_access_index)!=Y_DISPLACEMENT_CONDITION)&&
+         (Node_DOF_Boundary_Condition_Type(row_access_index)!=Z_DISPLACEMENT_CONDITION)){
         reduced_row_count++;
       }
     }
     Reduced_Stiffness_Matrix_Strides(i) = reduced_row_count;
   }
-
+  
   RaggedRightArrayKokkos<GO, array_layout, device_type, memory_traits> Reduced_DOF_Graph_Matrix(Reduced_Stiffness_Matrix_Strides); //stores global dof indices
   RaggedRightArrayKokkos<LO, array_layout, device_type, memory_traits> Reduced_Local_DOF_Graph_Matrix(Reduced_Stiffness_Matrix_Strides); //stores local dof indices
   RaggedRightArrayKokkos<real_t, Kokkos::LayoutRight, device_type, memory_traits, array_layout> Reduced_Stiffness_Matrix(Reduced_Stiffness_Matrix_Strides);
@@ -3988,7 +3991,7 @@ int Static_Solver_Parallel::solve(){
     for(int ipass = 0; ipass < local_nrows_reduced+1; ipass++){
       reduced_row_offsets_pass(ipass) = reduced_row_offsets(ipass);
     }
-
+  
   //construct maps to define set of global indices for the reduced node set
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_reduced_dof_original_map =
     Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced,Free_Indices.get_kokkos_view(),0,comm) );
@@ -4023,7 +4026,7 @@ int Static_Solver_Parallel::solve(){
   }
   
   CArrayKokkos<GO, array_layout, device_type, memory_traits> All_Free_Indices(all_nrows_reduced,"All_Free_Indices");
-
+  
   reduced_index = 0;
   for(LO i=0; i < nall_nodes*num_dim; i++)
     if((Node_DOF_Boundary_Condition_Type(i)!=DISPLACEMENT_CONDITION)&&
@@ -4044,7 +4047,7 @@ int Static_Solver_Parallel::solve(){
   Tpetra::Import<LO, GO> importer(local_reduced_dof_original_map, all_reduced_dof_original_map);
 
   Teuchos::RCP<MV> all_reduced_global_indices = Teuchos::rcp(new MV(all_reduced_dof_original_map, 1));
-
+  
   //comms to get ghosts
   all_reduced_global_indices->doImport(*local_reduced_global_indices, importer, Tpetra::INSERT);
 
@@ -4057,14 +4060,13 @@ int Static_Solver_Parallel::solve(){
   dual_vec_array dual_all_reduced_global_indices = dual_vec_array(all_reduced_global_indices_device, all_reduced_global_indices_host);
 
   //debug print
-  if(myrank==0)
-  *fos << "All reduced global indices :" << std::endl;
-  all_reduced_global_indices->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  std::fflush(stdout);
+  //if(myrank==0)
+  //*fos << "All reduced global indices :" << std::endl;
+  //all_reduced_global_indices->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
+  //std::fflush(stdout);
   
   //store the new global indices for the reduced matrix graph
-  GO global_dof_index, reduced_local_dof_index;
   for(LO i=0; i < local_nrows_reduced; i++){
     access_index = local_dof_map->getLocalElement(Free_Indices(i));
     row_counter = 0;
@@ -4076,11 +4078,12 @@ int Static_Solver_Parallel::solve(){
          (Node_DOF_Boundary_Condition_Type(row_access_index)!=Y_DISPLACEMENT_CONDITION)&&
          (Node_DOF_Boundary_Condition_Type(row_access_index)!=Z_DISPLACEMENT_CONDITION)){
         reduced_local_dof_index = all_reduced_dof_original_map->getLocalElement(global_dof_index);
+        //std::cout << "REDUCED LOCAL INDEX ON TASK " << myrank << " is " << Reduced_Stiffness_Matrix_Strides(i) << Reduced_DOF_Graph_Matrix(i,row_counter++) << std::endl;
         Reduced_DOF_Graph_Matrix(i,row_counter++) = all_reduced_global_indices_host(reduced_local_dof_index,0);
       }
     }
   }
-
+  
   //store reduced stiffness matrix values
   for(LO i=0; i < local_nrows_reduced; i++){
     access_index = local_dof_map->getLocalElement(Free_Indices(i));
@@ -4098,7 +4101,6 @@ int Static_Solver_Parallel::solve(){
     }
   }
   
-
   //indices_array all_indices = indices_array("indices_array",nnz);
   //values_array all_values = values_array("values_array",nnz);
   CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Bview(local_nrows_reduced);
@@ -4126,84 +4128,81 @@ int Static_Solver_Parallel::solve(){
   for(LO i=0; i < local_nrows_reduced; i++)
     for(LO j=0; j < Reduced_Stiffness_Matrix_Strides(i); j++)
       Reduced_Local_DOF_Graph_Matrix(i,j) = colmap->getLocalElement(Reduced_DOF_Graph_Matrix(i,j));
-    
-  
 
   //debug print of local indices
   std::cout << " DEBUG PRINT FOR LOCAL INDICES" << std::endl;
   
-  A = Teuchos::rcp(new MAT(local_reduced_dof_map, colmap, reduced_row_offsets_pass,
+  Teuchos::RCP<MAT> unbalanced_A = Teuchos::rcp(new MAT(local_reduced_dof_map, colmap, reduced_row_offsets_pass,
                    Reduced_Local_DOF_Graph_Matrix.get_kokkos_view(), Reduced_Stiffness_Matrix.get_kokkos_view()));
+  unbalanced_A->fillComplete();
+  Teuchos::RCP<const_MAT> const_unbalanced_A(new const_MAT(*unbalanced_A));
   
-  A->fillComplete();
   //This completes the setup for A matrix of the linear system
 
-  //debug print of A matrix
-  *fos << "Reduced Stiffness Matrix :" << std::endl;
-  A->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  return !EXIT_SUCCESS;
+  //debug print of A matrix before balancing
+  //*fos << "Reduced Stiffness Matrix :" << std::endl;
+  //const_unbalanced_A->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
 
   //communicate reduced stiffness matrix entries for better load balancing
   //create import object using the unbalanced map and the balanced map
   Tpetra::Import<LO, GO> matrix_importer(local_reduced_dof_map, local_balanced_reduced_dof_map);
+
+  Teuchos::RCP<MAT> balanced_A = Tpetra::importAndFillCompleteCrsMatrix(const_unbalanced_A, matrix_importer);
+
+  //debug print of A matrix after balancing
+  *fos << "Reduced Stiffness Matrix :" << std::endl;
+  balanced_A->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
   
+
   // Create random X vector
-  vec_array Xview_pass = vec_array("Xview_pass", local_nrows_reduced,1);
+  size_t balanced_local_nrows = local_balanced_reduced_dof_map->getNodeNumElements();
+  vec_array Xview_pass = vec_array("Xview_pass", balanced_local_nrows, 1);
   Xview_pass.assign_data(Xview.pointer());
-  X = Teuchos::rcp(new MV(local_reduced_dof_map, Xview_pass));
+  X = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, Xview_pass));
   X->randomize();
   
   //print allocation of the solution vector to check distribution
-  *fos << "ALLOCATED SOLUTION VECTOR :" << std::endl;
-  X->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //*fos << "ALLOCATED SOLUTION VECTOR :" << std::endl;
+  //X->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
   
   // Create Kokkos view of RHS B vector (Force Vector)  
   vec_array Bview_pass = vec_array("Bview_pass", local_nrows_reduced,1);
 
   //set bview to force vector data
-  for(LO i=0; i < local_nrows_reduced; i++)
-    Bview(i) = Nodal_Forces(local_reduced_dof_map->getGlobalElement(i),0);
+  for(LO i=0; i < local_nrows_reduced; i++){
+    access_index = local_dof_map->getLocalElement(Free_Indices(i));
+    Bview(i) = Nodal_Forces(access_index,0);
+  }
   
   Bview_pass.assign_data(Bview.pointer());
   
-  B = Teuchos::rcp(new MV(local_reduced_dof_map, Bview_pass));
+  Teuchos::RCP<MV> unbalanced_B = Teuchos::rcp(new MV(local_reduced_dof_map, Bview_pass));
+  
+  //import object to rebalance force vector
+  Tpetra::Import<LO, GO> Bvec_importer(local_reduced_dof_map, local_balanced_reduced_dof_map);
+
+  Teuchos::RCP<MV> balanced_B = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, 1));
+  
+  //comms to rebalance force vector
+  balanced_B->doImport(*unbalanced_B, Bvec_importer, Tpetra::INSERT);
 
   *fos << "RHS :" << std::endl;
-  B->describe(*fos,Teuchos::VERB_EXTREME);
+  balanced_B->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
-  
-  //debug block to print nodal positions corresponding to nodes of reduced system
-  CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Node_Positions_View(local_nrows_reduced);
 
-  vec_array Node_Positions_pass = vec_array("Node_Positions", local_nrows_reduced,1);
-
-  //print the nodal positions
-  for(LO i=0; i < local_nrows_reduced; i++){
-    Node_Positions_View(i) = node_data(local_reduced_dof_map->getGlobalElement(i)/num_dim,local_reduced_dof_map->getGlobalElement(i)%num_dim);
-  }
-
-  Node_Positions_pass.assign_data(Node_Positions_View.pointer());
-
-  Teuchos::RCP<MV> Node_Positions = Teuchos::rcp(new MV(local_reduced_dof_map, Node_Positions_pass));
-
-  *fos << "Node_Positions :" << std::endl;
-  Node_Positions->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  //end of debug block
-  
-  //std::fflush(stdout);
-  //std::cout << " PRINT BEFORE ERROR " << std::endl;
   // Create solver interface to KLU2 with Amesos2 factory method
-  Teuchos::RCP<Amesos2::Solver<MAT,MV> > solver = Amesos2::create<MAT,MV>("KLU2", A, X, B);
+  Teuchos::RCP<Amesos2::Solver<MAT,MV> > solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
   
   //declare non-contiguous map
   // Create a Teuchos::ParameterList to hold solver parameters
-  Teuchos::ParameterList amesos2_params("Amesos2");
-  amesos2_params.sublist("KLU2").set("IsContiguous", false, "Are GIDs Contiguous");
-  solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
+  //Teuchos::ParameterList amesos2_params("Amesos2");
+  //amesos2_params.sublist("KLU2").set("IsContiguous", false, "Are GIDs Contiguous");
+  //solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
   //Solve the system
+  //return !EXIT_SUCCESS;
   solver->symbolicFactorization().numericFactorization().solve();
   
   //Print solution vector

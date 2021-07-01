@@ -44,6 +44,7 @@ public:
   typedef Tpetra::Map<>::global_ordinal_type GO;
 
   typedef Tpetra::CrsMatrix<real_t,LO,GO> MAT;
+  typedef const Tpetra::CrsMatrix<real_t,LO,GO> const_MAT;
   typedef Tpetra::MultiVector<real_t,LO,GO> MV;
 
   typedef Kokkos::ViewTraits<LO*, Kokkos::LayoutLeft, void, void>::size_type SizeType;

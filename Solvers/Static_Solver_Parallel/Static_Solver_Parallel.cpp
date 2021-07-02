@@ -64,6 +64,7 @@ num_cells in element = (p_order*2)^3
 #include "Tpetra_Details_DefaultTypes.hpp"
 #include "Tpetra_Details_FixedHashTable.hpp"
 #include "Tpetra_Import.hpp"
+#include "MatrixMarket_Tpetra.hpp"
 #include <set>
 
 #include "elements.h"
@@ -886,11 +887,11 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //debug print
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  if(myrank==0)
-  *fos << "Ghost Node Map :" << std::endl;
-  all_node_map->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  std::fflush(stdout);
+  //if(myrank==0)
+  //*fos << "Ghost Node Map :" << std::endl;
+  //all_node_map->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
+  //std::fflush(stdout);
 
   //create local dof map for multivector of local node data
 
@@ -901,11 +902,11 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //debug print
   //std::ostream &out = std::cout;
   //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  if(myrank==0)
-  *fos << "Node Data :" << std::endl;
-  node_data_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  std::fflush(stdout);
+  //if(myrank==0)
+  //*fos << "Node Data :" << std::endl;
+  //node_data_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
+  //std::fflush(stdout);
 
   //create import object using local node indices map and all indices map
   Tpetra::Import<LO, GO> importer(map, all_node_map);
@@ -916,11 +917,11 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   //debug print
   //std::ostream &out = std::cout;
   //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  if(myrank==0)
-  *fos << "Node Data with Ghosts :" << std::endl;
-  all_node_data_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  std::fflush(stdout);
+  //if(myrank==0)
+  //*fos << "Node Data with Ghosts :" << std::endl;
+  //all_node_data_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
+  //std::fflush(stdout);
 
   //get view of all node data (local + ghost) on the device (multivector function forces sync of dual view)
 
@@ -931,11 +932,11 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
   dual_all_node_data = dual_vec_array(all_node_data_device, all_node_data_host);
 
   //debug print of views node indices
-  std::cout << "Local View of All Nodes on Task " << myrank <<std::endl;
-  for(int inode=0; inode < all_node_map->getNodeNumElements(); inode++){
-    std::cout << "node "<<all_node_map->getGlobalElement(inode) << " } " ;
-    std::cout << dual_all_node_data.view_host()(inode,0) << " " << dual_all_node_data.view_host()(inode,1) << " " << dual_all_node_data.view_host()(inode,2) << " " << std::endl;
-  }
+  //std::cout << "Local View of All Nodes on Task " << myrank <<std::endl;
+  //for(int inode=0; inode < all_node_map->getNodeNumElements(); inode++){
+    //std::cout << "node "<<all_node_map->getGlobalElement(inode) << " } " ;
+    //std::cout << dual_all_node_data.view_host()(inode,0) << " " << dual_all_node_data.view_host()(inode,1) << " " << dual_all_node_data.view_host()(inode,2) << " " << std::endl;
+  //}
      
   //std::cout << "number of patches = " << mesh->num_patches() << std::endl;
   std::cout << "End of setup " << std::endl;
@@ -1094,7 +1095,7 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
         } 
       }
       //all nodes were remote
-      if(remote_count == num_nodes_in_patch) my_rank_flag = false;
+      //if(remote_count == num_nodes_in_patch) my_rank_flag = false;
 
       //if all nodes were not local
       if(my_rank_flag)
@@ -1103,7 +1104,7 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
   }
 
   //debug print of boundary patches
-  std::cout << " BOUNDARY PATCHES ON TASK " << myrank << " = " << nboundary_patches <<std::endl;
+  /*std::cout << " BOUNDARY PATCHES ON TASK " << myrank << " = " << nboundary_patches <<std::endl;
   for(int iprint = 0; iprint < nboundary_patches; iprint++){
     std::cout << "Patch " << iprint + 1 << " ";
     for(int j = 0; j < Boundary_Patches(iprint).node_set.size(); j++)
@@ -1111,7 +1112,7 @@ void Static_Solver_Parallel::Get_Boundary_Patches(){
     std::cout << std::endl;
   }
   std::fflush(stdout);
-  
+  */
 }
 
 /* ----------------------------------------------------------------------
@@ -1223,7 +1224,7 @@ void Static_Solver_Parallel::generate_bcs(){
     */
 
     //allocate nodal data
-    Node_DOF_Boundary_Condition_Type = CArray<int>(nall_nodes*num_dim);
+    Node_DOF_Boundary_Condition_Type = CArrayKokkos<int, array_layout, device_type, memory_traits>(nall_nodes*num_dim, "Node_DOF_Boundary_Condition_Type");
     Node_DOF_Displacement_Boundary_Conditions = CArray<real_t>(nall_nodes*num_dim);
     Node_DOF_Force_Boundary_Conditions = CArray<real_t>(nall_nodes*num_dim);
 
@@ -4026,6 +4027,19 @@ int Static_Solver_Parallel::solve(){
   }
   
   CArrayKokkos<GO, array_layout, device_type, memory_traits> All_Free_Indices(all_nrows_reduced,"All_Free_Indices");
+
+  //debug print
+  /*
+  if(myrank==0||myrank==4){
+  std::cout << "DOF flags global :" << std::endl;
+  std::cout << "Reduced DOF Graph Matrix on Rank " << myrank << std::endl;
+  for(LO i=0; i < nall_nodes*num_dim; i++){
+    std::cout << all_dof_map->getGlobalElement(i) << " " << Node_DOF_Boundary_Condition_Type(i) <<" ";   
+    std::cout << std::endl;
+  }
+  std::fflush(stdout);
+  }
+  */
   
   reduced_index = 0;
   for(LO i=0; i < nall_nodes*num_dim; i++)
@@ -4042,12 +4056,28 @@ int Static_Solver_Parallel::solve(){
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_reduced_dof_original_map =
     Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),All_Free_Indices.get_kokkos_view(),0,comm) );
 
+  //debug print
+  /*
+  if(myrank==0)
+  *fos << "All reduced dof original indices :" << std::endl;
+  local_reduced_dof_original_map->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  std::fflush(stdout);
+
+  //debug print
+  if(myrank==0)
+  *fos << "All reduced dof original indices :" << std::endl;
+  all_reduced_dof_original_map->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  std::fflush(stdout);
+  */
+
   //communicate the new reduced global indices for ghost dof indices using the local information on other ranks through import
   //create import object using local node indices map and all indices map
   Tpetra::Import<LO, GO> importer(local_reduced_dof_original_map, all_reduced_dof_original_map);
 
   Teuchos::RCP<MV> all_reduced_global_indices = Teuchos::rcp(new MV(all_reduced_dof_original_map, 1));
-  
+
   //comms to get ghosts
   all_reduced_global_indices->doImport(*local_reduced_global_indices, importer, Tpetra::INSERT);
 
@@ -4060,11 +4090,13 @@ int Static_Solver_Parallel::solve(){
   dual_vec_array dual_all_reduced_global_indices = dual_vec_array(all_reduced_global_indices_device, all_reduced_global_indices_host);
 
   //debug print
-  //if(myrank==0)
-  //*fos << "All reduced global indices :" << std::endl;
-  //all_reduced_global_indices->describe(*fos,Teuchos::VERB_EXTREME);
-  //*fos << std::endl;
-  //std::fflush(stdout);
+  /*
+  if(myrank==0)
+  *fos << "All reduced global indices :" << std::endl;
+  all_reduced_global_indices->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  std::fflush(stdout);
+  */
   
   //store the new global indices for the reduced matrix graph
   for(LO i=0; i < local_nrows_reduced; i++){
@@ -4095,7 +4127,6 @@ int Static_Solver_Parallel::solve(){
          (Node_DOF_Boundary_Condition_Type(row_access_index)!=X_DISPLACEMENT_CONDITION)&&
          (Node_DOF_Boundary_Condition_Type(row_access_index)!=Y_DISPLACEMENT_CONDITION)&&
          (Node_DOF_Boundary_Condition_Type(row_access_index)!=Z_DISPLACEMENT_CONDITION)){
-        reduced_local_dof_index = all_reduced_dof_original_map->getLocalElement(global_dof_index);
         Reduced_Stiffness_Matrix(i,row_counter++) = Stiffness_Matrix(access_index,j);
       }
     }
@@ -4113,7 +4144,20 @@ int Static_Solver_Parallel::solve(){
   //build column map
   Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > colmap;
   const Teuchos::RCP<const Tpetra::Map<LO,GO,node_type> > dommap = local_reduced_dof_map;
-  
+
+  //debug print
+  /*
+  if(myrank==4){
+  std::cout << "Reduced DOF Graph Matrix on Rank " << myrank << std::endl;
+  for(LO i=0; i < local_nrows_reduced; i++){
+    for(LO j=0; j < Reduced_Stiffness_Matrix_Strides(i); j++){
+      std::cout << Reduced_DOF_Graph_Matrix(i,j) <<" ";
+    }
+    std::cout << std::endl;
+  }
+  }
+  */
+
   Tpetra::Details::makeColMap<LO,GO,node_type>(colmap,dommap,Reduced_DOF_Graph_Matrix.get_kokkos_view(), nullptr);
 
   /*//debug print of reduced row offsets
@@ -4128,9 +4172,6 @@ int Static_Solver_Parallel::solve(){
   for(LO i=0; i < local_nrows_reduced; i++)
     for(LO j=0; j < Reduced_Stiffness_Matrix_Strides(i); j++)
       Reduced_Local_DOF_Graph_Matrix(i,j) = colmap->getLocalElement(Reduced_DOF_Graph_Matrix(i,j));
-
-  //debug print of local indices
-  std::cout << " DEBUG PRINT FOR LOCAL INDICES" << std::endl;
   
   Teuchos::RCP<MAT> unbalanced_A = Teuchos::rcp(new MAT(local_reduced_dof_map, colmap, reduced_row_offsets_pass,
                    Reduced_Local_DOF_Graph_Matrix.get_kokkos_view(), Reduced_Stiffness_Matrix.get_kokkos_view()));
@@ -4147,13 +4188,21 @@ int Static_Solver_Parallel::solve(){
   //communicate reduced stiffness matrix entries for better load balancing
   //create import object using the unbalanced map and the balanced map
   Tpetra::Import<LO, GO> matrix_importer(local_reduced_dof_map, local_balanced_reduced_dof_map);
+  Teuchos::RCP<MAT> balanced_A = Tpetra::importAndFillCompleteCrsMatrix(const_unbalanced_A, matrix_importer, local_balanced_reduced_dof_map, local_balanced_reduced_dof_map);
 
-  Teuchos::RCP<MAT> balanced_A = Tpetra::importAndFillCompleteCrsMatrix(const_unbalanced_A, matrix_importer);
+  //debug print of map
+  //if(myrank==0)
+  //*fos << "Reduced DOF Map :" << std::endl;
+  //local_balanced_reduced_dof_map->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
+  //std::fflush(stdout);
 
   //debug print of A matrix after balancing
+  if(myrank==0)
   *fos << "Reduced Stiffness Matrix :" << std::endl;
   balanced_A->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
+  std::fflush(stdout);
   
 
   // Create random X vector
@@ -4164,10 +4213,13 @@ int Static_Solver_Parallel::solve(){
   X->randomize();
   
   //print allocation of the solution vector to check distribution
-  //*fos << "ALLOCATED SOLUTION VECTOR :" << std::endl;
-  //X->describe(*fos,Teuchos::VERB_EXTREME);
-  //*fos << std::endl;
-  
+  /*
+  if(myrank==0)
+  *fos << "ALLOCATED SOLUTION VECTOR:" << std::endl;
+  X->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  */
+
   // Create Kokkos view of RHS B vector (Force Vector)  
   vec_array Bview_pass = vec_array("Bview_pass", local_nrows_reduced,1);
 
@@ -4188,16 +4240,21 @@ int Static_Solver_Parallel::solve(){
   
   //comms to rebalance force vector
   balanced_B->doImport(*unbalanced_B, Bvec_importer, Tpetra::INSERT);
-
+  
+  if(myrank==0)
   *fos << "RHS :" << std::endl;
   balanced_B->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
 
+  //debug print
+  //Tpetra::MatrixMarket::Writer<MAT> market_writer();
+  //Tpetra::MatrixMarket::Writer<MAT>::writeSparseFile("A_matrix.txt", *balanced_A, "A_matrix", "Stores stiffness matrix values");
+  //return !EXIT_SUCCESS;
   // Create solver interface to KLU2 with Amesos2 factory method
   Teuchos::RCP<Amesos2::Solver<MAT,MV> > solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
   
   //declare non-contiguous map
-  // Create a Teuchos::ParameterList to hold solver parameters
+  //Create a Teuchos::ParameterList to hold solver parameters
   //Teuchos::ParameterList amesos2_params("Amesos2");
   //amesos2_params.sublist("KLU2").set("IsContiguous", false, "Are GIDs Contiguous");
   //solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
@@ -4206,6 +4263,7 @@ int Static_Solver_Parallel::solve(){
   solver->symbolicFactorization().numericFactorization().solve();
   
   //Print solution vector
+  if(myrank==0)
   *fos << "Solution :" << std::endl;
   X->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;

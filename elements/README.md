@@ -4,8 +4,8 @@ A mesh is a collection of non-overlapping elements, and the mesh can be unstruct
 
 
 ## geometry definition
-The position inside or on a a surface of an element is given by a polynomial.  **elements** contains a suite of spatial polynomials and also a space-time polynomial.  The Jacobi matrix is equal to the gradient of this spatial polynomial.  The volume of an element can be calculated using the determinate of the Jacobi matrix.  The inverse of the Jacobi matrix is used to transform a nabla opperator from the physical coordinates to the reference coordinates.
+The position inside an element is given by a polynomial.  **elements** contains a suite of spatial polynomials and also a space-time polynomial.  The Jacobi matrix is equal to the gradient of this spatial polynomial.  The volume of an element can be calculated using the determinate of the Jacobi matrix.  The inverse of the Jacobi matrix is used to transform a nabla opperator from the physical coordinates to the reference coordinates.
 
 
 ## index conventions
-The reference element contains nodes that are collocated with Labatto quadrature points.  The local indexing of the quadrature points and nodes within an element follows an (i,j,k) index convenction. An index map is supplied to convert the serendipty local index convention to the local (i,j,k) index convention.
+The reference element contains nodes that are collocated with the Labatto quadrature points.  The local indexing of the quadrature points and nodes within an element follows an (i,j,k) index convenction. An index map is supplied to convert the serendipty local index convention to the local (i,j,k) index convention.

@@ -1,6 +1,6 @@
 # elements
 
-A mesh is a collection of non-overlapping elements.  The mesh can be unstructured.  Each reference element is defined in a reference coordinate system with a spatial mapping (e.g., an interpolation polynomial) to the physical coordinates.  An element in the physical coordinates can have edges that are defined by straight lines (i.e., linear) or have edges defined by a high-order polynomial. The **elements** sub-library contains the mathematical functions for a suite of element types.    The **geometry** sub-library combines the mesh datastructures and mesh index spaces in **SWAGE** with the reference element defined in **elements**. 
+A mesh is a collection of non-overlapping elements, and the mesh can be unstructured.  Each reference element is defined in a reference coordinate system with a spatial mapping (e.g., an interpolation polynomial) to the physical coordinates.  An element in the physical coordinates can have edges that are defined by straight lines (i.e., linear) or have edges defined by a high-order polynomial. The **elements** sub-library contains the mathematical functions for a suite of element types.    The **geometry** sub-library combines the mesh datastructures and mesh index spaces in **SWAGE** with the reference element defined in **elements**. 
 
 
 ## geometry definition

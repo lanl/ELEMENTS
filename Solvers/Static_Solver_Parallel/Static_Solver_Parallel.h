@@ -115,7 +115,12 @@ public:
 
   void tag_boundaries(int this_bc_tag, real_t val, int bdy_set);
 
-  int check_boundary(Node_Combination &Patch_Nodes, int this_bc_tag, real_t val);
+  int check_boundary(Node_Combination &Patch_Nodes, int this_bc_tag, real_t val);\
+
+  //debug and performance functions/variables
+  double CPU_Time();
+  void init_clock();
+  double initial_CPU_time;
   
   swage::mesh_t *init_mesh;
   swage::mesh_t *mesh;

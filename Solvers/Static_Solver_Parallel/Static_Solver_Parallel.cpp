@@ -79,6 +79,11 @@ num_cells in element = (p_order*2)^3
 #include "Amesos2.hpp"
 #include "Static_Solver_Parallel.h"
 
+//debug and performance includes
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <ctime>
+
 #define BUFFER_LINES 1000
 #define MAX_WORD 30
 #define MAX_ELEM_NODES 8
@@ -141,6 +146,10 @@ void Static_Solver_Parallel::run(int argc, char *argv[]){
     
     std::cout << "Num elements = " << mesh->num_elems() << std::endl;
     
+    //initialize timing
+    if(simparam->report_runtime_flag)
+    init_clock();
+    
     // ---- Find Boundaries on mesh ---- //
     generate_bcs();
     
@@ -156,6 +165,9 @@ void Static_Solver_Parallel::run(int argc, char *argv[]){
       std::cout << "Before free pointer" << std::endl <<std::flush;
       return;
     }
+    //CPU time
+    double current_cpu = CPU_Time();
+    std::cout << " RUNTIME OF CODE ON TASK " << myrank << " is "<< current_cpu-initial_CPU_time <<std::endl;
     //debug return to avoid printing further
     return;
 
@@ -1186,9 +1198,10 @@ void Static_Solver_Parallel::generate_bcs(){
     std::cout << std::endl;
     */
 
-    std::cout << "tagging x = 2 " << std::endl;
+    std::cout << "tagging x = 1.2 " << std::endl;
     bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-    value = 2.0;
+    value = 1.2;
+    //value = 2;
     bdy_set_id = current_bdy_id++;
     //find boundary patches this BC corresponds to
     tag_boundaries(bc_tag, value, bdy_set_id);
@@ -3912,8 +3925,8 @@ int Static_Solver_Parallel::solve(){
   global_size_t global_index, reduced_row_count;
   
   // Before we do anything, check that KLU2 is enabled
-  if( !Amesos2::query("KLU2") ){
-    std::cerr << "KLU2 not enabled in this run.  Exiting..." << std::endl;
+  if( !Amesos2::query("SuperLUDist") ){
+    std::cerr << "SuperLUDist not enabled in this run.  Exiting..." << std::endl;
     return EXIT_SUCCESS;        // Otherwise CTest will pick it up as
                                 // failure, which it isn't really
   }
@@ -3921,7 +3934,13 @@ int Static_Solver_Parallel::solve(){
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
 
-  out << Amesos2::version() << std::endl << std::endl;
+  *fos << Amesos2::version() << std::endl << std::endl;
+
+  bool printTiming   = true;
+  bool verbose       = false;
+  std::string filename("arc130.mtx");
+  Teuchos::CommandLineProcessor cmdp(false,true);
+  cmdp.setOption("print-timing","no-print-timing",&printTiming,"Print solver timing statistics");
 
   const size_t numVectors = 1;
   
@@ -4198,11 +4217,11 @@ int Static_Solver_Parallel::solve(){
   //std::fflush(stdout);
 
   //debug print of A matrix after balancing
-  if(myrank==0)
-  *fos << "Reduced Stiffness Matrix :" << std::endl;
-  balanced_A->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  std::fflush(stdout);
+  //if(myrank==0)
+  //*fos << "Reduced Stiffness Matrix :" << std::endl;
+  //balanced_A->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
+  //std::fflush(stdout);
   
 
   // Create random X vector
@@ -4241,18 +4260,19 @@ int Static_Solver_Parallel::solve(){
   //comms to rebalance force vector
   balanced_B->doImport(*unbalanced_B, Bvec_importer, Tpetra::INSERT);
   
-  if(myrank==0)
-  *fos << "RHS :" << std::endl;
-  balanced_B->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //if(myrank==0)
+  //*fos << "RHS :" << std::endl;
+  //balanced_B->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
 
   //debug print
   //Tpetra::MatrixMarket::Writer<MAT> market_writer();
   //Tpetra::MatrixMarket::Writer<MAT>::writeSparseFile("A_matrix.txt", *balanced_A, "A_matrix", "Stores stiffness matrix values");
   //return !EXIT_SUCCESS;
   // Create solver interface to KLU2 with Amesos2 factory method
-  Teuchos::RCP<Amesos2::Solver<MAT,MV> > solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
   
+  Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
+  //return !EXIT_SUCCESS;
   //declare non-contiguous map
   //Create a Teuchos::ParameterList to hold solver parameters
   //Teuchos::ParameterList amesos2_params("Amesos2");
@@ -4260,13 +4280,55 @@ int Static_Solver_Parallel::solve(){
   //solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
   //Solve the system
   //return !EXIT_SUCCESS;
-  solver->symbolicFactorization().numericFactorization().solve();
+  //solver->symbolicFactorization().numericFactorization().solve();
+
+  //timing statistics for LU solver
+  //solver->printTiming(*fos);
   
   //Print solution vector
-  if(myrank==0)
-  *fos << "Solution :" << std::endl;
-  X->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //if(myrank==0)
+  //*fos << "Solution :" << std::endl;
+  //X->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
   
   return !EXIT_SUCCESS;
+}
+
+/* ----------------------------------------------------------------------
+   Return the CPU time for the current process in seconds very
+   much in the same way as MPI_Wtime() returns the wall time.
+------------------------------------------------------------------------- */
+
+double Static_Solver_Parallel::CPU_Time()
+{
+  double rv = 0.0;
+/*
+#ifdef _WIN32
+
+  // from MSD docs.
+  FILETIME ct,et,kt,ut;
+  union { FILETIME ft; uint64_t ui; } cpu;
+  if (GetProcessTimes(GetCurrentProcess(),&ct,&et,&kt,&ut)) {
+    cpu.ft = ut;
+    rv = cpu.ui * 0.0000001;
+  }
+*/
+
+  struct rusage ru;
+  if (getrusage(RUSAGE_SELF, &ru) == 0) {
+    rv = (double) ru.ru_utime.tv_sec;
+    rv += (double) ru.ru_utime.tv_usec * 0.000001;
+  }
+
+
+  return rv;
+}
+
+/* ----------------------------------------------------------------------
+   Clock variable initialization
+------------------------------------------------------------------------- */
+
+void Static_Solver_Parallel::init_clock(){
+  double current_cpu = 0;
+  initial_CPU_time = CPU_Time();
 }

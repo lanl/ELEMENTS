@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 3.17)
 project (Elements)
-add_compile_options(-g -O0)
+#add_compile_options(-g -O0)
+#add_compile_options(-g -O3)
 #set (CMAKE_CXX_STANDARD 14)
 
 find_package(MPI REQUIRED)
@@ -12,6 +13,10 @@ FIND_PACKAGE(Trilinos 13.1 REQUIRED)
 SET(CMAKE_CXX_COMPILER ${Trilinos_CXX_COMPILER} )
 SET(CMAKE_C_COMPILER ${Trilinos_C_COMPILER} )
 SET(CMAKE_Fortran_COMPILER ${Trilinos_Fortran_COMPILER} )
+
+set(CMAKE_CXX_FLAGS  "${Trilinos_CXX_COMPILER_FLAGS} ${CMAKE_CXX_FLAGS}")
+set(CMAKE_C_FLAGS  "${Trilinos_C_COMPILER_FLAGS} ${CMAKE_C_FLAGS}")
+set(CMAKE_Fortran_FLAGS  "${Trilinos_Fortran_COMPILER_FLAGS} ${CMAKE_Fortran_FLAGS}")
 
 # Echo trilinos build info just for fun
 MESSAGE("\nFound Trilinos!  Here are the details: ")

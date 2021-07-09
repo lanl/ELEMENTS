@@ -4280,7 +4280,7 @@ int Static_Solver_Parallel::solve(){
   //solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
   //Solve the system
   //return !EXIT_SUCCESS;
-  //solver->symbolicFactorization().numericFactorization().solve();
+  solver->symbolicFactorization().numericFactorization().solve();
 
   //timing statistics for LU solver
   //solver->printTiming(*fos);

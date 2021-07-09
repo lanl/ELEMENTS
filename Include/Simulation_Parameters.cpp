@@ -22,6 +22,9 @@ Simulation_Parameters::~Simulation_Parameters(){
 void Simulation_Parameters::input(){
   // ---- time varaibles and cycle info ---- //
 
+  //debug and performance report flags
+  report_runtime_flag = 1;
+
   //simulation spatial dimension
   num_dim = 3;
 

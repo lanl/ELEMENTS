@@ -1,2 +1,2 @@
-#Place this in the trilinos build folder and run it to configure CMake before using the make script
+#Place this and the make_script in the trilinos build folder and run this to configure CMake before using the make script
 cmake -DCMAKE_BUILD_TYPE=RELEASE -DTPL_ENABLE_MPI=ON -DTrilinos_ENABLE_Amesos2=ON -DTrilinos_ENABLE_ALL_PACKAGES=OFF -DTrilinos_ENABLE_ALL_OPTIONAL_PACKAGES=ON -DTrilinos_ENABLE_TESTS=ON -DCMAKE_INSTALL_PREFIX=/mnt/c/Users/Adrian\ Diaz/Documents/Github/ELEMENTS/Trilinos/build/ ..

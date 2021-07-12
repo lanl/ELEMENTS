@@ -1,5 +1,5 @@
-add_compile_options(-std=c++11 -g -O0)
-set(Solver_SRC_CXX SimpleSolve_Test.cpp)
+#add_compile_options(-std=c++11 -g -O0)
+set(Solver_SRC_CXX SimpleSolve_File.cpp)
 
 find_package(MPI REQUIRED)
 SET(CMAKE_PREFIX_PATH ../Trilinos/build/lib/cmake/Trilinos ${CMAKE_PREFIX_PATH})

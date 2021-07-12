@@ -159,7 +159,6 @@ void Static_Solver_Parallel::run(int argc, char *argv[]){
     //assemble the global solution (stiffness matrix etc. and nodal forces)
     assemble();
     
-    
     int solver_exit = solve();
     if(solver_exit == EXIT_SUCCESS){
       std::cout << "Before free pointer" << std::endl <<std::flush;
@@ -4223,13 +4222,14 @@ int Static_Solver_Parallel::solve(){
   //*fos << std::endl;
   //std::fflush(stdout);
   
-
   // Create random X vector
   size_t balanced_local_nrows = local_balanced_reduced_dof_map->getNodeNumElements();
   vec_array Xview_pass = vec_array("Xview_pass", balanced_local_nrows, 1);
   Xview_pass.assign_data(Xview.pointer());
   X = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, Xview_pass));
-  X->randomize();
+  //return !EXIT_SUCCESS;
+  //X->randomize();
+  
   
   //print allocation of the solution vector to check distribution
   /*
@@ -4272,24 +4272,24 @@ int Static_Solver_Parallel::solve(){
   // Create solver interface to KLU2 with Amesos2 factory method
   
   Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
-  //return !EXIT_SUCCESS;
+  
   //declare non-contiguous map
   //Create a Teuchos::ParameterList to hold solver parameters
   //Teuchos::ParameterList amesos2_params("Amesos2");
   //amesos2_params.sublist("KLU2").set("IsContiguous", false, "Are GIDs Contiguous");
   //solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
+
   //Solve the system
-  //return !EXIT_SUCCESS;
   solver->symbolicFactorization().numericFactorization().solve();
 
   //timing statistics for LU solver
   //solver->printTiming(*fos);
   
   //Print solution vector
-  //if(myrank==0)
-  //*fos << "Solution :" << std::endl;
-  //X->describe(*fos,Teuchos::VERB_EXTREME);
-  //*fos << std::endl;
+  if(myrank==0)
+  *fos << "Solution :" << std::endl;
+  X->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
   
   return !EXIT_SUCCESS;
 }

@@ -3,6 +3,7 @@ set(Class_SRC Solver.h ../Include/Simulation_Parameters.h ../Include/Simulation_
 set(Laplace_SRC Pseudo_Laplace/Pseudo_Laplacian.h Pseudo_Laplace/Pseudo_Laplacian.cpp)
 set(Static_SRC Static_Solver/Static_Solver.h Static_Solver/Static_Solver.cpp)
 set(Static_Parallel_SRC Static_Solver_Parallel/Static_Solver_Parallel.h Static_Solver_Parallel/Static_Solver_Parallel.cpp)
+set(Parallel_Nonlinear_SRC Parallel_Nonlinear_Solver/Parallel_Nonlinear_Solver.h Parallel_Nonlinear_Solver/Parallel_Nonlinear_Solver.cpp)
 set(Solver_SRC_CXX main.cpp Solver.cpp ../Include/math_util.cpp)
 
 find_package(MPI REQUIRED)
@@ -37,13 +38,14 @@ SET(CMAKE_Fortran_FLAGS  "${Trilinos_Fortran_COMPILER_FLAGS} ${CMAKE_Fortran_FLA
 include_directories(../Include)
 include_directories(Static_Solver)
 include_directories(Static_Solver_Parallel)
+include_directories(Parallel_Nonlinear_Solver)
 include_directories(Pseudo_Laplace)
 include_directories(../MATAR/src)
 
 INCLUDE_DIRECTORIES (${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS})
 LINK_DIRECTORIES (${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS})
 
-add_executable(main ${Solver_SRC_CXX} ${Solver_SRC_H} ${Class_SRC} ${Laplace_SRC} ${Static_SRC} ${Static_Parallel_SRC})
+add_executable(main ${Solver_SRC_CXX} ${Solver_SRC_H} ${Class_SRC} ${Laplace_SRC} ${Static_SRC} ${Static_Parallel_SRC} ${Parallel_Nonlinear_SRC})
 
 target_link_libraries (main swage)
 target_link_libraries (main elements)

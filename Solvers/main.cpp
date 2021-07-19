@@ -7,6 +7,7 @@
 #include "Pseudo_Laplacian.h"
 #include "Static_Solver.h"
 #include "Static_Solver_Parallel.h"
+#include "Parallel_Nonlinear_Solver.h"
 
 void solver_setup(int argc, char *argv[]);
 
@@ -37,7 +38,8 @@ void solver_setup(int argc, char *argv[]){
   
   //set base pointer to the chosen solver
   //solver = new Static_Solver_Parallel();
-  Static_Solver_Parallel solver;
+  //Static_Solver_Parallel solver;
+  Parallel_Nonlinear_Solver solver;
   //solver = new Static_Solver();
   //solver = new Pseudo_Laplacian();
 

@@ -175,6 +175,9 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     
     //assemble the global solution (stiffness matrix etc. and nodal forces)
     assemble();
+
+    //find each element's volume
+    compute_element_volumes();
     
     int solver_exit = solve();
     if(solver_exit == EXIT_SUCCESS){
@@ -343,12 +346,19 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 
   //allocate node storage with dual view
   dual_node_data = dual_vec_array("dual_node_data", nlocal_nodes,num_dim);
+  dual_node_densities = dual_vec_array("dual_node_densities", nlocal_nodes, 1);
   dual_nodal_forces = dual_vec_array("dual_nodal_forces", nlocal_nodes*num_dim,1);
 
   //local variable for host view in the dual view
   host_vec_array node_data = dual_node_data.view_host();
+  host_vec_array node_densities = dual_node_densities.view_host();
   //notify that the host view is going to be modified in the file readin
   dual_node_data.modify_host();
+  dual_node_densities.modify_host();
+
+  //initialize densities to 1 for now; in the future there might be an option to read in an initial condition for each node
+  for(int inode = 0; inode < nlocal_nodes; inode++)
+    node_densities(inode,0) = 1;
 
   //old swage method
   //mesh->init_nodes(local_nrows); // add 1 for index starting at 1
@@ -862,8 +872,8 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 
     //find which mpi rank each ghost node belongs to and store the information in a CArray
     //allocate Teuchos Views since they are the only input available at the moment in the map definitions
-    ghost_nodes_pass = Teuchos::ArrayView<GO>(ghost_nodes.get_kokkos_view().data(), nghost_nodes);
-    ghost_node_ranks_pass = Teuchos::ArrayView<int>(ghost_node_ranks.get_kokkos_view().data(), nghost_nodes);
+    Teuchos::ArrayView<const GO> ghost_nodes_pass(ghost_nodes.get_kokkos_view().data(), nghost_nodes);
+    Teuchos::ArrayView<int> ghost_node_ranks_pass(ghost_node_ranks.get_kokkos_view().data(), nghost_nodes);
     map->getRemoteIndexList(ghost_nodes_pass, ghost_node_ranks_pass);
     
     //debug print of ghost nodes
@@ -879,6 +889,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 
   //synchronize device data
   dual_node_data.sync_device();
+  dual_node_densities.sync_device();
     
   // Create reference element
   ref_elem->init(p_order, num_dim, elem->num_basis());
@@ -921,11 +932,14 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //*fos << std::endl;
   //std::fflush(stdout);
 
-  //create local dof map for multivector of local node data
+  //create element map for later
+  element_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),rnum_elem,0,comm));
 
   //create distributed multivector of the local node data and all (local + ghost) node storage
   node_data_distributed = Teuchos::rcp(new MV(map, dual_node_data));
   all_node_data_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
+  node_densities_distributed = Teuchos::rcp(new MV(map, dual_node_densities));
+  all_node_densities_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
   
   //debug print
   //std::ostream &out = std::cout;
@@ -2843,7 +2857,7 @@ void Parallel_Nonlinear_Solver::assemble(){
    Retrieve material properties associated with a finite element
 ------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Modulus, real_t &Poisson_Ratio){
+void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density){
 
   Element_Modulus = simparam->Elastic_Modulus;
   Poisson_Ratio = simparam->Poisson_Ratio;
@@ -2892,10 +2906,13 @@ void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_M
   ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,elem->num_basis());
   ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
   CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
+  CArray<real_t> nodal_density(elem->num_basis());
 
   //initialize weights
   elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
   elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
+
+  real_t current_density = 1;
 
   //acquire set of nodes for this local element
   for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
@@ -2904,12 +2921,6 @@ void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_M
     nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
     nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
   }
-
-  //look up element material properties
-  Element_Material_Properties((size_t) ielem,Element_Modulus,Poisson_Ratio);
-  Elastic_Constant = Element_Modulus/(1+Poisson_Ratio)/(1-2*Poisson_Ratio);
-  Shear_Term = 0.5-Poisson_Ratio;
-  Pressure_Term = 1 - Poisson_Ratio;
 
   //initialize local stiffness matrix storage
   for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
@@ -2936,6 +2947,23 @@ void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_M
 
     //compute shape functions at this point for the element type
     elem->basis(basis_values,quad_coordinate);
+
+    //compute density
+    current_density = 0;
+    if(nodal_density_flag)
+    for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+      current_density += nodal_density(node_loop)*basis_values(node_loop);
+    }
+    //default constant element density
+    else{
+      current_density = Element_Densities(ielem);
+    }
+
+    //look up element material properties as a function of density at the point
+    Element_Material_Properties((size_t) ielem,Element_Modulus,Poisson_Ratio, current_density);
+    Elastic_Constant = Element_Modulus/(1+Poisson_Ratio)/(1-2*Poisson_Ratio);
+    Shear_Term = 0.5-Poisson_Ratio;
+    Pressure_Term = 1 - Poisson_Ratio;
 
     //compute all the necessary coordinates and derivatives at this point
 
@@ -3252,6 +3280,7 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
   ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,elem->num_basis());
   ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
   CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
+  CArray<real_t> nodal_density(elem->num_basis());
   size_t Brows;
   if(num_dim==2) Brows = 3;
   if(num_dim==3) Brows = 6;
@@ -3265,12 +3294,15 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
   elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
   elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
 
+  real_t current_density = 1;
+
   //acquire set of nodes for this local element
   for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
     local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
     nodal_positions(node_loop,0) = all_node_data(local_node_id,0);
     nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
     nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
+    if(nodal_density_flag) nodal_density(node_loop) = Nodal_Densities(local_node_id);
     /*
     if(myrank==1&&nodal_positions(node_loop,2)>10000000){
       std::cout << " LOCAL MATRIX DEBUG ON TASK " << myrank << std::endl;
@@ -3280,12 +3312,6 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
     */
     //std::cout << local_node_id << " " << mesh->nodes_in_cell_list_(ielem, node_loop) << " " << nodal_positions(node_loop,0) << " " << nodal_positions(node_loop,1) << " "<< nodal_positions(node_loop,2) <<std::endl;
   }
-
-  //look up element material properties
-  Element_Material_Properties((size_t) ielem,Element_Modulus,Poisson_Ratio);
-  Elastic_Constant = Element_Modulus/(1+Poisson_Ratio)/(1-2*Poisson_Ratio);
-  Shear_Term = 0.5-Poisson_Ratio;
-  Pressure_Term = 1 - Poisson_Ratio;
 
   //initialize C matrix
   for(int irow = 0; irow < Brows; irow++)
@@ -3359,9 +3385,25 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
 
     //compute shape functions at this point for the element type
     elem->basis(basis_values,quad_coordinate);
+    
+    //compute density
+    current_density = 0;
+    if(nodal_density_flag)
+    for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+      current_density += nodal_density(node_loop,0)*basis_values(node_loop);
+    }
+    //default constant element density
+    else{
+      current_density = Element_Density(ielem);
+    }
+
+    //look up element material properties at this point as a function of density
+    Element_Material_Properties((size_t) ielem,Element_Modulus,Poisson_Ratio, current_density);
+    Elastic_Constant = Element_Modulus/(1+Poisson_Ratio)/(1-2*Poisson_Ratio);
+    Shear_Term = 0.5-Poisson_Ratio;
+    Pressure_Term = 1 - Poisson_Ratio;
 
     //compute all the necessary coordinates and derivatives at this point
-
     //compute shape function derivatives
     elem->partial_xi_basis(basis_derivative_s1,quad_coordinate);
     elem->partial_eta_basis(basis_derivative_s2,quad_coordinate);
@@ -3754,7 +3796,7 @@ void Parallel_Nonlinear_Solver::Force_Vector_Construct(){
     //loop over quadrature points if this is a distributed force
     for(int iquad=0; iquad < direct_product_count; iquad++){
       
-      if(Element_Types(current_element_index)==4){
+      if(Element_Types(current_element_index)==elements::elem_types::Hex8){
 
       real_t pointer_basis_values[8];
       real_t pointer_basis_derivative_s1[8];
@@ -3921,6 +3963,166 @@ void Parallel_Nonlinear_Solver::Force_Vector_Construct(){
       std::cout << " DOF: "<< iforce+1 << ", "<< Nodal_Forces(iforce) << std::endl;
     */
 
+}
+
+/* ----------------------------------------------------------------------
+   Compute the initial volume of each element; estimated with quadrature
+------------------------------------------------------------------------- */
+
+void Parallel_Nonlinear_Solver::compute_element_volumes(){
+  //initialize memory for volume storage
+  Element_Volumes = vec_array("Element Volumes", rnum_elem, 1);
+
+  //loop over elements and use quadrature rule to compute volume from Jacobian determinant
+  for(int ielem = 0; ielem < rnum_elem; ielem++){
+    //local variable for host view in the dual view
+    host_vec_array all_node_data = dual_all_node_data.view_device();
+    int num_dim = simparam->num_dim;
+    int nodes_per_elem = elem->num_basis();
+    int num_gauss_points = simparam->num_gauss_points;
+    int z_quad,y_quad,x_quad, direct_product_count;
+    size_t local_node_id;
+
+    real_t Elastic_Constant, Shear_Term, Pressure_Term, matrix_term;
+    real_t matrix_subterm1, matrix_subterm2, matrix_subterm3, Jacobian;
+    real_t Element_Modulus, Poisson_Ratio;
+    CArray<real_t> legendre_nodes_1D(num_gauss_points);
+    CArray<real_t> legendre_weights_1D(num_gauss_points);
+    real_t pointer_quad_coordinate[num_dim];
+    real_t pointer_quad_coordinate_weight[num_dim];
+    real_t pointer_interpolated_point[num_dim];
+    real_t pointer_JT_row1[num_dim];
+    real_t pointer_JT_row2[num_dim];
+    real_t pointer_JT_row3[num_dim];
+    ViewCArray<real_t> quad_coordinate(pointer_quad_coordinate,num_dim);
+    ViewCArray<real_t> quad_coordinate_weight(pointer_quad_coordinate_weight,num_dim);
+    ViewCArray<real_t> interpolated_point(pointer_interpolated_point,num_dim);
+    ViewCArray<real_t> JT_row1(pointer_JT_row1,num_dim);
+    ViewCArray<real_t> JT_row2(pointer_JT_row2,num_dim);
+    ViewCArray<real_t> JT_row3(pointer_JT_row3,num_dim);
+
+    real_t pointer_basis_values[elem->num_basis()];
+    real_t pointer_basis_derivative_s1[elem->num_basis()];
+    real_t pointer_basis_derivative_s2[elem->num_basis()];
+    real_t pointer_basis_derivative_s3[elem->num_basis()];
+    ViewCArray<real_t> basis_values(pointer_basis_values,elem->num_basis());
+    ViewCArray<real_t> basis_derivative_s1(pointer_basis_derivative_s1,elem->num_basis());
+    ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,elem->num_basis());
+    ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
+    CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
+
+    //initialize weights
+    elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
+    elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
+
+    //acquire set of nodes for this local element
+    for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+      local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
+      nodal_positions(node_loop,0) = all_node_data(local_node_id,0);
+      nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
+      nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
+      /*
+      if(myrank==1&&nodal_positions(node_loop,2)>10000000){
+        std::cout << " LOCAL MATRIX DEBUG ON TASK " << myrank << std::endl;
+        std::cout << node_loop+1 <<" " << local_node_id <<" "<< mesh->nodes_in_cell_list_(ielem, node_loop) << " "<< nodal_positions(node_loop,2) << std::endl;
+        std::fflush(stdout);
+      }
+      */
+      //std::cout << local_node_id << " " << mesh->nodes_in_cell_list_(ielem, node_loop) << " " << nodal_positions(node_loop,0) << " " << nodal_positions(node_loop,1) << " "<< nodal_positions(node_loop,2) <<std::endl;
+    }
+    
+    //initialize element volume
+    Element_Volumes(ielem,0) = 0;
+    
+    if(Element_Types(ielem)==elements::elem_types::Hex8){
+      direct_product_count = std::pow(num_gauss_points,num_dim);
+    }
+  
+    //loop over quadrature points
+    for(int iquad=0; iquad < direct_product_count; iquad++){
+
+      //set current quadrature point
+      if(num_dim==3) z_quad = iquad/(num_gauss_points*num_gauss_points);
+      y_quad = (iquad % (num_gauss_points*num_gauss_points))/num_gauss_points;
+      x_quad = iquad % num_gauss_points;
+      quad_coordinate(0) = legendre_nodes_1D(x_quad);
+      quad_coordinate(1) = legendre_nodes_1D(y_quad);
+      if(num_dim==3)
+      quad_coordinate(2) = legendre_nodes_1D(z_quad);
+
+      //set current quadrature weight
+      quad_coordinate_weight(0) = legendre_weights_1D(x_quad);
+      quad_coordinate_weight(1) = legendre_weights_1D(y_quad);
+      if(num_dim==3)
+      quad_coordinate_weight(2) = legendre_weights_1D(z_quad);
+
+      //compute shape functions at this point for the element type
+      elem->basis(basis_values,quad_coordinate);
+
+      //compute all the necessary coordinates and derivatives at this point
+
+      //compute shape function derivatives
+      elem->partial_xi_basis(basis_derivative_s1,quad_coordinate);
+      elem->partial_eta_basis(basis_derivative_s2,quad_coordinate);
+      elem->partial_mu_basis(basis_derivative_s3,quad_coordinate);
+
+      //compute derivatives of x,y,z w.r.t the s,t,w isoparametric space needed by JT (Transpose of the Jacobian)
+      //derivative of x,y,z w.r.t s
+      JT_row1(0) = 0;
+      JT_row1(1) = 0;
+      JT_row1(2) = 0;
+      for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+        JT_row1(0) += nodal_positions(node_loop,0)*basis_derivative_s1(node_loop);
+        JT_row1(1) += nodal_positions(node_loop,1)*basis_derivative_s1(node_loop);
+        JT_row1(2) += nodal_positions(node_loop,2)*basis_derivative_s1(node_loop);
+      }
+
+      //derivative of x,y,z w.r.t t
+      JT_row2(0) = 0;
+      JT_row2(1) = 0;
+      JT_row2(2) = 0;
+      for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+        JT_row2(0) += nodal_positions(node_loop,0)*basis_derivative_s2(node_loop);
+        JT_row2(1) += nodal_positions(node_loop,1)*basis_derivative_s2(node_loop);
+        JT_row2(2) += nodal_positions(node_loop,2)*basis_derivative_s2(node_loop);
+      }
+
+      //derivative of x,y,z w.r.t w
+      JT_row3(0) = 0;
+      JT_row3(1) = 0;
+      JT_row3(2) = 0;
+      for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+        JT_row3(0) += nodal_positions(node_loop,0)*basis_derivative_s3(node_loop);
+        JT_row3(1) += nodal_positions(node_loop,1)*basis_derivative_s3(node_loop);
+        JT_row3(2) += nodal_positions(node_loop,2)*basis_derivative_s3(node_loop);
+        //debug print
+        /*if(myrank==1&&nodal_positions(node_loop,2)*basis_derivative_s3(node_loop)<-10000000){
+        std::cout << " ELEMENT VOLUME JACOBIAN DEBUG ON TASK " << myrank << std::endl;
+        std::cout << node_loop+1 << " " << JT_row3(2) << " "<< nodal_positions(node_loop,2) <<" "<< basis_derivative_s3(node_loop) << std::endl;
+        std::fflush(stdout);
+        }*/
+      }
+    
+    
+    //compute the determinant of the Jacobian
+    Jacobian = JT_row1(0)*(JT_row2(1)*JT_row3(2)-JT_row3(1)*JT_row2(2))-
+               JT_row1(1)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
+               JT_row1(2)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1));
+    if(Jacobian<0) Jacobian = -Jacobian;
+    
+    Element_Volumes(ielem,0) += Jacobian;
+    }
+  }
+
+  //create global vector
+  Global_Element_Volumes = Teuchos::rcp(new MV(element_map, Element_Volumes));
+
+  std::ostream &out = std::cout;
+  Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  if(myrank==0)
+  *fos << "Global Element Volumes:" << std::endl;
+  Global_Element_Volumes->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
 }
 
 /* ----------------------------------------------------------------------

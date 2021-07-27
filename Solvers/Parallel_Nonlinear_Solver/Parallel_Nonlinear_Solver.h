@@ -72,19 +72,24 @@ public:
   void run(int argc, char *argv[]);
 
   void read_mesh(char *MESH);
-
+  
+  //initializes memory for arrays used in the global stiffness matrix assembly
   void init_global();
 
   void assemble();
 
   int solve();
 
+  void compute_element_volumes();
+
   void local_matrix(int ielem, CArray <real_t> &Local_Matrix);
 
   void local_matrix_multiply(int ielem, CArray <real_t> &Local_Matrix);
-
+  
+  //interfaces between user input and creating data structures for bcs
   void generate_bcs();
-
+  
+  //finds the boundary element surfaces in this model
   void Get_Boundary_Patches();
 
   void allocate_state();
@@ -105,7 +110,7 @@ public:
 
   void get_nodal_jacobian();
 
-  void Element_Material_Properties(size_t, real_t &Element_Modulus, real_t &Poisson_Ratio);
+  void Element_Material_Properties(size_t, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density);
 
   void Displacement_Boundary_Conditions();
 
@@ -136,6 +141,7 @@ public:
   //Local FEA data
   size_t nlocal_nodes;
   dual_vec_array dual_node_data; //first three indices of second dim should be positions
+  dual_vec_array dual_node_densities; //topology optimization design variable
   dual_vec_array dual_nodal_forces;
   CArray<elements::elem_types::elem_type> Element_Types;
   CArray<size_t> Nodes_Per_Element_Type;
@@ -147,28 +153,32 @@ public:
   CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Nodal_Results; //result of linear solve; typically displacements and densities
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Stiffness_Matrix_Strides;
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Matrix_Strides;
+  vec_array Element_Volumes;
 
   //Ghost data on this MPI rank
   size_t nghost_nodes;
   CArrayKokkos<GO, Kokkos::LayoutLeft, node_type::device_type> ghost_nodes;
   CArrayKokkos<int, array_layout, device_type, memory_traits> ghost_node_ranks;
-  Teuchos::ArrayView<const GO> ghost_nodes_pass;
-  Teuchos::ArrayView<int> ghost_node_ranks_pass;
 
   //Local FEA data including ghosts
   size_t nall_nodes;
   size_t rnum_elem;
   dual_vec_array dual_all_node_data; //first three indices of second dim should be positions
+  dual_vec_array dual_all_node_densities; //includes ghost data of the topology optimization design variable
 
   //Global FEA data
   size_t num_nodes, num_elem;
   Teuchos::RCP<const Teuchos::Comm<int> > comm;
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map; //map of node indices
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_node_map; //map of node indices with ghosts on each rank
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > element_map; //map of elements owned by each rank
   Teuchos::RCP<MV> node_data_distributed;
   Teuchos::RCP<MV> all_node_data_distributed;
+  Teuchos::RCP<MV> node_densities_distributed;
+  Teuchos::RCP<MV> all_node_densities_distributed;
   Teuchos::RCP<MAT> Global_Stiffness_Matrix;
   Teuchos::RCP<MV> Global_Nodal_Forces;
+  Teuchos::RCP<MV> Global_Element_Volumes;
   Teuchos::RCP<MAT> A;
   Teuchos::RCP<MV> B;
   Teuchos::RCP<MV> X;

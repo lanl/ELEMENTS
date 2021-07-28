@@ -22,9 +22,6 @@ Simulation_Parameters::~Simulation_Parameters(){
 void Simulation_Parameters::input(){
   // ---- time varaibles and cycle info ---- //
 
-  //debug and performance report flags
-  report_runtime_flag = 1;
-
   //simulation spatial dimension
   num_dim = 3;
 
@@ -66,6 +63,12 @@ void Simulation_Parameters::input(){
   //ensight file readin for Isotropical elasticity
 
   num_gauss_points = 2;
+
+  //debug and performance report flags
+  report_runtime_flag = 1;
+
+  //Topology Optimization flags
+  nodal_density_flag = 1;
     
   // Global instructions
   mat_fill[0].volume = region::global;    // fill everywhere

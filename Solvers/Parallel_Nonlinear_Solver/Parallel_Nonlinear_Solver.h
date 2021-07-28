@@ -76,6 +76,8 @@ public:
   //initializes memory for arrays used in the global stiffness matrix assembly
   void init_global();
 
+  void init_design();
+
   void assemble();
 
   int solve();
@@ -154,6 +156,7 @@ public:
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Stiffness_Matrix_Strides;
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Matrix_Strides;
   vec_array Element_Volumes;
+  vec_array Element_Densities;
 
   //Ghost data on this MPI rank
   size_t nghost_nodes;
@@ -178,6 +181,7 @@ public:
   Teuchos::RCP<MV> all_node_densities_distributed;
   Teuchos::RCP<MAT> Global_Stiffness_Matrix;
   Teuchos::RCP<MV> Global_Nodal_Forces;
+  Teuchos::RCP<MV> Global_Element_Densities;
   Teuchos::RCP<MV> Global_Element_Volumes;
   Teuchos::RCP<MAT> A;
   Teuchos::RCP<MV> B;

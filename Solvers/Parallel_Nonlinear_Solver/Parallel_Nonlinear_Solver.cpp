@@ -172,6 +172,9 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     
     //allocate and fill sparse structures needed for global solution
     init_global();
+
+    //initialize and initialize TO design variable storage
+    init_design();
     
     //assemble the global solution (stiffness matrix etc. and nodal forces)
     assemble();
@@ -346,19 +349,12 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 
   //allocate node storage with dual view
   dual_node_data = dual_vec_array("dual_node_data", nlocal_nodes,num_dim);
-  dual_node_densities = dual_vec_array("dual_node_densities", nlocal_nodes, 1);
   dual_nodal_forces = dual_vec_array("dual_nodal_forces", nlocal_nodes*num_dim,1);
 
   //local variable for host view in the dual view
   host_vec_array node_data = dual_node_data.view_host();
-  host_vec_array node_densities = dual_node_densities.view_host();
   //notify that the host view is going to be modified in the file readin
   dual_node_data.modify_host();
-  dual_node_densities.modify_host();
-
-  //initialize densities to 1 for now; in the future there might be an option to read in an initial condition for each node
-  for(int inode = 0; inode < nlocal_nodes; inode++)
-    node_densities(inode,0) = 1;
 
   //old swage method
   //mesh->init_nodes(local_nrows); // add 1 for index starting at 1
@@ -889,7 +885,6 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 
   //synchronize device data
   dual_node_data.sync_device();
-  dual_node_densities.sync_device();
     
   // Create reference element
   ref_elem->init(p_order, num_dim, elem->num_basis());
@@ -932,14 +927,12 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //*fos << std::endl;
   //std::fflush(stdout);
 
-  //create element map for later
+  //create element map
   element_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),rnum_elem,0,comm));
 
   //create distributed multivector of the local node data and all (local + ghost) node storage
   node_data_distributed = Teuchos::rcp(new MV(map, dual_node_data));
   all_node_data_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
-  node_densities_distributed = Teuchos::rcp(new MV(map, dual_node_densities));
-  all_node_densities_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
   
   //debug print
   //std::ostream &out = std::cout;
@@ -969,7 +962,6 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 
   vec_array all_node_data_device = all_node_data_distributed->getLocalView<device_type> (Tpetra::Access::ReadWrite);
   host_vec_array all_node_data_host = all_node_data_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
-
   //allocate node storage with dual view
   dual_all_node_data = dual_vec_array(all_node_data_device, all_node_data_host);
 
@@ -1883,9 +1875,6 @@ void Parallel_Nonlinear_Solver::get_nodal_jacobian(){
 
 
 
-
-
-
 // Output writers
 
 void Parallel_Nonlinear_Solver::vtk_writer(){
@@ -2396,7 +2385,6 @@ void Parallel_Nonlinear_Solver::init_global(){
 
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
-  int num_nodes = mesh->num_nodes();
   Stiffness_Matrix_Strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits> (nlocal_nodes*num_dim, "Stiffness_Matrix_Strides");
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Fill(nall_nodes, "nall_nodes");
   //CArray <int> nodes_in_cell_list_ = mesh->nodes_in_cell_list_;
@@ -2679,6 +2667,76 @@ void Parallel_Nonlinear_Solver::init_global(){
   
 }
 
+/* -----------------------------------------------------------------------------
+   Initialize local views and global vectors needed to describe the design
+-------------------------------------------------------------------------------- */
+
+void Parallel_Nonlinear_Solver::init_design(){
+  //initialize memory for volume storage
+  Element_Densities = vec_array("Element Densities", rnum_elem, 1);
+
+  int num_dim = simparam->num_dim;
+  bool nodal_density_flag = simparam->nodal_density_flag;
+  int num_elems = mesh->num_elems();
+
+  //set densities
+  if(nodal_density_flag){
+    dual_node_densities = dual_vec_array("dual_node_densities", nlocal_nodes, 1);
+    host_vec_array node_densities = dual_node_densities.view_host();
+    //notify that the host view is going to be modified in the file readin
+    dual_node_densities.modify_host();
+
+    //initialize densities to 1 for now; in the future there might be an option to read in an initial condition for each node
+    for(int inode = 0; inode < nlocal_nodes; inode++)
+      node_densities(inode,0) = 1;
+
+    //sync device view
+    dual_node_densities.sync_device();
+    
+    //allocate global vector information
+    node_densities_distributed = Teuchos::rcp(new MV(map, dual_node_densities));
+    all_node_densities_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
+
+    //communicate ghost information to the all vector
+    //create import object using local node indices map and all indices map
+    Tpetra::Import<LO, GO> importer(map, all_node_map);
+
+    //comms to get ghosts
+    all_node_densities_distributed->doImport(*node_densities_distributed, importer, Tpetra::INSERT);
+
+    //debug print
+    //std::ostream &out = std::cout;
+    //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+    //if(myrank==0)
+    //*fos << "Node Densities with Ghosts :" << std::endl;
+    //all_node_data_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+    //*fos << std::endl;
+    //std::fflush(stdout);
+
+    //get view of all node densities (local + ghost) on the device (multivector function forces sync of dual view)
+    vec_array all_node_densities_device = all_node_densities_distributed->getLocalView<device_type> (Tpetra::Access::ReadWrite);
+    host_vec_array all_node_densities_host = all_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+    //allocate node storage with dual view
+    dual_all_node_densities = dual_vec_array(all_node_densities_device, all_node_densities_host);
+  
+  }
+  else{
+    for(int ielem = 0; ielem < rnum_elem; ielem++)
+      Element_Densities(ielem,0) = 1;
+
+    //create global vector
+    Global_Element_Densities = Teuchos::rcp(new MV(element_map, Element_Densities));
+
+    std::ostream &out = std::cout;
+    Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+    if(myrank==0)
+    *fos << "Global Element Densities:" << std::endl;
+    Global_Element_Densities->describe(*fos,Teuchos::VERB_EXTREME);
+    *fos << std::endl;
+  }
+  
+}
+
 /* ----------------------------------------------------------------------
    Assemble the Sparse Stiffness Matrix and force vector
 ------------------------------------------------------------------------- */
@@ -2858,8 +2916,9 @@ void Parallel_Nonlinear_Solver::assemble(){
 ------------------------------------------------------------------------- */
 
 void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density){
-
-  Element_Modulus = simparam->Elastic_Modulus;
+  
+  //relationship between density and stiffness
+  Element_Modulus = density*simparam->Elastic_Modulus;
   Poisson_Ratio = simparam->Poisson_Ratio;
 
 }
@@ -2871,6 +2930,11 @@ void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t
 void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
   //local variable for host view in the dual view
   host_vec_array all_node_data = dual_all_node_data.view_device();
+  //local variable for host view of densities from the dual view
+  bool nodal_density_flag = simparam->nodal_density_flag;
+  host_vec_array all_node_densities;
+  if(nodal_density_flag)
+  all_node_densities = dual_all_node_densities.view_device();
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int nodes_per_elem = mesh->num_nodes_in_elem();
@@ -2920,6 +2984,7 @@ void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_M
     nodal_positions(node_loop,0) = all_node_data(local_node_id,0);
     nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
     nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
+    if(nodal_density_flag) nodal_density(node_loop) = all_node_densities(local_node_id,0);
   }
 
   //initialize local stiffness matrix storage
@@ -2956,7 +3021,7 @@ void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_M
     }
     //default constant element density
     else{
-      current_density = Element_Densities(ielem);
+      current_density = Element_Densities(ielem,0);
     }
 
     //look up element material properties as a function of density at the point
@@ -3246,6 +3311,11 @@ void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_M
 void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t> &Local_Matrix){
   //local variable for host view in the dual view
   host_vec_array all_node_data = dual_all_node_data.view_device();
+  //local variable for host view of densities from the dual view
+  bool nodal_density_flag = simparam->nodal_density_flag;
+  host_vec_array all_node_densities;
+  if(nodal_density_flag)
+  all_node_densities = dual_all_node_densities.view_device();
   int num_dim = simparam->num_dim;
   int nodes_per_elem = elem->num_basis();
   int num_gauss_points = simparam->num_gauss_points;
@@ -3281,6 +3351,7 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
   ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
   CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
   CArray<real_t> nodal_density(elem->num_basis());
+
   size_t Brows;
   if(num_dim==2) Brows = 3;
   if(num_dim==3) Brows = 6;
@@ -3302,7 +3373,7 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
     nodal_positions(node_loop,0) = all_node_data(local_node_id,0);
     nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
     nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
-    if(nodal_density_flag) nodal_density(node_loop) = Nodal_Densities(local_node_id);
+    if(nodal_density_flag) nodal_density(node_loop) = all_node_densities(local_node_id,0);
     /*
     if(myrank==1&&nodal_positions(node_loop,2)>10000000){
       std::cout << " LOCAL MATRIX DEBUG ON TASK " << myrank << std::endl;
@@ -3394,7 +3465,7 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
     }
     //default constant element density
     else{
-      current_density = Element_Density(ielem);
+      current_density = Element_Densities(ielem,0);
     }
 
     //look up element material properties at this point as a function of density

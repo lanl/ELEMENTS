@@ -28,206 +28,229 @@
 #include "ROL_Bounds.hpp"
 #include "ROL_OptimizationSolver.hpp"
 #include "ROL_ParameterList.hpp"
+#include "Parallel_Nonlinear_Solver.h"
 
-template<class Real>
-class MassObjective_TopOpt : public ROL::Objective_SimOpt<Real> {
-
-  typedef std::vector<Real>    vector;
-  typedef ROL::Vector<Real>    V;
-  typedef ROL::StdVector<Real> SV;
+class MassObjective_TopOpt : public ROL::Objective_SimOpt<real_t> {
   
-  typedef typename vector::size_type uint;  
+  typedef Tpetra::Map<>::local_ordinal_type LO;
+  typedef Tpetra::Map<>::global_ordinal_type GO;
+  typedef Tpetra::Map<>::node_type Node;
+  typedef Tpetra::Map<LO, GO, Node> Map;
+  typedef Tpetra::MultiVector<real_t, LO, GO, Node> MV;
+  typedef ROL::Vector<real_t> V;
+  typedef ROL::TpetraMultiVector<real_t,LO,GO,Node> ROL_MV;  
 
 private:
-  ROL::Ptr<FEM<Real> > FEM_;
 
-  //forward declare nonlinear parallel solver object to use linear system solve method in objective
+  ROL::Ptr<Parallel_Nonlinear_Solver> FEM_;
+  ROL::Ptr<MV> Element_Masses;
+  ROL::Ptr<ROL_MV> ROL_Element_Masses;
 
   bool useLC_; // Use linear form of compliance.  Otherwise use quadratic form.
 
-  ROL::Ptr<const vector> getVector( const V& x ) {
-    return dynamic_cast<const SV&>(x).getVector();
+  ROL::Ptr<const MV> getVector( const V& x ) {
+    return dynamic_cast<const ROL_MV&>(x).getVector();
   }
 
-  ROL::Ptr<vector> getVector( V& x ) {
-    return dynamic_cast<SV&>(x).getVector();
+  ROL::Ptr<MV> getVector( V& x ) {
+    return dynamic_cast<ROL_MV&>(x).getVector();
   }
 
 public:
-  bool constant_element_density;
+  bool nodal_density_flag_;
 
-  Objective_TopOpt(ROL::Ptr<FEM<Real> > FEM) 
-    : FEM_(FEM), useLC_(true) {}
+  MassObjective_TopOpt(ROL::Ptr<Parallel_Nonlinear_Solver> FEM, bool nodal_density_flag) 
+    : FEM_(FEM), useLC_(true) {
+      nodal_density_flag_ = nodal_density_flag;
+      Element_Masses = ROL::makePtr<MV>(FEM_->element_map,1,true);
+      ROL_Element_Masses = ROL::makePtr<ROL_MV>(Element_Masses);
+  }
 
-  Real value( const ROL::Vector<Real> &u, const ROL::Vector<Real> &z, Real &tol ) {
-    ROL::Ptr<const vector> up = getVector(u);
-    ROL::Ptr<const vector> zp = getVector(z);
- 
-    // Apply Jacobian
-    vector KU(up->size(),0.0);
-    if ( useLC_ ) {
-      FEM_->build_force(KU);
+  real_t value( const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+    ROL::Ptr<const MV> up = getVector(u);
+    ROL::Ptr<const MV> zp = getVector(z);
+    real_t c = 0.0;
+
+    host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+   
+    //local data count
+    size_t nlocal_densities = design_densities.extent(0);
+
+    //set per element mass
+    if(nodal_density_flag_){
+
     }
-    else {
-      vector U;
-      U.assign(up->begin(),up->end());
-      FEM_->set_boundary_conditions(U);
-      FEM_->apply_jacobian(KU,U,*zp);
+    else{
+      ROL::Ptr<ROL_MV> ROL_Global_Element_Volumes = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Volumes);
     }
-    // Compliance
-    Real c = 0.0;
-    for (uint i=0; i<up->size(); i++) {
-      c += (*up)[i]*KU[i];
-    }
+
+    //sum per element results across all MPI ranks
+    Elementwise::ReductionSum<Real> sumreduc;
+    c = ROL_Element_Masses->reduce(sumreduc);
+
     return c;
   }
 
-  void gradient_1( ROL::Vector<Real> &g, const ROL::Vector<Real> &u, const ROL::Vector<Real> &z, Real &tol ) {
+  void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+    /*
     // Unwrap g
-    ROL::Ptr<vector> gp = getVector(g);
+    ROL::Ptr<MV> gp = getVector(g);
     // Unwrap x
-    ROL::Ptr<const vector> up = getVector(u);
-    ROL::Ptr<const vector> zp = getVector(z);
+    ROL::Ptr<const MV> up = getVector(u);
+    ROL::Ptr<const MV> zp = getVector(z);
 
     // Apply Jacobian
-    vector KU(up->size(),0.0);
+    MV KU(up->size(),0.0);
     if ( useLC_ ) {
       FEM_->build_force(KU);
       // Apply jacobian to u
-      for (uint i=0; i<up->size(); i++) {
+      for (size_t i=0; i<up->size(); i++) {
         (*gp)[i] = KU[i];
       }
     }
     else {
-      vector U;
+      MV U;
       U.assign(up->begin(),up->end());
       FEM_->set_boundary_conditions(U);
       FEM_->apply_jacobian(KU,U,*zp);
       // Apply jacobian to u
-      for (uint i=0; i<up->size(); i++) {
+      for (size_t i=0; i<up->size(); i++) {
         (*gp)[i] = 2.0*KU[i];
       }
     }
+    */
   }
 
-  void gradient_2( ROL::Vector<Real> &g, const ROL::Vector<Real> &u, const ROL::Vector<Real> &z, Real &tol ) {
+  void gradient_2( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+    /*
     // Unwrap g
-    ROL::Ptr<vector> gp = getVector(g);
+    ROL::Ptr<MV> gp = getVector(g);
 
     // Unwrap x
-    ROL::Ptr<const vector> up = getVector(u);
-    ROL::Ptr<const vector> zp = getVector(z);
+    ROL::Ptr<const MV> up = getVector(u);
+    ROL::Ptr<const MV> zp = getVector(z);
 
     // Apply Jacobian
     g.zero();
     if ( !useLC_ ) {
-      vector U;
+      MV U;
       U.assign(up->begin(),up->end());
       FEM_->set_boundary_conditions(U);
       FEM_->apply_adjoint_jacobian(*gp,U,*zp,U);
     }
+    */
   }
-
-  void hessVec_11( ROL::Vector<Real> &hv, const ROL::Vector<Real> &v, 
-                   const ROL::Vector<Real> &u, const ROL::Vector<Real> &z, Real &tol ) {
-    ROL::Ptr<vector> hvp = getVector(hv);
+  /*
+  void hessVec_11( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 
+                   const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+    ROL::Ptr<MV> hvp = getVector(hv);
 
     // Unwrap v
-    ROL::Ptr<const vector> vp = getVector(v);
+    ROL::Ptr<const MV> vp = getVector(v);
 
     // Unwrap x
-    ROL::Ptr<const vector> up = getVector(u);
-    ROL::Ptr<const vector> zp = getVector(z);
+    ROL::Ptr<const MV> up = getVector(u);
+    ROL::Ptr<const MV> zp = getVector(z);
 
     // Apply Jacobian
     hv.zero();
     if ( !useLC_ ) {
-      vector KV(vp->size(),0.0);
-      vector V;
+      MV KV(vp->size(),0.0);
+      MV V;
       V.assign(vp->begin(),vp->end());
       FEM_->set_boundary_conditions(V);
       FEM_->apply_jacobian(KV,V,*zp);
-      for (uint i=0; i<vp->size(); i++) {
+      for (size_t i=0; i<vp->size(); i++) {
         (*hvp)[i] = 2.0*KV[i];
       }
     }
+    
   }
 
-  void hessVec_12( ROL::Vector<Real> &hv, const ROL::Vector<Real> &v, 
-                   const ROL::Vector<Real> &u, const ROL::Vector<Real> &z, Real &tol ) {
+  void hessVec_12( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 
+                   const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+    
     // Unwrap hv
-    ROL::Ptr<vector> hvp = getVector(hv);
+    ROL::Ptr<MV> hvp = getVector(hv);
 
     // Unwrap v
-    ROL::Ptr<const vector> vp = getVector(v);
+    ROL::Ptr<const MV> vp = getVector(v);
 
     // Unwrap x
-    ROL::Ptr<const vector> up = getVector(u);
-    ROL::Ptr<const vector> zp = getVector(z);
+    ROL::Ptr<const MV> up = getVector(u);
+    ROL::Ptr<const MV> zp = getVector(z);
 
     // Apply Jacobian
     hv.zero();
     if ( !useLC_ ) {
-      vector KU(up->size(),0.0);
-      vector U;
+      MV KU(up->size(),0.0);
+      MV U;
       U.assign(up->begin(),up->end());
       FEM_->set_boundary_conditions(U);
       FEM_->apply_jacobian(KU,U,*zp,*vp);
-      for (uint i=0; i<up->size(); i++) {
+      for (size_t i=0; i<up->size(); i++) {
         (*hvp)[i] = 2.0*KU[i];
       }
     }
+    
   }
 
-  void hessVec_21( ROL::Vector<Real> &hv, const ROL::Vector<Real> &v, 
-                   const ROL::Vector<Real> &u, const ROL::Vector<Real> &z, Real &tol ) {
+  void hessVec_21( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 
+                   const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+                     
     // Unwrap g
-    ROL::Ptr<vector> hvp = getVector(hv);
+    ROL::Ptr<MV> hvp = getVector(hv);
 
     // Unwrap v
-    ROL::Ptr<const vector> vp = getVector(v);
+    ROL::Ptr<const MV> vp = getVector(v);
 
     // Unwrap x
-    ROL::Ptr<const vector> up = getVector(u);
-    ROL::Ptr<const vector> zp = getVector(z);
+    ROL::Ptr<const MV> up = getVector(u);
+    ROL::Ptr<const MV> zp = getVector(z);
  
     // Apply Jacobian
     hv.zero();
     if ( !useLC_ ) {
-      std::vector<Real> U;
+      std::MV<real_t> U;
       U.assign(up->begin(),up->end());
       FEM_->set_boundary_conditions(U);
-      std::vector<Real> V;
+      std::MV<real_t> V;
       V.assign(vp->begin(),vp->end());
       FEM_->set_boundary_conditions(V);
       FEM_->apply_adjoint_jacobian(*hvp,U,*zp,V);
-      for (uint i=0; i<hvp->size(); i++) {
+      for (size_t i=0; i<hvp->size(); i++) {
         (*hvp)[i] *= 2.0;
       }
     }
+    
   }
 
-  void hessVec_22( ROL::Vector<Real> &hv, const ROL::Vector<Real> &v, 
-                   const ROL::Vector<Real> &u, const ROL::Vector<Real> &z, Real &tol ) {
-    ROL::Ptr<vector> hvp = getVector(hv);
+  void hessVec_22( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 
+                   const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+                     
+    ROL::Ptr<MV> hvp = getVector(hv);
 
     // Unwrap v
-    ROL::Ptr<const vector> vp = getVector(v);
+    ROL::Ptr<const MV> vp = getVector(v);
 
     // Unwrap x
-    ROL::Ptr<const vector> up = getVector(u);
-    ROL::Ptr<const vector> zp = getVector(z);
+    ROL::Ptr<const MV> up = getVector(u);
+    ROL::Ptr<const MV> zp = getVector(z);
     
     // Apply Jacobian
     hv.zero();
     if ( !useLC_ ) {
-      vector U;
+      MV U;
       U.assign(up->begin(),up->end());
       FEM_->set_boundary_conditions(U);
-      vector V;
+      MV V;
       V.assign(vp->begin(),vp->end());
       FEM_->set_boundary_conditions(V);
       FEM_->apply_adjoint_jacobian(*hvp,U,*zp,*vp,U);
     }
+    
   }
+  */
 };
+
+#endif // end header guard

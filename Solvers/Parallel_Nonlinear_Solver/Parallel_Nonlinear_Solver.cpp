@@ -37,7 +37,6 @@ num_cells in element = (p_order*2)^3
 
 */
 
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -95,6 +94,9 @@ num_cells in element = (p_order*2)^3
 #include "ROL_StdBoundConstraint.hpp"
 #include "ROL_ParameterList.hpp"
 #include <ROL_TpetraMultiVector.hpp>
+
+//Objective Functions and Constraint Functions
+#include "Mass_Objective.h"
 
 //debug and performance includes
 #include <sys/time.h>

@@ -23,11 +23,12 @@
 #include "Tpetra_Details_DefaultTypes.hpp"
 
 #include "ROL_Types.hpp"
-#include "ROL_StdVector.hpp"
+#include <ROL_TpetraMultiVector.hpp>
 #include "ROL_Reduced_Objective_SimOpt.hpp"
 #include "ROL_Bounds.hpp"
 #include "ROL_OptimizationSolver.hpp"
 #include "ROL_ParameterList.hpp"
+#include "ROL_Elementwise_Reduce.hpp"
 #include "Parallel_Nonlinear_Solver.h"
 
 class MassObjective_TopOpt : public ROL::Objective_SimOpt<real_t> {
@@ -38,7 +39,24 @@ class MassObjective_TopOpt : public ROL::Objective_SimOpt<real_t> {
   typedef Tpetra::Map<LO, GO, Node> Map;
   typedef Tpetra::MultiVector<real_t, LO, GO, Node> MV;
   typedef ROL::Vector<real_t> V;
-  typedef ROL::TpetraMultiVector<real_t,LO,GO,Node> ROL_MV;  
+  typedef ROL::TpetraMultiVector<real_t,LO,GO,Node> ROL_MV;
+  
+  using traits = Kokkos::ViewTraits<LO*, Kokkos::LayoutLeft, void, void>;
+  using array_layout    = typename traits::array_layout;
+  using execution_space = typename traits::execution_space;
+  using device_type     = typename traits::device_type;
+  using memory_traits   = typename traits::memory_traits;
+  using global_size_t = Tpetra::global_size_t;
+
+  typedef Kokkos::View<real_t*, Kokkos::LayoutRight, device_type, memory_traits> values_array;
+  typedef Kokkos::View<GO*, array_layout, device_type, memory_traits> global_indices_array;
+  typedef Kokkos::View<LO*, array_layout, device_type, memory_traits> indices_array;
+  
+  //typedef Kokkos::DualView<real_t**, Kokkos::LayoutLeft, device_type>::t_dev vec_array;
+  typedef MV::dual_view_type::t_dev vec_array;
+  typedef MV::dual_view_type::t_host host_vec_array;
+  typedef Kokkos::View<const real_t**, array_layout, HostSpace, memory_traits> const_host_vec_array;
+  typedef MV::dual_view_type dual_vec_array;
 
 private:
 
@@ -63,7 +81,6 @@ public:
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
       Element_Masses = ROL::makePtr<MV>(FEM_->element_map,1,true);
-      ROL_Element_Masses = ROL::makePtr<ROL_MV>(Element_Masses);
   }
 
   real_t value( const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
@@ -71,21 +88,13 @@ public:
     ROL::Ptr<const MV> zp = getVector(z);
     real_t c = 0.0;
 
-    host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
-   
-    //local data count
-    size_t nlocal_densities = design_densities.extent(0);
+    const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
-    //set per element mass
-    if(nodal_density_flag_){
-
-    }
-    else{
-      ROL::Ptr<ROL_MV> ROL_Global_Element_Volumes = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Volumes);
-    }
+    FEM_->compute_element_masses(design_densities);
+    ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
 
     //sum per element results across all MPI ranks
-    Elementwise::ReductionSum<Real> sumreduc;
+    ROL::Elementwise::ReductionSum<real_t> sumreduc;
     c = ROL_Element_Masses->reduce(sumreduc);
 
     return c;

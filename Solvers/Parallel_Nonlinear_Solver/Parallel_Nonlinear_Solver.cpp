@@ -295,6 +295,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   char ch;
   int num_dim = simparam->num_dim;
   int p_order = simparam->p_order;
+  int local_node_index, global_node_index, current_column_index;
   std::string skip_line, read_line, substring;
   std::stringstream line_parse;
   CArray <char> read_buffer;
@@ -621,15 +622,18 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //calculate buffer iterations to read number of lines
   buffer_iterations = num_elem/BUFFER_LINES;
   int assign_flag;
+
   //dynamic buffer used to store elements before we know how many this rank needs
   std::vector<size_t> element_temp(BUFFER_LINES*elem_words_per_line);
-  if(num_elem%BUFFER_LINES!=0) buffer_iterations++;
+  std::vector<size_t> global_indices_temp(BUFFER_LINES);
+  size_t buffer_max = BUFFER_LINES*elem_words_per_line;
+  size_t indices_buffer_max = BUFFER_LINES;
 
+  if(num_elem%BUFFER_LINES!=0) buffer_iterations++;
   read_index_start = 0;
   //std::cout << "ELEMENT BUFFER ITERATIONS: " << buffer_iterations << std::endl;
   rnum_elem = 0;
   for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
-    
     //pack buffer on rank 0
     if(myrank==0&&buffer_iteration<buffer_iterations-1){
       for (buffer_loop = 0; buffer_loop < BUFFER_LINES; buffer_loop++) {
@@ -689,12 +693,21 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         }
       }
 
-      if(assign_flag)
-      for(int inode = 0; inode < elem_words_per_line; inode++){
-        if((rnum_elem-1)*elem_words_per_line + inode>=BUFFER_LINES*elem_words_per_line) 
-          element_temp.resize((rnum_elem-1)*elem_words_per_line + inode + BUFFER_LINES*elem_words_per_line);
-        element_temp[(rnum_elem-1)*elem_words_per_line + inode] = node_store(inode); 
-        //std::cout << "VECTOR STORAGE FOR ELEM " << rnum_elem << " ON TASK " << myrank << " NODE " << inode+1 << " IS " << node_store(inode) + 1 << std::endl;
+      if(assign_flag){
+        for(int inode = 0; inode < elem_words_per_line; inode++){
+          if((rnum_elem-1)*elem_words_per_line + inode>=buffer_max){ 
+            element_temp.resize((rnum_elem-1)*elem_words_per_line + inode + BUFFER_LINES*elem_words_per_line);
+            buffer_max += (rnum_elem-1)*elem_words_per_line + inode + BUFFER_LINES*elem_words_per_line;
+          }
+          element_temp[(rnum_elem-1)*elem_words_per_line + inode] = node_store(inode); 
+          //std::cout << "VECTOR STORAGE FOR ELEM " << rnum_elem << " ON TASK " << myrank << " NODE " << inode+1 << " IS " << node_store(inode) + 1 << std::endl;
+        }
+        //assign global element id to temporary list
+        if(rnum_elem-1>=indices_buffer_max){ 
+          global_indices_temp.resize(indices_buffer_max + BUFFER_LINES);
+          indices_buffer_max = rnum_elem-1 + BUFFER_LINES;
+        }
+        global_indices_temp[rnum_elem-1] = elem_gid;
       }
     }
     read_index_start+=BUFFER_LINES;
@@ -709,9 +722,19 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
     for(int inode = 0; inode < elem_words_per_line; inode++)
       mesh->nodes_in_cell(ielem, inode) = element_temp[ielem*elem_words_per_line + inode];
 
-  //delete temporary element connectivity
-  //element_temp.~vector();
+  //view storage for all local elements connected to local nodes on this rank
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> All_Element_Global_Indices(rnum_elem);
+
+  //copy temporary global indices storage to view storage
+  for(int ielem = 0; ielem < rnum_elem; ielem++)
+    All_Element_Global_Indices(ielem) = global_indices_temp[ielem];
+
+  //delete temporary element connectivity and index storage
   std::vector<size_t>().swap(element_temp);
+  std::vector<size_t>().swap(global_indices_temp);
+  
+  //construct overlapping element map (since different ranks can own the same elements due to the local node map)
+  all_element_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),All_Element_Global_Indices.get_kokkos_view(),0,comm));
 
   //debug print element edof
   /*
@@ -864,10 +887,6 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
     //for(int i = 0; i < nghost_nodes; i++)
       //std::cout << "{" << i + 1 << "," << ghost_nodes(i) + 1 << "}" << std::endl;
 
-    //create map object; note that kokkos view members in our map won't lose contents when local object is destroyed
-    //since kokkos views use a reference counting mechanism to deallocate contents
-    global2local_map = global_to_local_table_host_type(ghost_nodes.get_kokkos_view());
-
     //find which mpi rank each ghost node belongs to and store the information in a CArray
     //allocate Teuchos Views since they are the only input available at the moment in the map definitions
     Teuchos::ArrayView<const GO> ghost_nodes_pass(ghost_nodes.get_kokkos_view().data(), nghost_nodes);
@@ -884,6 +903,9 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   // Close mesh input file
   if(myrank==0)
   in->close();
+
+  // create a Map for ghost node indices
+  ghost_node_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),ghost_nodes.get_kokkos_view(),0,comm));
 
   //synchronize device data
   dual_node_data.sync_device();
@@ -909,6 +931,55 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   // create a Map for all the node indices (ghost + local)
   all_node_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),all_node_indices.get_kokkos_view(),0,comm));
 
+  //remove elements from the local set so that each rank has a unique set of global ids
+  
+  //local elements belonging to the non-overlapping element distribution to each rank with buffer
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> Initial_Element_Global_Indices(rnum_elem);
+  size_t nonoverlapping_count = 0;
+  int my_element_flag;
+  //loop through local element set
+  if(num_dim == 2)
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
+    element_select->choose_2Delem_type(Element_Types(ielem), elem2D);
+    nodes_per_element = elem2D->num_nodes();
+    my_element_flag = 1;
+    for (int lnode = 0; lnode < nodes_per_element; lnode++){
+      global_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
+      if(ghost_node_map->isNodeGlobalElement(global_node_index)){
+        local_node_index = ghost_node_map->getLocalElement(global_node_index);
+        if(ghost_node_ranks(local_node_index) < myrank) my_element_flag = 0;
+      }
+    }
+    if(my_element_flag){
+      Initial_Element_Global_Indices(nonoverlapping_count++) = all_element_map->getGlobalElement(ielem);
+    }
+  }
+
+  if(num_dim == 3)
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
+    element_select->choose_3Delem_type(Element_Types(ielem), elem);
+    nodes_per_element = elem->num_nodes();
+    my_element_flag = 1;
+    for (int lnode = 0; lnode < nodes_per_element; lnode++){
+      global_node_index = mesh->nodes_in_cell_list_(ielem, lnode);
+      if(ghost_node_map->isNodeGlobalElement(global_node_index)){
+        local_node_index = ghost_node_map->getLocalElement(global_node_index);
+        if(ghost_node_ranks(local_node_index) < myrank) my_element_flag = 0;
+      }
+    }
+    if(my_element_flag){
+      Initial_Element_Global_Indices(nonoverlapping_count++) = all_element_map->getGlobalElement(ielem);
+    }
+  }
+
+  //copy over from buffer to compressed storage
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> Element_Global_Indices(nonoverlapping_count);
+  for(int ibuffer = 0; ibuffer < nonoverlapping_count; ibuffer++)
+  Element_Global_Indices(ibuffer) = Initial_Element_Global_Indices(ibuffer);
+
+  //create nonoverlapping element map
+  element_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),Element_Global_Indices.get_kokkos_view(),0,comm));
+
   //construct dof map that follows from the all_node map (used for distributed matrix and vector objects later)
   CArrayKokkos<GO, array_layout, device_type, memory_traits> all_dof_indices(nall_nodes*num_dim, "all_dof_indices");
   for(int i = 0; i < nall_nodes; i++){
@@ -928,9 +999,6 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //all_node_map->describe(*fos,Teuchos::VERB_EXTREME);
   //*fos << std::endl;
   //std::fflush(stdout);
-
-  //create element map
-  element_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),rnum_elem,0,comm));
 
   //create distributed multivector of the local node data and all (local + ghost) node storage
   node_data_distributed = Teuchos::rcp(new MV(map, dual_node_data));
@@ -2727,7 +2795,7 @@ void Parallel_Nonlinear_Solver::init_design(){
       Element_Densities(ielem,0) = 1;
 
     //create global vector
-    Global_Element_Densities = Teuchos::rcp(new MV(element_map, Element_Densities));
+    Global_Element_Densities = Teuchos::rcp(new MV(all_element_map, Element_Densities));
 
     std::ostream &out = std::cout;
     Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
@@ -4039,55 +4107,60 @@ void Parallel_Nonlinear_Solver::Force_Vector_Construct(){
 }
 
 /* ----------------------------------------------------------------------
-   Compute the initial volume of each element; estimated with quadrature
+   Compute the mass of each element; estimated with quadrature
 ------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::compute_element_volumes(){
+void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array design_densities){
+  //local number of uniquely assigned elements
+  size_t nonoverlap_nelements = element_map->getNodeNumElements();
   //initialize memory for volume storage
-  Element_Volumes = vec_array("Element Volumes", rnum_elem, 1);
+  vec_array Element_Masses("Element Masses", nonoverlap_nelements, 1);
+  //local variable for host view in the dual view
+  host_vec_array all_node_data = dual_all_node_data.view_device();
+  int num_dim = simparam->num_dim;
+  bool nodal_density_flag = simparam->nodal_density_flag;
+  int nodes_per_elem = elem->num_basis();
+  int num_gauss_points = simparam->num_gauss_points;
+  int z_quad,y_quad,x_quad, direct_product_count;
+  size_t local_node_id;
+  LO ielem;
+  GO global_element_index;
+
+  real_t Jacobian;
+  CArray<real_t> legendre_nodes_1D(num_gauss_points);
+  CArray<real_t> legendre_weights_1D(num_gauss_points);
+  real_t pointer_quad_coordinate[num_dim];
+  real_t pointer_quad_coordinate_weight[num_dim];
+  real_t pointer_interpolated_point[num_dim];
+  real_t pointer_JT_row1[num_dim];
+  real_t pointer_JT_row2[num_dim];
+  real_t pointer_JT_row3[num_dim];
+  ViewCArray<real_t> quad_coordinate(pointer_quad_coordinate,num_dim);
+  ViewCArray<real_t> quad_coordinate_weight(pointer_quad_coordinate_weight,num_dim);
+  ViewCArray<real_t> interpolated_point(pointer_interpolated_point,num_dim);
+  ViewCArray<real_t> JT_row1(pointer_JT_row1,num_dim);
+  ViewCArray<real_t> JT_row2(pointer_JT_row2,num_dim);
+  ViewCArray<real_t> JT_row3(pointer_JT_row3,num_dim);
+
+  real_t pointer_basis_values[elem->num_basis()];
+  real_t pointer_basis_derivative_s1[elem->num_basis()];
+  real_t pointer_basis_derivative_s2[elem->num_basis()];
+  real_t pointer_basis_derivative_s3[elem->num_basis()];
+  ViewCArray<real_t> basis_values(pointer_basis_values,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s1(pointer_basis_derivative_s1,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
+  CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
+
+  //initialize weights
+  elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
+  elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
 
   //loop over elements and use quadrature rule to compute volume from Jacobian determinant
-  for(int ielem = 0; ielem < rnum_elem; ielem++){
-    //local variable for host view in the dual view
-    host_vec_array all_node_data = dual_all_node_data.view_device();
-    int num_dim = simparam->num_dim;
-    int nodes_per_elem = elem->num_basis();
-    int num_gauss_points = simparam->num_gauss_points;
-    int z_quad,y_quad,x_quad, direct_product_count;
-    size_t local_node_id;
-
-    real_t Elastic_Constant, Shear_Term, Pressure_Term, matrix_term;
-    real_t matrix_subterm1, matrix_subterm2, matrix_subterm3, Jacobian;
-    real_t Element_Modulus, Poisson_Ratio;
-    CArray<real_t> legendre_nodes_1D(num_gauss_points);
-    CArray<real_t> legendre_weights_1D(num_gauss_points);
-    real_t pointer_quad_coordinate[num_dim];
-    real_t pointer_quad_coordinate_weight[num_dim];
-    real_t pointer_interpolated_point[num_dim];
-    real_t pointer_JT_row1[num_dim];
-    real_t pointer_JT_row2[num_dim];
-    real_t pointer_JT_row3[num_dim];
-    ViewCArray<real_t> quad_coordinate(pointer_quad_coordinate,num_dim);
-    ViewCArray<real_t> quad_coordinate_weight(pointer_quad_coordinate_weight,num_dim);
-    ViewCArray<real_t> interpolated_point(pointer_interpolated_point,num_dim);
-    ViewCArray<real_t> JT_row1(pointer_JT_row1,num_dim);
-    ViewCArray<real_t> JT_row2(pointer_JT_row2,num_dim);
-    ViewCArray<real_t> JT_row3(pointer_JT_row3,num_dim);
-
-    real_t pointer_basis_values[elem->num_basis()];
-    real_t pointer_basis_derivative_s1[elem->num_basis()];
-    real_t pointer_basis_derivative_s2[elem->num_basis()];
-    real_t pointer_basis_derivative_s3[elem->num_basis()];
-    ViewCArray<real_t> basis_values(pointer_basis_values,elem->num_basis());
-    ViewCArray<real_t> basis_derivative_s1(pointer_basis_derivative_s1,elem->num_basis());
-    ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,elem->num_basis());
-    ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
-    CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
-
-    //initialize weights
-    elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
-    elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
-
+  for(int nonoverlapping_ielem = 0; nonoverlapping_ielem < rnum_elem; nonoverlapping_ielem++){
+    global_element_index = element_map->getGlobalElement(nonoverlapping_ielem);
+    ielem = all_element_map->getLocalElement(global_element_index);
+    if(nodal_density_flag){
     //acquire set of nodes for this local element
     for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
       local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
@@ -4105,7 +4178,174 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
     }
     
     //initialize element volume
-    Element_Volumes(ielem,0) = 0;
+    Element_Masses(nonoverlapping_ielem,0) = 0;
+    
+    if(Element_Types(ielem)==elements::elem_types::Hex8){
+      direct_product_count = std::pow(num_gauss_points,num_dim);
+    }
+  
+    //loop over quadrature points
+    for(int iquad=0; iquad < direct_product_count; iquad++){
+
+      //set current quadrature point
+      if(num_dim==3) z_quad = iquad/(num_gauss_points*num_gauss_points);
+      y_quad = (iquad % (num_gauss_points*num_gauss_points))/num_gauss_points;
+      x_quad = iquad % num_gauss_points;
+      quad_coordinate(0) = legendre_nodes_1D(x_quad);
+      quad_coordinate(1) = legendre_nodes_1D(y_quad);
+      if(num_dim==3)
+      quad_coordinate(2) = legendre_nodes_1D(z_quad);
+
+      //set current quadrature weight
+      quad_coordinate_weight(0) = legendre_weights_1D(x_quad);
+      quad_coordinate_weight(1) = legendre_weights_1D(y_quad);
+      if(num_dim==3)
+      quad_coordinate_weight(2) = legendre_weights_1D(z_quad);
+
+      //compute shape functions at this point for the element type
+      elem->basis(basis_values,quad_coordinate);
+
+      //compute all the necessary coordinates and derivatives at this point
+
+      //compute shape function derivatives
+      elem->partial_xi_basis(basis_derivative_s1,quad_coordinate);
+      elem->partial_eta_basis(basis_derivative_s2,quad_coordinate);
+      elem->partial_mu_basis(basis_derivative_s3,quad_coordinate);
+
+      //compute derivatives of x,y,z w.r.t the s,t,w isoparametric space needed by JT (Transpose of the Jacobian)
+      //derivative of x,y,z w.r.t s
+      JT_row1(0) = 0;
+      JT_row1(1) = 0;
+      JT_row1(2) = 0;
+      for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+        JT_row1(0) += nodal_positions(node_loop,0)*basis_derivative_s1(node_loop);
+        JT_row1(1) += nodal_positions(node_loop,1)*basis_derivative_s1(node_loop);
+        JT_row1(2) += nodal_positions(node_loop,2)*basis_derivative_s1(node_loop);
+      }
+
+      //derivative of x,y,z w.r.t t
+      JT_row2(0) = 0;
+      JT_row2(1) = 0;
+      JT_row2(2) = 0;
+      for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+        JT_row2(0) += nodal_positions(node_loop,0)*basis_derivative_s2(node_loop);
+        JT_row2(1) += nodal_positions(node_loop,1)*basis_derivative_s2(node_loop);
+        JT_row2(2) += nodal_positions(node_loop,2)*basis_derivative_s2(node_loop);
+      }
+
+      //derivative of x,y,z w.r.t w
+      JT_row3(0) = 0;
+      JT_row3(1) = 0;
+      JT_row3(2) = 0;
+      for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+        JT_row3(0) += nodal_positions(node_loop,0)*basis_derivative_s3(node_loop);
+        JT_row3(1) += nodal_positions(node_loop,1)*basis_derivative_s3(node_loop);
+        JT_row3(2) += nodal_positions(node_loop,2)*basis_derivative_s3(node_loop);
+        //debug print
+        /*if(myrank==1&&nodal_positions(node_loop,2)*basis_derivative_s3(node_loop)<-10000000){
+        std::cout << " ELEMENT VOLUME JACOBIAN DEBUG ON TASK " << myrank << std::endl;
+        std::cout << node_loop+1 << " " << JT_row3(2) << " "<< nodal_positions(node_loop,2) <<" "<< basis_derivative_s3(node_loop) << std::endl;
+        std::fflush(stdout);
+        }*/
+      }
+    
+    
+      //compute the determinant of the Jacobian
+      Jacobian = JT_row1(0)*(JT_row2(1)*JT_row3(2)-JT_row3(1)*JT_row2(2))-
+                 JT_row1(1)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
+                 JT_row1(2)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1));
+      if(Jacobian<0) Jacobian = -Jacobian;
+    
+      Element_Masses(nonoverlapping_ielem,0) += Jacobian;
+    }
+    }
+    else{
+      Element_Masses(nonoverlapping_ielem,0) = Element_Volumes(nonoverlapping_ielem,0)*design_densities(nonoverlapping_ielem,0);
+    }
+  }
+
+  //create global vector
+  Global_Element_Masses = Teuchos::rcp(new MV(element_map, Element_Masses));
+
+  std::ostream &out = std::cout;
+  Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  if(myrank==0)
+  *fos << "Global Element Masses:" << std::endl;
+  Global_Element_Masses->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+}
+
+/* ----------------------------------------------------------------------
+   Compute the volume of each element; estimated with quadrature
+------------------------------------------------------------------------- */
+
+void Parallel_Nonlinear_Solver::compute_element_volumes(){
+  //local number of uniquely assigned elements
+  size_t nonoverlap_nelements = element_map->getNodeNumElements();
+  //initialize memory for volume storage
+  Element_Volumes = vec_array("Element Volumes", nonoverlap_nelements, 1);
+  //local variable for host view in the dual view
+  host_vec_array all_node_data = dual_all_node_data.view_device();
+  int num_dim = simparam->num_dim;
+  int nodes_per_elem = elem->num_basis();
+  int num_gauss_points = simparam->num_gauss_points;
+  int z_quad,y_quad,x_quad, direct_product_count;
+  size_t local_node_id;
+  LO ielem;
+  GO global_element_index;
+
+  real_t Jacobian;
+  CArray<real_t> legendre_nodes_1D(num_gauss_points);
+  CArray<real_t> legendre_weights_1D(num_gauss_points);
+  real_t pointer_quad_coordinate[num_dim];
+  real_t pointer_quad_coordinate_weight[num_dim];
+  real_t pointer_interpolated_point[num_dim];
+  real_t pointer_JT_row1[num_dim];
+  real_t pointer_JT_row2[num_dim];
+  real_t pointer_JT_row3[num_dim];
+  ViewCArray<real_t> quad_coordinate(pointer_quad_coordinate,num_dim);
+  ViewCArray<real_t> quad_coordinate_weight(pointer_quad_coordinate_weight,num_dim);
+  ViewCArray<real_t> interpolated_point(pointer_interpolated_point,num_dim);
+  ViewCArray<real_t> JT_row1(pointer_JT_row1,num_dim);
+  ViewCArray<real_t> JT_row2(pointer_JT_row2,num_dim);
+  ViewCArray<real_t> JT_row3(pointer_JT_row3,num_dim);
+
+  real_t pointer_basis_values[elem->num_basis()];
+  real_t pointer_basis_derivative_s1[elem->num_basis()];
+  real_t pointer_basis_derivative_s2[elem->num_basis()];
+  real_t pointer_basis_derivative_s3[elem->num_basis()];
+  ViewCArray<real_t> basis_values(pointer_basis_values,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s1(pointer_basis_derivative_s1,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
+  CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
+
+  //initialize weights
+  elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
+  elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
+
+  //loop over elements and use quadrature rule to compute volume from Jacobian determinant
+  for(int nonoverlapping_ielem = 0; nonoverlapping_ielem < rnum_elem; nonoverlapping_ielem++){
+    global_element_index = element_map->getGlobalElement(nonoverlapping_ielem);
+    ielem = all_element_map->getLocalElement(global_element_index);
+    //acquire set of nodes for this local element
+    for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+      local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
+      nodal_positions(node_loop,0) = all_node_data(local_node_id,0);
+      nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
+      nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
+      /*
+      if(myrank==1&&nodal_positions(node_loop,2)>10000000){
+        std::cout << " LOCAL MATRIX DEBUG ON TASK " << myrank << std::endl;
+        std::cout << node_loop+1 <<" " << local_node_id <<" "<< mesh->nodes_in_cell_list_(ielem, node_loop) << " "<< nodal_positions(node_loop,2) << std::endl;
+        std::fflush(stdout);
+      }
+      */
+      //std::cout << local_node_id << " " << mesh->nodes_in_cell_list_(ielem, node_loop) << " " << nodal_positions(node_loop,0) << " " << nodal_positions(node_loop,1) << " "<< nodal_positions(node_loop,2) <<std::endl;
+    }
+    
+    //initialize element volume
+    Element_Volumes(nonoverlapping_ielem,0) = 0;
     
     if(Element_Types(ielem)==elements::elem_types::Hex8){
       direct_product_count = std::pow(num_gauss_points,num_dim);
@@ -4183,7 +4423,7 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
                JT_row1(2)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1));
     if(Jacobian<0) Jacobian = -Jacobian;
     
-    Element_Volumes(ielem,0) += Jacobian;
+    Element_Volumes(nonoverlapping_ielem,0) += Jacobian;
     }
   }
 

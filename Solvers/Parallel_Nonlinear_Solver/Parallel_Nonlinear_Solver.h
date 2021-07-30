@@ -61,12 +61,11 @@ public:
   typedef Kokkos::View<GO*, array_layout, device_type, memory_traits> global_indices_array;
   typedef Kokkos::View<LO*, array_layout, device_type, memory_traits> indices_array;
   typedef Kokkos::View<SizeType*, array_layout, device_type, memory_traits> row_pointers;
- 
-  using vec_map_type = Tpetra::Map<LO, GO>;
-  using vec_device_type = typename vec_map_type::device_type;
+
   //typedef Kokkos::DualView<real_t**, Kokkos::LayoutLeft, device_type>::t_dev vec_array;
   typedef MV::dual_view_type::t_dev vec_array;
   typedef MV::dual_view_type::t_host host_vec_array;
+  typedef Kokkos::View<const real_t**, array_layout, HostSpace, memory_traits> const_host_vec_array;
   typedef MV::dual_view_type dual_vec_array;
 
   void run(int argc, char *argv[]);
@@ -83,6 +82,8 @@ public:
   int solve();
 
   void compute_element_volumes();
+
+  void compute_element_masses(const_host_vec_array design_densities);
 
   void local_matrix(int ielem, CArray <real_t> &Local_Matrix);
 
@@ -173,8 +174,10 @@ public:
   size_t num_nodes, num_elem;
   Teuchos::RCP<const Teuchos::Comm<int> > comm;
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map; //map of node indices
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > ghost_node_map; //map of node indices with ghosts on each rank
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_node_map; //map of node indices with ghosts on each rank
-  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > element_map; //map of elements owned by each rank
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > element_map; //non overlapping map of elements owned by each rank used in reduction ops
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_element_map; //overlapping map of elements connected to the local nodes in each rank
   Teuchos::RCP<MV> node_data_distributed;
   Teuchos::RCP<MV> all_node_data_distributed;
   Teuchos::RCP<MV> node_densities_distributed;
@@ -183,6 +186,7 @@ public:
   Teuchos::RCP<MV> Global_Nodal_Forces;
   Teuchos::RCP<MV> Global_Element_Densities;
   Teuchos::RCP<MV> Global_Element_Volumes;
+  Teuchos::RCP<MV> Global_Element_Masses;
   Teuchos::RCP<MAT> A;
   Teuchos::RCP<MV> B;
   Teuchos::RCP<MV> X;
@@ -229,11 +233,11 @@ public:
   MPI_Comm world; //stores the default communicator object (MPI_COMM_WORLD)
 
   //! mapping used to get local ghost index from the global ID.
-  typedef ::Tpetra::Details::FixedHashTable<GO, LO, Kokkos::HostSpace::device_type>
-    global_to_local_table_host_type;
+  //typedef ::Tpetra::Details::FixedHashTable<GO, LO, Kokkos::HostSpace::device_type>
+    //global_to_local_table_host_type;
 
-  global_to_local_table_host_type global2local_map;
-  CArrayKokkos<int, Kokkos::LayoutLeft, Kokkos::HostSpace::device_type> active_ranks;
+  //global_to_local_table_host_type global2local_map;
+  //CArrayKokkos<int, Kokkos::LayoutLeft, Kokkos::HostSpace::device_type> active_ranks;
 
   //Pertains to local mesh information being stored as prescribed by the row map
   global_size_t local_nrows;

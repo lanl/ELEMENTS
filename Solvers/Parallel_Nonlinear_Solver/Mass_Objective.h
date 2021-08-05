@@ -90,6 +90,8 @@ public:
 
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
+    //communication of ghost node densities after being updated
+
     FEM_->compute_element_masses(design_densities);
     ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
 
@@ -101,33 +103,34 @@ public:
   }
 
   void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
-    /*
-    // Unwrap g
-    ROL::Ptr<MV> gp = getVector(g);
-    // Unwrap x
+    //get Tpetra multivector pointer from the ROL vector
     ROL::Ptr<const MV> up = getVector(u);
     ROL::Ptr<const MV> zp = getVector(z);
+    ROL::Ptr<MV> gp = getVector(g);
+    
+    ROL::Ptr<ROL_MV> ROL_Element_Volumes;
 
-    // Apply Jacobian
-    MV KU(up->size(),0.0);
-    if ( useLC_ ) {
-      FEM_->build_force(KU);
-      // Apply jacobian to u
-      for (size_t i=0; i<up->size(); i++) {
-        (*gp)[i] = KU[i];
-      }
+    //communicate ghosts here again? check if variables were updated since last communication
+
+    //get local view of the data
+    host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+    const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    const_host_vec_array design_displacement = up->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+
+    int rnum_elem = FEM_->rnum_elem;
+
+    if(nodal_density_flag_){
+      FEM_->compute_nodal_gradients(design_densities, objective_gradients);
     }
-    else {
-      MV U;
-      U.assign(up->begin(),up->end());
-      FEM_->set_boundary_conditions(U);
-      FEM_->apply_jacobian(KU,U,*zp);
-      // Apply jacobian to u
-      for (size_t i=0; i<up->size(); i++) {
-        (*gp)[i] = 2.0*KU[i];
-      }
+    else{
+      //update per element volumes
+      FEM_->compute_element_volumes();
+      //ROL_Element_Volumes = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Volumes);
+      //local view of element volumes
+      const_host_vec_array element_volumes = FEM_->Global_Element_Volumes->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+      for(int ig = 0; ig < rnum_elem; ig++)
+        objective_gradients(ig,0) = element_volumes(ig,0);
     }
-    */
   }
 
   void gradient_2( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {

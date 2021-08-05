@@ -66,6 +66,7 @@ public:
   typedef MV::dual_view_type::t_dev vec_array;
   typedef MV::dual_view_type::t_host host_vec_array;
   typedef Kokkos::View<const real_t**, array_layout, HostSpace, memory_traits> const_host_vec_array;
+  typedef Kokkos::View<const real_t**, array_layout, device_type, memory_traits> const_vec_array;
   typedef MV::dual_view_type dual_vec_array;
 
   void run(int argc, char *argv[]);
@@ -84,6 +85,8 @@ public:
   void compute_element_volumes();
 
   void compute_element_masses(const_host_vec_array design_densities);
+
+  void compute_nodal_gradients(const_host_vec_array design_densities, host_vec_array objective_gradients);
 
   void local_matrix(int ielem, CArray <real_t> &Local_Matrix);
 
@@ -156,8 +159,6 @@ public:
   CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Nodal_Results; //result of linear solve; typically displacements and densities
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Stiffness_Matrix_Strides;
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Matrix_Strides;
-  vec_array Element_Volumes;
-  vec_array Element_Densities;
 
   //Ghost data on this MPI rank
   size_t nghost_nodes;

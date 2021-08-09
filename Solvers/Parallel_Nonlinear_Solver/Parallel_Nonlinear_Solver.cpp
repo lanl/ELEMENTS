@@ -97,6 +97,7 @@ num_cells in element = (p_order*2)^3
 
 //Objective Functions and Constraint Functions
 #include "Mass_Objective.h"
+#include "Bounded_Strain_Constraint.h"
 
 //debug and performance includes
 #include <sys/time.h>
@@ -4448,6 +4449,77 @@ void Parallel_Nonlinear_Solver::compute_nodal_gradients(const_host_vec_array des
     }
     
   }
+
+}
+
+/* -------------------------------------------------------------------------------------------
+   Compute the maximum nodal strains resulting from equivalent nodal integrals of each element
+---------------------------------------------------------------------------------------------- */
+
+void Parallel_Nonlinear_Solver::communicate_design_variables(){
+  
+  //communicate design densities
+  //create import object using local node indices map and all indices map
+  Tpetra::Import<LO, GO> importer(map, all_node_map);
+
+  //comms to get ghosts
+  all_node_densities_distributed->doImport(*node_densities_distributed, importer, Tpetra::INSERT);
+
+  //communicate nodal displacements
+
+}
+
+/* -------------------------------------------------------------------------------------------
+   Compute the maximum nodal strains resulting from equivalent nodal integrals of each element
+---------------------------------------------------------------------------------------------- */
+
+void Parallel_Nonlinear_Solver::compute_nodal_strains(const_host_vec_array nodal_displacements){
+  //local number of uniquely assigned elements
+  size_t nonoverlap_nelements = element_map->getNodeNumElements();
+  //local variable for host view in the dual view
+  host_vec_array all_node_data = dual_all_node_data.view_device();
+  int num_dim = simparam->num_dim;
+  bool nodal_density_flag = simparam->nodal_density_flag;
+  int nodes_per_elem = elem->num_basis();
+  int num_gauss_points = simparam->num_gauss_points;
+  int z_quad,y_quad,x_quad, direct_product_count;
+  size_t local_node_id;
+  LO ielem;
+  GO global_element_index;
+
+  real_t Jacobian;
+  CArray<real_t> legendre_nodes_1D(num_gauss_points);
+  CArray<real_t> legendre_weights_1D(num_gauss_points);
+  real_t pointer_quad_coordinate[num_dim];
+  real_t pointer_quad_coordinate_weight[num_dim];
+  real_t pointer_interpolated_point[num_dim];
+  real_t pointer_JT_row1[num_dim];
+  real_t pointer_JT_row2[num_dim];
+  real_t pointer_JT_row3[num_dim];
+  ViewCArray<real_t> quad_coordinate(pointer_quad_coordinate,num_dim);
+  ViewCArray<real_t> quad_coordinate_weight(pointer_quad_coordinate_weight,num_dim);
+  ViewCArray<real_t> interpolated_point(pointer_interpolated_point,num_dim);
+  ViewCArray<real_t> JT_row1(pointer_JT_row1,num_dim);
+  ViewCArray<real_t> JT_row2(pointer_JT_row2,num_dim);
+  ViewCArray<real_t> JT_row3(pointer_JT_row3,num_dim);
+
+  real_t pointer_basis_values[elem->num_basis()];
+  real_t pointer_basis_derivative_s1[elem->num_basis()];
+  real_t pointer_basis_derivative_s2[elem->num_basis()];
+  real_t pointer_basis_derivative_s3[elem->num_basis()];
+  ViewCArray<real_t> basis_values(pointer_basis_values,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s1(pointer_basis_derivative_s1,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,elem->num_basis());
+  ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
+  CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
+  CArray<real_t> nodal_variable(elem->num_basis());
+
+  //initialize weights
+  elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
+  elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
+
+  //loop over elements and use quadrature rule to compute volume from Jacobian determinant
+  
 
 }
 

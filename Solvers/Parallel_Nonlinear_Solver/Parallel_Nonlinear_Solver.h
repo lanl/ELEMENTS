@@ -82,11 +82,15 @@ public:
 
   int solve();
 
+  void communicate_design_variables();
+
   void compute_element_volumes();
 
   void compute_element_masses(const_host_vec_array design_densities);
 
   void compute_nodal_gradients(const_host_vec_array design_densities, host_vec_array objective_gradients);
+
+  void compute_nodal_strains(const_host_vec_array nodal_displacements);
 
   void local_matrix(int ielem, CArray <real_t> &Local_Matrix);
 
@@ -185,6 +189,7 @@ public:
   Teuchos::RCP<MV> all_node_densities_distributed;
   Teuchos::RCP<MAT> Global_Stiffness_Matrix;
   Teuchos::RCP<MV> Global_Nodal_Forces;
+  Teuchos::RCP<MV> Global_Nodal_Strains;
   Teuchos::RCP<MV> Global_Element_Densities;
   Teuchos::RCP<MV> Global_Element_Volumes;
   Teuchos::RCP<MV> Global_Element_Masses;

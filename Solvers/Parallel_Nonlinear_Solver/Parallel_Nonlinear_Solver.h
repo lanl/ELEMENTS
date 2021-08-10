@@ -82,7 +82,7 @@ public:
 
   int solve();
 
-  void communicate_design_variables();
+  void update_and_comm_variables();
 
   void compute_element_volumes();
 
@@ -150,7 +150,8 @@ public:
   
   //Local FEA data
   size_t nlocal_nodes;
-  dual_vec_array dual_node_data; //first three indices of second dim should be positions
+  dual_vec_array dual_node_coords; //coordinates of the nodes
+  dual_vec_array dual_node_displacements; //first three indices of second dim should be positions
   dual_vec_array dual_node_densities; //topology optimization design variable
   dual_vec_array dual_nodal_forces;
   CArray<elements::elem_types::elem_type> Element_Types;
@@ -172,7 +173,8 @@ public:
   //Local FEA data including ghosts
   size_t nall_nodes;
   size_t rnum_elem;
-  dual_vec_array dual_all_node_data; //first three indices of second dim should be positions
+  dual_vec_array dual_all_node_coords; //coordinates of the nodes including ghosts
+  dual_vec_array dual_all_node_displacements; //coordinates of the nodes including ghosts
   dual_vec_array dual_all_node_densities; //includes ghost data of the topology optimization design variable
 
   //Global FEA data
@@ -183,8 +185,10 @@ public:
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_node_map; //map of node indices with ghosts on each rank
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > element_map; //non overlapping map of elements owned by each rank used in reduction ops
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_element_map; //overlapping map of elements connected to the local nodes in each rank
-  Teuchos::RCP<MV> node_data_distributed;
-  Teuchos::RCP<MV> all_node_data_distributed;
+  Teuchos::RCP<MV> node_coords_distributed;
+  Teuchos::RCP<MV> node_displacements_distributed;
+  Teuchos::RCP<MV> all_node_coords_distributed;
+  Teuchos::RCP<MV> all_node_displacements_distributed;
   Teuchos::RCP<MV> node_densities_distributed;
   Teuchos::RCP<MV> all_node_densities_distributed;
   Teuchos::RCP<MAT> Global_Stiffness_Matrix;

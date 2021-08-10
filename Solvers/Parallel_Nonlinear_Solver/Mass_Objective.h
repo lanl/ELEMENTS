@@ -98,7 +98,7 @@ public:
 
     //check if communication of ghost node densities is needed
     if(current_step!=last_comm_step)
-    FEM_->communicate_design_variables();
+    FEM_->update_and_comm_variables();
 
     FEM_->compute_element_masses(design_densities);
     ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
@@ -124,7 +124,7 @@ public:
 
     //check if communication of ghost design variables is needed
     if(current_step!=last_comm_step)
-    FEM_->communicate_design_variables();
+    FEM_->update_and_comm_variables();
 
     //get local view of the data
     host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);

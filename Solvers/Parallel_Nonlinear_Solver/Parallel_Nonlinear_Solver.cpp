@@ -352,13 +352,14 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   local_dof_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes*num_dim,local_dof_indices.get_kokkos_view(),0,comm) );
 
   //allocate node storage with dual view
-  dual_node_data = dual_vec_array("dual_node_data", nlocal_nodes,num_dim);
+  dual_node_coords = dual_vec_array("dual_node_coords", nlocal_nodes,num_dim);
+  dual_node_displacements = dual_vec_array("dual_node_displacements", nlocal_nodes*num_dim,1);
   dual_nodal_forces = dual_vec_array("dual_nodal_forces", nlocal_nodes*num_dim,1);
 
   //local variable for host view in the dual view
-  host_vec_array node_data = dual_node_data.view_host();
+  host_vec_array node_coords = dual_node_coords.view_host();
   //notify that the host view is going to be modified in the file readin
-  dual_node_data.modify_host();
+  dual_node_coords.modify_host();
 
   //old swage method
   //mesh->init_nodes(local_nrows); // add 1 for index starting at 1
@@ -445,7 +446,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         //extract nodal position from the read buffer
         //for ensight format this is just one coordinate per line
         dof_value = atof(&read_buffer(scan_loop,0,0));
-        node_data(node_rid, 0) = dof_value;
+        node_coords(node_rid, 0) = dof_value;
       }
     }
     read_index_start+=BUFFER_LINES;
@@ -483,7 +484,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
         }
         buffer_loop++;
-        //std::cout<<" "<< node_data(node_gid, 0)<<std::endl;
+        //std::cout<<" "<< node_coords(node_gid, 0)<<std::endl;
       }
     }
 
@@ -504,7 +505,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         //extract nodal position from the read buffer
         //for ensight format this is just one coordinate per line
         dof_value = atof(&read_buffer(scan_loop,0,0));
-        node_data(node_rid, 1) = dof_value;
+        node_coords(node_rid, 1) = dof_value;
       }
     }
     read_index_start+=BUFFER_LINES;
@@ -542,7 +543,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
         }
         buffer_loop++;
-        //std::cout<<" "<< node_data(node_gid, 0)<<std::endl;
+        //std::cout<<" "<< node_coords(node_gid, 0)<<std::endl;
       }
     }
 
@@ -563,7 +564,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         //extract nodal position from the read buffer
         //for ensight format this is just one coordinate per line
         dof_value = atof(&read_buffer(scan_loop,0,0));
-        node_data(node_rid, 2) = dof_value;
+        node_coords(node_rid, 2) = dof_value;
       }
     }
     read_index_start+=BUFFER_LINES;
@@ -578,7 +579,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   for (int inode = 0; inode < local_nrows; inode++){
       std::cout << "node: " << map->getGlobalElement(inode) + 1 << " { ";
     for (int istride = 0; istride < num_dim; istride++){
-        std::cout << node_data(inode,istride) << " , ";
+        std::cout << node_coords(inode,istride) << " , ";
     }
     std::cout << " }"<< std::endl;
   }
@@ -662,7 +663,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
         }
         buffer_loop++;
-        //std::cout<<" "<< node_data(node_gid, 0)<<std::endl;
+        //std::cout<<" "<< node_coords(node_gid, 0)<<std::endl;
       }
     }
 
@@ -909,7 +910,8 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   ghost_node_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),ghost_nodes.get_kokkos_view(),0,comm));
 
   //synchronize device data
-  dual_node_data.sync_device();
+  dual_node_coords.sync_device();
+  dual_node_coords.modify_device();
     
   // Create reference element
   ref_elem->init(p_order, num_dim, elem->num_basis());
@@ -1002,15 +1004,18 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //std::fflush(stdout);
 
   //create distributed multivector of the local node data and all (local + ghost) node storage
-  node_data_distributed = Teuchos::rcp(new MV(map, dual_node_data));
-  all_node_data_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
+  node_coords_distributed = Teuchos::rcp(new MV(map, dual_node_coords));
+  all_node_coords_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
+  node_displacements_distributed = Teuchos::rcp(new MV(local_dof_map, 1));
+  all_node_displacements_distributed = Teuchos::rcp(new MV(all_dof_map, 1));
+  Global_Nodal_Forces = Teuchos::rcp(new MV(local_dof_map, dual_nodal_forces));
   
   //debug print
   //std::ostream &out = std::cout;
   //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
   //if(myrank==0)
   //*fos << "Node Data :" << std::endl;
-  //node_data_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  //node_coords_distributed->describe(*fos,Teuchos::VERB_EXTREME);
   //*fos << std::endl;
   //std::fflush(stdout);
 
@@ -1018,29 +1023,22 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   Tpetra::Import<LO, GO> importer(map, all_node_map);
 
   //comms to get ghosts
-  all_node_data_distributed->doImport(*node_data_distributed, importer, Tpetra::INSERT);
+  all_node_coords_distributed->doImport(*node_coords_distributed, importer, Tpetra::INSERT);
 
   //debug print
   //std::ostream &out = std::cout;
   //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
   //if(myrank==0)
   //*fos << "Node Data with Ghosts :" << std::endl;
-  //all_node_data_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  //all_node_coords_distributed->describe(*fos,Teuchos::VERB_EXTREME);
   //*fos << std::endl;
   //std::fflush(stdout);
-
-  //get view of all node data (local + ghost) on the device (multivector function forces sync of dual view)
-
-  vec_array all_node_data_device = all_node_data_distributed->getLocalView<device_type> (Tpetra::Access::ReadWrite);
-  host_vec_array all_node_data_host = all_node_data_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
-  //allocate node storage with dual view
-  dual_all_node_data = dual_vec_array(all_node_data_device, all_node_data_host);
 
   //debug print of views node indices
   //std::cout << "Local View of All Nodes on Task " << myrank <<std::endl;
   //for(int inode=0; inode < all_node_map->getNodeNumElements(); inode++){
     //std::cout << "node "<<all_node_map->getGlobalElement(inode) << " } " ;
-    //std::cout << dual_all_node_data.view_host()(inode,0) << " " << dual_all_node_data.view_host()(inode,1) << " " << dual_all_node_data.view_host()(inode,2) << " " << std::endl;
+    //std::cout << dual_all_node_coords.view_host()(inode,0) << " " << dual_all_node_coords.view_host()(inode,1) << " " << dual_all_node_coords.view_host()(inode,2) << " " << std::endl;
   //}
      
   //std::cout << "number of patches = " << mesh->num_patches() << std::endl;
@@ -1405,7 +1403,7 @@ void Parallel_Nonlinear_Solver::tag_boundaries(int bc_tag, real_t val, int bdy_s
 int Parallel_Nonlinear_Solver::check_boundary(Node_Combination &Patch_Nodes, int bc_tag, real_t val){
   
   int is_on_set = 1;
-  vec_array all_node_data = dual_all_node_data.view_device();
+  const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
   //Nodes on the Patch
   auto node_list = Patch_Nodes.node_set;
@@ -1422,7 +1420,7 @@ int Parallel_Nonlinear_Solver::check_boundary(Node_Combination &Patch_Nodes, int
   for(int inode = 0; inode < nnodes; inode++){
 
     node_rid = all_node_map->getLocalElement(node_list(inode));
-    node_coord = all_node_data(node_rid,bc_tag);
+    node_coord = all_node_coords(node_rid,bc_tag);
     if ( fabs(node_coord - val) <= 1.0e-8 ) node_on_flags(inode) = 1;
     //debug print of node id and node coord
     //std::cout << "node coords on task " << myrank << " for node " << node_rid << std::endl;
@@ -1464,7 +1462,7 @@ int Parallel_Nonlinear_Solver::check_boundary(Node_Combination &Patch_Nodes, int
 
 void Parallel_Nonlinear_Solver::allocate_state(){
     //local variable for host view in the dual view
-    host_vec_array node_data = dual_node_data.view_host();
+    host_vec_array node_coords = dual_node_coords.view_host();
     int rk_storage = simparam->rk_storage;
     int num_dim = simparam->num_dim;
     node_t *node = simparam->node;
@@ -1488,7 +1486,7 @@ void Parallel_Nonlinear_Solver::allocate_state(){
 
 void Parallel_Nonlinear_Solver::initialize_state(){
   //local variable for host view in the dual view
-  host_vec_array node_data = dual_node_data.view_host();
+  host_vec_array node_coords = dual_node_coords.view_host();
     int NF = simparam->NF;
     mat_pt_t *mat_pt = simparam->mat_pt;
     mat_fill_t *mat_fill = simparam->mat_fill;
@@ -1510,9 +1508,9 @@ void Parallel_Nonlinear_Solver::initialize_state(){
                 // increment the number of cells attached to this vertex
                 int vert_gid = mesh->nodes_in_cell(cell_rid, node_lid); // get the global_id
                 
-                cell_coords_x += node_data(vert_gid, 0);
-                cell_coords_y += node_data(vert_gid, 1);
-                cell_coords_z += node_data(vert_gid, 2);
+                cell_coords_x += node_coords(vert_gid, 0);
+                cell_coords_y += node_coords(vert_gid, 1);
+                cell_coords_z += node_coords(vert_gid, 2);
                 
             }// end for loop over node_lid
             
@@ -1819,7 +1817,7 @@ void Parallel_Nonlinear_Solver::smooth_element(){
 
 void Parallel_Nonlinear_Solver::get_nodal_jacobian(){
   //local variable for host view in the dual view
-  host_vec_array node_data = dual_node_data.view_host();
+  host_vec_array node_coords = dual_node_coords.view_host();
   mat_pt_t *mat_pt = simparam->mat_pt;
   mat_fill_t *mat_fill = simparam->mat_fill;
   int num_dim = simparam->num_dim;
@@ -1861,7 +1859,7 @@ void Parallel_Nonlinear_Solver::get_nodal_jacobian(){
                             int ref_node_gid = mesh->nodes_in_cell(cell_rid, basis_id);
 
                             mesh->node_jacobian(node_gid, dim_i, dim_j) += 
-                                node_data(ref_node_gid , dim_i) * ref_elem->ref_nodal_gradient(node_lid, basis_id, dim_j);
+                                node_coords(ref_node_gid , dim_i) * ref_elem->ref_nodal_gradient(node_lid, basis_id, dim_j);
                         }
                     }
                 }
@@ -1950,7 +1948,7 @@ void Parallel_Nonlinear_Solver::get_nodal_jacobian(){
 
 void Parallel_Nonlinear_Solver::vtk_writer(){
     //local variable for host view in the dual view
-    host_vec_array node_data = dual_node_data.view_host();
+    host_vec_array node_coords = dual_node_coords.view_host();
     int graphics_id = simparam->graphics_id;
     int num_dim = simparam->num_dim;
 
@@ -2055,9 +2053,9 @@ void Parallel_Nonlinear_Solver::vtk_writer(){
     
     for (int node_gid = 0; node_gid < num_nodes; node_gid++){
         
-        fprintf(out[0],"%f   %f   %f   \n",node_data(node_gid, 0),
-                                           node_data(node_gid, 1),
-                                           node_data(node_gid, 2));
+        fprintf(out[0],"%f   %f   %f   \n",node_coords(node_gid, 0),
+                                           node_coords(node_gid, 1),
+                                           node_coords(node_gid, 2));
 
     } 
 
@@ -2154,7 +2152,7 @@ void Parallel_Nonlinear_Solver::vtk_writer(){
 
 void Parallel_Nonlinear_Solver::ensight(){
     //local variable for host view in the dual view
-    host_vec_array node_data = dual_node_data.view_host();
+    host_vec_array node_coords = dual_node_coords.view_host();
     mat_pt_t *mat_pt = simparam->mat_pt;
     int &graphics_id = simparam->graphics_id;
     real_t *graphics_times = simparam->graphics_times;
@@ -2258,9 +2256,9 @@ void Parallel_Nonlinear_Solver::ensight(){
 
     for (int node_gid = 0; node_gid < num_nodes; node_gid++){
         
-        vec_fields(node_gid, 0, 0) = node_data(node_gid, 0); 
-        vec_fields(node_gid, 0, 1) = node_data(node_gid, 1);
-        vec_fields(node_gid, 0, 2) = node_data(node_gid, 2);
+        vec_fields(node_gid, 0, 0) = node_coords(node_gid, 0); 
+        vec_fields(node_gid, 0, 1) = node_coords(node_gid, 1);
+        vec_fields(node_gid, 0, 2) = node_coords(node_gid, 2);
 
     } // end for loop over vertices
 
@@ -2308,15 +2306,15 @@ void Parallel_Nonlinear_Solver::ensight(){
     
     // write all components of the point coordinates
     for (int node_gid=0; node_gid<num_nodes; node_gid++){
-        fprintf(out[0],"%12.5e\n",node_data(node_gid, 0));
+        fprintf(out[0],"%12.5e\n",node_coords(node_gid, 0));
     }
     
     for (int node_gid=0; node_gid<num_nodes; node_gid++){
-        fprintf(out[0],"%12.5e\n",node_data(node_gid, 1));
+        fprintf(out[0],"%12.5e\n",node_coords(node_gid, 1));
     }
     
     for (int node_gid=0; node_gid<num_nodes; node_gid++){
-        fprintf(out[0],"%12.5e\n",node_data(node_gid, 2));
+        fprintf(out[0],"%12.5e\n",node_coords(node_gid, 2));
     }
     
     // convert_vert_list_ord_Ensight
@@ -2691,7 +2689,7 @@ void Parallel_Nonlinear_Solver::init_global(){
   for (int inode = 0; inode < num_nodes; inode++){
       std::cout << "node: " << inode + 1 << " { ";
     for (int istride = 0; istride < num_dim; istride++){
-        std::cout << node_data(inode,istride) << " , ";
+        std::cout << node_coords(inode,istride) << " , ";
     }
     std::cout << " }"<< std::endl;
   }
@@ -2780,15 +2778,9 @@ void Parallel_Nonlinear_Solver::init_design(){
     //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
     //if(myrank==0)
     //*fos << "Node Densities with Ghosts :" << std::endl;
-    //all_node_data_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+    //all_node_coords_distributed->describe(*fos,Teuchos::VERB_EXTREME);
     //*fos << std::endl;
     //std::fflush(stdout);
-
-    //get view of all node densities (local + ghost) on the device (multivector function forces sync of dual view)
-    vec_array all_node_densities_device = all_node_densities_distributed->getLocalView<device_type> (Tpetra::Access::ReadWrite);
-    host_vec_array all_node_densities_host = all_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
-    //allocate node storage with dual view
-    dual_all_node_densities = dual_vec_array(all_node_densities_device, all_node_densities_host);
   
   }
   else{
@@ -2819,10 +2811,7 @@ void Parallel_Nonlinear_Solver::assemble(){
   int current_row_n_nodes_scanned;
   int local_dof_index, global_node_index, current_row, current_column;
   int max_stride = 0;
-  //local variable for host view in the dual view
-  host_vec_array Nodal_Forces = dual_nodal_forces.view_host();
-  //signal modification of the host view of nodal forces
-  dual_nodal_forces.modify_host();
+  
   CArray <real_t> Local_Stiffness_Matrix = CArray <real_t> (num_dim*max_nodes_per_element,num_dim*max_nodes_per_element);
 
   //assemble the global stiffness matrix
@@ -2889,21 +2878,12 @@ void Parallel_Nonlinear_Solver::assemble(){
       }
     }
   }
-
-  //force vector initialization
-  
-  //initialize
-  for(int i=0; i < num_dim*nlocal_nodes; i++)
-    Nodal_Forces(i,0) = 0;
   
   //Tag nodes for Boundary conditions such as displacements
   Displacement_Boundary_Conditions();
 
   //Construct applied nodal force vector with quadrature
   Force_Vector_Construct();
-
-  //sync device data for the nodal forces dual view
-  dual_nodal_forces.modify_host();
 
   //construct distributed stiffness matrix and force vector from local kokkos data
   
@@ -2972,9 +2952,6 @@ void Parallel_Nonlinear_Solver::assemble(){
   //*fos << "Global Stiffness Matrix :" << std::endl;
   //Global_Stiffness_Matrix->describe(*fos,Teuchos::VERB_EXTREME);
   //*fos << std::endl;
-  
-  //allocate global nodal force vector
-  //Global_Nodal_Forces = Teuchos::rcp(new MV(local_dof_map, dual_nodal_forces));
 
   //Print solution vector
   //*fos << "Global Nodal Forces :" << std::endl;
@@ -3000,13 +2977,13 @@ void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t
 
 void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_Matrix){
   //local variable for host view in the dual view
-  host_vec_array all_node_data = dual_all_node_data.view_device();
+  const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   const_host_vec_array Element_Densities;
   //local variable for host view of densities from the dual view
   bool nodal_density_flag = simparam->nodal_density_flag;
-  host_vec_array all_node_densities;
+  const_host_vec_array all_node_densities;
   if(nodal_density_flag)
-  all_node_densities = dual_all_node_densities.view_device();
+  all_node_densities = all_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   else
   Element_Densities = Global_Element_Densities->getLocalView<HostSpace>(Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
@@ -3055,9 +3032,9 @@ void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_M
   //acquire set of nodes for this local element
   for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
     local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
-    nodal_positions(node_loop,0) = all_node_data(local_node_id,0);
-    nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
-    nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
+    nodal_positions(node_loop,0) = all_node_coords(local_node_id,0);
+    nodal_positions(node_loop,1) = all_node_coords(local_node_id,1);
+    nodal_positions(node_loop,2) = all_node_coords(local_node_id,2);
     if(nodal_density_flag) nodal_density(node_loop) = all_node_densities(local_node_id,0);
   }
 
@@ -3384,13 +3361,13 @@ void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_M
 
 void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t> &Local_Matrix){
   //local variable for host view in the dual view
-  host_vec_array all_node_data = dual_all_node_data.view_device();
+  const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   const_host_vec_array Element_Densities;
   //local variable for host view of densities from the dual view
   bool nodal_density_flag = simparam->nodal_density_flag;
-  host_vec_array all_node_densities;
+  const_host_vec_array all_node_densities;
   if(nodal_density_flag)
-  all_node_densities = dual_all_node_densities.view_device();
+  all_node_densities = all_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   else
   Element_Densities = Global_Element_Densities->getLocalView<HostSpace>(Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
@@ -3447,9 +3424,9 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
   //acquire set of nodes for this local element
   for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
     local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
-    nodal_positions(node_loop,0) = all_node_data(local_node_id,0);
-    nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
-    nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
+    nodal_positions(node_loop,0) = all_node_coords(local_node_id,0);
+    nodal_positions(node_loop,1) = all_node_coords(local_node_id,1);
+    nodal_positions(node_loop,2) = all_node_coords(local_node_id,2);
     if(nodal_density_flag) nodal_density(node_loop) = all_node_densities(local_node_id,0);
     /*
     if(myrank==1&&nodal_positions(node_loop,2)>10000000){
@@ -3829,7 +3806,7 @@ void Parallel_Nonlinear_Solver::Displacement_Boundary_Conditions(){
           std::cout << " Node BC types " << Node_DOF_Boundary_Condition_Type(current_node_id);
           std::cout << " node: " << inode << " { ";
           for (int istride = 0; istride < num_dim; istride++){
-            std::cout << node_data(current_node_id,istride) << " , ";
+            std::cout << node_coords(current_node_id,istride) << " , ";
           }
           std::cout << " }"<< std::endl;
           */
@@ -3879,9 +3856,9 @@ void Parallel_Nonlinear_Solver::Displacement_Boundary_Conditions(){
 
 void Parallel_Nonlinear_Solver::Force_Vector_Construct(){
   //local variable for host view in the dual view
-  host_vec_array all_node_data = dual_all_node_data.view_host();
+  const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   //local variable for host view in the dual view
-  host_vec_array Nodal_Forces = dual_nodal_forces.view_host();
+  host_vec_array Nodal_Forces = Global_Nodal_Forces->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
   int num_bdy_patches_in_set;
   size_t current_node_index, node_id, patch_id;
   int num_boundary_sets = num_boundary_conditions;
@@ -3906,6 +3883,10 @@ void Parallel_Nonlinear_Solver::Force_Vector_Construct(){
   CArray<real_t> JT_row1(num_dim);
   CArray<real_t> JT_row2(num_dim);
   CArray<real_t> JT_row3(num_dim);
+
+   //force vector initialization
+  for(int i=0; i < num_dim*nlocal_nodes; i++)
+    Nodal_Forces(i,0) = 0;
 
   /*Loop through boundary sets and check if they apply surface forces.
   These sets can have overlapping nodes since applied loading conditions
@@ -4009,9 +3990,9 @@ void Parallel_Nonlinear_Solver::Force_Vector_Construct(){
       for(int node_loop=0; node_loop < 4; node_loop++){
         current_node_index = Surface_Nodes(node_loop);
         current_node_index = all_node_map->getLocalElement(current_node_index);
-        nodal_positions(node_loop,0) = all_node_data(current_node_index,0);
-        nodal_positions(node_loop,1) = all_node_data(current_node_index,1);
-        nodal_positions(node_loop,2) = all_node_data(current_node_index,2);
+        nodal_positions(node_loop,0) = all_node_coords(current_node_index,0);
+        nodal_positions(node_loop,1) = all_node_coords(current_node_index,1);
+        nodal_positions(node_loop,2) = all_node_coords(current_node_index,2);
       }
 
       if(local_surface_id<2){
@@ -4124,7 +4105,7 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
   vec_array Element_Masses("Element Masses", nonoverlap_nelements, 1);
   const_host_vec_array Element_Volumes = Global_Element_Volumes->getLocalView<HostSpace>(Tpetra::Access::ReadOnly);
   //local variable for host view in the dual view
-  host_vec_array all_node_data = dual_all_node_data.view_device();
+  const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
   int nodes_per_elem = elem->num_basis();
@@ -4173,9 +4154,9 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
     //acquire set of nodes for this local element
     for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
       local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
-      nodal_positions(node_loop,0) = all_node_data(local_node_id,0);
-      nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
-      nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
+      nodal_positions(node_loop,0) = all_node_coords(local_node_id,0);
+      nodal_positions(node_loop,1) = all_node_coords(local_node_id,1);
+      nodal_positions(node_loop,2) = all_node_coords(local_node_id,2);
       if(nodal_density_flag) nodal_density(node_loop) = design_densities(local_node_id,0);
       /*
       if(myrank==1&&nodal_positions(node_loop,2)>10000000){
@@ -4299,7 +4280,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_gradients(const_host_vec_array des
   //local number of uniquely assigned elements
   size_t nonoverlap_nelements = element_map->getNodeNumElements();
   //local variable for host view in the dual view
-  host_vec_array all_node_data = dual_all_node_data.view_device();
+  const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
   int nodes_per_elem = elem->num_basis();
@@ -4349,9 +4330,9 @@ void Parallel_Nonlinear_Solver::compute_nodal_gradients(const_host_vec_array des
     //acquire set of nodes for this local element
     for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
       local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
-      nodal_positions(node_loop,0) = all_node_data(local_node_id,0);
-      nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
-      nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
+      nodal_positions(node_loop,0) = all_node_coords(local_node_id,0);
+      nodal_positions(node_loop,1) = all_node_coords(local_node_id,1);
+      nodal_positions(node_loop,2) = all_node_coords(local_node_id,2);
       nodal_variable(node_loop) = design_variables(local_node_id,0);
       /*
       if(myrank==1&&nodal_positions(node_loop,2)>10000000){
@@ -4456,7 +4437,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_gradients(const_host_vec_array des
    Compute the maximum nodal strains resulting from equivalent nodal integrals of each element
 ---------------------------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::communicate_design_variables(){
+void Parallel_Nonlinear_Solver::update_and_comm_variables(){
   
   //communicate design densities
   //create import object using local node indices map and all indices map
@@ -4466,6 +4447,7 @@ void Parallel_Nonlinear_Solver::communicate_design_variables(){
   all_node_densities_distributed->doImport(*node_densities_distributed, importer, Tpetra::INSERT);
 
   //communicate nodal displacements
+  all_node_displacements_distributed->doImport(*node_displacements_distributed, importer, Tpetra::INSERT);
 
 }
 
@@ -4477,7 +4459,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(const_host_vec_array nodal
   //local number of uniquely assigned elements
   size_t nonoverlap_nelements = element_map->getNodeNumElements();
   //local variable for host view in the dual view
-  host_vec_array all_node_data = dual_all_node_data.view_device();
+  const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
   int nodes_per_elem = elem->num_basis();
@@ -4533,7 +4515,7 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
   //initialize memory for volume storage
   vec_array Element_Volumes("Element Volumes", nonoverlap_nelements, 1);
   //local variable for host view in the dual view
-  host_vec_array all_node_data = dual_all_node_data.view_device();
+  const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
   int nodes_per_elem = elem->num_basis();
   int num_gauss_points = simparam->num_gauss_points;
@@ -4579,9 +4561,9 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
     //acquire set of nodes for this local element
     for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
       local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
-      nodal_positions(node_loop,0) = all_node_data(local_node_id,0);
-      nodal_positions(node_loop,1) = all_node_data(local_node_id,1);
-      nodal_positions(node_loop,2) = all_node_data(local_node_id,2);
+      nodal_positions(node_loop,0) = all_node_coords(local_node_id,0);
+      nodal_positions(node_loop,1) = all_node_coords(local_node_id,1);
+      nodal_positions(node_loop,2) = all_node_coords(local_node_id,2);
       /*
       if(myrank==1&&nodal_positions(node_loop,2)>10000000){
         std::cout << " LOCAL MATRIX DEBUG ON TASK " << myrank << std::endl;
@@ -4692,9 +4674,9 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
 
 int Parallel_Nonlinear_Solver::solve(){
   //local variable for host view in the dual view
-  host_vec_array node_data = dual_node_data.view_host();
+  const_host_vec_array node_coords = node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   //local variable for host view in the dual view
-  host_vec_array Nodal_Forces = dual_nodal_forces.view_host();
+  const_host_vec_array Nodal_Forces = Global_Nodal_Forces->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int nodes_per_elem = mesh->num_nodes_in_elem();
@@ -4705,7 +4687,7 @@ int Parallel_Nonlinear_Solver::solve(){
 
   //ROL::Ptr<MV> > x_ptr  = ROL::makePtr<MV>(2);
   //assumes ROL::Ptr<T> was compiled as Teuchos::RCP<T>
-  ROL::Ptr<ROL::Vector<real_t> > x = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(node_data_distributed);
+  ROL::Ptr<ROL::Vector<real_t> > x = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(node_coords_distributed);
   
   // Before we do anything, check that KLU2 is enabled
   if( !Amesos2::query("SuperLUDist") ){
@@ -4883,13 +4865,7 @@ int Parallel_Nonlinear_Solver::solve(){
   //comms to get ghosts
   all_reduced_global_indices->doImport(*local_reduced_global_indices, importer, Tpetra::INSERT);
 
-  //get views from multivector object
-
-  vec_array all_reduced_global_indices_device = all_reduced_global_indices->getLocalView<device_type> (Tpetra::Access::ReadWrite);
-  host_vec_array all_reduced_global_indices_host = all_reduced_global_indices->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
-
-  //allocate node storage with dual view
-  dual_vec_array dual_all_reduced_global_indices = dual_vec_array(all_reduced_global_indices_device, all_reduced_global_indices_host);
+  const_host_vec_array all_reduced_global_indices_host = all_reduced_global_indices->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
   //debug print
   /*

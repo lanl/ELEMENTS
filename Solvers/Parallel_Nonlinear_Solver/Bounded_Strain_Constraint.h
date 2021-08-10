@@ -100,7 +100,7 @@ public:
 
     //check if communication of ghost design variables is needed
     if(current_step!=last_comm_step)
-    FEM_->communicate_design_variables();
+    FEM_->update_and_comm_variables();
 
     FEM_->compute_nodal_strains(design_displacements);
 

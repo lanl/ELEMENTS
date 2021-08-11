@@ -1291,8 +1291,8 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
 
     std::cout << "tagging x = 1.2 " << std::endl;
     bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-    value = 1.2;
-    //value = 2;
+    //value = 1.2;
+    value = 2;
     bdy_set_id = current_bdy_id++;
     //find boundary patches this BC corresponds to
     tag_boundaries(bc_tag, value, bdy_set_id);
@@ -2764,7 +2764,7 @@ void Parallel_Nonlinear_Solver::init_design(){
     
     //allocate global vector information
     node_densities_distributed = Teuchos::rcp(new MV(map, dual_node_densities));
-    all_node_densities_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
+    all_node_densities_distributed = Teuchos::rcp(new MV(all_node_map, 1));
 
     //communicate ghost information to the all vector
     //create import object using local node indices map and all indices map
@@ -2778,7 +2778,7 @@ void Parallel_Nonlinear_Solver::init_design(){
     //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
     //if(myrank==0)
     //*fos << "Node Densities with Ghosts :" << std::endl;
-    //all_node_coords_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+    //all_node_densities_distributed->describe(*fos,Teuchos::VERB_EXTREME);
     //*fos << std::endl;
     //std::fflush(stdout);
   
@@ -3443,42 +3443,6 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
     for(int icol = 0; icol < Brows; icol++)
       C_matrix(irow,icol) = 0;
 
-  //compute Elastic (C) matrix
-  if(num_dim==2){
-  C_matrix(0,0) = Pressure_Term;
-  C_matrix(1,1) = Pressure_Term;
-  C_matrix(0,1) = Poisson_Ratio;
-  C_matrix(1,0) = Poisson_Ratio;
-  C_matrix(2,2) = Shear_Term;
-  }
-  if(num_dim==3){
-  C_matrix(0,0) = Pressure_Term;
-  C_matrix(1,1) = Pressure_Term;
-  C_matrix(2,2) = Pressure_Term;
-  C_matrix(0,1) = Poisson_Ratio;
-  C_matrix(0,2) = Poisson_Ratio;
-  C_matrix(1,0) = Poisson_Ratio;
-  C_matrix(1,2) = Poisson_Ratio;
-  C_matrix(2,0) = Poisson_Ratio;
-  C_matrix(2,1) = Poisson_Ratio;
-  C_matrix(3,3) = Shear_Term;
-  C_matrix(4,4) = Shear_Term;
-  C_matrix(5,5) = Shear_Term;
-  }
-  
-  /*
-  //debug print of elasticity matrix
-  std::cout << " ------------ELASTICITY MATRIX "<< ielem + 1 <<"--------------"<<std::endl;
-  for (int idof = 0; idof < Brows; idof++){
-    std::cout << "row: " << idof + 1 << " { ";
-    for (int istride = 0; istride < Brows; istride++){
-      std::cout << istride + 1 << " = " << C_matrix(idof,istride) << " , " ;
-    }
-    std::cout << " }"<< std::endl;
-  }
-  //end debug block
-  */
-
   //initialize local stiffness matrix storage
   for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++)
       for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++)
@@ -3522,11 +3486,53 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
       current_density = Element_Densities(ielem,0);
     }
 
+    //debug print
+    //std::cout << "Current Density " << current_density << std::endl;
+
     //look up element material properties at this point as a function of density
     Element_Material_Properties((size_t) ielem,Element_Modulus,Poisson_Ratio, current_density);
     Elastic_Constant = Element_Modulus/(1+Poisson_Ratio)/(1-2*Poisson_Ratio);
     Shear_Term = 0.5-Poisson_Ratio;
     Pressure_Term = 1 - Poisson_Ratio;
+
+    //debug print
+    //std::cout << "Element Material Params " << Elastic_Constant << std::endl;
+
+    //compute Elastic (C) matrix
+    if(num_dim==2){
+      C_matrix(0,0) = Pressure_Term;
+      C_matrix(1,1) = Pressure_Term;
+      C_matrix(0,1) = Poisson_Ratio;
+      C_matrix(1,0) = Poisson_Ratio;
+      C_matrix(2,2) = Shear_Term;
+    }
+    if(num_dim==3){
+      C_matrix(0,0) = Pressure_Term;
+      C_matrix(1,1) = Pressure_Term;
+      C_matrix(2,2) = Pressure_Term;
+      C_matrix(0,1) = Poisson_Ratio;
+      C_matrix(0,2) = Poisson_Ratio;
+      C_matrix(1,0) = Poisson_Ratio;
+      C_matrix(1,2) = Poisson_Ratio;
+      C_matrix(2,0) = Poisson_Ratio;
+      C_matrix(2,1) = Poisson_Ratio;
+      C_matrix(3,3) = Shear_Term;
+      C_matrix(4,4) = Shear_Term;
+      C_matrix(5,5) = Shear_Term;
+    }
+  
+  /*
+  //debug print of elasticity matrix
+  std::cout << " ------------ELASTICITY MATRIX "<< ielem + 1 <<"--------------"<<std::endl;
+  for (int idof = 0; idof < Brows; idof++){
+    std::cout << "row: " << idof + 1 << " { ";
+    for (int istride = 0; istride < Brows; istride++){
+      std::cout << istride + 1 << " = " << C_matrix(idof,istride) << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+  }
+  //end debug block
+  */
 
     //compute all the necessary coordinates and derivatives at this point
     //compute shape function derivatives
@@ -3724,6 +3730,18 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
     }
     //end debug block
     */
+
+    //debug print of local stiffness matrix
+      /*
+      std::cout << " ------------LOCAL STIFFNESS MATRIX "<< ielem + 1 <<"--------------"<<std::endl;
+      for (int idof = 0; idof < num_dim*nodes_per_elem; idof++){
+        std::cout << "row: " << idof + 1 << " { ";
+        for (int istride = 0; istride < num_dim*nodes_per_elem; istride++){
+          std::cout << istride + 1 << " = " << Local_Matrix(idof,istride) << " , " ;
+        }
+        std::cout << " }"<< std::endl;
+        }
+      */
 }
 
 /* ----------------------------------------------------------------------
@@ -4555,9 +4573,12 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
   elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
 
   //loop over elements and use quadrature rule to compute volume from Jacobian determinant
-  for(int nonoverlapping_ielem = 0; nonoverlapping_ielem < rnum_elem; nonoverlapping_ielem++){
+  for(int nonoverlapping_ielem = 0; nonoverlapping_ielem < nonoverlap_nelements; nonoverlapping_ielem++){
     global_element_index = element_map->getGlobalElement(nonoverlapping_ielem);
     ielem = all_element_map->getLocalElement(global_element_index);
+    //debug print
+    //std::cout << "ELEMENT INDEX IS: " << ielem << " " <<global_element_index << std::endl;
+
     //acquire set of nodes for this local element
     for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
       local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
@@ -5046,10 +5067,10 @@ int Parallel_Nonlinear_Solver::solve(){
   //solver->printTiming(*fos);
   
   //Print solution vector
-  //if(myrank==0)
-  //*fos << "Solution :" << std::endl;
-  //X->describe(*fos,Teuchos::VERB_EXTREME);
-  //*fos << std::endl;
+  if(myrank==0)
+  *fos << "Solution :" << std::endl;
+  X->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
   
   return !EXIT_SUCCESS;
 }

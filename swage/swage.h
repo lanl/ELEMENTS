@@ -467,6 +467,8 @@ void refine_mesh(
     const int p_order,
     const int dim);
 
+void refine_high_order_mesh(mesh_t& input_mesh, mesh_t& mesh);
+
 } // end namespace swage
 
 extern swage::mesh_t init_mesh;

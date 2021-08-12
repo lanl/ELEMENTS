@@ -1322,7 +1322,7 @@ void mesh_t::build_patch_connectivity(){
     }
 
     node_hash_delta = fmin(node_hash_delta, dist_min);
-    node_hash_delta = node_hash_delta/2.0;
+    node_hash_delta = node_hash_delta/3.0;
 
     // calculate the 1d array length of the hash table for nodes
     real_t num_bins[num_dim_];

@@ -11,6 +11,10 @@
 #include "utilities.h"
 #include "matar.h"
 
+// Includes for barycentric Lagrange interpolation
+#include "common.h"
+#include "lagrange_polynomials.h"
+
 
 using namespace utils;
 
@@ -467,7 +471,8 @@ void refine_mesh(
     const int p_order,
     const int dim);
 
-void refine_high_order_mesh(mesh_t& input_mesh, mesh_t& mesh);
+void refine_high_order_mesh(mesh_t &input_mesh, mesh_t &mesh);
+void evaluate_jacobian_determinants(mesh_t &mesh);
 
 } // end namespace swage
 

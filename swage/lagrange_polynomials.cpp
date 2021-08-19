@@ -1,24 +1,6 @@
-#pragma once
-#include "common.h"
+#include "lagrange_polynomials.h"
 
 namespace lagrange {
-  /*
-   * Assess equality of two double precision floating point numbers of the same
-   * order of magnitude
-   *
-   * Paramters
-   * ---------
-   * a : a double precision number
-   * b : another double precision number
-   *
-   * Returns
-   * -------
-   *   a boolean 
-   */
-  inline bool almost_equal(Scalar a, Scalar b) {
-    return common::abs(a - b) < 2.0*SCALAR_EPSILON;
-  }
-
   /*
    * Branchless choice between two SizeType variables based on a logical
    * condition
@@ -35,11 +17,61 @@ namespace lagrange {
    */
   inline SizeType branchless_choice(bool c, SizeType a, SizeType b) {
     return a ^ ((b ^ a) & -(!c));
+  };
+
+  /*
+   * Assess equality of two double precision floating point numbers of the same
+   * order of magnitude
+   *
+   * Paramters
+   * ---------
+   * a : a double precision number
+   * b : another double precision number
+   *
+   * Returns
+   * -------
+   *   a boolean 
+   */
+  inline bool almost_equal(NumType a, NumType b) {
+    return common::abs(a - b) < 2.0*NUM_EPS;
+  };
+
+  /*
+   * If the input coordinate is coincident with any of the input vertices,
+   * return the index of the vertex with which it coincides
+   *
+   * It is typically bad practice to check if two floating point numbers, say x
+   * and y, are equal by evaluating x - y == 0. But that is precisely what the
+   * authors suggest to do in "Barycentric Lagrange Interpolation" (Berrut and
+   * Trefethen, 2004). It is also what the authors of Nektar++ do in their
+   * implementation of barycentric Lagrange interpolation. I'm not sure what to
+   * do
+   *
+   * Parameters
+   * ----------
+   * N : number of vertices
+   * z : vertex coordinates
+   * x : coordinate to test
+   * 
+   * Returns
+   * -------
+   * k : index of coincident vertex
+   */
+  void find_coincident_vertex(
+      const SizeType &N, const NumType *z, const NumType &x, SizeType &k) {
+    // The largest number an unsigned integer can be
+    k = -1;
+
+    // Adding to -1 in unsigned rolls over zero
+    for (SizeType j = 0; j < N; j++) {
+      //k += (j + 1)*SizeType(z[j] - x == 0.0);
+      k += (j + 1)*SizeType(almost_equal(z[j], x));
+    }
   }
 
   /*
    * Convert a number in its base 10 representation to its representation in
-   * mixed-radix form for a provided set of radices 
+   * mixed-radix form for a provided set of radices
    *
    * Parameters
    * ----------
@@ -49,25 +81,38 @@ namespace lagrange {
    *
    * Returns
    * -------
-   * y  : little-endian array of Nb + 1 entries, the mixed-radix form
+   * y  : little-endian array of Nb entries, the mixed-radix form
    */
   void base_10_to_mixed_radix(const SizeType &Nb, const SizeType *b, 
-      const SizeType &x, SizeType *y) {
-    SizeType d = 1, q, r = x;
-    // Calculate divisor
-    for (int i = 0; i < Nb; i++) d *= b[i];
-
-    // Calculate down to little end
-    for (int i = Nb; i >= 1; i--) {
-      q = r/d;
-      y[i] = q;
-      r = r - q*d;
-      d /= b[i-1];
+      SizeType x, SizeType *y) {
+    for (SizeType i = 0; i < Nb; i++) {
+      y[i] = x % b[i];
+      x /= b[i];
     }
+  };
 
-    // Calculate little end
-    q = r/d;
-    y[0] = q;
+  /*
+   * Convert a number in mixed-radix form to its base 10 representation for a
+   * provided set of radices
+   *
+   * Parameters
+   * ----------
+   * Nb : number of radices or bases
+   * b  : an array of radices or bases
+   * x  : little-endian array of Nb entries, the mixed-radix form
+   *
+   * Returns
+   * -------
+   * y  : an non-negative integer in base 10
+   */
+  void mixed_radix_to_base_10(const SizeType &Nb, const SizeType *b, 
+      SizeType *x, SizeType &y) {
+    y = 0;
+    SizeType z = 1;
+    for (SizeType i = 0; i < Nb; i++) {
+      y += x[i]*z; 
+      z *= b[i];
+    }
   };
 
   /*
@@ -83,7 +128,7 @@ namespace lagrange {
    * -------
    * z : array of equispaced points
    */
-  void equispaced_points(SizeType N, Scalar &zl, Scalar &zr, Scalar *z) {
+  void equispaced_points(SizeType N, NumType &zl, NumType &zr, NumType *z) {
     for (SizeType i = 0; i < N; i++)
       z[i] = zl + double(i)/double(N - 1)*(zr - zl);
   };
@@ -103,9 +148,9 @@ namespace lagrange {
    * -------
    * z : array of Chebyshev points
    */
-  void chebyshev_points(SizeType N, Scalar &zl, Scalar &zr, Scalar *z) {
+  void chebyshev_points(SizeType N, NumType &zl, NumType &zr, NumType *z) {
     // Evaluate the points using sine function to preserve symmetry
-    Scalar f = 0.5*M_PI/double(N);
+    NumType f = 0.5*M_PI/double(N);
     for (SizeType i = 0; i < N; i++) {
       int j = (-1*int(N) + 1) + 2*int(i);
       z[i] = sin(f*double(j));
@@ -114,174 +159,6 @@ namespace lagrange {
   // Scale the points to fit the domain
   for (int i = 0; i < N; i++)
     z[i] = 0.5*(1.0 - z[i])*zl + 0.5*(1.0 + z[i])*zr;
-  };
-
-  /*
-   * Calculation of barycentric weights of Lagrange interpolant vertices
-   *
-   * Parameters
-   * ----------
-   * N : number of vertices 
-   * z : vertex coordinates
-   *
-   * Returns
-   * -------
-   * w : barycentric vertex weights
-   *
-   * Notes
-   * -----
-   * If one evaluates the interpolant using the barycentric formula of the
-   * second kind, the barycentric weights may be scaled by an arbitrary scalar
-   * (the maximum weight, for example). Since I am using the barycentric
-   * formula of the first kind (also called the modified Lagrange formula), I
-   * cannot and do not scale the weights 
-   */
-  void compute_barycentric_weights(
-      const SizeType &N, const Scalar *z, Scalar *w) {
-    // Compute weights
-    for (SizeType j = 0; j < N; j++) {
-      w[j] = 1.0;
-      for (SizeType k = 0; k < N; k++) {
-        // TODO optimization: make branchless? Trefethen uses log o exp trick
-        if (j != k) w[j] *= 1.0/(z[j] - z[k]);
-      }
-    }
-  };
-
-  /*
-   * If the input coordinate is coincident with any of the input vertices,
-   * return the index of the vertex with which it coincides
-   *
-   * It is typically bad practice to check if two floating point numbers, say x
-   * and y, are equal by evaluating x - y == 0. Buth that is precisely what the
-   * authors suggest to do in "Barycentric Lagrange Interpolation" (Berrut and
-   * Trefethen, 2004). It is also what the authors of Nektar++ do in their
-   * implementation of barycentric Lagrange interpolation. I'm not sure what to
-   * do
-   *
-   * Parameters
-   * ----------
-   * N : number of vertices
-   * z : vertex coordinates
-   * x : coordinate to test
-   * 
-   * Returns
-   * -------
-   * k : index of coincident vertex
-   */
-  void find_coincident_vertex(
-      const SizeType &N, const Scalar *z, const Scalar &x, SizeType &k) {
-    // The largest number an unsigned integer can be
-    k = -1;
-
-    // Adding to -1 in unsigned rolls over zero
-    for (SizeType j = 0; j < N; j++) {
-      //k += (j + 1)*SizeType(z[j] - x == 0.0);
-      k += (j + 1)*SizeType(almost_equal(z[j], x));
-    }
-  }
-
-  /*
-   * Evaluation of (derivative of) 1D Lagrange interpolant 
-   *
-   * The implementation of the evaluation of the interpolant uses the modified
-   * Lagrange formula (barycentric formula of the first kind). The evaluation
-   * of derivatives (up to order 2) is based on the formula for the derivative
-   * of a rational interpolant given in "Some New Aspects of Rational
-   * Interpolation" (Schneider and Werner, 1986).
-   *
-   * Parameters
-   * ----------
-   * ND  : order of derivative
-   * ic  : index of vertex coincident with coordinate above (-1 if not coincident)
-   * Nv  : number of vertices 
-   * z   : vertex coordinates
-   * w   : barycentric vertex weights
-   * x   : coordinate at which to evaluate interpolant
-   * c0  : input coefficients (function values at vertices)
-   * ci  : work array for intermediate coefficients
-   *
-   * Returns
-   * -------
-   * co : output coefficient (evaluation of interpolant or its derivative)
-   */
-  void evaluate_1d(
-      const SizeType &ND, 
-      const SizeType &ic, 
-      const SizeType &Nv, 
-      const Scalar *z, 
-      const Scalar *w, 
-      const Scalar &x, 
-      const Scalar *c0, 
-      Scalar *ci, 
-      Scalar *co) {
-    // Copy input coefficients into the intermediate coefficients
-    std::copy(c0, c0+Nv, ci);
-
-    // Use the following to store evaluation of either factorial(n), when
-    // evaluating on vertex, or the nodal polynomial, when evaluating off
-    // vertex
-    Scalar L = 1.0;
-
-    // Evaluate the interpolant
-    if (ic < Nv) {  // coincident
-      *co = ci[ic];
-    } else {  // non-coincident
-      // Loop over vertices
-      *co = 0.0;
-      for (SizeType j = 0; j < Nv; j++) {
-        // Contribution to interpolant evaluation
-        *co += w[j]*ci[j]/(x - z[j]);
-
-        // Contribution to scalar (nodal polynomial evaluation)
-        L *= (x - z[j]);
-      }
-
-      // Apply scaling
-      *co *= L;
-    }
-
-    // Evaluate derivatives, building up to specified order
-    Scalar dnp = *co;
-    if (ic < Nv) {  // coincident
-      for (int n = 0; n < ND; n++) {
-        // Zero the output
-        *co = 0.0;
-
-        for (int j = 0; j < Nv; j++) {
-          // Calculate divided difference and store in intermediate coefficients
-          Scalar sx = 1.0/(z[ic] - z[j]);
-          ci[j] = sx*(dnp - ci[j]);
-
-          // Update output coefficient with contribution from vertex
-          // TODO optimization: make branchless? Trefethen uses log o exp trick
-          if (j != ic) *co += w[j]*ci[j];
-        }
-
-        // Scale the output and copy for use in calculating next order
-        *co *= -L/w[ic];
-        L *= n;
-        dnp = *co;
-      }
-    } else {  // non-coincident
-      for (int n = 0; n < ND; n++) {
-        // Zero the output
-        *co = 0.0;
-
-        for (int j = 0; j < Nv; j++) {
-          // Calculate divided difference and store in intermediate coefficients
-          Scalar sx = 1.0/(x - z[j]);
-          ci[j] = sx*(dnp - ci[j]);
-
-          // Update output coefficient with contribution from vertex
-          *co += w[j]*ci[j]/(x - z[j]);
-        }
-
-        // Scale the output and copy for use in calculating next order
-        *co *= L;
-        dnp = *co;
-      }
-    }
   };
 
   /*
@@ -339,6 +216,141 @@ namespace lagrange {
   };
 
   /*
+   * Calculation of barycentric weights of Lagrange interpolant vertices
+   *
+   * Parameters
+   * ----------
+   * N : number of vertices 
+   * z : vertex coordinates
+   *
+   * Returns
+   * -------
+   * w : barycentric vertex weights
+   *
+   * Notes
+   * -----
+   * If one evaluates the interpolant using the barycentric formula of the
+   * second kind, the barycentric weights may be scaled by an arbitrary scalar
+   * (the maximum weight, for example). Since I am using the barycentric
+   * formula of the first kind (also called the modified Lagrange formula), I
+   * cannot and do not scale the weights 
+   */
+  void compute_barycentric_weights(const SizeType &N, const NumType *z, 
+      NumType *w) {
+    // Compute weights
+    for (SizeType j = 0; j < N; j++) {
+      w[j] = 1.0;
+      for (SizeType k = 0; k < N; k++) {
+        // TODO optimization: make branchless? Trefethen uses log o exp trick
+        if (j != k) w[j] *= 1.0/(z[j] - z[k]);
+      }
+    }
+  };
+
+  /*
+   * Evaluation of (derivative of) 1D Lagrange interpolant 
+   *
+   * The implementation of the evaluation of the interpolant uses the modified
+   * Lagrange formula (barycentric formula of the first kind). The evaluation
+   * of derivatives (up to order 2) is based on the formula for the derivative
+   * of a rational interpolant given in "Some New Aspects of Rational
+   * Interpolation" (Schneider and Werner, 1986).
+   *
+   * Parameters
+   * ----------
+   * ND  : order of derivative
+   * ic  : index of vertex coincident with coordinate above (-1 if not coincident)
+   * Nv  : number of vertices 
+   * z   : vertex coordinates
+   * w   : barycentric vertex weights
+   * x   : coordinate at which to evaluate interpolant
+   * c0  : input coefficients (function values at vertices)
+   * ci  : work array for intermediate coefficients
+   *
+   * Returns
+   * -------
+   * co : output coefficient (evaluation of interpolant or its derivative)
+   */
+  void evaluate_1d(
+      const SizeType &ND, 
+      const SizeType &ic, 
+      const SizeType &Nv, 
+      const NumType *z, 
+      const NumType *w, 
+      const NumType &x, 
+      const NumType *c0, 
+      NumType *ci, 
+      NumType *co) {
+    // Copy input coefficients into the intermediate coefficients
+    std::copy(c0, c0+Nv, ci);
+
+    // Use the following to store evaluation of either factorial(n), when
+    // evaluating on vertex, or the nodal polynomial, when evaluating off
+    // vertex
+    NumType L = 1.0;
+
+    // Evaluate the interpolant
+    if (ic < Nv) {  // coincident
+      *co = ci[ic];
+    } else {  // non-coincident
+      // Loop over vertices
+      *co = 0.0;
+      for (SizeType j = 0; j < Nv; j++) {
+        // Contribution to interpolant evaluation
+        *co += w[j]*ci[j]/(x - z[j]);
+
+        // Contribution to scalar (nodal polynomial evaluation)
+        L *= (x - z[j]);
+      }
+
+      // Apply scaling
+      *co *= L;
+    }
+
+    // Evaluate derivatives, building up to specified order
+    NumType dnp = *co;
+    if (ic < Nv) {  // coincident
+      for (int n = 0; n < ND; n++) {
+        // Zero the output
+        *co = 0.0;
+
+        for (int j = 0; j < Nv; j++) {
+          // Calculate divided difference and store in intermediate coefficients
+          NumType sx = 1.0/(z[ic] - z[j]);
+          ci[j] = sx*(dnp - ci[j]);
+
+          // Update output coefficient with contribution from vertex
+          // TODO optimization: make branchless? Trefethen uses log o exp trick
+          if (j != ic) *co += w[j]*ci[j];
+        }
+
+        // Scale the output and copy for use in calculating next order
+        *co *= -L/w[ic];
+        L *= n;
+        dnp = *co;
+      }
+    } else {  // non-coincident
+      for (int n = 0; n < ND; n++) {
+        // Zero the output
+        *co = 0.0;
+
+        for (int j = 0; j < Nv; j++) {
+          // Calculate divided difference and store in intermediate coefficients
+          NumType sx = 1.0/(x - z[j]);
+          ci[j] = sx*(dnp - ci[j]);
+
+          // Update output coefficient with contribution from vertex
+          *co += w[j]*ci[j]/(x - z[j]);
+        }
+
+        // Scale the output and copy for use in calculating next order
+        *co *= L;
+        dnp = *co;
+      }
+    }
+  };
+
+  /*
    * Evaluation of 3D tensor product Lagrange interpolant and its partial
    * derivatives
    *
@@ -363,11 +375,11 @@ namespace lagrange {
   void evaluate_3d(
       const SizeType &pde,
       const SizeType &N,
-      const Scalar *z, 
-      const Scalar *w, 
-      const Scalar *x, 
-      const Scalar *f, 
-      Scalar *g) {  
+      const NumType *z, 
+      const NumType *w, 
+      const NumType *x, 
+      const NumType *f, 
+      NumType *g) {  
     // Check the coincidence of the coordinates with the nodes
     SizeType ix, iy, iz;
     find_coincident_vertex(N, z, x[0], ix);
@@ -378,8 +390,8 @@ namespace lagrange {
     SizeType NDx, NDy, NDz;
     decode_partial_derivative(pde, NDx, NDy, NDz);
 
-    const Scalar *c0;
-    Scalar *ci, *co;
+    const NumType *c0;
+    NumType *ci, *co;
 
     // Collapse second dimension into coefficients for third dimension
     for (int k = 0; k < N; k++) {
@@ -423,16 +435,16 @@ namespace lagrange {
    */
   void compute_jacobian_determinant(
       SizeType &N, 
-      Scalar *z, 
-      Scalar *w, 
-      Scalar *cx, 
-      Scalar *cy, 
-      Scalar *cz, 
-      Scalar *g, 
-      Scalar X[3], 
-      Scalar &J) {
+      NumType *z, 
+      NumType *w, 
+      NumType *cx, 
+      NumType *cy, 
+      NumType *cz, 
+      NumType *g, 
+      NumType X[3], 
+      NumType &J) {
     // Evaluate Jacobian (denoted F)
-    Scalar F[9];
+    NumType F[9];
     for (SizeType j = 0; j < 3; j++) {
       SizeType pde = 1 << j;  // partial derivative code (dx, dy, or dz)
 

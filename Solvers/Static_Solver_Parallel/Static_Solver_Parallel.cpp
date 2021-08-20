@@ -4286,10 +4286,10 @@ int Static_Solver_Parallel::solve(){
   //solver->printTiming(*fos);
   
   //Print solution vector
-  if(myrank==0)
-  *fos << "Solution :" << std::endl;
-  X->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //if(myrank==0)
+  //*fos << "Solution :" << std::endl;
+  //X->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
   
   return !EXIT_SUCCESS;
 }

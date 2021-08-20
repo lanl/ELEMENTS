@@ -107,7 +107,7 @@ public:
     //get local view of strains
     const_host_vec_array local_nodal_strains = FEM_->Global_Nodal_Strains->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     
-    //find abs of maximum strain component in the model
+    //find maximum absolute value of strain component in the model
     real_t maximum_strain = 0;
     //loop through all stress components evaluated at node positions (assumes Lagrange interpolation)
 

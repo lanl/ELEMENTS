@@ -187,8 +187,10 @@ public:
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_element_map; //overlapping map of elements connected to the local nodes in each rank
   Teuchos::RCP<MV> node_coords_distributed;
   Teuchos::RCP<MV> node_displacements_distributed;
+  Teuchos::RCP<MV> node_strains_distributed;
   Teuchos::RCP<MV> all_node_coords_distributed;
   Teuchos::RCP<MV> all_node_displacements_distributed;
+  Teuchos::RCP<MV> all_node_strains_distributed;
   Teuchos::RCP<MV> node_densities_distributed;
   Teuchos::RCP<MV> all_node_densities_distributed;
   Teuchos::RCP<MAT> Global_Stiffness_Matrix;

@@ -102,7 +102,7 @@ public:
     if(current_step!=last_comm_step)
     FEM_->update_and_comm_variables();
 
-    FEM_->compute_nodal_strains(design_displacements);
+    FEM_->compute_nodal_strains();
 
     //get local view of strains
     const_host_vec_array local_nodal_strains = FEM_->Global_Nodal_Strains->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);

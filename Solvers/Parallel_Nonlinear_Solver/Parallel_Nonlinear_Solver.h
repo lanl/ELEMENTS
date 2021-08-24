@@ -90,7 +90,7 @@ public:
 
   void compute_nodal_gradients(const_host_vec_array design_densities, host_vec_array objective_gradients);
 
-  void compute_nodal_strains(const_host_vec_array nodal_displacements);
+  void compute_nodal_strains();
 
   void local_matrix(int ielem, CArray <real_t> &Local_Matrix);
 

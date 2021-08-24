@@ -193,6 +193,10 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
       std::cout << "Before free pointer" << std::endl <<std::flush;
       return;
     }
+    
+    //find nodal strain values to approximate strain field subspace
+    compute_nodal_strains();
+
     //CPU time
     double current_cpu = CPU_Time();
     std::cout << " RUNTIME OF CODE ON TASK " << myrank << " is "<< current_cpu-initial_CPU_time <<std::endl;
@@ -4463,7 +4467,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_gradients(const_host_vec_array des
       for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
         if(map->isNodeGlobalElement(mesh->nodes_in_cell_list_(ielem, node_loop))){
           local_node_id = map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
-          design_gradients(local_node_id,0)+=basis_values(node_loop)*Jacobian;
+          design_gradients(local_node_id,0)+=quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*basis_values(node_loop)*Jacobian;
         }
       }
     }
@@ -4496,7 +4500,7 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(){
    for each element. Mainly used for output and is approximate.
 ---------------------------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::compute_nodal_strains(const_host_vec_array nodal_displacements){
+void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   //local variable for host view in the dual view
   const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   const_host_vec_array all_node_displacements = all_node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
@@ -4765,14 +4769,14 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(const_host_vec_array nodal
     //compute contribution to RHS projection vector
     for(int irow=0; irow < Brows; irow++)
       for(int icol=0; icol < nodes_per_elem; icol++){
-        projection_vector(irow,icol) += quad_strain(irow)*basis_values(icol);
+        projection_vector(irow,icol) += quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*quad_strain(irow)*basis_values(icol)*Jacobian;
       }
 
     //compute contribution to projection matrix (only upper part is set)
     for(int irow=0; irow < nodes_per_elem; irow++)
       for(int icol=0; icol < nodes_per_elem; icol++){
         if(irow<=icol)
-        projection_matrix(irow,icol) += basis_values(irow)*basis_values(icol);
+        projection_matrix(irow,icol) += quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*basis_values(irow)*basis_values(icol)*Jacobian;
       }
 
     //accumulate B matrix
@@ -4799,6 +4803,8 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(const_host_vec_array nodal
     //construct matrix and vector wrappers for dense solver
     //projection_matrix_pass = Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem);
     projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem));
+    //debug print of matrix
+    projection_matrix_pass->print(std::cout);
     //strain_vector_pass = Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, strain_vector.get_pointer(), nodes_per_elem);
     strain_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, strain_vector.get_pointer(), nodes_per_elem));
     //loop through strain components and solve for nodal values of that component
@@ -4824,6 +4830,8 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(const_host_vec_array nodal
           }
         }
       }
+      //debug print of vectors
+      projection_vector_pass->print(std::cout);
     }
     
   }
@@ -4995,7 +5003,7 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
                JT_row1(2)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1));
     if(Jacobian<0) Jacobian = -Jacobian;
     
-    Element_Volumes(nonoverlapping_ielem,0) += Jacobian;
+    Element_Volumes(nonoverlapping_ielem,0) += quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*Jacobian;
     }
   }
 

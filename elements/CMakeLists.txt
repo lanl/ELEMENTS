@@ -1,1 +1,19 @@
-add_library(elements elements.cpp)
+add_library(
+  elements 
+  elements.cpp
+  lagrange_polynomials.cpp
+  legendre_polynomials.cpp
+  jacobi_polynomials.cpp
+)
+
+add_library(
+  polynomials_complex
+  lagrange_polynomials.cpp
+  legendre_polynomials.cpp
+  jacobi_polynomials.cpp
+)
+target_compile_options(
+  polynomials_complex
+  PRIVATE
+  -DUSE_COMPLEX_NUMBERS
+)

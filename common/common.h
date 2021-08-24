@@ -6,6 +6,7 @@
 #include <complex>
 #include <limits>
 #include <algorithm>
+#include <iostream>
 
 #define NUM_EPS std::numeric_limits<RealNumber>::epsilon()
 #define NUM_MIN std::numeric_limits<RealNumber>::min()

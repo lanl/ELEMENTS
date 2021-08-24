@@ -1,0 +1,14 @@
+add_executable(
+  test_lagrange_1d_derivatives 
+  test_lagrange_1d_derivatives.cpp
+)
+target_link_libraries(
+  test_lagrange_1d_derivatives 
+  common
+  polynomials_complex
+)
+target_compile_options(
+  test_lagrange_1d_derivatives 
+  PRIVATE
+  -DUSE_COMPLEX_NUMBERS
+)

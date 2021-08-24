@@ -41,15 +41,19 @@ add_subdirectory(matar)
 include_directories(matar/src)
 
 # Includes
+include_directories(common)
 include_directories(elements)
 include_directories(geometry)
 include_directories(swage)
-include_directories(utilities)
 
 # Libraries
+add_subdirectory(common)
 add_subdirectory(elements)
 add_subdirectory(geometry)
 add_subdirectory(swage)
+
+# Tests
+add_subdirectory(tests)
 
 # Examples
 add_subdirectory(examples)

@@ -110,6 +110,7 @@ num_cells in element = (p_order*2)^3
 #define BUFFER_LINES 1000
 #define MAX_WORD 30
 #define MAX_ELEM_NODES 8
+#define STRAIN_EPSILON 0.000000001
 
 using namespace utils;
 
@@ -4309,10 +4310,10 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
 
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  if(myrank==0)
-  *fos << "Global Element Masses:" << std::endl;
-  Global_Element_Masses->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //if(myrank==0)
+  //*fos << "Global Element Masses:" << std::endl;
+  //Global_Element_Masses->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
 }
 
 /* ----------------------------------------------------------------------
@@ -4510,7 +4511,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   int nodes_per_elem = elem->num_basis();
   int num_gauss_points = simparam->num_gauss_points;
   int z_quad,y_quad,x_quad, direct_product_count;
-  int solve_flag;
+  int solve_flag, zero_strain_flag;
   size_t local_node_id, local_dof_idx, local_dof_idy, local_dof_idz;
   GO current_global_index;
 
@@ -4565,6 +4566,13 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
   elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
 
+  //initialize strains to 0
+  //local variable for host view in the dual view
+  for(int init = 0; init < local_dof_map->getNodeNumElements(); init++)
+    node_strains(init,0) = 0;
+  for(int init = 0; init < all_dof_map->getNodeNumElements(); init++)
+    all_node_strains(init,0) = 0;
+
   real_t current_density = 1;
 
   //compute nodal strains as the result of minimizing the L2 error between the strain field and the nodal interpolant over each element
@@ -4595,7 +4603,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       local_node_id = all_node_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop));
       local_dof_idx = all_dof_map->getLocalElement(mesh->nodes_in_cell_list_(ielem, node_loop)*num_dim);
       local_dof_idy = local_dof_idx + 1;
-      local_dof_idx = local_dof_idx + 2;
+      local_dof_idz = local_dof_idx + 2;
       nodal_positions(node_loop,0) = all_node_coords(local_node_id,0);
       nodal_positions(node_loop,1) = all_node_coords(local_node_id,1);
       nodal_positions(node_loop,2) = all_node_coords(local_node_id,2);
@@ -4603,15 +4611,24 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       current_nodal_displacements(node_loop*num_dim+1) = all_node_displacements(local_dof_idy,0);
       current_nodal_displacements(node_loop*num_dim+2) = all_node_displacements(local_dof_idz,0);
 
+      //debug print
       /*
-      if(myrank==1&&nodal_positions(node_loop,2)>10000000){
-        std::cout << " LOCAL MATRIX DEBUG ON TASK " << myrank << std::endl;
-        std::cout << node_loop+1 <<" " << local_node_id <<" "<< mesh->nodes_in_cell_list_(ielem, node_loop) << " "<< nodal_positions(node_loop,2) << std::endl;
-        std::fflush(stdout);
-      }
+      std::cout << "node index access x "<< local_node_id << std::endl;
+      std::cout << "local index access x "<< local_dof_idx << " displacement x " << current_nodal_displacements(node_loop*num_dim) <<std::endl;
+      std::cout << "local index access y "<< local_dof_idy << " displacement y " << current_nodal_displacements(node_loop*num_dim + 1) << std::endl;
+      std::cout << "local index access z "<< local_dof_idz << " displacement z " << current_nodal_displacements(node_loop*num_dim + 2) << std::endl; 
       */
-      //std::cout << local_node_id << " " << mesh->nodes_in_cell_list_(ielem, node_loop) << " " << nodal_positions(node_loop,0) << " " << nodal_positions(node_loop,1) << " "<< nodal_positions(node_loop,2) <<std::endl;
     }
+
+    //debug print of current_nodal_displacements
+    /*
+    std::cout << " ------------nodal displacements for Element "<< ielem + 1 <<"--------------"<<std::endl;
+    std::cout << " { ";
+    for (int idof = 0; idof < num_dim*nodes_per_elem; idof++){
+      std::cout << idof + 1 << " = " << current_nodal_displacements(idof) << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+    */
 
     //loop over quadrature points
     for(int iquad=0; iquad < direct_product_count; iquad++){
@@ -4757,8 +4774,9 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
           basis_derivative_s2(ishape)*(JT_row1(0)*JT_row3(2)-JT_row3(0)*JT_row1(2))-
           basis_derivative_s3(ishape)*(JT_row1(0)*JT_row2(2)-JT_row2(0)*JT_row1(2)));
     }
-
+    
     //multiply by displacement vector to get strain at this quadrature point
+    //division by J ommited since it is multiplied out later
     for(int irow=0; irow < Brows; irow++){
       quad_strain(irow) = 0;
       for(int icol=0; icol < num_dim*nodes_per_elem; icol++){
@@ -4766,10 +4784,20 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       }
     }
 
+    //debug print of quad strain
+    
+    std::cout << " ------------Strain at quadrature point for Element "<< ielem + 1 <<"--------------"<<std::endl;
+    std::cout << " { ";
+    for (int idof = 0; idof < Brows; idof++){
+      std::cout << idof + 1 << " = " << quad_strain(idof) << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+    
+
     //compute contribution to RHS projection vector
     for(int irow=0; irow < Brows; irow++)
       for(int icol=0; icol < nodes_per_elem; icol++){
-        projection_vector(irow,icol) += quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*quad_strain(irow)*basis_values(icol)*Jacobian;
+        projection_vector(irow,icol) += quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*quad_strain(irow)*basis_values(icol);
       }
 
     //compute contribution to projection matrix (only upper part is set)
@@ -4780,12 +4808,13 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       }
 
     //accumulate B matrix
-    for(int irow=0; irow < Brows; irow++)
-      for(int icol=0; icol < num_dim*nodes_per_elem; icol++)
-        B_matrix(irow,icol) += B_matrix_contribution(irow,icol);
+    //for(int irow=0; irow < Brows; irow++)
+      //for(int icol=0; icol < num_dim*nodes_per_elem; icol++)
+        //B_matrix(irow,icol) += quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*B_matrix_contribution(irow,icol)*Jacobian;
 
-    /*
+    
     //debug print of B matrix per quadrature point
+    /*
     std::cout << " ------------B MATRIX QUADRATURE CONTRIBUTION"<< ielem + 1 <<"--------------"<<std::endl;
     for (int idof = 0; idof < Brows; idof++){
       std::cout << "row: " << idof + 1 << " { ";
@@ -4794,44 +4823,65 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       }
       std::cout << " }"<< std::endl;
     }
-    //end debug block
     */
+    //end debug block
+    
     
     }
+    
+    //debug print of projection vector across all components
+    /*
+    std::cout << " ------------Strain Projection Vector"<< ielem + 1 <<"--------------"<<std::endl;
+    for (int idof = 0; idof < Brows; idof++){
+      std::cout << "row: " << idof + 1 << " { ";
+      for (int istride = 0; istride < nodes_per_elem*num_dim; istride++){
+        std::cout << istride + 1 << " = " << projection_vector(idof,istride) << " , " ;
+      }
+      std::cout << " }"<< std::endl;
+    }
+    */
+    //end debug block
 
     //solve small linear system for nodal strain values
     //construct matrix and vector wrappers for dense solver
-    //projection_matrix_pass = Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem);
     projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem));
+
     //debug print of matrix
-    projection_matrix_pass->print(std::cout);
-    //strain_vector_pass = Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, strain_vector.get_pointer(), nodes_per_elem);
+    //projection_matrix_pass->print(std::cout);
+
     strain_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, strain_vector.get_pointer(), nodes_per_elem));
     //loop through strain components and solve for nodal values of that component
     for(int istrain = 0; istrain < Brows; istrain++){
-      //projection_vector_pass = Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, &projection_vector(istrain,0), nodes_per_elem);
-      projection_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, &projection_vector(istrain,0), nodes_per_elem));
-      projection_solver.setMatrix(projection_matrix_pass);
-      projection_solver.setVectors(strain_vector_pass, projection_vector_pass);
-      solve_flag = projection_solver.solve();
-      if(solve_flag) std::cout << "Projection Solve Failed With: " << solve_flag << std::endl;
+      //check if projection vector is zero due to zero strains
+      zero_strain_flag = 1;
+      for(int icol=0; icol < nodes_per_elem; icol++){
+        if(fabs(projection_vector(istrain,icol))>STRAIN_EPSILON) zero_strain_flag = 0;
+      }
+      if(!zero_strain_flag){
+        projection_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, &projection_vector(istrain,0), nodes_per_elem));
+        //debug print of vectors
+        //projection_vector_pass->print(std::cout);
+        projection_solver.setMatrix(projection_matrix_pass);
+        projection_solver.setVectors(strain_vector_pass, projection_vector_pass);
+        solve_flag = projection_solver.solve();
+        strain_vector_pass->print(std::cout);
+        if(solve_flag) std::cout << "Projection Solve Failed With: " << solve_flag << std::endl;
 
-      //contribute equivalent nodal strain for this element to corresponding global nodes
-      //replace if abs greater than abs of currently assigned strain; accumulate average if flagged for node average
-      for(int node_loop=0; node_loop < nodes_per_elem; node_loop++){
-        current_global_index = mesh->nodes_in_cell_list_(ielem, node_loop);
-        local_node_id = all_node_map->getLocalElement(current_global_index);
-        if(fabs(strain_vector(node_loop)) > all_node_strains(local_node_id, istrain)){
-          all_node_strains(local_node_id, istrain) = strain_vector(node_loop);
+        //contribute equivalent nodal strain for this element to corresponding global nodes
+        //replace if abs greater than abs of currently assigned strain; accumulate average if flagged for node average
+        for(int node_loop=0; node_loop < nodes_per_elem; node_loop++){
+          current_global_index = mesh->nodes_in_cell_list_(ielem, node_loop);
+          local_node_id = all_node_map->getLocalElement(current_global_index);
+          if(fabs(strain_vector(node_loop)) > all_node_strains(local_node_id, istrain)){
+            all_node_strains(local_node_id, istrain) = strain_vector(node_loop);
 
-          if(map->isNodeGlobalElement(mesh->nodes_in_cell_list_(ielem, node_loop))){
-            local_node_id = all_node_map->getLocalElement(current_global_index);
-            node_strains(local_node_id, istrain) = strain_vector(node_loop);
+            if(map->isNodeGlobalElement(mesh->nodes_in_cell_list_(ielem, node_loop))){
+              local_node_id = all_node_map->getLocalElement(current_global_index);
+              node_strains(local_node_id, istrain) = strain_vector(node_loop);
+            }
           }
         }
       }
-      //debug print of vectors
-      projection_vector_pass->print(std::cout);
     }
     
   }
@@ -5012,10 +5062,10 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
 
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  if(myrank==0)
-  *fos << "Global Element Volumes:" << std::endl;
-  Global_Element_Volumes->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //if(myrank==0)
+  //*fos << "Global Element Volumes:" << std::endl;
+  //Global_Element_Volumes->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
 }
 
 /* ----------------------------------------------------------------------
@@ -5428,10 +5478,10 @@ int Parallel_Nonlinear_Solver::solve(){
   //comms to get displacements on all node map
   all_node_displacements_distributed->doImport(*node_displacements_distributed, ghost_displacement_importer, Tpetra::INSERT);
 
-  if(myrank==0)
-  *fos << "All displacements :" << std::endl;
-  all_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //if(myrank==0)
+  //*fos << "All displacements :" << std::endl;
+  //all_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
   
   return !EXIT_SUCCESS;
 }

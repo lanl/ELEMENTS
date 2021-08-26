@@ -196,7 +196,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     }
     
     //find nodal strain values to approximate strain field subspace
-    compute_nodal_strains();
+    //compute_nodal_strains();
 
     //CPU time
     double current_cpu = CPU_Time();
@@ -1065,6 +1065,68 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //std::cout << "number of patches = " << mesh->num_patches() << std::endl;
   std::cout << "End of setup " << std::endl;
 } // end read_mesh
+
+/* ----------------------------------------------------------------------
+   Setup Optimization Problem Object, Relevant Objective, and Constraints
+------------------------------------------------------------------------- */
+
+void setup_optimization_problem(){
+  // TypeU (unconstrained) specification
+    ROL::Ptr<ROL::Objective<double>> obj = ROL::makePtr<MyObjective<double>>();
+    ROL::Ptr<ROL::Vector<double>>      x = ROL::makePtr<MyOptimizationVector<double>>();
+    ROL::Problem<double> problem(obj,x);
+    // TypeU can now handle linear equality constraints.  If a linear
+    // equality constraint is added to the problem, the TypeU problem
+    // will eliminite the equality constraint using the change of variables
+    //     x = x_0 + N.apply(y)
+    // where x_0 is a feasible point for the linear equality constraint
+    // and N is a LinearOperator that projects onto the null space of the
+    // constraint Jacobian.
+    ROL::Ptr<ROL::Constraint<double>> lin_econ = ROL::makePtr<MyLinearEqualityConstraint<double>>();
+    ROL::Ptr<ROL::Vector<double>      lin_emul = ROL::makePtr<MyLinearEqualityConstraintMultiplier<double>>();
+    problem.addLinearConstraint("Linear Equality Constraint",lin_econ,lin_mul);
+    
+    
+    // Bound constraint defining the possible range of design density variables
+    ROL::Ptr<ROL::Vector<real_t> > lower_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(lower_bound_densities_distributed);
+    ROL::Ptr<ROL::Vector<real_t> > upper_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(upper_bound_densities_distributed);
+    ROL::Ptr<ROL::BoundConstraint<RealT> > bnd = ROL::makePtr<ROL::Bounds<RealT>>(lower_bounds, upper_bounds);
+    problem.addBoundConstraint(bnd);
+
+    // TypeB can now handle polyhedral constraints specified by
+    // a bound constraint and linear equality/inequality constraints.
+    // If a linear equality/inequality constraint is added to the problem,
+    // the TypeB problem will create a PolyhedralProjection object to
+    // handle the linear constraints.
+    ROL::Ptr<ROL::Constraint<double>>     lin_icon = ROL::makePtr<MyLinearInequalityConstraint<double>>();
+    ROL::Ptr<ROL::Vector<double>>         lin_imul = ROL::makePtr<MyLinearInequalityConstraintMultiplier<double>>();
+    ROL::Ptr<ROL:BoundConstraint<double>> lin_ibnd = ROL::makePtr<MyLinearInequalityConstraintBound<double>>();
+    problem.addLinearConstraint("Linear Inequality Constraint",lin_icon,lin_imul,lin_ibnd);
+    // You can set the PolyhedralProjection algorithmic parameters,
+    // by calling setProjectionAlgorithm.
+    ROL::ParameterList polyProjList;
+    ... // fill parameter list with desired polyhedral projection options
+    problem.setProjectionAlgorithm(polyProjList);
+    
+    // TypeG (generally constrained) specification
+    ROL::Ptr<ROL::Constraint<double>> econ = ROL::makePtr<MyEqualityConstraint<double>>();
+    ROL::Ptr<ROL::Vector<double>>     emul = ROL::makePtr<MyEqualityConstraintMultiplier<double>>();
+    problem.addConstraint("Equality Constraint",econ,emul);
+    ROL::Ptr<ROL::Constraint<double>>      icon = ROL::makePtr<MyInequalityConstraint<double>>();
+    ROL::Ptr<ROL:Vector<double>>          imul = ROL::makePtr<MyInequalityConstraintMultiplier<double>>();
+    ROL::Ptr<ROL::BoundConstraint<double>> ibnd = ROL::makePtr<MyInequalityConstraintBound<double>>();
+    problem.addConstraint("Inequality Constraint",icon,imul,ibnd);
+
+    // Instantiate Solver.
+    ROL::ParameterList parlist;
+    ... // fill parameter list with desired algorithmic options
+    ROL::OptimizationSolver<double> solver(problem,parlist);
+    
+    // Solve optimization problem.
+    std::ostream outStream;
+    solver.solve(outStream);
+  
+}
 
 /* ----------------------------------------------------------------------
    Find boundary surface segments that belong to this MPI rank

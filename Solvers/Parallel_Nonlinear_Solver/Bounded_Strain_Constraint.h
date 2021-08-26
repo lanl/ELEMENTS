@@ -92,6 +92,10 @@ public:
     ROL::Ptr<const MV> up = getVector(u);
     ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<MV> cp = getVector(c);
+    int num_dim = FEM_->simparam->num_dim;
+    int strain_count;
+    if(num_dim==3) strain_count = 6;
+    else strain_count = 3;
     
 
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
@@ -105,15 +109,21 @@ public:
     FEM_->compute_nodal_strains();
 
     //get local view of strains
-    const_host_vec_array local_nodal_strains = FEM_->Global_Nodal_Strains->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    const_host_vec_array local_nodal_strains = FEM_->node_strains_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    int nlocal_nodes = FEM_->nlocal_nodes;
     
     //find maximum absolute value of strain component in the model
     real_t maximum_strain = 0;
+    real_t global_maximum_strain = 0;
     //loop through all stress components evaluated at node positions (assumes Lagrange interpolation)
+    for(int inode = 0; inode < nlocal_nodes; inode++)
+     for(int istrain = 0; istrain < strain_count; istrain++)
+       if(local_nodal_strains(inode,istrain) > maximum_strain)
+         maximum_strain = local_nodal_strains(inode,istrain);
 
     //collective comm to find max
-
-    constraint_view(0,0) = maximum_strain;
+    MPI_Allreduce(&maximum_strain, &global_maximum_strain, 1, MPI_INT, MPI_MAX, FEM_->world);
+    constraint_view(0,0) = global_maximum_strain;
   }
   /*
   void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {

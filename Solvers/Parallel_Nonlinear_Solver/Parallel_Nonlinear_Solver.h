@@ -92,6 +92,8 @@ public:
 
   void compute_nodal_strains();
 
+  void setup_optimization_problem();
+
   void local_matrix(int ielem, CArray <real_t> &Local_Matrix);
 
   void local_matrix_multiply(int ielem, CArray <real_t> &Local_Matrix);
@@ -195,7 +197,6 @@ public:
   Teuchos::RCP<MV> all_node_densities_distributed;
   Teuchos::RCP<MAT> Global_Stiffness_Matrix;
   Teuchos::RCP<MV> Global_Nodal_Forces;
-  Teuchos::RCP<MV> Global_Nodal_Strains;
   Teuchos::RCP<MV> Global_Element_Densities;
   Teuchos::RCP<MV> Global_Element_Volumes;
   Teuchos::RCP<MV> Global_Element_Masses;

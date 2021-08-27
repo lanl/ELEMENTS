@@ -187,6 +187,8 @@ public:
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_node_map; //map of node indices with ghosts on each rank
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > element_map; //non overlapping map of elements owned by each rank used in reduction ops
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_element_map; //overlapping map of elements connected to the local nodes in each rank
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_dof_map; //map of local dofs (typically num_node_local*num_dim)
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_dof_map; //map of local and ghost dofs (typically num_node_all*num_dim)
   Teuchos::RCP<MV> node_coords_distributed;
   Teuchos::RCP<MV> node_displacements_distributed;
   Teuchos::RCP<MV> node_strains_distributed;
@@ -197,15 +199,16 @@ public:
   Teuchos::RCP<MV> all_node_densities_distributed;
   Teuchos::RCP<MAT> Global_Stiffness_Matrix;
   Teuchos::RCP<MV> Global_Nodal_Forces;
+  Teuchos::RCP<MV> lower_bound_node_densities_distributed;
+  Teuchos::RCP<MV> upper_bound_node_densities_distributed;
+  Teuchos::RCP<MV> Global_Element_Densities_Upper_Bound;
+  Teuchos::RCP<MV> Global_Element_Densities_Lower_Bound;
   Teuchos::RCP<MV> Global_Element_Densities;
   Teuchos::RCP<MV> Global_Element_Volumes;
   Teuchos::RCP<MV> Global_Element_Masses;
   Teuchos::RCP<MAT> A;
   Teuchos::RCP<MV> B;
   Teuchos::RCP<MV> X;
-  //Parallel map for the global set of nodes (before removing BCS)
-  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_dof_map; //map of local dofs (typically num_node_local*num_dim)
-  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_dof_map; //map of local and ghost dofs (typically num_node_all*num_dim)
   
   //Boundary Conditions Data
   //CArray <Nodal_Combination> Patch_Nodes;

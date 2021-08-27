@@ -111,6 +111,7 @@ num_cells in element = (p_order*2)^3
 #define MAX_WORD 30
 #define MAX_ELEM_NODES 8
 #define STRAIN_EPSILON 0.000000001
+#define DENSITY_EPSILON 0.001
 
 using namespace utils;
 
@@ -1071,6 +1072,49 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 ------------------------------------------------------------------------- */
 
 void setup_optimization_problem(){
+  int num_dim = simparam->num_dim;
+  bool nodal_density_flag = simparam->nodal_density_flag;
+  int num_elems = mesh->num_elems();
+
+  //set densities
+  if(nodal_density_flag){
+    dual_node_densities_upper_bound = dual_vec_array("dual_node_densities_upper_bound", nlocal_nodes, 1);
+    dual_node_densities_lower_bound = dual_vec_array("dual_node_densities_lower_bound", nlocal_nodes, 1);
+    host_vec_array node_densities_upper_bound = dual_node_densities_upper_bound.view_host();
+    host_vec_array node_densities_lower_bound = dual_node_densities_lower_bound.view_host();
+    //notify that the host view is going to be modified in the file readin
+    dual_node_densities_upper_bound.modify_host();
+    dual_node_densities_lower_bound.modify_host();
+
+    //initialize densities to 1 for now; in the future there might be an option to read in an initial condition for each node
+    for(int inode = 0; inode < nlocal_nodes; inode++){
+      node_densities_upper_bound(inode,0) = 1;
+      node_densities_lower_bound(inode,0) = DENSITY_EPSILON;
+    }
+
+    //sync device view
+    dual_node_densities_upper_bound.sync_device();
+    dual_node_densities_lower_bound.sync_device();
+    
+    //allocate global vector information
+    upper_bound_node_densities_distributed = Teuchos::rcp(new MV(map, dual_node_densities_upper_bound));
+    lower_bound_node_densities_distributed = Teuchos::rcp(new MV(map, dual_node_densities_lower_bound));
+  
+  }
+  else{
+    //initialize memory for volume storage
+    vec_array Element_Densities_Upper_Bound("Element Densities_Upper_Bound", rnum_elem, 1);
+    vec_array Element_Densities_Lower_Bound("Element Densities_Lower_Bound", rnum_elem, 1);
+    for(int ielem = 0; ielem < rnum_elem; ielem++){
+      Element_Densities_Upper_Bound(ielem,0) = 1;
+      Element_Densities_Lower_Bound(ielem,0) = 0;
+    }
+
+    //create global vector
+    Global_Element_Densities_Upper_Bound = Teuchos::rcp(new MV(element_map, Element_Densities_Upper_Bound));
+    Global_Element_Densities_Lower_Bound = Teuchos::rcp(new MV(element_map, Element_Densities_Lower_Bound));
+  }
+
   // TypeU (unconstrained) specification
     ROL::Ptr<ROL::Objective<double>> obj = ROL::makePtr<MyObjective<double>>();
     ROL::Ptr<ROL::Vector<double>>      x = ROL::makePtr<MyOptimizationVector<double>>();
@@ -1088,8 +1132,16 @@ void setup_optimization_problem(){
     
     
     // Bound constraint defining the possible range of design density variables
-    ROL::Ptr<ROL::Vector<real_t> > lower_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(lower_bound_densities_distributed);
-    ROL::Ptr<ROL::Vector<real_t> > upper_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(upper_bound_densities_distributed);
+    ROL::Ptr<ROL::Vector<real_t> > lower_bounds;
+    ROL::Ptr<ROL::Vector<real_t> > upper_bounds;
+    if(nodal_density_flag){
+      lower_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(lower_bound_densities_distributed);
+      upper_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(upper_bound_densities_distributed);
+    }
+    else{
+      lower_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(Global_Element_Densities_Lower_Bound);
+      upper_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(Global_Element_Densities_Upper_Bound);
+    }
     ROL::Ptr<ROL::BoundConstraint<RealT> > bnd = ROL::makePtr<ROL::Bounds<RealT>>(lower_bounds, upper_bounds);
     problem.addBoundConstraint(bnd);
 

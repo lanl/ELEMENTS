@@ -1071,15 +1071,32 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
    Setup Optimization Problem Object, Relevant Objective, and Constraints
 ------------------------------------------------------------------------- */
 
-void setup_optimization_problem(){
+void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
   int num_elems = mesh->num_elems();
+  //RCP pointer to *this (Parallel Nonlinear Solver Object)
+  Teuchos::RCP<Parallel_Nonlinear_Solver> FEM_pass = Teuchos::rcp(this);
 
-  //set densities
+  // Objective function
+  ROL::Ptr<ROL::Objective<real_t>> obj = ROL::makePtr<MassObjective_TopOpt>(FEM_pass, nodal_density_flag);
+  //Design variables to optimize
+  ROL::Ptr<ROL::Vector<double>> x;
+  if(nodal_density_flag)
+    x = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(node_densities_distributed);
+  else
+    x = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(Global_Element_Densities);
+  //optimization problem interface that can have constraints added to it before passing to solver object
+  ROL::Problem<double> problem(obj,x);
+
+  //ROL::Ptr<ROL::Constraint<double>> lin_econ = ROL::makePtr<MyLinearEqualityConstraint<double>>();
+  //ROL::Ptr<ROL::Vector<double>      lin_emul = ROL::makePtr<MyLinearEqualityConstraintMultiplier<double>>();
+  //problem.addLinearConstraint("Linear Equality Constraint",lin_econ,lin_mul);
+
+  //set bounds on design variables
   if(nodal_density_flag){
-    dual_node_densities_upper_bound = dual_vec_array("dual_node_densities_upper_bound", nlocal_nodes, 1);
-    dual_node_densities_lower_bound = dual_vec_array("dual_node_densities_lower_bound", nlocal_nodes, 1);
+    dual_vec_array dual_node_densities_upper_bound = dual_vec_array("dual_node_densities_upper_bound", nlocal_nodes, 1);
+    dual_vec_array dual_node_densities_lower_bound = dual_vec_array("dual_node_densities_lower_bound", nlocal_nodes, 1);
     host_vec_array node_densities_upper_bound = dual_node_densities_upper_bound.view_host();
     host_vec_array node_densities_lower_bound = dual_node_densities_lower_bound.view_host();
     //notify that the host view is going to be modified in the file readin
@@ -1114,69 +1131,51 @@ void setup_optimization_problem(){
     Global_Element_Densities_Upper_Bound = Teuchos::rcp(new MV(element_map, Element_Densities_Upper_Bound));
     Global_Element_Densities_Lower_Bound = Teuchos::rcp(new MV(element_map, Element_Densities_Lower_Bound));
   }
+    
+  // Bound constraint defining the possible range of design density variables
+  ROL::Ptr<ROL::Vector<real_t> > lower_bounds;
+  ROL::Ptr<ROL::Vector<real_t> > upper_bounds;
+  if(nodal_density_flag){
+    lower_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(lower_bound_node_densities_distributed);
+    upper_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(upper_bound_node_densities_distributed);
+  }
+  else{
+    lower_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(Global_Element_Densities_Lower_Bound);
+    upper_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(Global_Element_Densities_Upper_Bound);
+  }
+  ROL::Ptr<ROL::BoundConstraint<real_t> > bnd = ROL::makePtr<ROL::Bounds<real_t>>(lower_bounds, upper_bounds);
+  problem.addBoundConstraint(bnd);
 
-  // TypeU (unconstrained) specification
-    ROL::Ptr<ROL::Objective<double>> obj = ROL::makePtr<MyObjective<double>>();
-    ROL::Ptr<ROL::Vector<double>>      x = ROL::makePtr<MyOptimizationVector<double>>();
-    ROL::Problem<double> problem(obj,x);
-    // TypeU can now handle linear equality constraints.  If a linear
-    // equality constraint is added to the problem, the TypeU problem
-    // will eliminite the equality constraint using the change of variables
-    //     x = x_0 + N.apply(y)
-    // where x_0 is a feasible point for the linear equality constraint
-    // and N is a LinearOperator that projects onto the null space of the
-    // constraint Jacobian.
-    ROL::Ptr<ROL::Constraint<double>> lin_econ = ROL::makePtr<MyLinearEqualityConstraint<double>>();
-    ROL::Ptr<ROL::Vector<double>      lin_emul = ROL::makePtr<MyLinearEqualityConstraintMultiplier<double>>();
-    problem.addLinearConstraint("Linear Equality Constraint",lin_econ,lin_mul);
+  //ROL::Ptr<ROL::Constraint<double>>     lin_icon = ROL::makePtr<MyLinearInequalityConstraint<double>>();
+  //ROL::Ptr<ROL::Vector<double>>         lin_imul = ROL::makePtr<MyLinearInequalityConstraintMultiplier<double>>();
+  //ROL::Ptr<ROL:BoundConstraint<double>> lin_ibnd = ROL::makePtr<MyLinearInequalityConstraintBound<double>>();
+  //problem.addLinearConstraint("Linear Inequality Constraint",lin_icon,lin_imul,lin_ibnd);
     
-    
-    // Bound constraint defining the possible range of design density variables
-    ROL::Ptr<ROL::Vector<real_t> > lower_bounds;
-    ROL::Ptr<ROL::Vector<real_t> > upper_bounds;
-    if(nodal_density_flag){
-      lower_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(lower_bound_densities_distributed);
-      upper_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(upper_bound_densities_distributed);
-    }
-    else{
-      lower_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(Global_Element_Densities_Lower_Bound);
-      upper_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(Global_Element_Densities_Upper_Bound);
-    }
-    ROL::Ptr<ROL::BoundConstraint<RealT> > bnd = ROL::makePtr<ROL::Bounds<RealT>>(lower_bounds, upper_bounds);
-    problem.addBoundConstraint(bnd);
+  // TypeG (generally constrained) specification
+  //ROL::Ptr<ROL::Constraint<double>> econ = ROL::makePtr<MyEqualityConstraint<double>>();
+  //ROL::Ptr<ROL::Vector<double>>     emul = ROL::makePtr<MyEqualityConstraintMultiplier<double>>();
+  //problem.addConstraint("Equality Constraint",econ,emul);
+  ROL::Ptr<std::vector<real_t> > li_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
+  ROL::Ptr<std::vector<real_t> > ll_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
+  //ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,ROL::ROL_INF<real_t>());
+  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,simparam->maximum_strain);
 
-    // TypeB can now handle polyhedral constraints specified by
-    // a bound constraint and linear equality/inequality constraints.
-    // If a linear equality/inequality constraint is added to the problem,
-    // the TypeB problem will create a PolyhedralProjection object to
-    // handle the linear constraints.
-    ROL::Ptr<ROL::Constraint<double>>     lin_icon = ROL::makePtr<MyLinearInequalityConstraint<double>>();
-    ROL::Ptr<ROL::Vector<double>>         lin_imul = ROL::makePtr<MyLinearInequalityConstraintMultiplier<double>>();
-    ROL::Ptr<ROL:BoundConstraint<double>> lin_ibnd = ROL::makePtr<MyLinearInequalityConstraintBound<double>>();
-    problem.addLinearConstraint("Linear Inequality Constraint",lin_icon,lin_imul,lin_ibnd);
-    // You can set the PolyhedralProjection algorithmic parameters,
-    // by calling setProjectionAlgorithm.
-    ROL::ParameterList polyProjList;
-    ... // fill parameter list with desired polyhedral projection options
-    problem.setProjectionAlgorithm(polyProjList);
-    
-    // TypeG (generally constrained) specification
-    ROL::Ptr<ROL::Constraint<double>> econ = ROL::makePtr<MyEqualityConstraint<double>>();
-    ROL::Ptr<ROL::Vector<double>>     emul = ROL::makePtr<MyEqualityConstraintMultiplier<double>>();
-    problem.addConstraint("Equality Constraint",econ,emul);
-    ROL::Ptr<ROL::Constraint<double>>      icon = ROL::makePtr<MyInequalityConstraint<double>>();
-    ROL::Ptr<ROL:Vector<double>>          imul = ROL::makePtr<MyInequalityConstraintMultiplier<double>>();
-    ROL::Ptr<ROL::BoundConstraint<double>> ibnd = ROL::makePtr<MyInequalityConstraintBound<double>>();
-    problem.addConstraint("Inequality Constraint",icon,imul,ibnd);
+  ROL::Ptr<ROL::Vector<real_t> > constraint_mul = ROL::makePtr<ROL::StdVector<real_t>>(li_ptr);
+  ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
+  ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
 
-    // Instantiate Solver.
-    ROL::ParameterList parlist;
-    ... // fill parameter list with desired algorithmic options
-    ROL::OptimizationSolver<double> solver(problem,parlist);
+  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<BoundedStrainConstraint_TopOpt>(FEM_pass, nodal_density_flag, simparam->maximum_strain);
+  ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
+  problem.addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+
+  // fill parameter list with desired algorithmic options or leave as default
+  ROL::ParameterList parlist;
+  // Instantiate Solver.
+  ROL::OptimizationSolver<real_t> solver(problem,parlist);
     
-    // Solve optimization problem.
-    std::ostream outStream;
-    solver.solve(outStream);
+  // Solve optimization problem.
+  std::ostream outStream;
+  solver.solve(outStream);
   
 }
 

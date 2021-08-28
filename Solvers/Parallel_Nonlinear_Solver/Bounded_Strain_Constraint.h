@@ -63,6 +63,7 @@ private:
   ROL::Ptr<Parallel_Nonlinear_Solver> FEM_;
   ROL::Ptr<MV> Element_Masses;
   ROL::Ptr<ROL_MV> ROL_Element_Masses;
+  real_t maximum_strain_;
 
   bool useLC_; // Use linear form of compliance.  Otherwise use quadratic form.
 
@@ -78,10 +79,11 @@ public:
   bool nodal_density_flag_;
   size_t last_comm_step, current_step;
 
-  BoundedStrainConstraint_TopOpt(ROL::Ptr<Parallel_Nonlinear_Solver> FEM, bool nodal_density_flag) 
+  BoundedStrainConstraint_TopOpt(ROL::Ptr<Parallel_Nonlinear_Solver> FEM, bool nodal_density_flag, real_t maximum_strain) 
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
       Element_Masses = ROL::makePtr<MV>(FEM_->element_map,1,true);
+      maximum_strain_ = maximum_strain;
   }
 
   void update( const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
@@ -123,7 +125,7 @@ public:
 
     //collective comm to find max
     MPI_Allreduce(&maximum_strain, &global_maximum_strain, 1, MPI_INT, MPI_MAX, FEM_->world);
-    constraint_view(0,0) = global_maximum_strain;
+    constraint_view(0,0) = maximum_strain_ - global_maximum_strain;
   }
   /*
   void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {

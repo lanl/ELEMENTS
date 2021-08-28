@@ -60,7 +60,7 @@ class MassObjective_TopOpt : public ROL::Objective_SimOpt<real_t> {
 
 private:
 
-  ROL::Ptr<Parallel_Nonlinear_Solver> FEM_;
+  Teuchos::RCP<Parallel_Nonlinear_Solver> FEM_;
   ROL::Ptr<MV> Element_Masses;
   ROL::Ptr<ROL_MV> ROL_Element_Masses;
 
@@ -78,7 +78,7 @@ public:
   bool nodal_density_flag_;
   size_t last_comm_step, current_step;
 
-  MassObjective_TopOpt(ROL::Ptr<Parallel_Nonlinear_Solver> FEM, bool nodal_density_flag) 
+  MassObjective_TopOpt(Teuchos::RCP<Parallel_Nonlinear_Solver> FEM, bool nodal_density_flag) 
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
       Element_Masses = ROL::makePtr<MV>(FEM_->element_map,1,true);

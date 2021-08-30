@@ -24,14 +24,14 @@
 
 #include "ROL_Types.hpp"
 #include <ROL_TpetraMultiVector.hpp>
-#include "ROL_Reduced_Objective_SimOpt.hpp"
+#include "ROL_Objective.hpp"
 #include "ROL_Bounds.hpp"
 #include "ROL_OptimizationSolver.hpp"
 #include "ROL_ParameterList.hpp"
 #include "ROL_Elementwise_Reduce.hpp"
 #include "Parallel_Nonlinear_Solver.h"
 
-class MassObjective_TopOpt : public ROL::Objective_SimOpt<real_t> {
+class MassObjective_TopOpt : public ROL::Objective<real_t> {
   
   typedef Tpetra::Map<>::local_ordinal_type LO;
   typedef Tpetra::Map<>::global_ordinal_type GO;
@@ -85,21 +85,18 @@ public:
       current_step = 0;
   }
 
-  void update( const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
+  void update(const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
     current_step++;
+    //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
+    FEM_->update_and_comm_variables();
   }
 
-  real_t value( const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
-    ROL::Ptr<const MV> up = getVector(u);
+  real_t value(const ROL::Vector<real_t> &z, real_t &tol ) {
     ROL::Ptr<const MV> zp = getVector(z);
     real_t c = 0.0;
 
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-
-    //check if communication of ghost node densities is needed
-    if(current_step!=last_comm_step)
-    FEM_->update_and_comm_variables();
-
+    
     FEM_->compute_element_masses(design_densities);
     ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
 
@@ -110,26 +107,21 @@ public:
     return c;
   }
 
-  void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
-    g.zero();
-  }
+  //void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+    //g.zero();
+  //}
 
-  void gradient_2( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+  void gradient( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &z, real_t &tol ) {
     //get Tpetra multivector pointer from the ROL vector
-    ROL::Ptr<const MV> up = getVector(u);
     ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<MV> gp = getVector(g);
     
     ROL::Ptr<ROL_MV> ROL_Element_Volumes;
 
-    //check if communication of ghost design variables is needed
-    if(current_step!=last_comm_step)
-    FEM_->update_and_comm_variables();
-
     //get local view of the data
     host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    const_host_vec_array design_displacement = up->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    const_host_vec_array design_displacement = FEM_->node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
     int rnum_elem = FEM_->rnum_elem;
 

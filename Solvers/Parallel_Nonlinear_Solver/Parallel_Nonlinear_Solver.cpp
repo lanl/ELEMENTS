@@ -193,12 +193,26 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     
     int solver_exit = solve();
     if(solver_exit == EXIT_SUCCESS){
-      std::cout << "Before free pointer" << std::endl <<std::flush;
+      std::cout << "Linear Solver Error" << std::endl <<std::flush;
       return;
     }
     
     //find nodal strain values to approximate strain field subspace
     //compute_nodal_strains();
+
+    setup_optimization_problem();
+    
+    //debug print of design variables
+    std::ostream &out = std::cout;
+    Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+    if(myrank==0)
+    *fos << "Density data :" << std::endl;
+    if(simparam->nodal_density_flag)
+    node_densities_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+    else
+    Global_Element_Densities->describe(*fos,Teuchos::VERB_EXTREME);
+    *fos << std::endl;
+    std::fflush(stdout);
 
     //CPU time
     double current_cpu = CPU_Time();
@@ -4603,6 +4617,16 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(){
 
   //comms to get ghosts
   all_node_densities_distributed->doImport(*node_densities_distributed, importer, Tpetra::INSERT);
+
+  //Assemble updated matrix with densities
+  assemble();
+
+  //solve for new nodal displacements
+  int solver_exit = solve();
+  if(solver_exit == EXIT_SUCCESS){
+    std::cout << "Linear Solver Error" << std::endl <<std::flush;
+    return;
+  }
 
   //communicate nodal displacements
   all_node_displacements_distributed->doImport(*node_displacements_distributed, importer, Tpetra::INSERT);

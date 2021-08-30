@@ -24,14 +24,14 @@
 
 #include "ROL_Types.hpp"
 #include <ROL_TpetraMultiVector.hpp>
-#include "ROL_Reduced_Objective_SimOpt.hpp"
+#include "ROL_Constraint.hpp"
 #include "ROL_Bounds.hpp"
 #include "ROL_OptimizationSolver.hpp"
 #include "ROL_ParameterList.hpp"
 #include "ROL_Elementwise_Reduce.hpp"
 #include "Parallel_Nonlinear_Solver.h"
 
-class BoundedStrainConstraint_TopOpt : public ROL::Constraint_SimOpt<real_t> {
+class BoundedStrainConstraint_TopOpt : public ROL::Constraint<real_t> {
   
   typedef Tpetra::Map<>::local_ordinal_type LO;
   typedef Tpetra::Map<>::global_ordinal_type GO;
@@ -86,12 +86,12 @@ public:
       maximum_strain_ = maximum_strain;
   }
 
-  void update( const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
+  void update(const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
     current_step++;
+    FEM_->update_and_comm_variables();
   }
 
-  void value(ROL::Vector<real_t> &c, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
-    ROL::Ptr<const MV> up = getVector(u);
+  void value(ROL::Vector<real_t> &c, const ROL::Vector<real_t> &z, real_t &tol ) {
     ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<MV> cp = getVector(c);
     int num_dim = FEM_->simparam->num_dim;
@@ -101,12 +101,11 @@ public:
     
 
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    const_host_vec_array design_displacements = up->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    const_host_vec_array design_displacements = FEM_->node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     host_vec_array constraint_view = cp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
 
     //check if communication of ghost design variables is needed
     if(current_step!=last_comm_step)
-    FEM_->update_and_comm_variables();
 
     FEM_->compute_nodal_strains();
 

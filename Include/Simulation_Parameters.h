@@ -82,6 +82,9 @@ class Simulation_Parameters
 
   //Topology Optimization flags
   bool nodal_density_flag;
+
+  //Topology Optimization parameters
+  real_t maximum_strain;
 };
 
 #endif // end HEADER_H

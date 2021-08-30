@@ -69,6 +69,9 @@ void Simulation_Parameters::input(){
 
   //Topology Optimization flags
   nodal_density_flag = 1;
+
+  //Topology Optimization parameters
+  maximum_strain = 0.02;
     
   // Global instructions
   mat_fill[0].volume = region::global;    // fill everywhere
@@ -107,4 +110,5 @@ void Simulation_Parameters::input(){
   boundary[1].surface = bdy::x_plane; // planes, cylinder, spheres, or a files
   boundary[1].value = 2.0;
   boundary[1].thermal_bc = bdy::isothermal;
+
 }

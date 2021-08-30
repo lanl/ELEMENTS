@@ -83,6 +83,7 @@ num_cells in element = (p_order*2)^3
 
 //Optimization Package
 #include "ROL_Algorithm.hpp"
+#include "ROL_Solver.hpp"
 #include "ROL_LineSearchStep.hpp"
 #include "ROL_TrustRegionStep.hpp"
 #include "ROL_StatusTest.hpp"
@@ -1081,13 +1082,13 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   // Objective function
   ROL::Ptr<ROL::Objective<real_t>> obj = ROL::makePtr<MassObjective_TopOpt>(FEM_pass, nodal_density_flag);
   //Design variables to optimize
-  ROL::Ptr<ROL::Vector<double>> x;
+  ROL::Ptr<ROL::Vector<real_t>> x;
   if(nodal_density_flag)
     x = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(node_densities_distributed);
   else
     x = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(Global_Element_Densities);
   //optimization problem interface that can have constraints added to it before passing to solver object
-  ROL::Problem<double> problem(obj,x);
+   ROL::Ptr<ROL::Problem<real_t>> problem = ROL::makePtr<ROL::Problem<real_t>>(obj,x);
 
   //ROL::Ptr<ROL::Constraint<double>> lin_econ = ROL::makePtr<MyLinearEqualityConstraint<double>>();
   //ROL::Ptr<ROL::Vector<double>      lin_emul = ROL::makePtr<MyLinearEqualityConstraintMultiplier<double>>();
@@ -1144,7 +1145,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
     upper_bounds = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(Global_Element_Densities_Upper_Bound);
   }
   ROL::Ptr<ROL::BoundConstraint<real_t> > bnd = ROL::makePtr<ROL::Bounds<real_t>>(lower_bounds, upper_bounds);
-  problem.addBoundConstraint(bnd);
+  problem->addBoundConstraint(bnd);
 
   //ROL::Ptr<ROL::Constraint<double>>     lin_icon = ROL::makePtr<MyLinearInequalityConstraint<double>>();
   //ROL::Ptr<ROL::Vector<double>>         lin_imul = ROL::makePtr<MyLinearInequalityConstraintMultiplier<double>>();
@@ -1166,16 +1167,16 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
 
   ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<BoundedStrainConstraint_TopOpt>(FEM_pass, nodal_density_flag, simparam->maximum_strain);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  problem.addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
 
   // fill parameter list with desired algorithmic options or leave as default
   ROL::ParameterList parlist;
   // Instantiate Solver.
-  ROL::OptimizationSolver<real_t> solver(problem,parlist);
+  ROL::Solver<real_t> solver(problem,parlist);
     
   // Solve optimization problem.
-  std::ostream outStream;
-  solver.solve(outStream);
+  //std::ostream outStream;
+  solver.solve(std::cout);
   
 }
 

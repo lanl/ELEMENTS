@@ -93,7 +93,8 @@ public:
 
   void value(ROL::Vector<real_t> &c, const ROL::Vector<real_t> &z, real_t &tol ) {
     ROL::Ptr<const MV> zp = getVector(z);
-    ROL::Ptr<MV> cp = getVector(c);
+    //ROL::Ptr<MV> cp = getVector(c);
+    ROL::Ptr<std::vector<real_t>> cp = dynamic_cast<ROL::StdVector<real_t>&>(c).getVector();
     int num_dim = FEM_->simparam->num_dim;
     int strain_count;
     if(num_dim==3) strain_count = 6;
@@ -102,10 +103,7 @@ public:
 
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     const_host_vec_array design_displacements = FEM_->node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    host_vec_array constraint_view = cp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
-
-    //check if communication of ghost design variables is needed
-    if(current_step!=last_comm_step)
+    //host_vec_array constraint_view = cp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
 
     FEM_->compute_nodal_strains();
 
@@ -124,7 +122,7 @@ public:
 
     //collective comm to find max
     MPI_Allreduce(&maximum_strain, &global_maximum_strain, 1, MPI_INT, MPI_MAX, FEM_->world);
-    constraint_view(0,0) = maximum_strain_ - global_maximum_strain;
+    (*cp)[0] = maximum_strain_ - global_maximum_strain;
   }
   /*
   void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {

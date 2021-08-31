@@ -137,6 +137,7 @@ Parallel_Nonlinear_Solver::Parallel_Nonlinear_Solver() : Solver(){
 
     element_select = new elements::element_selector();
     num_nodes = 0;
+    update_count = 0;
 }
 
 Parallel_Nonlinear_Solver::~Parallel_Nonlinear_Solver(){
@@ -180,13 +181,14 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     generate_bcs();
     
     //allocate and fill sparse structures needed for global solution
-    init_global();
+    init_assembly();
 
     //initialize and initialize TO design variable storage
     init_design();
     
     //assemble the global solution (stiffness matrix etc. and nodal forces)
-    assemble();
+    assemble_matrix();
+    assemble_vector();
 
     //find each element's volume
     compute_element_volumes();
@@ -1373,117 +1375,120 @@ void Parallel_Nonlinear_Solver::Get_Boundary_Patches(){
 
 void Parallel_Nonlinear_Solver::generate_bcs(){
     
-    // build boundary mesh patches
-    //mesh->build_bdy_patches();
-    Get_Boundary_Patches();
+  // build boundary mesh patches
+  //mesh->build_bdy_patches();
+  Get_Boundary_Patches();
 
-    std::cout << "number of boundary patches on task " << myrank << " = " << nboundary_patches << std::endl;
-    std::cout << "building boundary sets " << std::endl;
-    // set the number of boundary sets
+  std::cout << "number of boundary patches on task " << myrank << " = " << nboundary_patches << std::endl;
+  std::cout << "building boundary sets " << std::endl;
+  // set the number of boundary sets
     
-    int num_boundary_sets = simparam->NB;
-    int num_surface_force_sets = simparam->NBSF;
-    int num_surface_disp_sets = simparam->NBD;
-    int num_dim = simparam->num_dim;
-    int current_bdy_id = 0;
-    int bdy_set_id;
-    int surf_force_set_id = 0;
-    int surf_disp_set_id = 0;
+  int num_boundary_sets = simparam->NB;
+  int num_surface_force_sets = simparam->NBSF;
+  int num_surface_disp_sets = simparam->NBD;
+  int num_dim = simparam->num_dim;
+  int current_bdy_id = 0;
+  int bdy_set_id;
+  int surf_force_set_id = 0;
+  int surf_disp_set_id = 0;
 
-    init_boundary_sets(num_boundary_sets);
-    Boundary_Condition_Type_List = CArray<int>(num_boundary_sets); 
-    Boundary_Surface_Force_Densities = CArray<real_t>(num_surface_force_sets,3);
-    Boundary_Surface_Displacements = CArray<real_t>(num_surface_disp_sets,3);
-    //initialize
-    for(int ibdy=0; ibdy < num_boundary_sets; ibdy++) Boundary_Condition_Type_List(ibdy) = NONE;
+  init_boundary_sets(num_boundary_sets);
+  Boundary_Condition_Type_List = CArray<int>(num_boundary_sets); 
+  Boundary_Surface_Force_Densities = CArray<real_t>(num_surface_force_sets,3);
+  Boundary_Surface_Displacements = CArray<real_t>(num_surface_disp_sets,3);
+  //initialize
+  for(int ibdy=0; ibdy < num_boundary_sets; ibdy++) Boundary_Condition_Type_List(ibdy) = NONE;
     
-    // tag the x=0 plane,  (Direction, value, bdy_set)
-    std::cout << "tagging x = 0 " << std::endl;
-    int bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-    real_t value = 0.0;
-    bdy_set_id = current_bdy_id++;
-    tag_boundaries(bc_tag, value, bdy_set_id);
-    Boundary_Condition_Type_List(bdy_set_id) = DISPLACEMENT_CONDITION;
-    Boundary_Surface_Displacements(surf_disp_set_id,0) = 0;
-    Boundary_Surface_Displacements(surf_disp_set_id,1) = 0;
-    Boundary_Surface_Displacements(surf_disp_set_id,2) = 0;
-    surf_disp_set_id++;
+  // tag the x=0 plane,  (Direction, value, bdy_set)
+  std::cout << "tagging x = 0 " << std::endl;
+  int bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  real_t value = 0.0;
+  bdy_set_id = current_bdy_id++;
+  tag_boundaries(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = DISPLACEMENT_CONDITION;
+  Boundary_Surface_Displacements(surf_disp_set_id,0) = 0;
+  Boundary_Surface_Displacements(surf_disp_set_id,1) = 0;
+  Boundary_Surface_Displacements(surf_disp_set_id,2) = 0;
+  surf_disp_set_id++;
     
-    std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
-    std::cout << std::endl;
-    /*
-    //This part should be changed so it interfaces with simparam to handle multiple input cases
-    // tag the y=0 plane,  (Direction, value, bdy_set)
-    std::cout << "tagging y = 0 " << std::endl;
-    bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-    value = 0.0;
-    bdy_set_id = 1;
-    mesh->tag_bdys(bc_tag, value, bdy_set_id);
-    Boundary_Condition_Type_List(bdy_set_id) = DISPLACEMENT_CONDITION;
-    std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
-    std::cout << std::endl;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
+  std::cout << std::endl;
+  /*
+  //This part should be changed so it interfaces with simparam to handle multiple input cases
+  // tag the y=0 plane,  (Direction, value, bdy_set)
+  std::cout << "tagging y = 0 " << std::endl;
+  bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 0.0;
+  bdy_set_id = 1;
+  mesh->tag_bdys(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = DISPLACEMENT_CONDITION;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+  std::cout << std::endl;
     
 
-    // tag the z=0 plane,  (Direction, value, bdy_set)
-    std::cout << "tagging z = 0 " << std::endl;
-    bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-    value = 0.0;
-    bdy_set_id = 2;
-    mesh->tag_bdys(bc_tag, value, bdy_set_id);
-    Boundary_Condition_Type_List(bdy_set_id) = DISPLACEMENT_CONDITION;
-    std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
-    std::cout << std::endl;
-    */
+  // tag the z=0 plane,  (Direction, value, bdy_set)
+  std::cout << "tagging z = 0 " << std::endl;
+  bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 0.0;
+  bdy_set_id = 2;
+  mesh->tag_bdys(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = DISPLACEMENT_CONDITION;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+  std::cout << std::endl;
+  */
 
-    std::cout << "tagging x = 1.2 " << std::endl;
-    bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-    //value = 1.2;
-    value = 2;
-    bdy_set_id = current_bdy_id++;
-    //find boundary patches this BC corresponds to
-    tag_boundaries(bc_tag, value, bdy_set_id);
-    Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-    Boundary_Surface_Force_Densities(surf_force_set_id,0) = 2;
-    Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
-    Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
-    surf_force_set_id++;
-    std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
-    std::cout << std::endl;
+  std::cout << "tagging x = 1.2 " << std::endl;
+  bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  //value = 1.2;
+  value = 2;
+  bdy_set_id = current_bdy_id++;
+  //find boundary patches this BC corresponds to
+  tag_boundaries(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 2;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
+  surf_force_set_id++;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
+  std::cout << std::endl;
 
-    /*
-    std::cout << "tagging y = 2 " << std::endl;
-    bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-    value = 2.0;
-    bdy_set_id = 4;
-    mesh->tag_bdys(bc_tag, value, bdy_set_id);
-    Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-    std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
-    std::cout << std::endl;
+  /*
+  std::cout << "tagging y = 2 " << std::endl;
+  bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 2.0;
+  bdy_set_id = 4;
+  mesh->tag_bdys(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+  std::cout << std::endl;
 
-    std::cout << "tagging z = 2 " << std::endl;
-    bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-    value = 2.0;
-    bdy_set_id = 5;
-    mesh->tag_bdys(bc_tag, value, bdy_set_id);
-    Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-    std::cout << "tagged a set " << std::endl;
-    std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
-    std::cout << std::endl;
-    */
+  std::cout << "tagging z = 2 " << std::endl;
+  bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 2.0;
+  bdy_set_id = 5;
+  mesh->tag_bdys(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
+  std::cout << std::endl;
+  */
 
-    //allocate nodal data
-    Node_DOF_Boundary_Condition_Type = CArrayKokkos<int, array_layout, device_type, memory_traits>(nall_nodes*num_dim, "Node_DOF_Boundary_Condition_Type");
-    Node_DOF_Displacement_Boundary_Conditions = CArray<real_t>(nall_nodes*num_dim);
-    Node_DOF_Force_Boundary_Conditions = CArray<real_t>(nall_nodes*num_dim);
+  //allocate nodal data
+  Node_DOF_Boundary_Condition_Type = CArrayKokkos<int, array_layout, device_type, memory_traits>(nall_nodes*num_dim, "Node_DOF_Boundary_Condition_Type");
+  Node_DOF_Displacement_Boundary_Conditions = CArray<real_t>(nall_nodes*num_dim);
+  Node_DOF_Force_Boundary_Conditions = CArray<real_t>(nall_nodes*num_dim);
 
-    //initialize
-    for(int init=0; init < nall_nodes*num_dim; init++)
-      Node_DOF_Boundary_Condition_Type(init) = NONE;
+  //initialize
+  for(int init=0; init < nall_nodes*num_dim; init++)
+    Node_DOF_Boundary_Condition_Type(init) = NONE;
+
+  //Tag nodes for Boundary conditions such as displacements
+  Displacement_Boundary_Conditions();
 } // end generate_bcs
 
 /* ----------------------------------------------------------------------
@@ -2599,7 +2604,7 @@ void Parallel_Nonlinear_Solver::ensight(){
    Initialize global vectors and array maps needed for matrix assembly
 ------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::init_global(){
+void Parallel_Nonlinear_Solver::init_assembly(){
 
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
@@ -2818,12 +2823,11 @@ void Parallel_Nonlinear_Solver::init_global(){
   Stiffness_Matrix = RaggedRightArrayKokkos<real_t, Kokkos::LayoutRight, device_type, memory_traits, array_layout>(Stiffness_Matrix_Strides);
   DOF_Graph_Matrix = RaggedRightArrayKokkos<GO, array_layout, device_type, memory_traits> (Stiffness_Matrix_Strides);
 
-  //initialize stiffness Matrix entries to 0
+  //set stiffness Matrix Graph
   //debug print
     //std::cout << "DOF GRAPH MATRIX ENTRIES ON TASK " << myrank << std::endl;
   for (int idof = 0; idof < num_dim*nlocal_nodes; idof++){
     for (int istride = 0; istride < Stiffness_Matrix_Strides(idof); istride++){
-      Stiffness_Matrix(idof,istride) = 0;
       DOF_Graph_Matrix(idof,istride) = Graph_Matrix(idof/num_dim,istride/num_dim)*num_dim + istride%num_dim;
       //debug print
       //std::cout << "{" <<istride + 1 << "," << DOF_Graph_Matrix(idof,istride) << "} ";
@@ -2950,10 +2954,10 @@ void Parallel_Nonlinear_Solver::init_design(){
 }
 
 /* ----------------------------------------------------------------------
-   Assemble the Sparse Stiffness Matrix and force vector
+   Assemble the Sparse Stiffness Matrix
 ------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::assemble(){
+void Parallel_Nonlinear_Solver::assemble_matrix(){
   int num_dim = simparam->num_dim;
   int num_elems = mesh->num_elems();
   int nodes_per_element;
@@ -2962,6 +2966,19 @@ void Parallel_Nonlinear_Solver::assemble(){
   int max_stride = 0;
   
   CArray <real_t> Local_Stiffness_Matrix = CArray <real_t> (num_dim*max_nodes_per_element,num_dim*max_nodes_per_element);
+
+  //initialize stiffness Matrix entries to 0
+  //debug print
+    //std::cout << "DOF GRAPH MATRIX ENTRIES ON TASK " << myrank << std::endl;
+  for (int idof = 0; idof < num_dim*nlocal_nodes; idof++){
+    for (int istride = 0; istride < Stiffness_Matrix_Strides(idof); istride++){
+      Stiffness_Matrix(idof,istride) = 0;
+      //debug print
+      //std::cout << "{" <<istride + 1 << "," << DOF_Graph_Matrix(idof,istride) << "} ";
+    }
+    //debug print
+    //std::cout << std::endl;
+  }
 
   //assemble the global stiffness matrix
   if(num_dim==2)
@@ -3027,12 +3044,6 @@ void Parallel_Nonlinear_Solver::assemble(){
       }
     }
   }
-  
-  //Tag nodes for Boundary conditions such as displacements
-  Displacement_Boundary_Conditions();
-
-  //Construct applied nodal force vector with quadrature
-  Force_Vector_Construct();
 
   //construct distributed stiffness matrix and force vector from local kokkos data
   
@@ -4026,7 +4037,7 @@ void Parallel_Nonlinear_Solver::Displacement_Boundary_Conditions(){
    Construct the global applied force vector
 ------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::Force_Vector_Construct(){
+void Parallel_Nonlinear_Solver::assemble_vector(){
   //local variable for host view in the dual view
   const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   //local variable for host view in the dual view
@@ -4619,7 +4630,7 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(){
   all_node_densities_distributed->doImport(*node_densities_distributed, importer, Tpetra::INSERT);
 
   //Assemble updated matrix with densities
-  assemble();
+  assemble_matrix();
 
   //solve for new nodal displacements
   int solver_exit = solve();
@@ -4631,6 +4642,21 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(){
   //communicate nodal displacements
   all_node_displacements_distributed->doImport(*node_displacements_distributed, importer, Tpetra::INSERT);
 
+  //debug print of design variables
+  std::ostream &out = std::cout;
+  Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  if(myrank==0)
+  *fos << "Density data :" << std::endl;
+  if(simparam->nodal_density_flag)
+  all_node_densities_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  else
+  Global_Element_Densities->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  std::fflush(stdout);
+
+  update_count++;
+  if(update_count==5)
+  MPI_Finalize();
 }
 
 /* -------------------------------------------------------------------------------------------
@@ -4924,12 +4950,12 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
 
     //debug print of quad strain
     
-    std::cout << " ------------Strain at quadrature point for Element "<< ielem + 1 <<"--------------"<<std::endl;
-    std::cout << " { ";
-    for (int idof = 0; idof < Brows; idof++){
-      std::cout << idof + 1 << " = " << quad_strain(idof) << " , " ;
-    }
-    std::cout << " }"<< std::endl;
+    //std::cout << " ------------Strain at quadrature point for Element "<< ielem + 1 <<"--------------"<<std::endl;
+    //std::cout << " { ";
+    //for (int idof = 0; idof < Brows; idof++){
+      //std::cout << idof + 1 << " = " << quad_strain(idof)/Jacobian << " , " ;
+    //}
+    //std::cout << " }"<< std::endl;
     
 
     //compute contribution to RHS projection vector
@@ -5002,7 +5028,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
         projection_solver.setMatrix(projection_matrix_pass);
         projection_solver.setVectors(strain_vector_pass, projection_vector_pass);
         solve_flag = projection_solver.solve();
-        strain_vector_pass->print(std::cout);
+        //strain_vector_pass->print(std::cout);
         if(solve_flag) std::cout << "Projection Solve Failed With: " << solve_flag << std::endl;
 
         //contribute equivalent nodal strain for this element to corresponding global nodes

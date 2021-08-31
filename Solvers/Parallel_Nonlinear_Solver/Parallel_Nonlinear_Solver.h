@@ -74,11 +74,13 @@ public:
   void read_mesh(char *MESH);
   
   //initializes memory for arrays used in the global stiffness matrix assembly
-  void init_global();
+  void init_assembly();
 
   void init_design();
 
-  void assemble();
+  void assemble_matrix();
+
+  void assemble_vector();
 
   int solve();
 
@@ -126,8 +128,6 @@ public:
 
   void Displacement_Boundary_Conditions();
 
-  void Force_Vector_Construct();
-
   void init_boundary_sets(int num_boundary_sets);
 
   void tag_boundaries(int this_bc_tag, real_t val, int bdy_set);
@@ -138,6 +138,7 @@ public:
   double CPU_Time();
   void init_clock();
   double initial_CPU_time;
+  int update_count;
   
   swage::mesh_t *init_mesh;
   swage::mesh_t *mesh;

@@ -137,7 +137,14 @@ public:
       for(int ig = 0; ig < rnum_elem; ig++)
         objective_gradients(ig,0) = element_volumes(ig,0);
     }
-    
+    //debug print of design variables
+    std::ostream &out = std::cout;
+    Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+    if(FEM_->myrank==0)
+    *fos << "Gradient data :" << std::endl;
+    gp->describe(*fos,Teuchos::VERB_EXTREME);
+    *fos << std::endl;
+    std::fflush(stdout);
   }
   /*
   void hessVec_12( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 

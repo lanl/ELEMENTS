@@ -60,7 +60,7 @@ class BoundedStrainConstraint_TopOpt : public ROL::Constraint<real_t> {
 
 private:
 
-  ROL::Ptr<Parallel_Nonlinear_Solver> FEM_;
+  Parallel_Nonlinear_Solver *FEM_;
   ROL::Ptr<MV> Element_Masses;
   ROL::Ptr<ROL_MV> ROL_Element_Masses;
   real_t maximum_strain_;
@@ -79,16 +79,16 @@ public:
   bool nodal_density_flag_;
   size_t last_comm_step, current_step;
 
-  BoundedStrainConstraint_TopOpt(ROL::Ptr<Parallel_Nonlinear_Solver> FEM, bool nodal_density_flag, real_t maximum_strain) 
+  BoundedStrainConstraint_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag, real_t maximum_strain) 
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
       Element_Masses = ROL::makePtr<MV>(FEM_->element_map,1,true);
       maximum_strain_ = maximum_strain;
+      last_comm_step = current_step = 0;
   }
 
   void update(const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
     current_step++;
-    FEM_->update_and_comm_variables();
   }
 
   void value(ROL::Vector<real_t> &c, const ROL::Vector<real_t> &z, real_t &tol ) {
@@ -104,6 +104,12 @@ public:
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     const_host_vec_array design_displacements = FEM_->node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     //host_vec_array constraint_view = cp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+
+    //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
+    if(last_comm_step!=current_step){
+      FEM_->update_and_comm_variables();
+      last_comm_step = current_step;
+    }
 
     FEM_->compute_nodal_strains();
 

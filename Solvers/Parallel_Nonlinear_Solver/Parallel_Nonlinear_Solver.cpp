@@ -126,18 +126,21 @@ each surface to use for hammering metal into to form it.
 
 Parallel_Nonlinear_Solver::Parallel_Nonlinear_Solver() : Solver(){
   //create parameter object
-    simparam = new Simulation_Parameters();
+  simparam = new Simulation_Parameters();
   // ---- Read input file, define state and boundary conditions ---- //
-    simparam->input();
+  simparam->input();
   //create ref element object
-    ref_elem = new elements::ref_element();
+  ref_elem = new elements::ref_element();
   //create mesh objects
-    init_mesh = new swage::mesh_t(simparam);
-    mesh = new swage::mesh_t(simparam);
+  init_mesh = new swage::mesh_t(simparam);
+  mesh = new swage::mesh_t(simparam);
 
-    element_select = new elements::element_selector();
-    num_nodes = 0;
-    update_count = 0;
+  element_select = new elements::element_selector();
+  num_nodes = 0;
+  update_count = 0;
+
+  //RCP pointer to *this (Parallel Nonlinear Solver Object)
+  //FEM_pass = Teuchos::rcp(this);
 }
 
 Parallel_Nonlinear_Solver::~Parallel_Nonlinear_Solver(){
@@ -203,18 +206,6 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     //compute_nodal_strains();
 
     setup_optimization_problem();
-    
-    //debug print of design variables
-    std::ostream &out = std::cout;
-    Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-    if(myrank==0)
-    *fos << "Density data :" << std::endl;
-    if(simparam->nodal_density_flag)
-    node_densities_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-    else
-    Global_Element_Densities->describe(*fos,Teuchos::VERB_EXTREME);
-    *fos << std::endl;
-    std::fflush(stdout);
 
     //CPU time
     double current_cpu = CPU_Time();
@@ -1092,11 +1083,9 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
   int num_elems = mesh->num_elems();
-  //RCP pointer to *this (Parallel Nonlinear Solver Object)
-  Teuchos::RCP<Parallel_Nonlinear_Solver> FEM_pass = Teuchos::rcp(this);
 
   // Objective function
-  ROL::Ptr<ROL::Objective<real_t>> obj = ROL::makePtr<MassObjective_TopOpt>(FEM_pass, nodal_density_flag);
+  ROL::Ptr<ROL::Objective<real_t>> obj = ROL::makePtr<MassObjective_TopOpt>(this, nodal_density_flag);
   //Design variables to optimize
   ROL::Ptr<ROL::Vector<real_t>> x;
   if(nodal_density_flag)
@@ -1181,7 +1170,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
 
-  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<BoundedStrainConstraint_TopOpt>(FEM_pass, nodal_density_flag, simparam->maximum_strain);
+  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<BoundedStrainConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
   problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
 
@@ -2945,10 +2934,10 @@ void Parallel_Nonlinear_Solver::init_design(){
 
     std::ostream &out = std::cout;
     Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-    if(myrank==0)
-    *fos << "Global Element Densities:" << std::endl;
-    Global_Element_Densities->describe(*fos,Teuchos::VERB_EXTREME);
-    *fos << std::endl;
+    //if(myrank==0)
+    //*fos << "Global Element Densities:" << std::endl;
+    //Global_Element_Densities->describe(*fos,Teuchos::VERB_EXTREME);
+    //*fos << std::endl;
   }
   
 }
@@ -4289,6 +4278,7 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
   const_host_vec_array Element_Volumes = Global_Element_Volumes->getLocalView<HostSpace>(Tpetra::Access::ReadOnly);
   //local variable for host view in the dual view
   const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  const_host_vec_array all_design_densities = all_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
   int nodes_per_elem = elem->num_basis();
@@ -4330,7 +4320,7 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
   elements::legendre_weights_1D(legendre_weights_1D,num_gauss_points);
 
   //loop over elements and use quadrature rule to compute volume from Jacobian determinant
-  for(int nonoverlapping_ielem = 0; nonoverlapping_ielem < rnum_elem; nonoverlapping_ielem++){
+  for(int nonoverlapping_ielem = 0; nonoverlapping_ielem < nonoverlap_nelements; nonoverlapping_ielem++){
     global_element_index = element_map->getGlobalElement(nonoverlapping_ielem);
     ielem = all_element_map->getLocalElement(global_element_index);
     if(nodal_density_flag){
@@ -4340,7 +4330,7 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
       nodal_positions(node_loop,0) = all_node_coords(local_node_id,0);
       nodal_positions(node_loop,1) = all_node_coords(local_node_id,1);
       nodal_positions(node_loop,2) = all_node_coords(local_node_id,2);
-      if(nodal_density_flag) nodal_density(node_loop) = design_densities(local_node_id,0);
+      if(nodal_density_flag) nodal_density(node_loop) = all_design_densities(local_node_id,0);
       /*
       if(myrank==1&&nodal_positions(node_loop,2)>10000000){
         std::cout << " LOCAL MATRIX DEBUG ON TASK " << myrank << std::endl;
@@ -4348,9 +4338,14 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
         std::fflush(stdout);
       }
       */
-      //std::cout << local_node_id << " " << mesh->nodes_in_cell_list_(ielem, node_loop) << " " << nodal_positions(node_loop,0) << " " << nodal_positions(node_loop,1) << " "<< nodal_positions(node_loop,2) <<std::endl;
+      //std::cout << local_node_id << " " << mesh->nodes_in_cell_list_(ielem, node_loop) << " "
+       //<< nodal_positions(node_loop,0) << " " << nodal_positions(node_loop,1) << " "<< nodal_positions(node_loop,2) << " " << nodal_density(node_loop) <<std::endl;
     }
     
+    //debug print of index
+    //std::cout << "nonoverlap element id on TASK " << myrank << " is " << nonoverlapping_ielem << std::endl;
+    //std::fflush(stdout);
+
     //initialize element mass
     Element_Masses(nonoverlapping_ielem,0) = 0;
     
@@ -4449,10 +4444,10 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
 
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  //if(myrank==0)
-  //*fos << "Global Element Masses:" << std::endl;
-  //Global_Element_Masses->describe(*fos,Teuchos::VERB_EXTREME);
-  //*fos << std::endl;
+  if(myrank==0)
+  *fos << "Global Element Masses:" << std::endl;
+  Global_Element_Masses->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
 }
 
 /* ----------------------------------------------------------------------
@@ -4642,20 +4637,8 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(){
   //communicate nodal displacements
   all_node_displacements_distributed->doImport(*node_displacements_distributed, importer, Tpetra::INSERT);
 
-  //debug print of design variables
-  std::ostream &out = std::cout;
-  Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  if(myrank==0)
-  *fos << "Density data :" << std::endl;
-  if(simparam->nodal_density_flag)
-  all_node_densities_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-  else
-  Global_Element_Densities->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  std::fflush(stdout);
-
   update_count++;
-  if(update_count==5)
+  if(update_count==50)
   MPI_Finalize();
 }
 
@@ -5011,7 +4994,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
     projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem));
 
     //debug print of matrix
-    //projection_matrix_pass->print(std::cout);
+    projection_matrix_pass->print(std::cout);
 
     strain_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, strain_vector.get_pointer(), nodes_per_elem));
     //loop through strain components and solve for nodal values of that component
@@ -5024,7 +5007,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       if(!zero_strain_flag){
         projection_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, &projection_vector(istrain,0), nodes_per_elem));
         //debug print of vectors
-        //projection_vector_pass->print(std::cout);
+        projection_vector_pass->print(std::cout);
         projection_solver.setMatrix(projection_matrix_pass);
         projection_solver.setVectors(strain_vector_pass, projection_vector_pass);
         solve_flag = projection_solver.solve();
@@ -5263,7 +5246,7 @@ int Parallel_Nonlinear_Solver::solve(){
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
 
-  *fos << Amesos2::version() << std::endl << std::endl;
+  //*fos << Amesos2::version() << std::endl << std::endl;
 
   bool printTiming   = true;
   bool verbose       = false;
@@ -5613,10 +5596,10 @@ int Parallel_Nonlinear_Solver::solve(){
   //solver->printTiming(*fos);
   
   //Print solution vector
-  if(myrank==0)
-  *fos << "Solution :" << std::endl;
-  X->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //if(myrank==0)
+  //*fos << "Solution :" << std::endl;
+  //X->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
 
   //communicate solution on reduced map to the all node map vector for post processing of strain etc.
   //intermediate storage on the unbalanced reduced system
@@ -5642,10 +5625,10 @@ int Parallel_Nonlinear_Solver::solve(){
   //comms to get displacements on all node map
   all_node_displacements_distributed->doImport(*node_displacements_distributed, ghost_displacement_importer, Tpetra::INSERT);
 
-  //if(myrank==0)
-  //*fos << "All displacements :" << std::endl;
-  //all_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-  //*fos << std::endl;
+  if(myrank==0)
+  *fos << "All displacements :" << std::endl;
+  all_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
   
   return !EXIT_SUCCESS;
 }

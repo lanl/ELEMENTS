@@ -60,7 +60,7 @@ class MassObjective_TopOpt : public ROL::Objective<real_t> {
 
 private:
 
-  Teuchos::RCP<Parallel_Nonlinear_Solver> FEM_;
+  Parallel_Nonlinear_Solver *FEM_;
   ROL::Ptr<MV> Element_Masses;
   ROL::Ptr<ROL_MV> ROL_Element_Masses;
 
@@ -78,17 +78,15 @@ public:
   bool nodal_density_flag_;
   size_t last_comm_step, current_step;
 
-  MassObjective_TopOpt(Teuchos::RCP<Parallel_Nonlinear_Solver> FEM, bool nodal_density_flag) 
+  MassObjective_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag) 
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
       Element_Masses = ROL::makePtr<MV>(FEM_->element_map,1,true);
-      current_step = 0;
+      last_comm_step = current_step = 0;
   }
 
   void update(const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
     current_step++;
-    //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
-    FEM_->update_and_comm_variables();
   }
 
   real_t value(const ROL::Vector<real_t> &z, real_t &tol ) {
@@ -96,6 +94,22 @@ public:
     real_t c = 0.0;
 
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+
+    //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
+    if(last_comm_step!=current_step){
+      FEM_->update_and_comm_variables();
+      last_comm_step = current_step;
+    }
+
+    //debug print of design variables
+  
+    std::ostream &out = std::cout;
+    Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+    if(FEM_->myrank==0)
+    *fos << "Density data :" << std::endl;
+    zp->describe(*fos,Teuchos::VERB_EXTREME);
+    *fos << std::endl;
+    std::fflush(stdout);
     
     FEM_->compute_element_masses(design_densities);
     ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
@@ -103,7 +117,8 @@ public:
     //sum per element results across all MPI ranks
     ROL::Elementwise::ReductionSum<real_t> sumreduc;
     c = ROL_Element_Masses->reduce(sumreduc);
-
+    //debug print
+    std::cout << "SYSTEM MASS: " << c << std::endl;
     return c;
   }
 
@@ -122,6 +137,12 @@ public:
     host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     const_host_vec_array design_displacement = FEM_->node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+
+    //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
+    if(last_comm_step!=current_step){
+      FEM_->update_and_comm_variables();
+      last_comm_step = current_step;
+    }
 
     int rnum_elem = FEM_->rnum_elem;
 

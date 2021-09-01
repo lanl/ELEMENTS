@@ -4,6 +4,11 @@ add_library(
   lagrange_polynomials.cpp
   legendre_polynomials.cpp
   jacobi_polynomials.cpp
+  gauss_jacobi_quadrature.cpp
+)
+target_link_libraries(
+  elements
+  common
 )
 
 add_library(

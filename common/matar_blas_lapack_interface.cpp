@@ -1,5 +1,4 @@
 #include "matar_blas_lapack_interface.h"
-#include "c_blas_lapack_interface.h"
 
 /*
  * Transpose a 2D MATAR CArray and return the result in B
@@ -7,18 +6,16 @@
  * B = A^{T}
  *
  */
-ErrorCode transpose_2d_matar_carray(const CArray<NumType> &A, 
+void matar2blas::transpose(const CArray<NumType> &A, 
     CArray<NumType> &B) {
-  // Throw error if MATAR CArrays are not both 2D, i.e. they're not matrices
+  // Assert compatibility of inputs
   int 
   num_dim_a = A.order(),
   num_dim_b = B.order();
 
   bool both_are_2d = num_dim_a == 2 and num_dim_b == 2;
+  assert(both_are_2d and "Error: arrays are not both 2D");
 
-  if (not both_are_2d) return(NOT_A_MATRIX_ERROR);
-
-  // Throw error if the dimensions of A and B do not match
   int 
   m_a = A.dims(0),
   n_a = A.dims(1),
@@ -26,14 +23,12 @@ ErrorCode transpose_2d_matar_carray(const CArray<NumType> &A,
   n_b = B.dims(1);
 
   bool matching_dims = m_a == n_b and n_a == m_b;
-  if (not matching_dims) return (INCOMPATIBLE_DIMS_ERROR);
+  assert(matching_dims and "Error: array dimensions don't match");
 
   // Put the transpose of A into B
   for (int i = 0; i < m_a; i++)
     for (int j = 0; j < n_a; j++)
       B(j,i) = A(i,j);
-
-  return(0);
 }
 
 /*
@@ -44,46 +39,40 @@ ErrorCode transpose_2d_matar_carray(const CArray<NumType> &A,
  * y = A \times x
  *
  */
-ErrorCode matvec_matar_carray_blas(const CArray<NumType> &A, 
+void matar2blas::matvec(const CArray<NumType> &A, 
     const CArray<NumType> &x, CArray<NumType> &y) {
-  // Check if A is 2D, i.e. that it's a matrix
+  // Assert compatibility of inputs
   int num_dim_a = A.order();
   bool a_is_2d = num_dim_a == 2;
-  if (not a_is_2d) return(NOT_A_MATRIX_ERROR);
+  assert(a_is_2d and "Error: matrix has wrong dimensions");
 
-  // Check that x and y are both 1D, i.e. that they're vectors
   int num_dim_x = x.order(), num_dim_y = y.order();
   bool x_and_y_are_1d = num_dim_x == 1 and num_dim_y == 1;
-  if (not x_and_y_are_1d) return(NOT_A_VECTOR_ERROR);
+  assert(x_and_y_are_1d and "Error: vectors have wrong dimensions");
 
-  // Check that the dimensions of A, x, and y are compatible for matvec
   int 
   m_a = A.dims(0),
   n_a = A.dims(1),
   n_x = x.dims(0),
   m_y = y.dims(0);
   bool compatible_dims = m_y == m_a and n_a == n_x;
-  if (not compatible_dims) return(INCOMPATIBLE_DIMS_ERROR);
+  assert(compatible_dims and "Error: matrix and vector dims incompatible");
   
   int k = n_a;
 
-  /*
-   * Copy the contents of A into regular, unwrapped arrays in column major
-   * order, which what the BLAS routine requires
-   */
+  // Copy the contents of A into regular, unwrapped arrays in column major
+  // order, which what the BLAS routine requires
   NumType *a = new NumType[m_a*n_a];
   for (int i = 0; i < m_a; i++)
     for (int j = 0; j < n_a; j++)
       a[i+n_a*j] = A(i,j);
 
-  /*
-   * Use dgemv from BLAS to compute the matrix-vector multiplication. Note that
-   * dgemv computes 
-   *
-   *   y = \alpha A \times x + \beta y. 
-   *
-   * In this case, we set \alpha = 1 and \beta = 0.
-   */
+  // Use dgemv from BLAS to compute the matrix-vector multiplication. Note that
+  // dgemv computes 
+  //
+  //   y = \alpha A \times x + \beta y. 
+  //
+  // In this case, we set \alpha = 1 and \beta = 0.
   const char if_transpose = 'N';  // whether to tranpose matrix A
 
   NumType 
@@ -106,8 +95,6 @@ ErrorCode matvec_matar_carray_blas(const CArray<NumType> &A,
 	);
 
   delete[] a;
-
-  return(0);
 }
 
 /*
@@ -117,31 +104,28 @@ ErrorCode matvec_matar_carray_blas(const CArray<NumType> &A,
  * C = A \times B
  *
  */
-ErrorCode multiply_2d_matar_carray_blas(const CArray<NumType> &A, 
+void matar2blas::matmul(const CArray<NumType> &A, 
     const CArray<NumType> &B, CArray<NumType> &C) {
-  // Throw error if MATAR CArrays are not all 2D, i.e. they're not matrices
+  // Assert compatibility of inputs
   int 
   num_dim_a = A.order(),
   num_dim_b = B.order(),
   num_dim_c = C.order();
   bool all_are_2d = num_dim_a == 2 and num_dim_b == 2 and num_dim_c == 2;
-  if (not all_are_2d) return(NOT_A_MATRIX_ERROR);
+  assert(all_are_2d and "Error: arrays are not all 2D");
 
-  // Throw error if dimensions of A and B aren't compatible for multiplication
   int 
   m_a = A.dims(0),
   n_a = A.dims(1),
   m_b = B.dims(0),
   n_b = B.dims(1);
   bool compatible_dims = n_a == m_b;
-  if (not compatible_dims) return(INCOMPATIBLE_DIMS_ERROR);
+  assert(compatible_dims and "Error: dimensions are incompatible");
   
   int k = n_a;
 
-  /*
-   * Copy the contents of the input MATAR CArrays into regular, unwrapped
-   * arrays in column major order, which what the BLAS routine requires
-   */
+  // Copy the contents of the input MATAR CArrays into regular, unwrapped
+  // arrays in column major order, which what the BLAS routine requires
   NumType *a = new NumType[m_a*n_a];
   for (int i = 0; i < m_a; i++)
     for (int j = 0; j < n_a; j++)
@@ -152,14 +136,12 @@ ErrorCode multiply_2d_matar_carray_blas(const CArray<NumType> &A,
     for (int j = 0; j < n_b; j++)
       b[i+n_b*j] = B(i,j);
 
-  /*
-   * Use dgemm from BLAS to compute the matrix-matrix multiplication. Note that
-   * dgemm computes 
-   *
-   *   C = \alpha A \times B + \beta C. 
-   *
-   * In this case, we set \alpha = 1 and \beta = 0.
-   */
+  // Use dgemm from BLAS to compute the matrix-matrix multiplication. Note that
+  // dgemm computes 
+  //
+  //   C = \alpha A \times B + \beta C. 
+  //
+  // In this case, we set \alpha = 1 and \beta = 0.
   const char if_transpose_a = 'N';  // whether to tranpose matrix A
   const char if_transpose_b = 'N';  // whether to tranpose matrix B
 
@@ -192,8 +174,6 @@ ErrorCode multiply_2d_matar_carray_blas(const CArray<NumType> &A,
   }
 
   delete[] a, b, c;
-
-  return(0);
 }
 
 /*
@@ -203,32 +183,28 @@ ErrorCode multiply_2d_matar_carray_blas(const CArray<NumType> &A,
  * B = A^{-1}
  *
  */
-ErrorCode invert_2d_matar_carray_lapack(const CArray<NumType> &A, CArray<NumType> &B) {
-  // Throw error if MATAR CArrays are not both 2D, i.e. they're not matrices
+void matar2lapack::invert(const CArray<NumType> &A, CArray<NumType> &B) {
+  // Assert compatibility of inputs
   int num_dim_a = A.order();
   int num_dim_b = B.order();
   bool both_are_2d = num_dim_a == 2 and num_dim_b == 2;
-  if (not both_are_2d) return(NOT_A_MATRIX_ERROR);
+  assert(both_are_2d and "Error: arrays are not both 2D");
   
-  // Throw error if matrices do not have same dimensions
   int 
   m_a = A.dims(0),
   n_a = A.dims(1),
   m_b = B.dims(0),
   n_b = B.dims(1);
   bool matrices_have_same_dims = m_a == m_b and n_a == n_b;
-  if (not matrices_have_same_dims) return(NON_MATCHING_DIMS_ERROR);
+  assert(matrices_have_same_dims and "Error: non-matching dimensions");
   
-  // Throw error if matrices are not square
   int m = m_a;
   int n = n_a;
   bool matrices_are_square = m == n;
-  if (not matrices_are_square) return(NON_SQUARE_MATRIX_ERROR);
+  assert(matrices_are_square and "Error: can't invert non-square matrix");
 
-  /*
-   * Copy the contents of the input MATAR CArray into a regular, unwrapped
-   * array in column major order, which what the LAPACK routine requires
-   */
+  // Copy the contents of the input MATAR CArray into a regular, unwrapped
+  // array in column major order, which what the LAPACK routine requires
   NumType *a = new NumType[m*n];
   for (int i = 0; i < m; i++)
     for (int j = 0; j < n; j++)
@@ -237,14 +213,17 @@ ErrorCode invert_2d_matar_carray_lapack(const CArray<NumType> &A, CArray<NumType
   // Compute LU factorization of matrix A
   int 
   lda = m,      // leading dimension of matrix A
-  info_factor;  // error code
+  factor_info;  // error code
 
   int *ipiv = new int[n];  // pivot indices in LU factorization
 
-  lapack_getrf(&m, &n, a, &lda, ipiv, &info_factor);
-
-  // Throw error if unsuccessful factorization
-  if (info_factor != 0) return(LINEAR_ALGEBRA_ERROR + 1);
+  try {
+    lapack_getrf(&m, &n, a, &lda, ipiv, &factor_info);
+    if (factor_info != 0) throw FactorizationError(
+        "Error: LAPACK LU factorization failed");
+  } catch (std::exception &e) {
+    std::cerr << e.what() << std::endl;
+  }
 
   // Populate right-hand side array (identity since A = L*U, L*U*A^{-1} = I)
   NumType *b = new NumType[m*n];
@@ -258,12 +237,15 @@ ErrorCode invert_2d_matar_carray_lapack(const CArray<NumType> &A, CArray<NumType
   int 
   nrhs  = n,   // number of right-hand sides
   ldb   = m,   // leading dimension of matrix B
-  info_solve;  // error code 
+  solve_info;  // error code 
 
-  lapack_getrs(&if_transpose, &n, &nrhs, a, &lda, ipiv, b, &ldb, &info_solve);
-
-  // Throw error if unsuccessful solution
-  if (info_solve < 0) return(LINEAR_ALGEBRA_ERROR + 2);
+  try {
+    lapack_getrs(&if_transpose, &n, &nrhs, a, &lda, ipiv, b, &ldb, &solve_info);
+    if (solve_info != 0) throw SolutionError(
+        "Error: LAPACK linear system solution failed");
+  } catch (std::exception &e) {
+    std::cerr << e.what() << std::endl;
+  }
 
   // Copy the result into the output MATAR CArray
   for (int j = 0; j < n; j++) {
@@ -273,6 +255,58 @@ ErrorCode invert_2d_matar_carray_lapack(const CArray<NumType> &A, CArray<NumType
   }
   
   delete[] a, ipiv, b;
+}
 
-  return(0);
+/*
+ * Compute eigenvalues and eigenvectors of real symmetric triadiagonal matrix,
+ * as defined by its diagonal and subdiagonal values
+ */
+void matar2lapack::eig_sym_tri(const CArray<NumType> &diag, 
+    const CArray<NumType> &subdiag, CArray<NumType> &eigvals, 
+    CArray<NumType> &eigvecs) {
+  // Assert compatibilty of inputs
+  int num_dim_diag    = diag.order();
+  int num_dim_subdiag = subdiag.order();
+  int num_dim_eigvals = eigvals.order();
+  int num_dim_eigvecs = eigvecs.order();
+  bool correct_input_shape = num_dim_diag == 1 and num_dim_subdiag == 1;
+  bool correct_output_shape = num_dim_eigvals == 1 and num_dim_eigvecs == 2;
+  assert(correct_input_shape and correct_output_shape 
+      and "Error: incorrect input/output shapes");
+  
+  int n_diag = diag.dims(0);
+  int n_subdiag = subdiag.dims(0);
+  int n_eigvals = eigvals.dims(0);
+  int m_eigvecs = eigvecs.dims(0);
+  int n_eigvecs = eigvecs.dims(1);
+  bool correct_input_size = n_diag == n_subdiag + 1;
+  bool correct_output_size = n_eigvals == n_diag and m_eigvecs == n_eigvals 
+      and n_eigvecs == m_eigvecs;
+  assert(correct_input_size and correct_output_size 
+      and "Error: incorrect input/output sizes");
+
+  // Copy diagonal entries into raw C array (LAPACK will overwrite the entries)
+  RealNumber *diag_copy = new RealNumber[n_diag];
+  for (int i = 0; i < n_diag; i++) diag_copy[i] = diag(i);
+
+  // Compute eigenvalues and eigenvectors
+  const char compute_eigenvectors = 'V';  // request eigenvectors
+  RealNumber *work_array = new RealNumber[2*n_diag-2];  // allocate work array
+  int info = 0;
+
+  try {
+    lapack_stev(&compute_eigenvectors, &n_diag, diag_copy, 
+        subdiag.get_pointer(), eigvecs.get_pointer(), &n_diag, 
+        work_array, &info);
+    if (info != 0) throw FactorizationError(
+        "Error: LAPACK eigensolution for symmetric tridiagonal matrix failed");
+  } catch(std::exception &e) {
+    std::cerr << e.what() << std::endl;
+  }
+
+  // Extract eigenvalues from overwritten copy of diagonal entry array
+  for (int i = 0; i < n_diag; i++) eigvals(i) = diag_copy[i];
+
+  // Deallocate work array
+  delete[] work_array;
 }

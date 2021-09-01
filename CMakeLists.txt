@@ -18,6 +18,10 @@ if (CMAKE_VECTOR_VERBOSE)
   set(VECTOR_Fortran_FLAGS "${VECTOR_Fortran_FLAGS} ${VECTOR_Fortran_VERBOSE}")
 endif (CMAKE_VECTOR_VERBOSE)
 
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+find_package(VTK)
+
 INCLUDE(cmake/Modules/TargetDistclean.cmake OPTIONAL)
 
 # Build type

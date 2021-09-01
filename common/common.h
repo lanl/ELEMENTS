@@ -1,12 +1,11 @@
-#ifndef COMMON_H
-#define COMMON_H
+#pragma once
+
+#include "matar.h"
 
 #include <cmath>
-#include <cstdio>
 #include <complex>
-#include <limits>
-#include <algorithm>
 #include <iostream>
+#include <limits>
 
 #define NUM_EPS std::numeric_limits<RealNumber>::epsilon()
 #define NUM_MIN std::numeric_limits<RealNumber>::min()
@@ -35,4 +34,3 @@ namespace common {
   inline RealNumber abs(ComplexNumber number) { 
       return std::abs(number.real()); }
 }
-#endif // COMMON_H

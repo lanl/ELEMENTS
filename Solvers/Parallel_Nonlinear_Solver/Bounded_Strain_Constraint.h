@@ -116,6 +116,15 @@ public:
     //get local view of strains
     const_host_vec_array local_nodal_strains = FEM_->node_strains_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     int nlocal_nodes = FEM_->nlocal_nodes;
+
+    //debug print of strain variables
+    std::ostream &out = std::cout;
+    Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+    if(FEM_->myrank==0)
+    *fos << "Global Strain data :" << std::endl;
+    FEM_->node_strains_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+    *fos << std::endl;
+    std::fflush(stdout);
     
     //find maximum absolute value of strain component in the model
     real_t maximum_strain = 0;
@@ -123,12 +132,17 @@ public:
     //loop through all stress components evaluated at node positions (assumes Lagrange interpolation)
     for(int inode = 0; inode < nlocal_nodes; inode++)
      for(int istrain = 0; istrain < strain_count; istrain++)
-       if(local_nodal_strains(inode,istrain) > maximum_strain)
-         maximum_strain = local_nodal_strains(inode,istrain);
+       if(fabs(local_nodal_strains(inode,istrain)) > maximum_strain)
+         maximum_strain = fabs(local_nodal_strains(inode,istrain));
 
+    //std::cout << "STRAIN VALUE " << maximum_strain << std::endl;
     //collective comm to find max
-    MPI_Allreduce(&maximum_strain, &global_maximum_strain, 1, MPI_INT, MPI_MAX, FEM_->world);
+    MPI_Allreduce(&maximum_strain, &global_maximum_strain, 1, MPI_DOUBLE, MPI_MAX, FEM_->world);
+    //debug print
+    //std::cout << "GLOBAL STRAIN VALUE " << global_maximum_strain << std::endl;
     (*cp)[0] = maximum_strain_ - global_maximum_strain;
+    //debug print
+    std::cout << "CONSTRAINT VALUE " << maximum_strain_ - global_maximum_strain << std::endl;
   }
   /*
   void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {

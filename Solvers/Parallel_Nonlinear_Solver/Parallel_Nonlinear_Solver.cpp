@@ -1170,9 +1170,9 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
 
-  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<BoundedStrainConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain);
-  ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<BoundedStrainConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain);
+  //ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
+  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
 
   // fill parameter list with desired algorithmic options or leave as default
   ROL::ParameterList parlist;
@@ -4638,8 +4638,8 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(){
   all_node_displacements_distributed->doImport(*node_displacements_distributed, importer, Tpetra::INSERT);
 
   update_count++;
-  if(update_count==50)
-  MPI_Finalize();
+  //if(update_count==30)
+  //MPI_Finalize();
 }
 
 /* -------------------------------------------------------------------------------------------
@@ -4663,7 +4663,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   GO current_global_index;
 
   direct_product_count = std::pow(num_gauss_points,num_dim);
-  real_t matrix_term;
+  real_t matrix_term, current_strain;
   real_t matrix_subterm1, matrix_subterm2, matrix_subterm3, Jacobian;
   CArray<real_t> legendre_nodes_1D(num_gauss_points);
   CArray<real_t> legendre_weights_1D(num_gauss_points);
@@ -4981,7 +4981,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
     std::cout << " ------------Strain Projection Vector"<< ielem + 1 <<"--------------"<<std::endl;
     for (int idof = 0; idof < Brows; idof++){
       std::cout << "row: " << idof + 1 << " { ";
-      for (int istride = 0; istride < nodes_per_elem*num_dim; istride++){
+      for (int istride = 0; istride < nodes_per_elem; istride++){
         std::cout << istride + 1 << " = " << projection_vector(idof,istride) << " , " ;
       }
       std::cout << " }"<< std::endl;
@@ -4994,7 +4994,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
     projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem));
 
     //debug print of matrix
-    projection_matrix_pass->print(std::cout);
+    //projection_matrix_pass->print(std::cout);
 
     strain_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, strain_vector.get_pointer(), nodes_per_elem));
     //loop through strain components and solve for nodal values of that component
@@ -5007,7 +5007,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       if(!zero_strain_flag){
         projection_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, &projection_vector(istrain,0), nodes_per_elem));
         //debug print of vectors
-        projection_vector_pass->print(std::cout);
+        //projection_vector_pass->print(std::cout);
         projection_solver.setMatrix(projection_matrix_pass);
         projection_solver.setVectors(strain_vector_pass, projection_vector_pass);
         solve_flag = projection_solver.solve();
@@ -5019,12 +5019,15 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
         for(int node_loop=0; node_loop < nodes_per_elem; node_loop++){
           current_global_index = mesh->nodes_in_cell_list_(ielem, node_loop);
           local_node_id = all_node_map->getLocalElement(current_global_index);
-          if(fabs(strain_vector(node_loop)) > all_node_strains(local_node_id, istrain)){
-            all_node_strains(local_node_id, istrain) = strain_vector(node_loop);
+          //debug print
+          //std::cout << "STRAIN CHECK " << (*strain_vector_pass)(node_loop) << " " << all_node_strains(local_node_id, istrain) << std::endl;
+          current_strain = (*strain_vector_pass)(node_loop);
+          if(fabs(current_strain) > all_node_strains(local_node_id, istrain)){
+            all_node_strains(local_node_id, istrain) = current_strain;
 
             if(map->isNodeGlobalElement(mesh->nodes_in_cell_list_(ielem, node_loop))){
-              local_node_id = all_node_map->getLocalElement(current_global_index);
-              node_strains(local_node_id, istrain) = strain_vector(node_loop);
+              local_node_id = map->getLocalElement(current_global_index);
+              node_strains(local_node_id, istrain) = current_strain;
             }
           }
         }

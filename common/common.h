@@ -33,4 +33,17 @@ namespace common {
   inline RealNumber abs(RealNumber number) { return std::abs(number); }
   inline RealNumber abs(ComplexNumber number) { 
       return std::abs(number.real()); }
+
+  // Converting between representations of array indices
+  void base_10_to_mixed_radix(const SizeType &Nb, const SizeType *b, 
+      SizeType x, SizeType *y);
+  SizeType mixed_radix_to_base_10(const SizeType &Nb, const SizeType *b, 
+      SizeType *x);
+
+  // Encoding and decoding a requested partial derivative to and from an
+  // unsigned integer
+  SizeType encode_partial_derivative(const SizeType &nx, const SizeType &ny, 
+      const SizeType &nz);
+  void decode_partial_derivative(SizeType e, SizeType &nx, SizeType &ny, 
+      SizeType &nz);
 }

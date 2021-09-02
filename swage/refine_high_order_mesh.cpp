@@ -76,7 +76,7 @@ namespace swage {
         SizeType radices[num_rad] = {SizeType(num_g_pts_1d), SizeType(num_g_pts_1d), 
             SizeType(num_g_pts_1d)};
         SizeType IJK[num_rad];
-        lagrange::base_10_to_mixed_radix(num_rad, radices, node_lid, IJK);
+        common::base_10_to_mixed_radix(num_rad, radices, node_lid, IJK);
 
         // Get reference coordinates of quadrature point
         NumType X[3];

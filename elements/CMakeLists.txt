@@ -17,6 +17,10 @@ add_library(
   legendre_polynomials.cpp
   jacobi_polynomials.cpp
 )
+target_link_libraries(
+  polynomials_complex
+  common
+)
 target_compile_options(
   polynomials_complex
   PRIVATE

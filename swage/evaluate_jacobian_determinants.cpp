@@ -21,10 +21,8 @@ namespace swage {
       for (int j = 0; j < num_nodes_1d; j += 2) {
         for (int i = 0; i < num_nodes_1d; i += 2) {
           SizeType IJK[num_rad] = {SizeType(i), SizeType(j), SizeType(k)};
-          SizeType node_id;
-          lagrange::mixed_radix_to_base_10(num_rad, radices, IJK, node_id);
-
-          vert_node_map(vert_id) = int(node_id);
+          vert_node_map(vert_id) = int(common::mixed_radix_to_base_10(num_rad, 
+                radices, IJK));
           vert_id++;
         }   
       }
@@ -71,7 +69,7 @@ namespace swage {
         // Get IJK coordinates of quadrature point
         const SizeType num_rad = 3;
         SizeType IJK[num_rad];
-        lagrange::base_10_to_mixed_radix(num_rad, radices, node_lid, IJK);
+        common::base_10_to_mixed_radix(num_rad, radices, node_lid, IJK);
 
         // Get reference coordinates of quadrature point
         NumType node_coords[3];

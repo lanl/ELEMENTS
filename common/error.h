@@ -14,3 +14,8 @@ class SolutionError : public std::runtime_error {
  public:
   SolutionError(const std::string info) : std::runtime_error(info) {}
 };
+
+class VtkGridError : public std::runtime_error {
+ public:
+  VtkGridError(const std::string info) : std::runtime_error(info) {}
+};

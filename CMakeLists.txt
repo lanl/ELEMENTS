@@ -20,7 +20,8 @@ endif (CMAKE_VECTOR_VERBOSE)
 
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
-find_package(VTK)
+find_package(VTK NO_MODULE)
+find_package(GMSH)
 
 INCLUDE(cmake/Modules/TargetDistclean.cmake OPTIONAL)
 
@@ -49,12 +50,14 @@ include_directories(common)
 include_directories(elements)
 include_directories(geometry)
 include_directories(swage)
+include_directories(io)
 
 # Libraries
 add_subdirectory(common)
 add_subdirectory(elements)
 add_subdirectory(geometry)
 add_subdirectory(swage)
+add_subdirectory(io)
 
 # Tests
 add_subdirectory(tests)

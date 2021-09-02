@@ -2,6 +2,24 @@
 
 namespace lagrange {
   /*
+   * Assess equality of two double precision floating point numbers of the same
+   * order of magnitude
+   *
+   * Paramters
+   * ---------
+   * a : a double precision number
+   * b : another double precision number
+   *
+   * Returns
+   * -------
+   *   a boolean 
+   */
+  inline bool almost_equal(NumType a, NumType b) {
+    return common::abs(a - b) < 2.0*NUM_EPS;
+  }
+
+
+  /*
    * Branchless choice between two SizeType variables based on a logical
    * condition
    *
@@ -17,24 +35,55 @@ namespace lagrange {
    */
   inline SizeType branchless_choice(bool c, SizeType a, SizeType b) {
     return a ^ ((b ^ a) & -(!c));
-  };
+  }
 
   /*
-   * Assess equality of two double precision floating point numbers of the same
-   * order of magnitude
+   * Fill an array with points equally spaced between end points (inclusive)
    *
-   * Paramters
-   * ---------
-   * a : a double precision number
-   * b : another double precision number
+   * Parameters
+   * ----------
+   * N  : number of points
+   * zl : left end point 
+   * zr : right end point 
    *
    * Returns
    * -------
-   *   a boolean 
+   * z : array of equispaced points
    */
-  inline bool almost_equal(NumType a, NumType b) {
-    return common::abs(a - b) < 2.0*NUM_EPS;
-  };
+  void equispaced_points(SizeType N, NumType &zl, NumType &zr, 
+      NumType *z) {
+    for (SizeType i = 0; i < N; i++)
+      z[i] = zl + double(i)/double(N - 1)*(zr - zl);
+  }
+
+  /*
+   * Fill an array with Chebyshev points of the second kind in the interval
+   * defined by the specified end points. The symmetry-preserving technique from
+   * Chebfun (chebtech1/chebpts.m) is used.
+   *
+   * Parameters
+   * ----------
+   * N  : number of points
+   * zl : left end point 
+   * zr : right end point 
+   *
+   * Returns
+   * -------
+   * z : array of Chebyshev points
+   */
+  void chebyshev_points(SizeType N, NumType &zl, NumType &zr, 
+      NumType *z) {
+    // Evaluate the points using sine function to preserve symmetry
+    NumType f = 0.5*M_PI/double(N);
+    for (SizeType i = 0; i < N; i++) {
+      int j = (-1*int(N) + 1) + 2*int(i);
+      z[i] = sin(f*double(j));
+    }
+
+    // Scale the points to fit the domain
+    for (int i = 0; i < N; i++)
+      z[i] = 0.5*(1.0 - z[i])*zl + 0.5*(1.0 + z[i])*zr;
+  }
 
   /*
    * If the input coordinate is coincident with any of the input vertices,
@@ -57,163 +106,17 @@ namespace lagrange {
    * -------
    * k : index of coincident vertex
    */
-  void find_coincident_vertex(
-      const SizeType &N, const NumType *z, const NumType &x, SizeType &k) {
+  void find_coincident_vertex(const SizeType &N, const NumType *z, 
+      const NumType &x, SizeType &k) {
     // The largest number an unsigned integer can be
     k = -1;
 
     // Adding to -1 in unsigned rolls over zero
     for (SizeType j = 0; j < N; j++) {
       //k += (j + 1)*SizeType(z[j] - x == 0.0);
-      k += (j + 1)*SizeType(almost_equal(z[j], x));
+      k += (j + 1)*SizeType(lagrange::almost_equal(z[j], x));
     }
   }
-
-  /*
-   * Convert a number in its base 10 representation to its representation in
-   * mixed-radix form for a provided set of radices
-   *
-   * Parameters
-   * ----------
-   * Nb : number of radices or bases
-   * b  : an array of radices or bases
-   * x  : an non-negative integer in base 10
-   *
-   * Returns
-   * -------
-   * y  : little-endian array of Nb entries, the mixed-radix form
-   */
-  void base_10_to_mixed_radix(const SizeType &Nb, const SizeType *b, 
-      SizeType x, SizeType *y) {
-    for (SizeType i = 0; i < Nb; i++) {
-      y[i] = x % b[i];
-      x /= b[i];
-    }
-  };
-
-  /*
-   * Convert a number in mixed-radix form to its base 10 representation for a
-   * provided set of radices
-   *
-   * Parameters
-   * ----------
-   * Nb : number of radices or bases
-   * b  : an array of radices or bases
-   * x  : little-endian array of Nb entries, the mixed-radix form
-   *
-   * Returns
-   * -------
-   * y  : an non-negative integer in base 10
-   */
-  void mixed_radix_to_base_10(const SizeType &Nb, const SizeType *b, 
-      SizeType *x, SizeType &y) {
-    y = 0;
-    SizeType z = 1;
-    for (SizeType i = 0; i < Nb; i++) {
-      y += x[i]*z; 
-      z *= b[i];
-    }
-  };
-
-  /*
-   * Fill an array with points equally spaced between end points (inclusive)
-   *
-   * Parameters
-   * ----------
-   * N  : number of points
-   * zl : left end point 
-   * zr : right end point 
-   *
-   * Returns
-   * -------
-   * z : array of equispaced points
-   */
-  void equispaced_points(SizeType N, NumType &zl, NumType &zr, NumType *z) {
-    for (SizeType i = 0; i < N; i++)
-      z[i] = zl + double(i)/double(N - 1)*(zr - zl);
-  };
-
-  /*
-   * Fill an array with Chebyshev points of the second kind in the interval
-   * defined by the specified end points. The symmetry-preserving technique from
-   * Chebfun (chebtech1/chebpts.m) is used.
-   *
-   * Parameters
-   * ----------
-   * N  : number of points
-   * zl : left end point 
-   * zr : right end point 
-   *
-   * Returns
-   * -------
-   * z : array of Chebyshev points
-   */
-  void chebyshev_points(SizeType N, NumType &zl, NumType &zr, NumType *z) {
-    // Evaluate the points using sine function to preserve symmetry
-    NumType f = 0.5*M_PI/double(N);
-    for (SizeType i = 0; i < N; i++) {
-      int j = (-1*int(N) + 1) + 2*int(i);
-      z[i] = sin(f*double(j));
-    }
-
-  // Scale the points to fit the domain
-  for (int i = 0; i < N; i++)
-    z[i] = 0.5*(1.0 - z[i])*zl + 0.5*(1.0 + z[i])*zr;
-  };
-
-  /*
-   * Encoding the information specifying a partial derivative of a function in
-   * three variables. The information is the order of the partial derivative in
-   * each of the three variables (x, y, z).
-   *
-   * The encoding is simple. A value of 1 in one of the first three bits
-   * corresponds to a first-order derivative with respect to x, y, or z,
-   * depending on whether it is the first (x), second (y), or third (z) bit.
-   * The scheme generalizes to higher orders by shifting the bits up three
-   * places. 
-   *
-   * Parameters
-   * ----------
-   * nx : order of the partial derivative with respect to x
-   * ny : order of the partial derivative with respect to y
-   * nz : order of the partial derivative with respect to z
-   *
-   * Returns
-   * -------
-   * e : encoding
-   */
-  void encode_partial_derivative(
-      const SizeType &nx, const SizeType &ny, const SizeType &nz, SizeType &e) {
-    e = (nx > 0) << (0 + 3*(nx - 1)) | (ny > 0) << (1 + 3*(ny - 1)) 
-        | (nz > 0) << (2 + 3*(nz - 1));
-  };
-
-  /*
-   * Decoding the partial derivative information encoding above
-   *
-   * Parameters
-   * ----------
-   * e : encoding
-   *
-   * Returns
-   * ----------
-   * nx : order of the partial derivative with respect to x
-   * ny : order of the partial derivative with respect to y
-   * nz : order of the partial derivative with respect to z
-   */
-  void decode_partial_derivative(
-      SizeType e, SizeType &nx, SizeType &ny, SizeType &nz) {
-    nx = 0, ny = 0, nz = 0; 
-    SizeType p = 1;  // order of derivative
-
-    while (e > 0) {
-      nx += ((e & 1) > 0)*p;
-      ny += ((e & 2) > 0)*p;
-      nz += ((e & 4) > 0)*p;
-      e >>= 3;
-      p += 1;
-    }
-  };
 
   /*
    * Calculation of barycentric weights of Lagrange interpolant vertices
@@ -284,10 +187,8 @@ namespace lagrange {
     // Copy input coefficients into the intermediate coefficients
     std::copy(c0, c0+Nv, ci);
 
-    // Use the following to store evaluation of either factorial(n), when
-    // evaluating on vertex, or the nodal polynomial, when evaluating off
-    // vertex
-    NumType L = 1.0;
+    NumType M = 1.0;  // factorial(n)
+    NumType L = 1.0;  // nodal polynomial
 
     // Evaluate the interpolant
     if (ic < Nv) {  // coincident
@@ -308,13 +209,13 @@ namespace lagrange {
     }
 
     // Evaluate derivatives, building up to specified order
-    NumType dnp = *co;
+    NumType dnp = *co;  // initialize with n = 0, the evaluation
     if (ic < Nv) {  // coincident
-      for (int n = 0; n < ND; n++) {
+      for (SizeType n = 1; n <= ND; n++) {
         // Zero the output
         *co = 0.0;
 
-        for (int j = 0; j < Nv; j++) {
+        for (SizeType j = 0; j < Nv; j++) {
           // Calculate divided difference and store in intermediate coefficients
           NumType sx = 1.0/(z[ic] - z[j]);
           ci[j] = sx*(dnp - ci[j]);
@@ -325,16 +226,16 @@ namespace lagrange {
         }
 
         // Scale the output and copy for use in calculating next order
-        *co *= -L/w[ic];
-        L *= n;
+        M *= n;
+        *co *= -M/w[ic];
         dnp = *co;
       }
     } else {  // non-coincident
-      for (int n = 0; n < ND; n++) {
+      for (SizeType n = 1; n <= ND; n++) {
         // Zero the output
         *co = 0.0;
 
-        for (int j = 0; j < Nv; j++) {
+        for (SizeType j = 0; j < Nv; j++) {
           // Calculate divided difference and store in intermediate coefficients
           NumType sx = 1.0/(x - z[j]);
           ci[j] = sx*(dnp - ci[j]);
@@ -344,7 +245,8 @@ namespace lagrange {
         }
 
         // Scale the output and copy for use in calculating next order
-        *co *= L;
+        M *= n;
+        *co *= L*M;
         dnp = *co;
       }
     }
@@ -388,7 +290,7 @@ namespace lagrange {
 
     // Decode partial derivative information
     SizeType NDx, NDy, NDz;
-    decode_partial_derivative(pde, NDx, NDy, NDz);
+    common::decode_partial_derivative(pde, NDx, NDy, NDz);
 
     const NumType *c0;
     NumType *ci, *co;

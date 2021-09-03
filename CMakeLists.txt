@@ -21,7 +21,6 @@ endif (CMAKE_VECTOR_VERBOSE)
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 find_package(VTK NO_MODULE)
-find_package(GMSH)
 
 INCLUDE(cmake/Modules/TargetDistclean.cmake OPTIONAL)
 
@@ -77,3 +76,4 @@ install(FILES ${ALL_HEADERS} DESTINATION include)
 install(TARGETS elements DESTINATION lib)
 install(TARGETS geometry DESTINATION lib)
 install(TARGETS swage DESTINATION lib)
+install(TARGETS common DESTINATION lib)

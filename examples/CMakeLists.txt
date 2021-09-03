@@ -6,4 +6,4 @@ add_subdirectory(vtk)
 
 # "Projection" example, demonstration of projection of
 # function onto higher-order basis and plotting with Paraview
-#add_subdirectory(projection)
+add_subdirectory(projection)

@@ -84,8 +84,8 @@ VtkGrid swage2vtk::read_grid(const std::string &file_name) {
  * Notes
  * -----
  * This routine currently assumes: 
- *  - all cells in VTK grid are of the same type (VTK_LAGRANGE_HEXAHEDRON) and
- *    of the same order; and
+ *  - all cells in VTK grid are of the same type (VTK_LAGRANGE_HEXAHEDRON or
+ *    VTK_TRIQUADRATIC_HEXAHEDRON) and of the same order; and
  *  - all elements in the SWAGE mesh are to be hexahedra of the same order.
  */
 void swage2vtk::init_swage_mesh(const int &elem_order, const VtkGrid &grid, 
@@ -108,7 +108,8 @@ void swage2vtk::init_swage_mesh(const int &elem_order, const VtkGrid &grid,
   int num_cells = grid->GetCells()->GetNumberOfCells();
   for (int cell_id = 0; cell_id < num_cells; cell_id++) {
     int cell_type = grid->GetCellType(cell_id);
-    if (cell_type != VTK_LAGRANGE_HEXAHEDRON) {
+    if (cell_type != VTK_LAGRANGE_HEXAHEDRON 
+        and cell_type != VTK_TRIQUADRATIC_HEXAHEDRON) {
       std::ostringstream err_oss;
       err_oss << "Error: cell " << cell_id 
           << " is not a VTK_LAGRANGE_HEXAHEDRON" << std::endl;

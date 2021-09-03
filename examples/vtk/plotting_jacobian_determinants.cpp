@@ -122,7 +122,7 @@ CArray<NumType> compute_jacobian_determinants(SwageMesh &mesh) {
 
 int main() {
   // Create a 2-element half-annulus mesh 
-  int elem_order = 2;
+  int elem_order = 2;  // try increasing the order!
   SwageMesh mesh;
   create_annular_mesh(elem_order, mesh);
 

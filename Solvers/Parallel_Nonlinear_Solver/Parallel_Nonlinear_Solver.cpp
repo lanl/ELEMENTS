@@ -102,6 +102,7 @@ num_cells in element = (p_order*2)^3
 //Objective Functions and Constraint Functions
 #include "Mass_Objective.h"
 #include "Bounded_Strain_Constraint.h"
+#include "Strain_Energy_Constraint.h"
 
 //debug and performance includes
 #include <sys/time.h>
@@ -716,14 +717,14 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         for(int inode = 0; inode < elem_words_per_line; inode++){
           if((rnum_elem-1)*elem_words_per_line + inode>=buffer_max){ 
             element_temp.resize((rnum_elem-1)*elem_words_per_line + inode + BUFFER_LINES*elem_words_per_line);
-            buffer_max += (rnum_elem-1)*elem_words_per_line + inode + BUFFER_LINES*elem_words_per_line;
+            buffer_max = (rnum_elem-1)*elem_words_per_line + inode + BUFFER_LINES*elem_words_per_line;
           }
           element_temp[(rnum_elem-1)*elem_words_per_line + inode] = node_store(inode); 
           //std::cout << "VECTOR STORAGE FOR ELEM " << rnum_elem << " ON TASK " << myrank << " NODE " << inode+1 << " IS " << node_store(inode) + 1 << std::endl;
         }
         //assign global element id to temporary list
         if(rnum_elem-1>=indices_buffer_max){ 
-          global_indices_temp.resize(indices_buffer_max + BUFFER_LINES);
+          global_indices_temp.resize(rnum_elem-1 + BUFFER_LINES);
           indices_buffer_max = rnum_elem-1 + BUFFER_LINES;
         }
         global_indices_temp[rnum_elem-1] = elem_gid;
@@ -1164,15 +1165,15 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<std::vector<real_t> > li_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
   ROL::Ptr<std::vector<real_t> > ll_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
   //ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,ROL::ROL_INF<real_t>());
-  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,simparam->maximum_strain);
+  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,simparam->maximum_strain_energy);
 
   ROL::Ptr<ROL::Vector<real_t> > constraint_mul = ROL::makePtr<ROL::StdVector<real_t>>(li_ptr);
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
-
-  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<BoundedStrainConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain);
-  //ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+ 
+  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<StrainEnergyConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
+  ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
+  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
 
   // fill parameter list with desired algorithmic options or leave as default
   ROL::ParameterList parlist;
@@ -5628,10 +5629,10 @@ int Parallel_Nonlinear_Solver::solve(){
   //comms to get displacements on all node map
   all_node_displacements_distributed->doImport(*node_displacements_distributed, ghost_displacement_importer, Tpetra::INSERT);
 
-  if(myrank==0)
-  *fos << "All displacements :" << std::endl;
-  all_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //if(myrank==0)
+  //*fos << "All displacements :" << std::endl;
+  //all_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
   
   return !EXIT_SUCCESS;
 }

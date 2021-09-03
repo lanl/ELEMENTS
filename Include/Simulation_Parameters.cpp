@@ -72,6 +72,7 @@ void Simulation_Parameters::input(){
 
   //Topology Optimization parameters
   maximum_strain = 0.02;
+  maximum_strain_energy = 0.02;
     
   // Global instructions
   mat_fill[0].volume = region::global;    // fill everywhere

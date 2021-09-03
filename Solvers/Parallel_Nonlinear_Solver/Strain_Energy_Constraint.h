@@ -1,5 +1,5 @@
-#ifndef MASS_OBJECTIVE_TOPOPT_H
-#define MASS_OBJECTIVE_TOPOPT_H
+#ifndef STRAIN_ENERGY_CONSTRAINT_TOPOPT_H
+#define STRAIN_ENERGY_CONSTRAINT_TOPOPT_H
 
 #include "utilities.h"
 #include "../Solver.h"
@@ -24,14 +24,14 @@
 
 #include "ROL_Types.hpp"
 #include <ROL_TpetraMultiVector.hpp>
-#include "ROL_Objective.hpp"
+#include "ROL_Constraint.hpp"
 #include "ROL_Bounds.hpp"
 #include "ROL_OptimizationSolver.hpp"
 #include "ROL_ParameterList.hpp"
 #include "ROL_Elementwise_Reduce.hpp"
 #include "Parallel_Nonlinear_Solver.h"
 
-class MassObjective_TopOpt : public ROL::Objective<real_t> {
+class StrainEnergyConstraint_TopOpt : public ROL::Constraint<real_t> {
   
   typedef Tpetra::Map<>::local_ordinal_type LO;
   typedef Tpetra::Map<>::global_ordinal_type GO;
@@ -61,7 +61,9 @@ class MassObjective_TopOpt : public ROL::Objective<real_t> {
 private:
 
   Parallel_Nonlinear_Solver *FEM_;
-  ROL::Ptr<ROL_MV> ROL_Element_Masses;
+  ROL::Ptr<ROL_MV> ROL_Force;
+  ROL::Ptr<ROL_MV> ROL_Displacements;
+  real_t maximum_strain_energy_;
 
   bool useLC_; // Use linear form of compliance.  Otherwise use quadratic form.
 
@@ -77,9 +79,10 @@ public:
   bool nodal_density_flag_;
   size_t last_comm_step, current_step;
 
-  MassObjective_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag) 
+  StrainEnergyConstraint_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag, real_t maximum_strain_energy) 
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
+      maximum_strain_energy_ = maximum_strain_energy;
       last_comm_step = current_step = 0;
   }
 
@@ -87,60 +90,45 @@ public:
     current_step++;
   }
 
-  real_t value(const ROL::Vector<real_t> &z, real_t &tol ) {
-    ROL::Ptr<const MV> zp = getVector(z);
-    real_t c = 0.0;
+  void value(ROL::Vector<real_t> &c, const ROL::Vector<real_t> &z, real_t &tol ) {
 
-    const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-
+    ROL::Ptr<std::vector<real_t>> cp = dynamic_cast<ROL::StdVector<real_t>&>(c).getVector();
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
       FEM_->update_and_comm_variables();
       last_comm_step = current_step;
     }
 
-    //debug print of design variables
-  
-    std::ostream &out = std::cout;
-    Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-    if(FEM_->myrank==0)
-    *fos << "Density data :" << std::endl;
-    zp->describe(*fos,Teuchos::VERB_EXTREME);
-    *fos << std::endl;
-    std::fflush(stdout);
-    
-    FEM_->compute_element_masses(design_densities);
-    ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
+    ROL_Force = ROL::makePtr<ROL_MV>(FEM_->Global_Nodal_Forces);
+    ROL_Displacements = ROL::makePtr<ROL_MV>(FEM_->node_displacements_distributed);
 
-    //sum per element results across all MPI ranks
-    ROL::Elementwise::ReductionSum<real_t> sumreduc;
-    c = ROL_Element_Masses->reduce(sumreduc);
+    real_t current_strain_energy = ROL_Displacements->dot(*ROL_Force);
+    std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
     //debug print
-    std::cout << "SYSTEM MASS: " << c << std::endl;
-    return c;
+    //std::cout << "GLOBAL STRAIN VALUE " << global_maximum_strain << std::endl;
+    (*cp)[0] = maximum_strain_energy_ - current_strain_energy;
+    //debug print
+    std::cout << "CONSTRAINT VALUE " << maximum_strain_energy_ - current_strain_energy << std::endl;
+  }
+  /*
+  void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+    g.zero();
   }
 
-  //void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
-    //g.zero();
-  //}
-
-  void gradient( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &z, real_t &tol ) {
+  void gradient_2( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
     //get Tpetra multivector pointer from the ROL vector
+    ROL::Ptr<const MV> up = getVector(u);
     ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<MV> gp = getVector(g);
     
     ROL::Ptr<ROL_MV> ROL_Element_Volumes;
 
+    //communicate ghosts here again? check if variables were updated since last communication
+
     //get local view of the data
     host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    const_host_vec_array design_displacement = FEM_->node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-
-    //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
-    if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
-      last_comm_step = current_step;
-    }
+    const_host_vec_array design_displacement = up->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
     int rnum_elem = FEM_->rnum_elem;
 
@@ -156,16 +144,9 @@ public:
       for(int ig = 0; ig < rnum_elem; ig++)
         objective_gradients(ig,0) = element_volumes(ig,0);
     }
-    //debug print of design variables
-    //std::ostream &out = std::cout;
-    //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-    //if(FEM_->myrank==0)
-    //*fos << "Gradient data :" << std::endl;
-    //gp->describe(*fos,Teuchos::VERB_EXTREME);
-    //*fos << std::endl;
-    //std::fflush(stdout);
+    
   }
-  /*
+  
   void hessVec_12( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 
                    const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
     

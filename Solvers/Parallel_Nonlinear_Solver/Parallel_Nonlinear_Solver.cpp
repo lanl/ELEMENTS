@@ -216,20 +216,6 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
 
     std::cout << "finished linear solver" << std::endl;
 
-    // ---- Allocate memory for state on mesh ---- //
-    allocate_state();
-
-    initialize_state();
-
-    std::cout << "Before boundary  " << std::endl;
-    apply_boundary();
-
-
-    // Calculate reference element information
-    calculate_ref_elem();
-
-    get_nodal_jacobian();
-
     real_t dt = simparam->dt;
     int cycle_stop = simparam->cycle_stop;
     real_t &TIME = simparam->TIME;
@@ -240,67 +226,11 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     real_t graphics_time = simparam->graphics_dt_ival;
     real_t &percent_comp = simparam->percent_comp;
 
-
-    // Solve the Laplacian
-
-
-    ensight();
-
-    for (cycle = 1; cycle <= cycle_stop; cycle++) {
-        // stop calculation if flag
-        if (simparam->stop_calc == 1) break;
-
-
-        // Set timestep
-        dt = simparam->dt;
-
-
-        // smooth_cells();
-
-        smooth_element();
-
-        apply_boundary();
-
-        // increment the time
-        TIME += dt;
-
-
-
-        // Runtime outputs
-
-        if ((cycle%10) == 0) {
-            percent_comp = (TIME/TFINAL)*100.;
-            printf("Percent complete = %.2f \n", percent_comp); 
-        }
-        
-        // end of calculation
-        if (TIME>=TFINAL) break;
-
-        
-        if ((cycle%50) == 0) {
-            printf("Step = %d   dt = %e  time = %e  \n ", cycle, dt, TIME);
-        }
-
-        
-        // output a graphics dump
-        if ((cycle%graphics_cyc_ival) == 0 || (TIME-graphics_time) >= 0.0) {
-            
-            printf("****************Graphics write*************** \n");
-            ensight();
-            
-            // set next time to dump a graphics output
-            graphics_time += graphics_dt_ival;
-        }
-        
-        
-    } // end of cycle loop
-
     // Data writers
-    ensight();
+    ensight_writer();
     // vtk_writer();
-
+    
     std::cout << "End of Main file" << std::endl;
-
 }
 
 //==============================================================================
@@ -1164,7 +1094,6 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //problem.addConstraint("Equality Constraint",econ,emul);
   ROL::Ptr<std::vector<real_t> > li_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
   ROL::Ptr<std::vector<real_t> > ll_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
-  //ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,ROL::ROL_INF<real_t>());
   ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,simparam->maximum_strain_energy);
 
   ROL::Ptr<ROL::Vector<real_t> > constraint_mul = ROL::makePtr<ROL::StdVector<real_t>>(li_ptr);
@@ -1604,491 +1533,25 @@ int Parallel_Nonlinear_Solver::check_boundary(Node_Combination &Patch_Nodes, int
     
 } // end method to check bdy
 
-void Parallel_Nonlinear_Solver::allocate_state(){
-    //local variable for host view in the dual view
-    host_vec_array node_coords = dual_node_coords.view_host();
-    int rk_storage = simparam->rk_storage;
-    int num_dim = simparam->num_dim;
-    node_t *node = simparam->node;
-    mat_pt_t *mat_pt = simparam->mat_pt;
-
-    std::cout << "Allocate and Initialize"  << std::endl;
-    std::cout << "RK num stages = "<< rk_storage  << std::endl;
-    // --- allocate and initialize the defaults for the problem ---
-
-    // ---- Node initialization ---- //
-    node->init_node_state(num_dim, *mesh, rk_storage);
-    std::cout << "Node state allocated and initialized to zero"  << std::endl;
-    std::cout << std::endl;
-
-    // ---- Material point initialization ---- //
-    mat_pt->init_mat_pt_state(num_dim, *mesh, rk_storage);
-    std::cout << "Material point state allocated and initialized to zero"  << std::endl;
-    std::cout << std::endl;
-} // end allocate_state
-
-
-void Parallel_Nonlinear_Solver::initialize_state(){
-  //local variable for host view in the dual view
-  host_vec_array node_coords = dual_node_coords.view_host();
-    int NF = simparam->NF;
-    mat_pt_t *mat_pt = simparam->mat_pt;
-    mat_fill_t *mat_fill = simparam->mat_fill;
-    int rk_stage = simparam->rk_stage;
-
-    std::cout << "Before fill instructions"  << std::endl;
-    //--- apply the fill instructions ---//
-    for (int f_id = 0; f_id < NF; f_id++){
-        
-        for (int cell_rid = 0; cell_rid < mesh->num_cells(); cell_rid++) {
-            
-            // calculate the coordinates and radius of the cell
-            real_t cell_coords_x = 0.0;
-            real_t cell_coords_y = 0.0;
-            real_t cell_coords_z = 0.0;
-            
-            for (int node_lid = 0; node_lid < 8; node_lid++){
-                
-                // increment the number of cells attached to this vertex
-                int vert_gid = mesh->nodes_in_cell(cell_rid, node_lid); // get the global_id
-                
-                cell_coords_x += node_coords(vert_gid, 0);
-                cell_coords_y += node_coords(vert_gid, 1);
-                cell_coords_z += node_coords(vert_gid, 2);
-                
-            }// end for loop over node_lid
-            
-            cell_coords_x = cell_coords_x/8.0;
-            cell_coords_y = cell_coords_y/8.0;
-            cell_coords_z = cell_coords_z/8.0;
-
-            // Material points at cell center
-
-            mat_pt->coords(rk_stage, cell_rid, 0) = cell_coords_x;
-            mat_pt->coords(rk_stage, cell_rid, 1) = cell_coords_y;
-            mat_pt->coords(rk_stage, cell_rid, 2) = cell_coords_z;
-
-            
-            // spherical radius
-            real_t radius = sqrt( cell_coords_x*cell_coords_x +
-                                  cell_coords_y*cell_coords_y +
-                                  cell_coords_z*cell_coords_z );
-            
-            // cylinderical radius
-            real_t radius_cyl = sqrt( cell_coords_x*cell_coords_x +
-                                      cell_coords_y*cell_coords_y);
-            
-            
-            // default is not to fill the cell
-            int fill_this = 0;
-            
-            // check to see if this cell should be filled
-            switch(mat_fill[f_id].volume)
-            {
-                case region::global:
-                {
-                    fill_this = 1;
-                }
-                case region::box:
-                {
-                    if ( cell_coords_x >= mat_fill[f_id].x1
-                        && cell_coords_x <= mat_fill[f_id].x2
-                        && cell_coords_y >= mat_fill[f_id].y1
-                        && cell_coords_y <= mat_fill[f_id].y2
-                        && cell_coords_z >= mat_fill[f_id].z1
-                        && cell_coords_z <= mat_fill[f_id].z2 ) fill_this = 1;
-                }
-                case region::cylinder:
-                {
-                    if ( radius_cyl >= mat_fill[f_id].radius1
-                      && radius_cyl <= mat_fill[f_id].radius2 ) fill_this = 1;
-                }
-                case region::sphere:
-                {
-                    if ( radius >= mat_fill[f_id].radius1
-                      && radius <= mat_fill[f_id].radius2 ) fill_this = 1;
-                }
-            } // end of switch
-
-            if (fill_this == 1){    
-                
-                mat_pt->field(cell_rid) = mat_fill[f_id].field2;
-
-
-            } // end if fill volume
-        } // end for cell loop
-    } // end for fills
-
-    std::cout << "After fill instructions"  << std::endl;
-} // end initialize_state
-
-
-void Parallel_Nonlinear_Solver::calculate_ref_elem(){
-    int num_dim = simparam->num_dim;
-
-    real_t partial_xia[elem->num_basis()];
-    auto partial_xi = ViewCArray <real_t> (partial_xia, elem->num_basis());
-
-    real_t partial_etaa[elem->num_basis()];
-    auto partial_eta = ViewCArray <real_t> (partial_etaa, elem->num_basis());
-
-    real_t partial_mua[elem->num_basis()];
-    auto partial_mu = ViewCArray <real_t> (partial_mua, elem->num_basis());
-
-
-    std::cout << "::::  Getting partials of basis  ::::" << std::endl;
-    std::cout << "Num Basis =  "<< elem->num_basis() << std::endl;
-
-    std::cout << "Num_ref_nodes  "<< ref_elem->num_ref_nodes() << std::endl;
-
-    for(int node_rid = 0; node_rid < ref_elem->num_ref_nodes(); node_rid++){
-
-        // make temp array of ref node positions
-        real_t ref_node_loc_a[mesh->num_dim()];
-        auto ref_node_loc = ViewCArray<real_t> (ref_node_loc_a, mesh->num_dim());
-
-        for(int dim = 0; dim < mesh->num_dim(); dim++){
-
-            ref_node_loc(dim) = ref_elem->ref_node_positions(node_rid, dim);
-        }
-    
-        std::cout << "Local Node =  "<< node_rid << std::endl;
-
-        // Calculate array of partials of each basis at the point ref_node
-        elem->partial_xi_basis(partial_xi, ref_node_loc);
-        elem->partial_eta_basis(partial_eta, ref_node_loc);
-        elem->partial_mu_basis(partial_mu, ref_node_loc);
-        
-        // Save the partials of each basis to the reference node
-        
-        for(int basis_id = 0; basis_id < elem->num_basis(); basis_id++){
-            
-            ref_elem->ref_nodal_gradient(node_rid, basis_id, 0) = partial_xi(basis_id);
-            ref_elem->ref_nodal_gradient(node_rid, basis_id, 1) = partial_eta(basis_id);
-            ref_elem->ref_nodal_gradient(node_rid, basis_id, 2) = partial_mu(basis_id);
-
-            // std::cout << "Partial Xi for basis "<< basis_id <<" = " << partial_xi(basis_id) << std::endl;
-            // std::cout << "Partial Eta for basis "<< basis_id <<" = " << partial_eta(basis_id) << std::endl;
-            // std::cout << "Partial Mu for basis "<< basis_id <<" = " << partial_eta(basis_id) << std::endl;
-            // std::cout << "Basis " << basis_id  << std::endl;
-            // std::cout << "XX Partial Xi = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 0) << std::endl;
-            // std::cout << "XX Partial Eta = " << ref_elem.ref_nodal_gradient(node_rid, basis_id, 1) << std::endl;
-            // std::cout << "XX Partial Mu = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 2) << std::endl;
-            
-
-
-
-            partial_xi(basis_id) = 0.0;
-            partial_eta(basis_id)= 0.0;
-            partial_mu(basis_id) = 0.0;
-
-        }
-
-
-        std::cout << std::endl;
-
-    } // end for node_rid
-
-
-    // for(int node_rid = 0; node_rid < ref_elem.num_ref_nodes(); node_rid++){
-
-    //     std::cout << "Local Reference Node =  "<< node_rid << std::endl;
-
-    //     for(int basis_id = 0; basis_id < elem->num_basis(); basis_id++){
-            
-    //         std::cout << "Basis " << basis_id  << std::endl;
-    //         std::cout << "Partial Xi = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 0) << std::endl;
-    //         std::cout << "Partial Eta = " << ref_elem.ref_nodal_gradient(node_rid, basis_id, 1) << std::endl;
-    //         std::cout << "Partial Mu = "  << ref_elem.ref_nodal_gradient(node_rid, basis_id, 2) << std::endl;
-    //     }
-
-    //     std::cout << std::endl;
-    // } // end vert lid
-
-    std::cout << "Finished gradient vector" << std::endl;
-
-}
-
-
-// Runtime Functions
-
-void Parallel_Nonlinear_Solver::apply_boundary(){
-
-    node_t *node = simparam->node;
-
-    for (int bdy_patch_gid = 0; bdy_patch_gid < mesh->num_bdy_patches_in_set(3); bdy_patch_gid++){
-                
-        // get the global id for this boundary patch
-        int patch_gid = mesh->bdy_patches_in_set(3, bdy_patch_gid);
-
-        // apply boundary condition at nodes on boundary
-        for(int node_lid = 0; node_lid < 4; node_lid++){
-            
-            int node_gid = mesh->node_in_patch(patch_gid, node_lid);
-
-            // Set nodal temp to zero
-            node->field(node_gid) = 0.0;
-
-        }
-    }
-
-    // std::cout << "Apply temp" << std::endl;
-    // Apply constant temp of 1 to x=0 plane of mesh
-    for (int bdy_patch_gid = 0; bdy_patch_gid < mesh->num_bdy_patches_in_set(0); bdy_patch_gid++){
-                
-        // get the global id for this boundary patch
-        int patch_gid = mesh->bdy_patches_in_set(0, bdy_patch_gid);
-
-        // apply boundary condition at nodes on boundary
-        for(int node_lid = 0; node_lid < 4; node_lid++){
-            
-            int node_gid = mesh->node_in_patch(patch_gid, node_lid);
-
-            // Set nodal temp to zero
-            node->field(node_gid) = 40.0;
-
-        }
-    }
-}
-
-
-void Parallel_Nonlinear_Solver::smooth_cells(){
-    mat_pt_t *mat_pt = simparam->mat_pt;
-    mat_fill_t *mat_fill = simparam->mat_fill;
-    node_t *node = simparam->node;
-
-    // Walk over cells 
-    for(int cell_rid = 0; cell_rid < mesh->num_cells(); cell_rid++){
-
-        // Temporary holder variable
-        real_t temp_avg = 0.0;
-
-        // Walk over nodes in cell and calculate average
-        for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
-
-            // Get global index of the node
-            int node_gid = mesh->nodes_in_cell(cell_rid, node_lid);
-
-            temp_avg += node->field(node_gid)/8.0;
-
-        }
-
-        // Save average to material point at cell center
-        mat_pt->field(cell_rid) = temp_avg;
-
-    } // end of loop over cells
-
-    // Walk over all the nodes
-    for(int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++){
-
-        real_t temp_avg = 0.0;
-        
-        // Walk over all the cells connected to the node and average values
-        for(int cell_lid = 0; cell_lid < mesh->num_cells_in_node(node_gid); cell_lid++){
-
-            // Get global index of the cell
-            int cell_rid = mesh->cells_in_node(node_gid, cell_lid);
-
-            temp_avg += mat_pt->field(cell_rid)/ (real_t)mesh->num_cells_in_node(node_gid);
-        
-        }
-
-        // Save average to the node
-        node->field(node_gid) = temp_avg;
-
-    } // end of loop over nodes
-}
-
-
-void Parallel_Nonlinear_Solver::smooth_element(){
-    mat_pt_t *mat_pt = simparam->mat_pt;
-    mat_fill_t *mat_fill = simparam->mat_fill;
-    node_t *node = simparam->node;
-
-    // Walk over each element in the mesh
-    for(int elem_gid = 0; elem_gid < mesh->num_elems(); elem_gid++){
-
-        // Walk over each cell in the element
-        for(int cell_lid = 0; cell_lid < mesh->num_cells_in_elem(); cell_lid++){
-
-            // Get the global ID of the cell
-            int cell_rid = mesh->cells_in_elem(elem_gid, cell_lid);
-
-            real_t temp_avg = 0.0;
-
-            // Loop over nodes in the cell
-            for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
-
-                // Get global ID for this node
-                int node_gid = mesh->nodes_in_cell(cell_rid, node_lid);
-
-                temp_avg += node->field(node_gid)/mesh->num_nodes_in_cell();
-
-            }
-
-            // Save averaged values to cell centered material point
-            mat_pt->field(cell_rid) = temp_avg;
-        }// end loop over nodes
-    }// end loop over elements
-
-
-    // Walk over each element in the mesh
-    for(int elem_gid = 0; elem_gid < mesh->num_elems(); elem_gid++){
-       
-        // Walk over each node in the element
-        for(int node_lid = 0; node_lid < mesh->num_nodes_in_elem(); node_lid++){
-
-            // Get global ID of the node
-            int node_gid = mesh->nodes_in_elem(elem_gid, node_lid);
-
-            real_t temp_avg = 0.0;
-
-            // Walk over all cell connected to the node
-            for(int cell_lid = 0; cell_lid < mesh->num_cells_in_node(node_gid); cell_lid++){
-
-                // Get globa ID for the cell
-                int cell_rid = mesh->cells_in_node(node_gid, cell_lid);
-
-                temp_avg += mat_pt->field(cell_rid)/ (real_t)mesh->num_cells_in_node(node_gid);
-            }
-
-            // Save averaged field to node
-            node->field(node_gid) = temp_avg;
-
-        }// end loop over nodes
-    }// end loop over elements
-}
-
-void Parallel_Nonlinear_Solver::get_nodal_jacobian(){
-  //local variable for host view in the dual view
-  host_vec_array node_coords = dual_node_coords.view_host();
-  mat_pt_t *mat_pt = simparam->mat_pt;
-  mat_fill_t *mat_fill = simparam->mat_fill;
-  int num_dim = simparam->num_dim;
-
-  // loop over the mesh
-
-    for(int elem_gid = 0; elem_gid < mesh->num_elems(); elem_gid++){
-        
-        for(int cell_lid = 0; cell_lid < mesh->num_cells_in_elem(); cell_lid++){ // 1 for linear elements
-
-            int cell_rid = mesh->cells_in_elem(elem_gid, cell_lid);
-
-            // Loop over nodes in cell and initialize jacobian to zero
-            for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
-
-                int node_gid = mesh->nodes_in_cell(cell_rid, node_lid);
-                
-                for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
-                    for(int dim_j = 0; dim_j < mesh->num_dim(); dim_j++){
-
-                        mesh->node_jacobian(node_gid, dim_i, dim_j) = 0.0;
-                    }
-                }
-            }
-
-            // Calculate the actual jacobian for that node
-            for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
-                
-                int node_gid = mesh->nodes_in_cell(cell_rid, node_lid);
-
-
-
-                for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
-                    for(int dim_j = 0; dim_j < mesh->num_dim(); dim_j++){
-
-                        // Sum over the basis functions and nodes where they are defined
-                        for(int basis_id = 0; basis_id < mesh->num_nodes_in_cell(); basis_id++){
-
-                            int ref_node_gid = mesh->nodes_in_cell(cell_rid, basis_id);
-
-                            mesh->node_jacobian(node_gid, dim_i, dim_j) += 
-                                node_coords(ref_node_gid , dim_i) * ref_elem->ref_nodal_gradient(node_lid, basis_id, dim_j);
-                        }
-                    }
-                }
-            }
-
-        }
-    }
-
-// NOTE: Save only J^inverse and det_J
-#pragma omp simd //Modified by Daniel
-    // loop over the nodes of the mesh
-    for (int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++) {
-
-        mesh->node_det_j(node_gid) = 
-            mesh->node_jacobian(node_gid, 0, 0) 
-          * ( (mesh->node_jacobian(node_gid, 1, 1)*mesh->node_jacobian(node_gid, 2, 2)) - (mesh->node_jacobian(node_gid, 2, 1)*mesh->node_jacobian(node_gid, 1, 2)) )  //group 1
-          - mesh->node_jacobian(node_gid, 0, 1) 
-          * ( (mesh->node_jacobian(node_gid, 1, 0)*mesh->node_jacobian(node_gid, 2, 2)) - (mesh->node_jacobian(node_gid, 2, 0)*mesh->node_jacobian(node_gid, 1, 2)) ) // group 2
-          + mesh->node_jacobian(node_gid, 0, 2) 
-          * ( (mesh->node_jacobian(node_gid, 1, 0)*mesh->node_jacobian(node_gid, 2, 1)) - (mesh->node_jacobian(node_gid, 2, 0)*mesh->node_jacobian(node_gid, 1, 1)) ); // group 3
-
-    }
-
-    for(int cell_rid = 0; cell_rid < mesh->num_cells(); cell_rid++){
-
-        mat_pt->volume(cell_rid) = 0;
-
-        for(int node_lid = 0; node_lid < mesh->num_nodes_in_cell(); node_lid++){
-
-            int node_gid = mesh->nodes_in_cell(cell_rid, node_lid);
-
-            mat_pt->volume(cell_rid) += mesh->node_det_j(node_gid);
-        }
-
-        std::cout<< "Volume for cell  "<< cell_rid << " = "<< mat_pt->volume(cell_rid) << std::endl;
-    }
-
-    // NOTE: Invert and save J^inverse here!
-
-
-
-    for (int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++) {
-        
-        auto jacobian_view = ViewCArray <real_t> (&mesh->node_jacobian(node_gid, 0, 0), mesh->num_dim(), mesh->num_dim());
-        auto jacobian_inverse_view = ViewCArray <real_t> (&mesh->node_jacobian_inv(node_gid, 0, 0), mesh->num_dim(), mesh->num_dim());
-
-        elements::jacobian_inverse_3d(jacobian_inverse_view, jacobian_view);
-    }
-
-
-    // Check J^-1 * J = I
-
-
-    for (int node_gid = 0; node_gid < mesh->num_nodes(); node_gid++) {
-        
-        real_t test_array[3][3];
-
-        for(int dim_k = 0; dim_k < mesh->num_dim(); dim_k++){
-            for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
-
-                test_array[dim_i][dim_k] = 0.0;
-            }
-        }
-
-        for(int dim_k = 0; dim_k < mesh->num_dim(); dim_k++){
-            for(int dim_j = 0; dim_j < mesh->num_dim(); dim_j++){
-                for(int dim_i = 0; dim_i < mesh->num_dim(); dim_i++){
-                    test_array[dim_i][dim_k] += mesh->node_jacobian(node_gid, dim_i, dim_j) * mesh->node_jacobian_inv(node_gid, dim_j, dim_k);
-                }
-            }
-        }
-        std::cout << std::fixed;
-        std::cout<< "J * J^-1 for node  "<< node_gid << " = " << std::endl;
-        std::cout  << test_array[0][0] << "     " << test_array[0][1] << "     " << test_array[0][2] << std::endl;
-        std::cout  << test_array[1][0] << "     " << test_array[1][1] << "     " << test_array[1][2] << std::endl;
-        std::cout  << test_array[2][0] << "     " << test_array[2][1] << "     " << test_array[2][2] << std::endl;
-    }
-
-
-    
-} // end subroutine
-
-
-
 // Output writers
+
+/* ----------------------------------------------------------------------
+   Output Model Information in vtk format
+------------------------------------------------------------------------- */
+
+void Parallel_Nonlinear_Solver::collect_information(){
+  //construct map to import all data to rank 0
+  size_t nreduce_nodes = 0;
+  if(comm->myrank==0) nreduce_nodes = num_nodes;
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > global_reduce_map =
+    Teuchos::rcp(new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),nreduce_nodes,0,comm));
+
+  //import data from selected node variables
+}
+
+/* ----------------------------------------------------------------------
+   Output Model Information in vtk format
+------------------------------------------------------------------------- */
 
 void Parallel_Nonlinear_Solver::vtk_writer(){
     //local variable for host view in the dual view
@@ -2293,14 +1756,19 @@ void Parallel_Nonlinear_Solver::vtk_writer(){
     fclose(out[0]);
 } // end vtk_writer
 
+/* ----------------------------------------------------------------------
+   Output Model Information in ensight format
+------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::ensight(){
+void Parallel_Nonlinear_Solver::ensight_writer(){
     //local variable for host view in the dual view
     host_vec_array node_coords = dual_node_coords.view_host();
     mat_pt_t *mat_pt = simparam->mat_pt;
     int &graphics_id = simparam->graphics_id;
     real_t *graphics_times = simparam->graphics_times;
     real_t &TIME = simparam->TIME;
+
+    collect_information();
 
     auto convert_vert_list_ord_Ensight = CArray <int> (8);
     convert_vert_list_ord_Ensight(0) = 1;

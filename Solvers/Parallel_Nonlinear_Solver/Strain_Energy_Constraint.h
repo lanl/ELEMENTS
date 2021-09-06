@@ -104,11 +104,8 @@ public:
 
     real_t current_strain_energy = ROL_Displacements->dot(*ROL_Force);
     std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
-    //debug print
-    //std::cout << "GLOBAL STRAIN VALUE " << global_maximum_strain << std::endl;
-    (*cp)[0] = maximum_strain_energy_ - current_strain_energy;
-    //debug print
-    std::cout << "CONSTRAINT VALUE " << maximum_strain_energy_ - current_strain_energy << std::endl;
+    
+    (*cp)[0] = current_strain_energy;
   }
   /*
   void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {

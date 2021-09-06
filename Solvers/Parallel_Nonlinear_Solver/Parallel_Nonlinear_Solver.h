@@ -86,6 +86,8 @@ public:
 
   void update_and_comm_variables();
 
+  void collect_information();
+
   void compute_element_volumes();
 
   void compute_element_masses(const_host_vec_array design_densities);
@@ -106,23 +108,9 @@ public:
   //finds the boundary element surfaces in this model
   void Get_Boundary_Patches();
 
-  void allocate_state();
-
-  void initialize_state();
-
-  void calculate_ref_elem();
-
-  void apply_boundary();
-
   void vtk_writer();
 
-  void ensight();
-
-  void smooth_cells();
-
-  void smooth_element();
-
-  void get_nodal_jacobian();
+  void ensight_writer();
 
   void Element_Material_Properties(size_t, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density);
 
@@ -210,6 +198,10 @@ public:
   Teuchos::RCP<MAT> A;
   Teuchos::RCP<MV> B;
   Teuchos::RCP<MV> X;
+
+  //Global arrays with collected data used to print
+  host_vec_array collected_node_data;
+  host_vec_array collected_element_connectivity;
   
   //Boundary Conditions Data
   //CArray <Nodal_Combination> Patch_Nodes;

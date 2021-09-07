@@ -46,6 +46,7 @@ public:
   typedef Tpetra::CrsMatrix<real_t,LO,GO> MAT;
   typedef const Tpetra::CrsMatrix<real_t,LO,GO> const_MAT;
   typedef Tpetra::MultiVector<real_t,LO,GO> MV;
+  typedef Tpetra::MultiVector<GO,LO,GO> MCONN;
 
   typedef Kokkos::ViewTraits<LO*, Kokkos::LayoutLeft, void, void>::size_type SizeType;
   typedef Tpetra::Details::DefaultTypes::node_type node_type;
@@ -68,6 +69,11 @@ public:
   typedef Kokkos::View<const real_t**, array_layout, HostSpace, memory_traits> const_host_vec_array;
   typedef Kokkos::View<const real_t**, array_layout, device_type, memory_traits> const_vec_array;
   typedef MV::dual_view_type dual_vec_array;
+  typedef MCONN::dual_view_type dual_elem_conn_array;
+  typedef MCONN::dual_view_type::t_host host_elem_conn_array;
+  typedef MCONN::dual_view_type::t_dev elem_conn_array;
+  typedef Kokkos::View<const GO**, array_layout, HostSpace, memory_traits> const_host_elem_conn_array;
+  typedef Kokkos::View<const GO**, array_layout, device_type, memory_traits> const_elem_conn_array;
 
   void run(int argc, char *argv[]);
 
@@ -111,6 +117,8 @@ public:
   void vtk_writer();
 
   void ensight_writer();
+
+  void tecplot_writer();
 
   void Element_Material_Properties(size_t, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density);
 
@@ -178,6 +186,7 @@ public:
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_element_map; //overlapping map of elements connected to the local nodes in each rank
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_dof_map; //map of local dofs (typically num_node_local*num_dim)
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > all_dof_map; //map of local and ghost dofs (typically num_node_all*num_dim)
+  Teuchos::RCP<MCONN> nodes_in_elem_distributed;
   Teuchos::RCP<MV> node_coords_distributed;
   Teuchos::RCP<MV> node_displacements_distributed;
   Teuchos::RCP<MV> node_strains_distributed;
@@ -200,7 +209,8 @@ public:
   Teuchos::RCP<MV> X;
 
   //Global arrays with collected data used to print
-  host_vec_array collected_node_data;
+  host_vec_array collected_node_displacements;
+  host_vec_array collected_node_densities;
   host_vec_array collected_element_connectivity;
   
   //Boundary Conditions Data

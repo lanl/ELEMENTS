@@ -70,7 +70,8 @@ You might also create a configuration script like, for example,
 ELEMENTS_DIR=..  # relative path of ELEMENTS repository
 cmake \
   -DCMAKE_INSTALL_PREFIX=`pwd` \
-  -DCMAKE_CXX_FLAGS=-g \
+  -DCMAKE_BUILD_TYPE=Debug \
+  -DVTK_DIR=${HOME}/packages/vtk/build-9.0 \
   ${ELEMENTS_DIR}
 ```
 where the CMake installation directory is configured to be the directory in which the configuration script is run (in this example, the `build/` directory created above).

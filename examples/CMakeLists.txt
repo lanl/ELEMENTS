@@ -1,17 +1,9 @@
-# Includes
-include_directories(src)
-include_directories(include)
+# "Average" example, an overview of ELEMENTS
+add_subdirectory(average)
 
-# Meshes
-add_subdirectory(meshes)
+# "VTK" example, demonstration of visualization using VTK/Paraview
+add_subdirectory(vtk)
 
-# Input file
-add_subdirectory(src)
-
-# Example executable
-add_subdirectory(test)
-
-#if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
-#  set_target_properties(file.cpp PROPERTIES COMPILE_FLAGS "${VECTOR_CXX_FLAGS_RELEASE}")
-#endif (${CMAKE_BUILD_TYPE} STREQUAL "Release”)
-# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${VECTOR_CXX_FLAGS_RELEASE}")
+# "Projection" example, demonstration of projection of
+# function onto higher-order basis and plotting with Paraview
+add_subdirectory(projection)

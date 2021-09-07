@@ -18,6 +18,10 @@ if (CMAKE_VECTOR_VERBOSE)
   set(VECTOR_Fortran_FLAGS "${VECTOR_Fortran_FLAGS} ${VECTOR_Fortran_VERBOSE}")
 endif (CMAKE_VECTOR_VERBOSE)
 
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+find_package(VTK NO_MODULE)
+
 INCLUDE(cmake/Modules/TargetDistclean.cmake OPTIONAL)
 
 # Build type
@@ -41,15 +45,21 @@ add_subdirectory(matar)
 include_directories(matar/src)
 
 # Includes
+include_directories(common)
 include_directories(elements)
 include_directories(geometry)
 include_directories(swage)
-include_directories(utilities)
+include_directories(io)
 
 # Libraries
+add_subdirectory(common)
 add_subdirectory(elements)
 add_subdirectory(geometry)
 add_subdirectory(swage)
+add_subdirectory(io)
+
+# Tests
+add_subdirectory(tests)
 
 # Examples
 add_subdirectory(examples)
@@ -66,3 +76,4 @@ install(FILES ${ALL_HEADERS} DESTINATION include)
 install(TARGETS elements DESTINATION lib)
 install(TARGETS geometry DESTINATION lib)
 install(TARGETS swage DESTINATION lib)
+install(TARGETS common DESTINATION lib)

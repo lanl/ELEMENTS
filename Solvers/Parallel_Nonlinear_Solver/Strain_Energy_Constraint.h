@@ -103,8 +103,8 @@ public:
     ROL_Displacements = ROL::makePtr<ROL_MV>(FEM_->node_displacements_distributed);
 
     real_t current_strain_energy = ROL_Displacements->dot(*ROL_Force);
-    std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
-    
+    //std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
+
     (*cp)[0] = current_strain_energy;
   }
   /*

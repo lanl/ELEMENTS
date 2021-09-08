@@ -207,9 +207,9 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     
     //find nodal strain values to approximate strain field subspace
     //compute_nodal_strains();
-    
+    //return;
     setup_optimization_problem();
-    return;
+    
     //CPU time
     double current_cpu = CPU_Time();
     std::cout << " RUNTIME OF CODE ON TASK " << myrank << " is "<< current_cpu-initial_CPU_time <<std::endl;
@@ -1115,9 +1115,9 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
  
-  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<StrainEnergyConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
-  //ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<StrainEnergyConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
+  ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
+  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
   
   // fill parameter list with desired algorithmic options or leave as default
   ROL::ParameterList parlist;
@@ -1558,6 +1558,7 @@ int Parallel_Nonlinear_Solver::check_boundary(Node_Combination &Patch_Nodes, int
 void Parallel_Nonlinear_Solver::collect_information(){
   size_t nreduce_dof = 0;
   size_t nreduce_nodes = 0;
+  size_t nreduce_elem = 0;
   size_t num_dim = simparam->num_dim;
 
   //collect nodal coordinate information
@@ -1570,7 +1571,7 @@ void Parallel_Nonlinear_Solver::collect_information(){
 
   Teuchos::RCP<MV> collected_node_coords_distributed = Teuchos::rcp(new MV(global_reduce_map, num_dim));
 
-  //comms to get ghosts
+  //comms to collect
   collected_node_coords_distributed->doImport(*node_coords_distributed, node_collection_importer, Tpetra::INSERT);
   
   //collect nodal displacement information
@@ -1583,23 +1584,42 @@ void Parallel_Nonlinear_Solver::collect_information(){
 
   Teuchos::RCP<MV> collected_node_displacements_distributed = Teuchos::rcp(new MV(global_reduce_dof_map, 1));
 
-  //comms to get ghosts
+  //comms to collect
   collected_node_displacements_distributed->doImport(*node_displacements_distributed, dof_collection_importer, Tpetra::INSERT);
 
-  //collect nodal density information
+  //collected nodal density information
   Teuchos::RCP<MV> collected_node_densities_distributed = Teuchos::rcp(new MV(global_reduce_map, 1));
 
-  //comms to get ghosts
+  //comms to collect
   collected_node_densities_distributed->doImport(*node_densities_distributed, node_collection_importer, Tpetra::INSERT);
+
+  //collect element connectivity data
+  if(myrank==0) nreduce_elem = num_elem;
+  Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > global_reduce_element_map =
+    Teuchos::rcp(new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),nreduce_elem,0,comm));
+
+  //importer from all element map to collected distribution
+  Tpetra::Import<LO, GO> element_collection_importer(all_element_map, global_reduce_element_map);
+  
+  Teuchos::RCP<MCONN> collected_nodes_in_elem_distributed = Teuchos::rcp(new MCONN(global_reduce_element_map, max_nodes_per_element));
+
+  //comms to collect
+  collected_nodes_in_elem_distributed->doImport(*nodes_in_elem_distributed, element_collection_importer, Tpetra::INSERT);
 
   //debug print
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
   if(myrank==0)
-  *fos << "Collected node data :" << std::endl;
-  collected_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << "Collected elem data :" << std::endl;
+  collected_nodes_in_elem_distributed->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
   std::fflush(stdout);
+
+  //set host views of the collected data to print out from
+  collected_node_coords = collected_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  collected_node_displacements = collected_node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  collected_node_densities = collected_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  collected_nodes_in_elem = collected_nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 }
 
 /* ----------------------------------------------------------------------
@@ -4000,7 +4020,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_gradients(const_host_vec_array des
   size_t local_node_id;
   LO ielem;
   GO global_element_index;
-
+  
   real_t Jacobian;
   CArray<real_t> legendre_nodes_1D(num_gauss_points);
   CArray<real_t> legendre_weights_1D(num_gauss_points);
@@ -4171,8 +4191,10 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(){
   all_node_displacements_distributed->doImport(*node_displacements_distributed, importer, Tpetra::INSERT);
 
   update_count++;
-  if(update_count==4)
-    MPI_Abort(world,4);
+  //if(update_count==1){
+      //MPI_Barrier(world);
+      //MPI_Abort(world,4);
+  //}
 }
 
 /* -------------------------------------------------------------------------------------------
@@ -4997,11 +5019,6 @@ int Parallel_Nonlinear_Solver::solve(){
     }
   }
   
-  //indices_array all_indices = indices_array("indices_array",nnz);
-  //values_array all_values = values_array("values_array",nnz);
-  CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Bview(local_nrows_reduced);
-  CArrayKokkos<real_t, Kokkos::LayoutLeft, device_type, memory_traits> Xview(local_nrows_reduced);
-  
   // create a Map for the reduced global stiffness matrix that is evenly distributed amongst mpi ranks
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > local_balanced_reduced_dof_map = 
     Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced,0,comm));
@@ -5071,9 +5088,9 @@ int Parallel_Nonlinear_Solver::solve(){
   
   // Create random X vector
   size_t balanced_local_nrows = local_balanced_reduced_dof_map->getNodeNumElements();
-  vec_array Xview_pass = vec_array("Xview_pass", balanced_local_nrows, 1);
-  Xview_pass.assign_data(Xview.pointer());
-  Teuchos::RCP<MV> X = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, Xview_pass));
+  //vec_array Xview_pass = vec_array("Xview_pass", balanced_local_nrows, 1);
+  //Xview_pass.assign_data(Xview.pointer());
+  Teuchos::RCP<MV> X = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, 1));
   //return !EXIT_SUCCESS;
   //X->randomize();
   
@@ -5092,10 +5109,8 @@ int Parallel_Nonlinear_Solver::solve(){
   //set bview to force vector data
   for(LO i=0; i < local_nrows_reduced; i++){
     access_index = local_dof_map->getLocalElement(Free_Indices(i));
-    Bview(i) = Nodal_Forces(access_index,0);
+    Bview_pass(i,0) = Nodal_Forces(access_index,0);
   }
-  
-  Bview_pass.assign_data(Bview.pointer());
   
   Teuchos::RCP<MV> unbalanced_B = Teuchos::rcp(new MV(local_reduced_dof_map, Bview_pass));
   
@@ -5118,17 +5133,18 @@ int Parallel_Nonlinear_Solver::solve(){
   //return !EXIT_SUCCESS;
   // Create solver interface to KLU2 with Amesos2 factory method
   
-  Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
+  //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
+  Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
   
   //declare non-contiguous map
   //Create a Teuchos::ParameterList to hold solver parameters
   //Teuchos::ParameterList amesos2_params("Amesos2");
   //amesos2_params.sublist("KLU2").set("IsContiguous", false, "Are GIDs Contiguous");
   //solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
-
+  
   //Solve the system
   solver->symbolicFactorization().numericFactorization().solve();
-
+  //return !EXIT_SUCCESS;
   //timing statistics for LU solver
   //solver->printTiming(*fos);
   

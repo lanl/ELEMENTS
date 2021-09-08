@@ -110,9 +110,9 @@ public:
     //zp->describe(*fos,Teuchos::VERB_EXTREME);
     //*fos << std::endl;
     //std::fflush(stdout);
-
+    
     FEM_->compute_element_masses(design_densities);
-
+    
     //sum per element results across all MPI ranks
     ROL::Elementwise::ReductionSum<real_t> sumreduc;
     c = ROL_Element_Masses->reduce(sumreduc);
@@ -142,7 +142,7 @@ public:
       FEM_->update_and_comm_variables();
       last_comm_step = current_step;
     }
-
+    
     int rnum_elem = FEM_->rnum_elem;
 
     if(nodal_density_flag_){
@@ -157,7 +157,7 @@ public:
       for(int ig = 0; ig < rnum_elem; ig++)
         objective_gradients(ig,0) = element_volumes(ig,0);
     }
-
+    
     //debug print of design variables
     //std::ostream &out = std::cout;
     //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));

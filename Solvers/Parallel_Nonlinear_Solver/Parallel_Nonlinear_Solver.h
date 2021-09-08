@@ -204,9 +204,6 @@ public:
   Teuchos::RCP<MV> Global_Element_Densities;
   Teuchos::RCP<MV> Global_Element_Volumes;
   Teuchos::RCP<MV> Global_Element_Masses;
-  Teuchos::RCP<MAT> A;
-  Teuchos::RCP<MV> B;
-  Teuchos::RCP<MV> X;
 
   //Global arrays with collected data used to print
   host_vec_array collected_node_displacements;
@@ -265,6 +262,9 @@ public:
   global_size_t min_gid;
   global_size_t max_gid;
   global_size_t index_base;
+
+  //allocation flags to avoid repeat MV and global matrix construction
+  int Matrix_alloc;
 
   //file readin variables
   std::ifstream *in;

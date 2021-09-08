@@ -77,10 +77,12 @@ public:
   bool nodal_density_flag_;
   size_t last_comm_step, current_step;
 
-  MassObjective_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag) 
-    : FEM_(FEM), useLC_(true) {
-      nodal_density_flag_ = nodal_density_flag;
-      last_comm_step = current_step = 0;
+  MassObjective_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag){
+    FEM_ = FEM;
+    useLC_ = true;
+    nodal_density_flag_ = nodal_density_flag;
+    last_comm_step = current_step = 0;
+    ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
   }
 
   void update(const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
@@ -98,19 +100,18 @@ public:
       FEM_->update_and_comm_variables();
       last_comm_step = current_step;
     }
-
+    
     //debug print of design variables
   
-    std::ostream &out = std::cout;
-    Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-    if(FEM_->myrank==0)
-    *fos << "Density data :" << std::endl;
-    zp->describe(*fos,Teuchos::VERB_EXTREME);
-    *fos << std::endl;
-    std::fflush(stdout);
-    
+    //std::ostream &out = std::cout;
+    //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+    //if(FEM_->myrank==0)
+    //*fos << "Density data :" << std::endl;
+    //zp->describe(*fos,Teuchos::VERB_EXTREME);
+    //*fos << std::endl;
+    //std::fflush(stdout);
+
     FEM_->compute_element_masses(design_densities);
-    ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
 
     //sum per element results across all MPI ranks
     ROL::Elementwise::ReductionSum<real_t> sumreduc;
@@ -123,13 +124,13 @@ public:
   //void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
     //g.zero();
   //}
-
+  
   void gradient( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &z, real_t &tol ) {
     //get Tpetra multivector pointer from the ROL vector
     ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<MV> gp = getVector(g);
     
-    ROL::Ptr<ROL_MV> ROL_Element_Volumes;
+    //ROL::Ptr<ROL_MV> ROL_Element_Volumes;
 
     //get local view of the data
     host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
@@ -156,6 +157,7 @@ public:
       for(int ig = 0; ig < rnum_elem; ig++)
         objective_gradients(ig,0) = element_volumes(ig,0);
     }
+
     //debug print of design variables
     //std::ostream &out = std::cout;
     //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));

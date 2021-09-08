@@ -140,6 +140,8 @@ Parallel_Nonlinear_Solver::Parallel_Nonlinear_Solver() : Solver(){
   num_nodes = 0;
   update_count = 0;
 
+  Matrix_alloc=0;
+
   //RCP pointer to *this (Parallel Nonlinear Solver Object)
   //FEM_pass = Teuchos::rcp(this);
 }
@@ -175,7 +177,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     // ---- Read intial mesh, refine, and build connectivity ---- //
     read_mesh(argv[1]);
     
-    std::cout << "Num elements = " << mesh->num_elems() << std::endl;
+    std::cout << "Num elements = " << rnum_elem << std::endl;
     
     //initialize timing
     if(simparam->report_runtime_flag)
@@ -193,7 +195,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     //assemble the global solution (stiffness matrix etc. and nodal forces)
     assemble_matrix();
     assemble_vector();
-
+    //return;
     //find each element's volume
     compute_element_volumes();
     
@@ -205,9 +207,9 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     
     //find nodal strain values to approximate strain field subspace
     //compute_nodal_strains();
-
+    
     setup_optimization_problem();
-
+    return;
     //CPU time
     double current_cpu = CPU_Time();
     std::cout << " RUNTIME OF CODE ON TASK " << myrank << " is "<< current_cpu-initial_CPU_time <<std::endl;
@@ -994,11 +996,11 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //debug print
   //std::ostream &out = std::cout;
   //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  if(myrank==0)
-  *fos << "Element Connectivity :" << std::endl;
-  nodes_in_elem_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  std::fflush(stdout);
+  //if(myrank==0)
+  //*fos << "Element Connectivity :" << std::endl;
+  //nodes_in_elem_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
+  //std::fflush(stdout);
 
   //debug print
   //std::ostream &out = std::cout;
@@ -1027,7 +1029,6 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
-  int num_elems = mesh->num_elems();
 
   // Objective function
   ROL::Ptr<ROL::Objective<real_t>> obj = ROL::makePtr<MassObjective_TopOpt>(this, nodal_density_flag);
@@ -1114,10 +1115,10 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
  
-  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<StrainEnergyConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
-  ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
-
+  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<StrainEnergyConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
+  //ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
+  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  
   // fill parameter list with desired algorithmic options or leave as default
   ROL::ParameterList parlist;
   // Instantiate Solver.
@@ -1870,7 +1871,7 @@ void Parallel_Nonlinear_Solver::ensight_writer(){
         cell_fields(cell_rid, 0) = mat_pt->field(cell_rid);    
     } // end for k over cells
 
-    int num_elem = mesh->num_elems();
+    int num_elem = rnum_elem;
 
     int num_sub_1d;
 
@@ -2126,7 +2127,6 @@ void Parallel_Nonlinear_Solver::ensight_writer(){
 
 void Parallel_Nonlinear_Solver::init_assembly(){
   int num_dim = simparam->num_dim;
-  int num_elems = mesh->num_elems();
   const_host_elem_conn_array nodes_in_elem = nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   Stiffness_Matrix_Strides = CArrayKokkos<size_t, array_layout, device_type, memory_traits> (nlocal_nodes*num_dim, "Stiffness_Matrix_Strides");
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Graph_Fill(nall_nodes, "nall_nodes");
@@ -2369,7 +2369,7 @@ void Parallel_Nonlinear_Solver::init_assembly(){
   
   std::cout << " ------------ELEMENT EDOF--------------"<<std::endl;
 
-  for (int ielem = 0; ielem < num_elems; ielem++){
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
     std::cout << "elem:  " << ielem+1 << std::endl;
     for (int lnode = 0; lnode < nodes_per_elem; lnode++){
         std::cout << "{ ";
@@ -2393,7 +2393,7 @@ void Parallel_Nonlinear_Solver::init_assembly(){
 
   std::cout << " ------------ELEMENT ASSEMBLY MAP--------------"<<std::endl;
 
-  for (int ielem = 0; ielem < num_elems; ielem++){
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
     std::cout << "elem:  " << ielem+1 << std::endl;
     for (int lnode = 0; lnode < nodes_per_elem; lnode++){
         std::cout << "{ "<< std::endl;
@@ -2418,7 +2418,6 @@ void Parallel_Nonlinear_Solver::init_design(){
 
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
-  int num_elems = mesh->num_elems();
 
   //set densities
   if(nodal_density_flag){
@@ -2469,7 +2468,9 @@ void Parallel_Nonlinear_Solver::init_design(){
     //Global_Element_Densities->describe(*fos,Teuchos::VERB_EXTREME);
     //*fos << std::endl;
   }
-  
+
+  //create global vector
+  Global_Element_Masses = Teuchos::rcp(new MV(element_map, 1));
 }
 
 /* ----------------------------------------------------------------------
@@ -2478,7 +2479,6 @@ void Parallel_Nonlinear_Solver::init_design(){
 
 void Parallel_Nonlinear_Solver::assemble_matrix(){
   int num_dim = simparam->num_dim;
-  int num_elems = mesh->num_elems();
   const_host_elem_conn_array nodes_in_elem = nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int nodes_per_element;
   int current_row_n_nodes_scanned;
@@ -2502,7 +2502,7 @@ void Parallel_Nonlinear_Solver::assemble_matrix(){
 
   //assemble the global stiffness matrix
   if(num_dim==2)
-  for (int ielem = 0; ielem < num_elems; ielem++){
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
     element_select->choose_2Delem_type(Element_Types(ielem), elem2D);
     nodes_per_element = elem2D->num_nodes();
     //construct local stiffness matrix for this element
@@ -2534,7 +2534,7 @@ void Parallel_Nonlinear_Solver::assemble_matrix(){
   }
 
   if(num_dim==3)
-  for (int ielem = 0; ielem < num_elems; ielem++){
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
     element_select->choose_3Delem_type(Element_Types(ielem), elem);
     nodes_per_element = elem->num_nodes();
     //construct local stiffness matrix for this element
@@ -2619,14 +2619,16 @@ void Parallel_Nonlinear_Solver::assemble_matrix(){
     }
   }
   
+  if(!Matrix_alloc){
   Global_Stiffness_Matrix = Teuchos::rcp(new MAT(local_dof_map, colmap, row_offsets_pass, stiffness_local_indices.get_kokkos_view(), Stiffness_Matrix.get_kokkos_view()));
-
   Global_Stiffness_Matrix->fillComplete();
+  Matrix_alloc = 1;
+  }
   //This completes the setup for A matrix of the linear system
   
   //file to debug print
-  std::ostream &out = std::cout;
-  Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  //std::ostream &out = std::cout;
+  //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
 
   //debug print of A matrix
   //*fos << "Global Stiffness Matrix :" << std::endl;
@@ -2668,8 +2670,7 @@ void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_M
   else
   Element_Densities = Global_Element_Densities->getLocalView<HostSpace>(Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
-  int num_elems = mesh->num_elems();
-  int nodes_per_elem = mesh->num_nodes_in_elem();
+  int nodes_per_elem = max_nodes_per_element;
   int num_gauss_points = simparam->num_gauss_points;
   int z_quad,y_quad,x_quad, direct_product_count;
   size_t local_node_id;
@@ -3570,8 +3571,7 @@ void Parallel_Nonlinear_Solver::assemble_vector(){
   int num_boundary_sets = num_boundary_conditions;
   int surface_force_set_id = 0;
   int num_dim = simparam->num_dim;
-  int num_elems = mesh->num_elems();
-  int nodes_per_elem = mesh->num_nodes_in_elem();
+  int nodes_per_elem = max_nodes_per_element;
   int num_gauss_points = simparam->num_gauss_points;
   int z_quad,y_quad,x_quad, direct_product_count;
   int current_element_index, local_surface_id, surf_dim1, surf_dim2;
@@ -3808,7 +3808,7 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
   //local number of uniquely assigned elements
   size_t nonoverlap_nelements = element_map->getNodeNumElements();
   //initialize memory for volume storage
-  vec_array Element_Masses("Element Masses", nonoverlap_nelements, 1);
+  host_vec_array Element_Masses = Global_Element_Masses->getLocalView<HostSpace>(Tpetra::Access::ReadWrite);
   const_host_vec_array Element_Volumes = Global_Element_Volumes->getLocalView<HostSpace>(Tpetra::Access::ReadOnly);
   //local variable for host view in the dual view
   const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
@@ -3974,15 +3974,12 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
     }
   }
 
-  //create global vector
-  Global_Element_Masses = Teuchos::rcp(new MV(element_map, Element_Masses));
-
-  std::ostream &out = std::cout;
-  Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  if(myrank==0)
-  *fos << "Global Element Masses:" << std::endl;
-  Global_Element_Masses->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //std::ostream &out = std::cout;
+  //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  //if(myrank==0)
+  //*fos << "Global Element Masses:" << std::endl;
+  //Global_Element_Masses->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
 }
 
 /* ----------------------------------------------------------------------
@@ -4162,20 +4159,20 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(){
 
   //Assemble updated matrix with densities
   assemble_matrix();
-
+  
   //solve for new nodal displacements
   int solver_exit = solve();
   if(solver_exit == EXIT_SUCCESS){
     std::cout << "Linear Solver Error" << std::endl <<std::flush;
     return;
   }
-
+  
   //communicate nodal displacements
   all_node_displacements_distributed->doImport(*node_displacements_distributed, importer, Tpetra::INSERT);
 
   update_count++;
-  //if(update_count==30)
-  //MPI_Finalize();
+  if(update_count==4)
+    MPI_Abort(world,4);
 }
 
 /* -------------------------------------------------------------------------------------------
@@ -4766,8 +4763,7 @@ int Parallel_Nonlinear_Solver::solve(){
   //local variable for host view in the dual view
   const_host_vec_array Nodal_Forces = Global_Nodal_Forces->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
-  int num_elems = mesh->num_elems();
-  int nodes_per_elem = mesh->num_nodes_in_elem();
+  int nodes_per_elem = max_nodes_per_element;
   int local_node_index, current_row, current_column;
   size_t reduced_index;
   int max_stride = 0;
@@ -5077,7 +5073,7 @@ int Parallel_Nonlinear_Solver::solve(){
   size_t balanced_local_nrows = local_balanced_reduced_dof_map->getNodeNumElements();
   vec_array Xview_pass = vec_array("Xview_pass", balanced_local_nrows, 1);
   Xview_pass.assign_data(Xview.pointer());
-  X = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, Xview_pass));
+  Teuchos::RCP<MV> X = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, Xview_pass));
   //return !EXIT_SUCCESS;
   //X->randomize();
   

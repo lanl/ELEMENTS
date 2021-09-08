@@ -206,9 +206,10 @@ public:
   Teuchos::RCP<MV> Global_Element_Masses;
 
   //Global arrays with collected data used to print
-  host_vec_array collected_node_displacements;
-  host_vec_array collected_node_densities;
-  host_vec_array collected_element_connectivity;
+  const_host_vec_array collected_node_coords;
+  const_host_vec_array collected_node_displacements;
+  const_host_vec_array collected_node_densities;
+  const_host_elem_conn_array collected_nodes_in_elem;
   
   //Boundary Conditions Data
   //CArray <Nodal_Combination> Patch_Nodes;

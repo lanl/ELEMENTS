@@ -1606,20 +1606,24 @@ void Parallel_Nonlinear_Solver::collect_information(){
   //comms to collect
   collected_nodes_in_elem_distributed->doImport(*nodes_in_elem_distributed, element_collection_importer, Tpetra::INSERT);
 
+  //collect element type data
+
   //debug print
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
   if(myrank==0)
-  *fos << "Collected elem data :" << std::endl;
+  *fos << "Collected nodal displacements :" << std::endl;
   collected_nodes_in_elem_distributed->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
   std::fflush(stdout);
 
   //set host views of the collected data to print out from
-  collected_node_coords = collected_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-  collected_node_displacements = collected_node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-  collected_node_densities = collected_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-  collected_nodes_in_elem = collected_nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  if(myrank==0){
+    collected_node_coords = collected_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    collected_node_displacements = collected_node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    collected_node_densities = collected_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    collected_nodes_in_elem = collected_nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -1628,8 +1632,64 @@ void Parallel_Nonlinear_Solver::collect_information(){
 
 void Parallel_Nonlinear_Solver::tecplot_writer(){
   collect_information();
-}
+  size_t num_dim = simparam->num_dim;
+	std::string current_file_name;
+	std::string base_file_name= "TecplotTO";
+	std::stringstream ss;
+	std::string file_extension= ".dat";
+  int time_step = 0;
+  int temp_convert;
+  // Convert ijk index system to the finite element numbering convention
+  // for vertices in cell
+  CArray<size_t> convert_ijk_to_ensight(max_nodes_per_element);
+  CArray<size_t> tmp_ijk_indx(max_nodes_per_element);
+  convert_ijk_to_ensight(0) = 0;
+  convert_ijk_to_ensight(1) = 1;
+  convert_ijk_to_ensight(2) = 3;
+  convert_ijk_to_ensight(3) = 2;
+  convert_ijk_to_ensight(4) = 4;
+  convert_ijk_to_ensight(5) = 5;
+  convert_ijk_to_ensight(6) = 7;
+  convert_ijk_to_ensight(7) = 6;
 
+  //compared to primitive unit cell, assumes orthogonal primitive unit cell
+  if(myrank==0){
+    current_file_name = base_file_name + file_extension;
+    std::ofstream myfile (current_file_name.c_str()); //output filestream object for file output
+	  //read in position data
+	  myfile << std::fixed << std::setprecision(8);
+		
+		//output header of the tecplot file
+
+		myfile << "TITLE=\"results for TO code\"" "\n";
+		myfile << "VARIABLES = \"x\", \"y\", \"z\", \"disp1\", \"disp2\", \"disp3\", \"density\"" "\n";
+
+		myfile << "ZONE T=\"load step " << time_step << "\", NODES= " << num_nodes
+			<< ", ELEMENTS= " << num_elem << ", DATAPACKING=POINT, ZONETYPE=FEBRICK" "\n";
+
+		for (int nodeline = 0; nodeline < num_nodes; nodeline++) {
+			myfile << std::setw(25) << collected_node_coords(nodeline,0) << " ";
+			myfile << std::setw(25) << collected_node_coords(nodeline,1) << " ";
+      if(num_dim==3)
+			myfile << std::setw(25) << collected_node_coords(nodeline,2) << " ";
+			myfile << std::setw(25) << collected_node_displacements(nodeline*num_dim,0) << " ";
+			myfile << std::setw(25) << collected_node_displacements(nodeline*num_dim + 1,0) << " ";
+      if(num_dim==3)
+			myfile << std::setw(25) << collected_node_displacements(nodeline*num_dim + 2,0) << " ";
+			myfile << std::setw(25) << collected_node_densities(nodeline,0) << std::endl;
+		}
+		for (int elementline = 0; elementline < num_elem; elementline++) {
+      //convert node ordering
+			for (int ii = 0; ii < max_nodes_per_element; ii++) {
+        temp_convert = convert_ijk_to_ensight(ii);
+				myfile << std::setw(10) << collected_nodes_in_elem(elementline, temp_convert) + 1 << " ";
+			}
+			myfile << " \n";
+		}
+    myfile.close();
+  }
+
+}
 /* ----------------------------------------------------------------------
    Output Model Information in vtk format
 ------------------------------------------------------------------------- */

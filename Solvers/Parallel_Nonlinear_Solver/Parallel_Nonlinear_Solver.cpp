@@ -208,7 +208,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     //find nodal strain values to approximate strain field subspace
     //compute_nodal_strains();
     //return;
-    setup_optimization_problem();
+    //setup_optimization_problem();
     
     //CPU time
     double current_cpu = CPU_Time();
@@ -1115,9 +1115,9 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
  
-  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<StrainEnergyConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
-  ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<StrainEnergyConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
+  //ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
+  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
   
   // fill parameter list with desired algorithmic options or leave as default
   ROL::ParameterList parlist;
@@ -1336,7 +1336,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
     
   // tag the x=0 plane,  (Direction, value, bdy_set)
   std::cout << "tagging x = 0 " << std::endl;
-  int bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  int bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   real_t value = 0.0;
   bdy_set_id = current_bdy_id++;
   tag_boundaries(bc_tag, value, bdy_set_id);
@@ -1377,14 +1377,30 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
 
   std::cout << "tagging x = 1.2 " << std::endl;
   bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-  //value = 1.2;
-  value = 2;
+  value = 0.381;
+  //value = 2;
   bdy_set_id = current_bdy_id++;
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 2;
-  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 1;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
+  surf_force_set_id++;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
+  std::cout << std::endl;
+
+  std::cout << "tagging x = 1.2 " << std::endl;
+  bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 0;
+  //value = 2;
+  bdy_set_id = current_bdy_id++;
+  //find boundary patches this BC corresponds to
+  tag_boundaries(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = -1;
   Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
   surf_force_set_id++;
   std::cout << "tagged a set " << std::endl;
@@ -1609,13 +1625,13 @@ void Parallel_Nonlinear_Solver::collect_information(){
   //collect element type data
 
   //debug print
-  std::ostream &out = std::cout;
-  Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  if(myrank==0)
-  *fos << "Collected nodal displacements :" << std::endl;
-  collected_nodes_in_elem_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  std::fflush(stdout);
+  //std::ostream &out = std::cout;
+  //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  //if(myrank==0)
+  //*fos << "Collected nodal displacements :" << std::endl;
+  //collected_nodes_in_elem_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
+  //std::fflush(stdout);
 
   //set host views of the collected data to print out from
   if(myrank==0){
@@ -1637,8 +1653,11 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
 	std::string base_file_name= "TecplotTO";
 	std::stringstream ss;
 	std::string file_extension= ".dat";
+  std::string file_count;
+	std::stringstream count_temp;
   int time_step = 0;
   int temp_convert;
+  int displace_geometry = 1;
   // Convert ijk index system to the finite element numbering convention
   // for vertices in cell
   CArray<size_t> convert_ijk_to_ensight(max_nodes_per_element);
@@ -1653,41 +1672,118 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
   convert_ijk_to_ensight(7) = 6;
 
   //compared to primitive unit cell, assumes orthogonal primitive unit cell
-  if(myrank==0){
-    current_file_name = base_file_name + file_extension;
-    std::ofstream myfile (current_file_name.c_str()); //output filestream object for file output
-	  //read in position data
-	  myfile << std::fixed << std::setprecision(8);
+  if(displace_geometry){
+    if(myrank==0){
+      //initial undeformed geometry
+      count_temp.str("");
+      count_temp << 1;
+	    file_count = count_temp.str();
+    
+      current_file_name = base_file_name + file_count + file_extension;
+      std::ofstream myfile (current_file_name.c_str()); //output filestream object for file output
+	    //read in position data
+	    myfile << std::fixed << std::setprecision(8);
 		
-		//output header of the tecplot file
+		  //output header of the tecplot file
 
-		myfile << "TITLE=\"results for TO code\"" "\n";
-		myfile << "VARIABLES = \"x\", \"y\", \"z\", \"disp1\", \"disp2\", \"disp3\", \"density\"" "\n";
+		  myfile << "TITLE=\"results for TO code\"" "\n";
+		  myfile << "VARIABLES = \"x\", \"y\", \"z\", \"density\"" "\n";
 
-		myfile << "ZONE T=\"load step " << time_step << "\", NODES= " << num_nodes
+		  myfile << "ZONE T=\"load step " << time_step << "\", NODES= " << num_nodes
+			  << ", ELEMENTS= " << num_elem << ", DATAPACKING=POINT, ZONETYPE=FEBRICK" "\n";
+
+		  for (int nodeline = 0; nodeline < num_nodes; nodeline++) {
+			  myfile << std::setw(25) << collected_node_coords(nodeline,0) << " ";
+			  myfile << std::setw(25) << collected_node_coords(nodeline,1) << " ";
+        if(num_dim==3)
+			  myfile << std::setw(25) << collected_node_coords(nodeline,2) << " ";
+			  myfile << std::setw(25) << collected_node_densities(nodeline,0) << std::endl;
+		  }
+		  for (int elementline = 0; elementline < num_elem; elementline++) {
+        //convert node ordering
+			  for (int ii = 0; ii < max_nodes_per_element; ii++) {
+          temp_convert = convert_ijk_to_ensight(ii);
+				  myfile << std::setw(10) << collected_nodes_in_elem(elementline, temp_convert) + 1 << " ";
+			  }
+			  myfile << " \n";
+		  }
+      myfile.close();
+    }
+    if(myrank==0){
+      //deformed geometry
+      count_temp.str("");
+      count_temp << 2;
+	    file_count = count_temp.str();
+    
+      current_file_name = base_file_name + file_count + file_extension;
+      std::ofstream myfile (current_file_name.c_str()); //output filestream object for file output
+	    //read in position data
+	    myfile << std::fixed << std::setprecision(8);
+		
+		  //output header of the tecplot file
+
+		  myfile << "TITLE=\"results for TO code\"" "\n";
+		  myfile << "VARIABLES = \"x\", \"y\", \"z\", \"density\"" "\n";
+
+		  myfile << "ZONE T=\"load step " << time_step + 1 << "\", NODES= " << num_nodes
 			<< ", ELEMENTS= " << num_elem << ", DATAPACKING=POINT, ZONETYPE=FEBRICK" "\n";
 
-		for (int nodeline = 0; nodeline < num_nodes; nodeline++) {
-			myfile << std::setw(25) << collected_node_coords(nodeline,0) << " ";
-			myfile << std::setw(25) << collected_node_coords(nodeline,1) << " ";
-      if(num_dim==3)
-			myfile << std::setw(25) << collected_node_coords(nodeline,2) << " ";
-			myfile << std::setw(25) << collected_node_displacements(nodeline*num_dim,0) << " ";
-			myfile << std::setw(25) << collected_node_displacements(nodeline*num_dim + 1,0) << " ";
-      if(num_dim==3)
-			myfile << std::setw(25) << collected_node_displacements(nodeline*num_dim + 2,0) << " ";
-			myfile << std::setw(25) << collected_node_densities(nodeline,0) << std::endl;
-		}
-		for (int elementline = 0; elementline < num_elem; elementline++) {
-      //convert node ordering
-			for (int ii = 0; ii < max_nodes_per_element; ii++) {
-        temp_convert = convert_ijk_to_ensight(ii);
-				myfile << std::setw(10) << collected_nodes_in_elem(elementline, temp_convert) + 1 << " ";
-			}
-			myfile << " \n";
-		}
-    myfile.close();
+		  for (int nodeline = 0; nodeline < num_nodes; nodeline++) {
+			  myfile << std::setw(25) << collected_node_coords(nodeline,0) + collected_node_displacements(nodeline*num_dim,0) << " ";
+			  myfile << std::setw(25) << collected_node_coords(nodeline,1) + collected_node_displacements(nodeline*num_dim + 1,0) << " ";
+        if(num_dim==3)
+			  myfile << std::setw(25) << collected_node_coords(nodeline,2) + collected_node_displacements(nodeline*num_dim + 2,0) << " ";
+			  myfile << std::setw(25) << collected_node_densities(nodeline,0) << std::endl;
+		  }
+		  for (int elementline = 0; elementline < num_elem; elementline++) {
+        //convert node ordering
+			  for (int ii = 0; ii < max_nodes_per_element; ii++) {
+          temp_convert = convert_ijk_to_ensight(ii);
+				  myfile << std::setw(10) << collected_nodes_in_elem(elementline, temp_convert) + 1 << " ";
+			  }
+			  myfile << " \n";
+		  }
+      myfile.close();
+    }
   }
+  else{
+    if(myrank==0){
+      current_file_name = base_file_name + file_extension;
+      std::ofstream myfile (current_file_name.c_str()); //output filestream object for file output
+	    //read in position data
+	    myfile << std::fixed << std::setprecision(8);
+		
+		  //output header of the tecplot file
+
+		  myfile << "TITLE=\"results for TO code\"" "\n";
+		  myfile << "VARIABLES = \"x\", \"y\", \"z\", \"disp1\", \"disp2\", \"disp3\", \"density\"" "\n";
+
+		  myfile << "ZONE T=\"load step " << time_step << "\", NODES= " << num_nodes
+			  << ", ELEMENTS= " << num_elem << ", DATAPACKING=POINT, ZONETYPE=FEBRICK" "\n";
+
+		  for (int nodeline = 0; nodeline < num_nodes; nodeline++) {
+			  myfile << std::setw(25) << collected_node_coords(nodeline,0) << " ";
+			  myfile << std::setw(25) << collected_node_coords(nodeline,1) << " ";
+        if(num_dim==3)
+			  myfile << std::setw(25) << collected_node_coords(nodeline,2) << " ";
+			  myfile << std::setw(25) << collected_node_displacements(nodeline*num_dim,0) << " ";
+			  myfile << std::setw(25) << collected_node_displacements(nodeline*num_dim + 1,0) << " ";
+        if(num_dim==3)
+			  myfile << std::setw(25) << collected_node_displacements(nodeline*num_dim + 2,0) << " ";
+			  myfile << std::setw(25) << collected_node_densities(nodeline,0) << std::endl;
+		  }
+		  for (int elementline = 0; elementline < num_elem; elementline++) {
+        //convert node ordering
+			  for (int ii = 0; ii < max_nodes_per_element; ii++) {
+          temp_convert = convert_ijk_to_ensight(ii);
+				  myfile << std::setw(10) << collected_nodes_in_elem(elementline, temp_convert) + 1 << " ";
+			  }
+			  myfile << " \n";
+		  }
+      myfile.close();
+    }
+  }
+  
 
 }
 /* ----------------------------------------------------------------------
@@ -5193,8 +5289,8 @@ int Parallel_Nonlinear_Solver::solve(){
   //return !EXIT_SUCCESS;
   // Create solver interface to KLU2 with Amesos2 factory method
   
-  //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
-  Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
+  Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
+  //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
   
   //declare non-contiguous map
   //Create a Teuchos::ParameterList to hold solver parameters

@@ -53,7 +53,7 @@ num_cells in element = (p_order*2)^3
 #include <Teuchos_VerboseObject.hpp>
 #include <Teuchos_SerialDenseMatrix.hpp>
 #include <Teuchos_SerialDenseVector.hpp>
-#include <Teuchos_SerialSpdDenseSolver.hpp>
+#include <Teuchos_SerialDenseSolver.hpp>
 
 #include <Tpetra_Core.hpp>
 #include <Tpetra_Map.hpp>
@@ -162,7 +162,7 @@ Parallel_Nonlinear_Solver::~Parallel_Nonlinear_Solver(){
 
 void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     
-    std::cout << "Running Static Solver Example" << std::endl;
+    std::cout << "Running TO Solver" << std::endl;
     //MPI info
     world = MPI_COMM_WORLD; //used for convenience to represent all the ranks in the job
     MPI_Comm_rank(world,&myrank);
@@ -205,8 +205,6 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
       return;
     }
     
-    //find nodal strain values to approximate strain field subspace
-    //compute_nodal_strains();
     //return;
     //setup_optimization_problem();
     
@@ -214,9 +212,6 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     double current_cpu = CPU_Time();
     std::cout << " RUNTIME OF CODE ON TASK " << myrank << " is "<< current_cpu-initial_CPU_time <<std::endl;
     //debug return to avoid printing further
-    
-
-    std::cout << "finished linear solver" << std::endl;
 
     real_t dt = simparam->dt;
     int cycle_stop = simparam->cycle_stop;
@@ -246,6 +241,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   char ch;
   int num_dim = simparam->num_dim;
   int p_order = simparam->p_order;
+  real_t unit_scaling = simparam->unit_scaling;
   int local_node_index, global_node_index, current_column_index;
   size_t strain_count;
   std::string skip_line, read_line, substring;
@@ -396,7 +392,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         //extract nodal position from the read buffer
         //for ensight format this is just one coordinate per line
         dof_value = atof(&read_buffer(scan_loop,0,0));
-        node_coords(node_rid, 0) = dof_value;
+        node_coords(node_rid, 0) = dof_value * unit_scaling;
       }
     }
     read_index_start+=BUFFER_LINES;
@@ -455,7 +451,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         //extract nodal position from the read buffer
         //for ensight format this is just one coordinate per line
         dof_value = atof(&read_buffer(scan_loop,0,0));
-        node_coords(node_rid, 1) = dof_value;
+        node_coords(node_rid, 1) = dof_value * unit_scaling;
       }
     }
     read_index_start+=BUFFER_LINES;
@@ -514,7 +510,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
         //extract nodal position from the read buffer
         //for ensight format this is just one coordinate per line
         dof_value = atof(&read_buffer(scan_loop,0,0));
-        node_coords(node_rid, 2) = dof_value;
+        node_coords(node_rid, 2) = dof_value * unit_scaling;
       }
     }
     read_index_start+=BUFFER_LINES;
@@ -1376,21 +1372,22 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   */
 
   std::cout << "tagging x = 1.2 " << std::endl;
-  bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-  value = 0.381;
+  bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 3.81 * simparam->unit_scaling;
   //value = 2;
   bdy_set_id = current_bdy_id++;
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
-  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 1;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
   surf_force_set_id++;
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-
+  
+  /*
   std::cout << "tagging x = 1.2 " << std::endl;
   bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 0;
@@ -1406,7 +1403,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-
+  */
   /*
   std::cout << "tagging y = 2 " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
@@ -1576,6 +1573,8 @@ void Parallel_Nonlinear_Solver::collect_information(){
   size_t nreduce_nodes = 0;
   size_t nreduce_elem = 0;
   size_t num_dim = simparam->num_dim;
+  int strain_count;
+  int output_strain_flag = simparam->output_strain_flag;
 
   //collect nodal coordinate information
   if(myrank==0) nreduce_nodes = num_nodes;
@@ -1624,6 +1623,29 @@ void Parallel_Nonlinear_Solver::collect_information(){
 
   //collect element type data
 
+  //set host views of the collected data to print out from
+  if(myrank==0){
+    collected_node_coords = collected_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    collected_node_displacements = collected_node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    collected_node_densities = collected_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    collected_nodes_in_elem = collected_nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  }
+
+  //collect strain data
+  if(output_strain_flag){
+    if(num_dim==3) strain_count = 6;
+    else strain_count = 3;
+
+    //collected nodal density information
+    Teuchos::RCP<MV> collected_node_strains_distributed = Teuchos::rcp(new MV(global_reduce_map, strain_count));
+
+    //comms to collect
+    collected_node_strains_distributed->doImport(*node_strains_distributed, node_collection_importer, Tpetra::INSERT);
+
+    //host view to print from
+    collected_node_strains = collected_node_strains_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  }
+
   //debug print
   //std::ostream &out = std::cout;
   //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
@@ -1633,13 +1655,7 @@ void Parallel_Nonlinear_Solver::collect_information(){
   //*fos << std::endl;
   //std::fflush(stdout);
 
-  //set host views of the collected data to print out from
-  if(myrank==0){
-    collected_node_coords = collected_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    collected_node_displacements = collected_node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    collected_node_densities = collected_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    collected_nodes_in_elem = collected_nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-  }
+  
 }
 
 /* ----------------------------------------------------------------------
@@ -1647,7 +1663,7 @@ void Parallel_Nonlinear_Solver::collect_information(){
 ------------------------------------------------------------------------- */
 
 void Parallel_Nonlinear_Solver::tecplot_writer(){
-  collect_information();
+  
   size_t num_dim = simparam->num_dim;
 	std::string current_file_name;
 	std::string base_file_name= "TecplotTO";
@@ -1658,6 +1674,9 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
   int time_step = 0;
   int temp_convert;
   int displace_geometry = 1;
+  int output_strain_flag = simparam->output_strain_flag;
+  if(output_strain_flag) compute_nodal_strains();
+  collect_information();
   // Convert ijk index system to the finite element numbering convention
   // for vertices in cell
   CArray<size_t> convert_ijk_to_ensight(max_nodes_per_element);
@@ -1687,6 +1706,9 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
 		  //output header of the tecplot file
 
 		  myfile << "TITLE=\"results for TO code\"" "\n";
+      if(output_strain_flag)
+      myfile << "VARIABLES = \"x\", \"y\", \"z\", \"density\", \"sigmaxx\", \"sigmayy\", \"sigmazz\", \"sigmaxy\", \"sigmaxz\", \"sigmayz\"" "\n";
+      else
 		  myfile << "VARIABLES = \"x\", \"y\", \"z\", \"density\"" "\n";
 
 		  myfile << "ZONE T=\"load step " << time_step << "\", NODES= " << num_nodes
@@ -1697,7 +1719,19 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
 			  myfile << std::setw(25) << collected_node_coords(nodeline,1) << " ";
         if(num_dim==3)
 			  myfile << std::setw(25) << collected_node_coords(nodeline,2) << " ";
-			  myfile << std::setw(25) << collected_node_densities(nodeline,0) << std::endl;
+        if(output_strain_flag){
+          myfile << std::setw(25) << collected_node_densities(nodeline,0) << " ";
+          myfile << std::setw(25) << collected_node_strains(nodeline,0) << " ";
+          myfile << std::setw(25) << collected_node_strains(nodeline,1) << " ";
+          myfile << std::setw(25) << collected_node_strains(nodeline,2) << " ";
+          if(num_dim==3){
+            myfile << std::setw(25) << collected_node_strains(nodeline,3) << " ";
+            myfile << std::setw(25) << collected_node_strains(nodeline,4) << " ";
+            myfile << std::setw(25) << collected_node_strains(nodeline,5) << std::endl;
+          }
+        }
+        else
+          myfile << std::setw(25) << collected_node_densities(nodeline,0) << std::endl;
 		  }
 		  for (int elementline = 0; elementline < num_elem; elementline++) {
         //convert node ordering
@@ -1723,6 +1757,9 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
 		  //output header of the tecplot file
 
 		  myfile << "TITLE=\"results for TO code\"" "\n";
+		  if(output_strain_flag)
+      myfile << "VARIABLES = \"x\", \"y\", \"z\", \"density\", \"sigmaxx\", \"sigmayy\", \"sigmazz\", \"sigmaxy\", \"sigmaxz\", \"sigmayz\"" "\n";
+      else
 		  myfile << "VARIABLES = \"x\", \"y\", \"z\", \"density\"" "\n";
 
 		  myfile << "ZONE T=\"load step " << time_step + 1 << "\", NODES= " << num_nodes
@@ -1733,7 +1770,19 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
 			  myfile << std::setw(25) << collected_node_coords(nodeline,1) + collected_node_displacements(nodeline*num_dim + 1,0) << " ";
         if(num_dim==3)
 			  myfile << std::setw(25) << collected_node_coords(nodeline,2) + collected_node_displacements(nodeline*num_dim + 2,0) << " ";
-			  myfile << std::setw(25) << collected_node_densities(nodeline,0) << std::endl;
+			  if(output_strain_flag){
+          myfile << std::setw(25) << collected_node_densities(nodeline,0) << " ";
+          myfile << std::setw(25) << collected_node_strains(nodeline,0) << " ";
+          myfile << std::setw(25) << collected_node_strains(nodeline,1) << " ";
+          myfile << std::setw(25) << collected_node_strains(nodeline,2) << " ";
+          if(num_dim==3){
+            myfile << std::setw(25) << collected_node_strains(nodeline,3) << " ";
+            myfile << std::setw(25) << collected_node_strains(nodeline,4) << " ";
+            myfile << std::setw(25) << collected_node_strains(nodeline,5) << std::endl;
+          }
+        }
+        else
+          myfile << std::setw(25) << collected_node_densities(nodeline,0) << std::endl;
 		  }
 		  for (int elementline = 0; elementline < num_elem; elementline++) {
         //convert node ordering
@@ -4372,6 +4421,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   int z_quad,y_quad,x_quad, direct_product_count;
   int solve_flag, zero_strain_flag;
   size_t local_node_id, local_dof_idx, local_dof_idy, local_dof_idz;
+  real_t J_min = std::numeric_limits<real_t>::max();
   GO current_global_index;
 
   direct_product_count = std::pow(num_gauss_points,num_dim);
@@ -4402,7 +4452,6 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
   CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
   CArray<real_t> current_nodal_displacements(elem->num_basis()*num_dim);
-  CArray<real_t> nodal_density(elem->num_basis());
 
   size_t Brows;
   if(num_dim==2) Brows = 3;
@@ -4414,12 +4463,13 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   CArray<real_t> projection_vector(Brows,max_nodes_per_element);
   CArray<real_t> strain_vector(max_nodes_per_element);
   //Teuchos::SerialSymDenseMatrix<LO,real_t> projection_matrix_pass;
-  Teuchos::RCP<Teuchos::SerialSymDenseMatrix<LO,real_t>> projection_matrix_pass;
+  Teuchos::RCP<Teuchos::SerialDenseMatrix<LO,real_t>> projection_matrix_pass;
   //Teuchos::SerialDenseVector<LO,real_t> projection_vector_pass;
   Teuchos::RCP<Teuchos::SerialDenseVector<LO,real_t>> projection_vector_pass;
   //Teuchos::SerialDenseVector<LO,real_t> strain_vector_pass;
   Teuchos::RCP<Teuchos::SerialDenseVector<LO,real_t>> strain_vector_pass;
-  Teuchos::SerialSpdDenseSolver<LO,real_t> projection_solver;
+  //Teuchos::SerialSpdDenseSolver<LO,real_t> projection_solver;
+  Teuchos::SerialDenseSolver<LO,real_t> projection_solver;
 
   //initialize weights
   elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
@@ -4488,7 +4538,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
     }
     std::cout << " }"<< std::endl;
     */
-
+    J_min = std::numeric_limits<real_t>::max();
     //loop over quadrature points
     for(int iquad=0; iquad < direct_product_count; iquad++){
 
@@ -4553,6 +4603,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
                JT_row1(1)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
                JT_row1(2)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1));
     if(Jacobian<0) Jacobian = -Jacobian;
+    if(Jacobian < J_min) J_min = Jacobian;
 
     //compute the contributions of this quadrature point to the B matrix
     if(num_dim==2)
@@ -4644,14 +4695,14 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
     }
 
     //debug print of quad strain
-    
-    //std::cout << " ------------Strain at quadrature point for Element "<< ielem + 1 <<"--------------"<<std::endl;
-    //std::cout << " { ";
-    //for (int idof = 0; idof < Brows; idof++){
-      //std::cout << idof + 1 << " = " << quad_strain(idof)/Jacobian << " , " ;
-    //}
-    //std::cout << " }"<< std::endl;
-    
+    /*
+    std::cout << " ------------Strain at quadrature point for Element "<< ielem + 1 <<"--------------"<<std::endl;
+    std::cout << " { ";
+    for (int idof = 0; idof < Brows; idof++){
+      std::cout << idof + 1 << " = " << quad_strain(idof)/Jacobian << " , " ;
+    }
+    std::cout << " }"<< std::endl;
+    */
 
     //compute contribution to RHS projection vector
     for(int irow=0; irow < Brows; irow++)
@@ -4662,7 +4713,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
     //compute contribution to projection matrix (only upper part is set)
     for(int irow=0; irow < nodes_per_elem; irow++)
       for(int icol=0; icol < nodes_per_elem; icol++){
-        if(irow<=icol)
+        //if(irow<=icol)
         projection_matrix(irow,icol) += quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*basis_values(irow)*basis_values(icol)*Jacobian;
       }
 
@@ -4700,13 +4751,29 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
     }
     */
     //end debug block
-
+    
     //solve small linear system for nodal strain values
+    //scale for conditioning
+    /*
+    for(int irow=0; irow < nodes_per_elem; irow++)
+      for(int icol=0; icol < nodes_per_elem; icol++){
+        //if(irow<=icol)
+        projection_matrix(irow,icol) /= J_min;
+      }
+    //use percentages
+    for(int irow=0; irow < Brows; irow++)
+      for(int icol=0; icol < nodes_per_elem; icol++){
+        projection_vector(irow,icol) *= 100;
+      }
+      */
     //construct matrix and vector wrappers for dense solver
-    projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem));
+    //projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem));
+    projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialDenseMatrix<LO,real_t>(Teuchos::View, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem, nodes_per_elem));
 
     //debug print of matrix
     //projection_matrix_pass->print(std::cout);
+
+    
 
     strain_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, strain_vector.get_pointer(), nodes_per_elem));
     //loop through strain components and solve for nodal values of that component
@@ -4722,7 +4789,9 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
         //projection_vector_pass->print(std::cout);
         projection_solver.setMatrix(projection_matrix_pass);
         projection_solver.setVectors(strain_vector_pass, projection_vector_pass);
+        projection_solver.factorWithEquilibration(true);
         solve_flag = projection_solver.solve();
+        //debug print
         //strain_vector_pass->print(std::cout);
         if(solve_flag) std::cout << "Projection Solve Failed With: " << solve_flag << std::endl;
 
@@ -4748,19 +4817,16 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
     
   }
     
-    /*
-    //debug print of B matrix per quadrature point
-    std::cout << " ------------B MATRIX"<< ielem + 1 <<"--------------"<<std::endl;
-    for (int idof = 0; idof < Brows; idof++){
-      std::cout << "row: " << idof + 1 << " { ";
-      for (int istride = 0; istride < nodes_per_elem*num_dim; istride++){
-        std::cout << istride + 1 << " = " << B_matrix(idof,istride) << " , " ;
-      }
-      std::cout << " }"<< std::endl;
-    }
-    //end debug block
-    */
-  
+  //debug print
+  /*
+  std::ostream &out = std::cout;
+  Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  if(myrank==0)
+  *fos << "Local Node Strains :" << std::endl;
+  node_strains_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  std::fflush(stdout);
+  */
 
 }
 

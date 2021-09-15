@@ -1379,7 +1379,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1/simparam->unit_scaling/simparam->unit_scaling;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
   surf_force_set_id++;
@@ -2871,9 +2871,9 @@ void Parallel_Nonlinear_Solver::assemble_matrix(){
 ------------------------------------------------------------------------- */
 
 void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density){
-  
+  real_t unit_scaling = simparam->unit_scaling;
   //relationship between density and stiffness
-  Element_Modulus = density*simparam->Elastic_Modulus;
+  Element_Modulus = density*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
   Poisson_Ratio = simparam->Poisson_Ratio;
 
 }
@@ -4699,15 +4699,25 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
     std::cout << " ------------Strain at quadrature point for Element "<< ielem + 1 <<"--------------"<<std::endl;
     std::cout << " { ";
     for (int idof = 0; idof < Brows; idof++){
-      std::cout << idof + 1 << " = " << quad_strain(idof)/Jacobian << " , " ;
+      std::cout << idof + 1 << " = " << quad_strain(idof)/Jacobian*100 << " , " ;
     }
     std::cout << " }"<< std::endl;
+    std::fflush(stdout);
     */
 
     //compute contribution to RHS projection vector
     for(int irow=0; irow < Brows; irow++)
       for(int icol=0; icol < nodes_per_elem; icol++){
+        //debug print
+        /*
+        if(irow==2){
+        std::cout << " ------------Strain Projection Vector Contribution"<< ielem + 1 <<"--------------"<<std::endl;
+        std::cout << icol + 1 << " = " << projection_vector(irow,icol) << " " << quad_strain(irow) << " " << basis_values(icol) << " " << quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2) << std::endl;
+        std::fflush(stdout);
+        }
+        */
         projection_vector(irow,icol) += quad_coordinate_weight(0)*quad_coordinate_weight(1)*quad_coordinate_weight(2)*quad_strain(irow)*basis_values(icol);
+        
       }
 
     //compute contribution to projection matrix (only upper part is set)
@@ -4749,6 +4759,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       }
       std::cout << " }"<< std::endl;
     }
+    std::fflush(stdout);
     */
     //end debug block
     
@@ -4760,20 +4771,18 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
         //if(irow<=icol)
         projection_matrix(irow,icol) /= J_min;
       }
+      */
     //use percentages
     for(int irow=0; irow < Brows; irow++)
       for(int icol=0; icol < nodes_per_elem; icol++){
         projection_vector(irow,icol) *= 100;
       }
-      */
+      
     //construct matrix and vector wrappers for dense solver
     //projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem));
-    projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialDenseMatrix<LO,real_t>(Teuchos::View, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem, nodes_per_elem));
 
     //debug print of matrix
     //projection_matrix_pass->print(std::cout);
-
-    
 
     strain_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, strain_vector.get_pointer(), nodes_per_elem));
     //loop through strain components and solve for nodal values of that component
@@ -4785,13 +4794,17 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       }
       if(!zero_strain_flag){
         projection_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, &projection_vector(istrain,0), nodes_per_elem));
+        projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialDenseMatrix<LO,real_t>(Teuchos::Copy, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem, nodes_per_elem));
         //debug print of vectors
         //projection_vector_pass->print(std::cout);
+        //projection_matrix_pass->print(std::cout);
         projection_solver.setMatrix(projection_matrix_pass);
         projection_solver.setVectors(strain_vector_pass, projection_vector_pass);
         projection_solver.factorWithEquilibration(true);
         solve_flag = projection_solver.solve();
+        
         //debug print
+        //std::cout << "STRAIN COMPONENT ON NODES " << istrain + 1 << std::endl;
         //strain_vector_pass->print(std::cout);
         if(solve_flag) std::cout << "Projection Solve Failed With: " << solve_flag << std::endl;
 
@@ -4806,7 +4819,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
           if(fabs(current_strain) > all_node_strains(local_node_id, istrain)){
             all_node_strains(local_node_id, istrain) = current_strain;
 
-            if(map->isNodeGlobalElement(nodes_in_elem(ielem, node_loop))){
+            if(map->isNodeGlobalElement(current_global_index)){
               local_node_id = map->getLocalElement(current_global_index);
               node_strains(local_node_id, istrain) = current_strain;
             }

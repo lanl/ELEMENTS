@@ -36,6 +36,7 @@ class Simulation_Parameters
   // --- Graphics output variables ---
   int graphics_id;
   int graphics_cyc_ival;
+  int output_strain_flag, strain_max_flag;
 
   real_t graphics_times[250];
   real_t graphics_dt_ival;
@@ -76,6 +77,7 @@ class Simulation_Parameters
   //file input parameters 
   int words_per_line, elem_words_per_line;
   char *format_specification;  //per line file format when reading dofs
+  real_t unit_scaling;
 
   //debug and performance reporting flags
   int report_runtime_flag;

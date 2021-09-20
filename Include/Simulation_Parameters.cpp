@@ -11,6 +11,13 @@ Simulation_Parameters::Simulation_Parameters(){
   node = new node_t();
   mat_pt = new mat_pt_t();
   material = new material_t();
+
+  //initialize flags to defaults
+  output_strain_flag = 0;
+  report_runtime_flag = 0;
+  nodal_density_flag = 1;
+  unit_scaling = 1;
+  strain_max_flag = 0;
 }
 
 Simulation_Parameters::~Simulation_Parameters(){
@@ -24,6 +31,7 @@ void Simulation_Parameters::input(){
 
   //simulation spatial dimension
   num_dim = 3;
+  unit_scaling = 1;
 
   // time step
   TFINAL = 0.5;
@@ -47,6 +55,7 @@ void Simulation_Parameters::input(){
   // ---- graphics information ---- //
   graphics_cyc_ival = 10;
   graphics_dt_ival  = 0.1;    // every 0.1 time units
+  output_strain_flag = 1;
 
   // ---- fill instructions and intial conditions ---- //
 
@@ -56,7 +65,7 @@ void Simulation_Parameters::input(){
   
   //Static isotropic parameters to move into a child class later
   Elastic_Modulus = 3000;
-  Poisson_Ratio = 0.1;
+  Poisson_Ratio = 0.3;
   words_per_line = 1;
   elem_words_per_line = 8;
 
@@ -94,8 +103,8 @@ void Simulation_Parameters::input(){
   mat_fill[1].field2 = 0.0;   // some other field
 
   // ---- boundary conditions ---- //
-  NB = 3; // number of boundaries
-  NBSF = 2; //number of surface density force conditions
+  NB = 2; // number of boundaries
+  NBSF = 1; //number of surface density force conditions
   NBD = 1; //number of surface sets used to specify a fixed displacement on nodes belonging to respective surfaces
            //note this only implies a fixed displacement on the surface if no other basis functions have support on the surface
     

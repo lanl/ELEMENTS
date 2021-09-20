@@ -19,7 +19,7 @@
 #include <Kokkos_View.hpp>
 #include <Kokkos_Parallel.hpp>
 #include <Kokkos_Parallel_Reduce.hpp>
-#include "Tpetra_Details_makeColMap.hpp"
+//#include "Tpetra_Details_makeColMap.hpp"
 #include "Tpetra_Details_DefaultTypes.hpp"
 
 namespace swage{

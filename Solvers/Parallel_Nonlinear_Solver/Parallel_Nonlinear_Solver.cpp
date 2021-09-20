@@ -370,7 +370,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
     }
 
     //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
-    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    MPI_Bcast(read_buffer.pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
     //broadcast how many nodes were read into this buffer iteration
     MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
 
@@ -435,7 +435,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
     }
 
     //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
-    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    MPI_Bcast(read_buffer.pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
     //broadcast how many nodes were read into this buffer iteration
     MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
 
@@ -494,7 +494,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
     }
 
     //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
-    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    MPI_Bcast(read_buffer.pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
     //broadcast how many nodes were read into this buffer iteration
     MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
 
@@ -614,7 +614,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
     }
 
     //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
-    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*elem_words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    MPI_Bcast(read_buffer.pointer(),BUFFER_LINES*elem_words_per_line*MAX_WORD,MPI_CHAR,0,world);
     //broadcast how many nodes were read into this buffer iteration
     MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
     
@@ -949,11 +949,26 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //*fos << std::endl;
   //std::fflush(stdout);
 
+  //Count how many elements connect to each local node
+  node_nconn_distributed = Teuchos::rcp(new MCONN(map, 1));
+  host_elem_conn_array node_nconn = node_nconn_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+  for(int inode = 0; inode < nlocal_nodes; inode++)
+    node_nconn(inode,0) = 0;
+
+  for(int ielem = 0; ielem < rnum_elem; ielem++){
+    for(int inode = 0; inode < nodes_per_element; inode++){
+      node_gid = nodes_in_elem(ielem, inode);
+      if(map->isNodeGlobalElement(node_gid))
+        node_nconn(map->getLocalElement(node_gid),0)++;
+    }
+  }
+
   //create distributed multivector of the local node data and all (local + ghost) node storage
   node_coords_distributed = Teuchos::rcp(new MV(map, dual_node_coords));
   all_node_coords_distributed = Teuchos::rcp(new MV(all_node_map, num_dim));
   node_displacements_distributed = Teuchos::rcp(new MV(local_dof_map, 1));
   all_node_displacements_distributed = Teuchos::rcp(new MV(all_dof_map, 1));
+  //all_node_nconn_distributed = Teuchos::rcp(new MCONN(all_node_map, 1));
   if(num_dim==3) strain_count = 6;
   else strain_count = 3;
   node_strains_distributed = Teuchos::rcp(new MV(map, strain_count));
@@ -983,6 +998,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 
   //comms to get ghosts
   all_node_coords_distributed->doImport(*node_coords_distributed, importer, Tpetra::INSERT);
+  //all_node_nconn_distributed->doImport(*node_nconn_distributed, importer, Tpetra::INSERT);
   
   dual_nodes_in_elem.sync_device();
   dual_nodes_in_elem.modify_device();
@@ -995,6 +1011,15 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //if(myrank==0)
   //*fos << "Element Connectivity :" << std::endl;
   //nodes_in_elem_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
+  //std::fflush(stdout);
+
+  //debug print
+  //std::ostream &out = std::cout;
+  //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+  //if(myrank==0)
+  //*fos << "Number of Elements Connected to Each Node :" << std::endl;
+  //all_node_nconn_distributed->describe(*fos,Teuchos::VERB_EXTREME);
   //*fos << std::endl;
   //std::fflush(stdout);
 
@@ -1636,25 +1661,28 @@ void Parallel_Nonlinear_Solver::collect_information(){
     if(num_dim==3) strain_count = 6;
     else strain_count = 3;
 
+    //importer for strains, all nodes to global node set on rank 0
+    //Tpetra::Import<LO, GO> strain_collection_importer(all_node_map, global_reduce_map);
+
     //collected nodal density information
     Teuchos::RCP<MV> collected_node_strains_distributed = Teuchos::rcp(new MV(global_reduce_map, strain_count));
 
     //comms to collect
     collected_node_strains_distributed->doImport(*node_strains_distributed, node_collection_importer, Tpetra::INSERT);
 
+    //debug print
+    //std::ostream &out = std::cout;
+    //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+    //if(myrank==0)
+    //*fos << "Collected nodal displacements :" << std::endl;
+    //collected_node_strains_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+    //*fos << std::endl;
+    //std::fflush(stdout);
+
     //host view to print from
+    if(myrank==0)
     collected_node_strains = collected_node_strains_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   }
-
-  //debug print
-  //std::ostream &out = std::cout;
-  //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  //if(myrank==0)
-  //*fos << "Collected nodal displacements :" << std::endl;
-  //collected_nodes_in_elem_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-  //*fos << std::endl;
-  //std::fflush(stdout);
-
   
 }
 
@@ -4415,9 +4443,11 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   const_host_elem_conn_array nodes_in_elem = nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   host_vec_array all_node_strains = all_node_strains_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
   host_vec_array node_strains = node_strains_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+  const_host_elem_conn_array node_nconn = node_nconn_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
   int nodes_per_elem = elem->num_basis();
   int num_gauss_points = simparam->num_gauss_points;
+  int strain_max_flag = simparam->strain_max_flag;
   int z_quad,y_quad,x_quad, direct_product_count;
   int solve_flag, zero_strain_flag;
   size_t local_node_id, local_dof_idx, local_dof_idy, local_dof_idz;
@@ -4477,10 +4507,14 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
 
   //initialize strains to 0
   //local variable for host view in the dual view
-  for(int init = 0; init < local_dof_map->getNodeNumElements(); init++)
-    node_strains(init,0) = 0;
-  for(int init = 0; init < all_dof_map->getNodeNumElements(); init++)
-    all_node_strains(init,0) = 0;
+  for(int init = 0; init < map->getNodeNumElements(); init++)
+    for(int istrain = 0; istrain < Brows; istrain++)
+      node_strains(init,istrain) = 0;
+
+  for(int init = 0; init < all_node_map->getNodeNumElements(); init++)
+    for(int istrain = 0; istrain < Brows; istrain++)
+      all_node_strains(init,istrain) = 0;
+  
 
   real_t current_density = 1;
 
@@ -4779,12 +4813,12 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       }
       
     //construct matrix and vector wrappers for dense solver
-    //projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem));
+    //projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialSymDenseMatrix<LO,real_t>(Teuchos::View, true, projection_matrix.pointer(), nodes_per_elem, nodes_per_elem));
 
     //debug print of matrix
     //projection_matrix_pass->print(std::cout);
 
-    strain_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, strain_vector.get_pointer(), nodes_per_elem));
+    strain_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, strain_vector.pointer(), nodes_per_elem));
     //loop through strain components and solve for nodal values of that component
     for(int istrain = 0; istrain < Brows; istrain++){
       //check if projection vector is zero due to zero strains
@@ -4794,7 +4828,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
       }
       if(!zero_strain_flag){
         projection_vector_pass = Teuchos::rcp( new Teuchos::SerialDenseVector<LO,real_t>(Teuchos::View, &projection_vector(istrain,0), nodes_per_elem));
-        projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialDenseMatrix<LO,real_t>(Teuchos::Copy, projection_matrix.get_pointer(), nodes_per_elem, nodes_per_elem, nodes_per_elem));
+        projection_matrix_pass = Teuchos::rcp( new Teuchos::SerialDenseMatrix<LO,real_t>(Teuchos::Copy, projection_matrix.pointer(), nodes_per_elem, nodes_per_elem, nodes_per_elem));
         //debug print of vectors
         //projection_vector_pass->print(std::cout);
         //projection_matrix_pass->print(std::cout);
@@ -4816,12 +4850,22 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
           //debug print
           //std::cout << "STRAIN CHECK " << (*strain_vector_pass)(node_loop) << " " << all_node_strains(local_node_id, istrain) << std::endl;
           current_strain = (*strain_vector_pass)(node_loop);
-          if(fabs(current_strain) > all_node_strains(local_node_id, istrain)){
-            all_node_strains(local_node_id, istrain) = current_strain;
+          if(strain_max_flag){
+            if(fabs(current_strain) > all_node_strains(local_node_id, istrain)){
+              all_node_strains(local_node_id, istrain) = current_strain;
 
+              if(map->isNodeGlobalElement(current_global_index)){
+                local_node_id = map->getLocalElement(current_global_index);
+                node_strains(local_node_id, istrain) = current_strain;
+              }
+            }
+          }
+          else{
+            //debug print
+            //std::cout << current_strain/(double)all_node_nconn(local_node_id,0) << all_node_nconn(local_node_id,0) << " ";
             if(map->isNodeGlobalElement(current_global_index)){
               local_node_id = map->getLocalElement(current_global_index);
-              node_strains(local_node_id, istrain) = current_strain;
+              node_strains(local_node_id, istrain) += current_strain/(double)node_nconn(local_node_id,0);
             }
           }
         }
@@ -4831,15 +4875,15 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   }
     
   //debug print
-  /*
+  
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
   if(myrank==0)
   *fos << "Local Node Strains :" << std::endl;
-  node_strains_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+  //all_node_strains_distributed->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
   std::fflush(stdout);
-  */
+  
 
 }
 

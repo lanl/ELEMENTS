@@ -396,7 +396,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     }
 
     //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
-    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    MPI_Bcast(read_buffer.pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
     //broadcast how many nodes were read into this buffer iteration
     MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
 
@@ -461,7 +461,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     }
 
     //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
-    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    MPI_Bcast(read_buffer.pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
     //broadcast how many nodes were read into this buffer iteration
     MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
 
@@ -520,7 +520,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     }
 
     //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
-    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    MPI_Bcast(read_buffer.pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
     //broadcast how many nodes were read into this buffer iteration
     MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
 
@@ -637,7 +637,7 @@ void Static_Solver_Parallel::read_mesh(char *MESH){
     }
 
     //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
-    MPI_Bcast(read_buffer.get_pointer(),BUFFER_LINES*elem_words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    MPI_Bcast(read_buffer.pointer(),BUFFER_LINES*elem_words_per_line*MAX_WORD,MPI_CHAR,0,world);
     //broadcast how many nodes were read into this buffer iteration
     MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
     

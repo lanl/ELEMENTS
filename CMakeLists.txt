@@ -64,6 +64,9 @@ add_subdirectory(tests)
 # Examples
 add_subdirectory(examples)
 
+# mesh tools
+add_subdirectory(mesh_tools)
+
 # Install headers in include/ subdirectory of the specified install directory
 # (Note: This is an inelegant way of installing the headers. Resursing through
 # subdirectories looking for anything that matches the pattern "*.h" is

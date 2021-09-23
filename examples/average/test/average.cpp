@@ -43,7 +43,7 @@ num_cells in element = (p_order*2)^3
 #include <stdlib.h> 
 #include <math.h>  // fmin, fmax, abs note: fminl is long
 #include <sys/stat.h>
-
+#include <cstdlib>  // for killing the code with std::exit
 
 #include "geometry.h"
 #include "matar.h"
@@ -147,7 +147,18 @@ int p_order = 0;
 
 int main(int argc, char *argv[]){
 
-
+    // check to see of a mesh was supplied when running the code
+    if (argc == 1) {
+        std::cout << "\n\n**********************************\n\n";
+        std::cout << " ERROR:\n";
+        std::cout << " Please supply a mesh \n";
+        std::cout << "   ./Average my_mesh.geo \n\n";
+        std::cout << "**********************************\n\n" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+        
+        
+            
     // ---- Read input file, define state and boundary conditions ---- //
     input();
 

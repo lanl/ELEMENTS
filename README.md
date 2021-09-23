@@ -38,7 +38,8 @@ The **SWAGE** sub-library contains a large suite of mesh data structures, a rich
 The **geometry** sub-library combines **SWAGE** with **elements** to deliver the required capabilities to implement a large range of numerical methods on unstructured linear or high-order meshes.
 
 ## examples
-The examples folder contains a simple code to calculate an average from the cells to nodes and then back.  A figures folder within the examples folder contains diagrams to illustrate, for instance, the code project layout, geometric index spaces, and various capabilties supported by the **ELEMENTS** library.  
+The examples folder contains a simple code to calculate an average from the cells to nodes and then back.  A figures folder within the examples folder contains diagrams to illustrate, for instance, the code project layout, geometric index spaces, and various capabilties supported by the **ELEMENTS** library. When beginning your exploration of 
+ELEMENTS, the file `/examples/average/test/average.cpp` is a good place to start seeing how all the pieces fit together. Additionally, the Fierro project https://github.com/lanl/Fierro shows a much more comprehensive usage.
 
 
 ## Cloning, Building, and Installation
@@ -71,7 +72,6 @@ ELEMENTS_DIR=..  # relative path of ELEMENTS repository
 cmake \
   -DCMAKE_INSTALL_PREFIX=`pwd` \
   -DCMAKE_BUILD_TYPE=Debug \
-  -DVTK_DIR=${HOME}/packages/vtk/build-9.0 \
   ${ELEMENTS_DIR}
 ```
 where the CMake installation directory is configured to be the directory in which the configuration script is run (in this example, the `build/` directory created above).
@@ -80,6 +80,12 @@ Then enter
 ./my_config.sh; make
 ```
 at the command line (assuming you named your configuration script `my_config.sh`).
+
+There is an additional cmake flag that is experimental at this time:
+```
+  -DVTK_DIR=${HOME}/packages/vtk/build-9.0 \
+```
+VTK is only required to read VTK meshes and is not required to write VTK output.
 
 To install the **ELEMENTS** libraries and header files (with an in-place build or otherwise), enter
 ```

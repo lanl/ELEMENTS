@@ -151,6 +151,14 @@ int main(int argc, char *argv[]){
     // ---- Read input file, define state and boundary conditions ---- //
     input();
 
+    // ---- Make sure we have a mesh ---- //
+    if (argc<2) {
+        std::cout << "Average requires an input mesh. "
+        "Please specify a mesh file on the command line: \n" 
+        "$ Average meshfile" <<std::endl;
+        return 1;
+    }
+
     // ---- Read intial mesh, refine, and build connectivity ---- //
     read_mesh(argv[1]);
     std::cout << "Num elements = " << mesh.num_elems() << std::endl;

@@ -1,4 +1,5 @@
 #include "matar_blas_lapack_interface.h"
+#include <iostream>
 
 /*
  * Transpose a 2D MATAR CArray and return the result in B
@@ -6,8 +7,8 @@
  * B = A^{T}
  *
  */
-void matar2blas::transpose(const CArray<NumType> &A, 
-    CArray<NumType> &B) {
+void matar2blas::transpose(const CArray<Real> &A, 
+    CArray<Real> &B) {
   // Assert compatibility of inputs
   int 
   num_dim_a = A.order(),
@@ -39,8 +40,8 @@ void matar2blas::transpose(const CArray<NumType> &A,
  * y = A \times x
  *
  */
-void matar2blas::matvec(const CArray<NumType> &A, 
-    const CArray<NumType> &x, CArray<NumType> &y) {
+void matar2blas::matvec(const CArray<Real> &A, 
+    const CArray<Real> &x, CArray<Real> &y) {
   // Assert compatibility of inputs
   int num_dim_a = A.order();
   bool a_is_2d = num_dim_a == 2;
@@ -62,7 +63,7 @@ void matar2blas::matvec(const CArray<NumType> &A,
 
   // Copy the contents of A into regular, unwrapped arrays in column major
   // order, which what the BLAS routine requires
-  NumType *a = new NumType[m_a*n_a];
+  Real *a = new Real[m_a*n_a];
   for (int i = 0; i < m_a; i++)
     for (int j = 0; j < n_a; j++)
       a[i+n_a*j] = A(i,j);
@@ -75,7 +76,7 @@ void matar2blas::matvec(const CArray<NumType> &A,
   // In this case, we set \alpha = 1 and \beta = 0.
   const char if_transpose = 'N';  // whether to tranpose matrix A
 
-  NumType 
+  Real 
   alpha = 1.0,  // scaling of matrix-vector multiplication
   beta  = 0.0;  // Scaling of input/output vector y
 
@@ -104,8 +105,8 @@ void matar2blas::matvec(const CArray<NumType> &A,
  * C = A \times B
  *
  */
-void matar2blas::matmul(const CArray<NumType> &A, 
-    const CArray<NumType> &B, CArray<NumType> &C) {
+void matar2blas::matmul(const CArray<Real> &A, 
+    const CArray<Real> &B, CArray<Real> &C) {
   // Assert compatibility of inputs
   int 
   num_dim_a = A.order(),
@@ -126,12 +127,12 @@ void matar2blas::matmul(const CArray<NumType> &A,
 
   // Copy the contents of the input MATAR CArrays into regular, unwrapped
   // arrays in column major order, which what the BLAS routine requires
-  NumType *a = new NumType[m_a*n_a];
+  Real *a = new Real[m_a*n_a];
   for (int i = 0; i < m_a; i++)
     for (int j = 0; j < n_a; j++)
       a[i+n_a*j] = A(i,j);
 
-  NumType *b = new NumType[m_b*n_b];
+  Real *b = new Real[m_b*n_b];
   for (int i = 0; i < m_b; i++)
     for (int j = 0; j < n_b; j++)
       b[i+n_b*j] = B(i,j);
@@ -145,7 +146,7 @@ void matar2blas::matmul(const CArray<NumType> &A,
   const char if_transpose_a = 'N';  // whether to tranpose matrix A
   const char if_transpose_b = 'N';  // whether to tranpose matrix B
 
-  NumType 
+  Real 
   alpha = 1.0,  // scaling of matrix-matrix multiplication
   beta  = 0.0;  // Scaling of input/output matrix C
 
@@ -154,7 +155,7 @@ void matar2blas::matmul(const CArray<NumType> &A,
   ldb = m_b,  // leading dimension of matrix B
   ldc = m_a;  // leading dimension of matrix C
 
-  NumType *c = new NumType[m_a*n_b];
+  Real *c = new Real[m_a*n_b];
 
   blas_gemm(
       &if_transpose_a, &if_transpose_b, 
@@ -183,7 +184,7 @@ void matar2blas::matmul(const CArray<NumType> &A,
  * B = A^{-1}
  *
  */
-void matar2lapack::invert(const CArray<NumType> &A, CArray<NumType> &B) {
+void matar2lapack::invert(const CArray<Real> &A, CArray<Real> &B) {
   // Assert compatibility of inputs
   int num_dim_a = A.order();
   int num_dim_b = B.order();
@@ -205,7 +206,7 @@ void matar2lapack::invert(const CArray<NumType> &A, CArray<NumType> &B) {
 
   // Copy the contents of the input MATAR CArray into a regular, unwrapped
   // array in column major order, which what the LAPACK routine requires
-  NumType *a = new NumType[m*n];
+  Real *a = new Real[m*n];
   for (int i = 0; i < m; i++)
     for (int j = 0; j < n; j++)
       a[i+n*j] = A(i,j);
@@ -226,7 +227,7 @@ void matar2lapack::invert(const CArray<NumType> &A, CArray<NumType> &B) {
   }
 
   // Populate right-hand side array (identity since A = L*U, L*U*A^{-1} = I)
-  NumType *b = new NumType[m*n];
+  Real *b = new Real[m*n];
   for (int j = 0; j < n; j++)
     for (int i = 0; i < n; i++)
       b[i+n*j] = (i == j) ? 1 : 0;
@@ -261,9 +262,9 @@ void matar2lapack::invert(const CArray<NumType> &A, CArray<NumType> &B) {
  * Compute eigenvalues and eigenvectors of real symmetric triadiagonal matrix,
  * as defined by its diagonal and subdiagonal values
  */
-void matar2lapack::eig_sym_tri(const CArray<NumType> &diag, 
-    const CArray<NumType> &subdiag, CArray<NumType> &eigvals, 
-    CArray<NumType> &eigvecs) {
+void matar2lapack::eig_sym_tri(const CArray<Real> &diag, 
+    const CArray<Real> &subdiag, CArray<Real> &eigvals, 
+    CArray<Real> &eigvecs) {
   // Assert compatibilty of inputs
   int num_dim_diag    = diag.order();
   int num_dim_subdiag = subdiag.order();
@@ -286,12 +287,12 @@ void matar2lapack::eig_sym_tri(const CArray<NumType> &diag,
       and "Error: incorrect input/output sizes");
 
   // Copy diagonal entries into raw C array (LAPACK will overwrite the entries)
-  RealNumber *diag_copy = new RealNumber[n_diag];
+  Real *diag_copy = new Real[n_diag];
   for (int i = 0; i < n_diag; i++) diag_copy[i] = diag(i);
 
   // Compute eigenvalues and eigenvectors
-  const char compute_eigenvectors = 'V';  // request eigenvectors
-  RealNumber *work_array = new RealNumber[2*n_diag-2];  // allocate work array
+  const char compute_eigenvectors = 'V';    // request eigenvectors
+  Real *work_array = new Real[2*n_diag-2];  // allocate work array
   int info = 0;
 
   try {

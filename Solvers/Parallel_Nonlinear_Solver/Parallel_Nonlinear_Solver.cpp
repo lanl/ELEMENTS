@@ -1395,10 +1395,61 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
   std::cout << std::endl;
   */
-
+  
+  /*
   std::cout << "tagging x = 1.2 " << std::endl;
-  bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-  value = 3.81 * simparam->unit_scaling;
+  bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 0 * simparam->unit_scaling;
+  //value = 2;
+  bdy_set_id = current_bdy_id++;
+  //find boundary patches this BC corresponds to
+  tag_boundaries(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0.1/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
+  surf_force_set_id++;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
+  std::cout << std::endl;
+  */
+
+  
+  std::cout << "tagging x = 0 " << std::endl;
+  bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 0 * simparam->unit_scaling;
+  //value = 2;
+  bdy_set_id = current_bdy_id++;
+  //find boundary patches this BC corresponds to
+  tag_boundaries(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = -1/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
+  surf_force_set_id++;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
+  std::cout << std::endl;
+
+  std::cout << "tagging x = 0.381 " << std::endl;
+  bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 10 * simparam->unit_scaling;
+  //value = 2;
+  bdy_set_id = current_bdy_id++;
+  //find boundary patches this BC corresponds to
+  tag_boundaries(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 1/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
+  surf_force_set_id++;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
+  std::cout << std::endl;
+  
+  std::cout << "tagging x = 0 " << std::endl;
+  bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 0 * simparam->unit_scaling;
   //value = 2;
   bdy_set_id = current_bdy_id++;
   //find boundary patches this BC corresponds to
@@ -1411,6 +1462,23 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
+
+  std::cout << "tagging x = 0.381 " << std::endl;
+  bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 10 * simparam->unit_scaling;
+  //value = 2;
+  bdy_set_id = current_bdy_id++;
+  //find boundary patches this BC corresponds to
+  tag_boundaries(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = -1/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
+  surf_force_set_id++;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
+  std::cout << std::endl;
+  
   
   /*
   std::cout << "tagging x = 1.2 " << std::endl;
@@ -5075,7 +5143,7 @@ int Parallel_Nonlinear_Solver::solve(){
   ROL::Ptr<ROL::Vector<real_t> > x = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(node_coords_distributed);
   
   // Before we do anything, check that KLU2 is enabled
-  if( !Amesos2::query("SuperLUDist") ){
+  if( !Amesos2::query("MUMPS") ){
     std::cerr << "SuperLUDist not enabled in this run.  Exiting..." << std::endl;
     return EXIT_SUCCESS;        // Otherwise CTest will pick it up as
                                 // failure, which it isn't really
@@ -5412,7 +5480,8 @@ int Parallel_Nonlinear_Solver::solve(){
   //return !EXIT_SUCCESS;
   // Create solver interface to KLU2 with Amesos2 factory method
   
-  Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
+  Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("MUMPS", balanced_A, X, balanced_B);
+  //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
   //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
   
   //declare non-contiguous map

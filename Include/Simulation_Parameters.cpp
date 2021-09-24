@@ -64,7 +64,7 @@ void Simulation_Parameters::input(){
   mat_fill = (mat_fill_t *) malloc((size_t)(NF*sizeof(mat_fill_t)));
   
   //Static isotropic parameters to move into a child class later
-  Elastic_Modulus = 3000;
+  Elastic_Modulus = 6000;
   Poisson_Ratio = 0.3;
   words_per_line = 1;
   elem_words_per_line = 8;
@@ -103,8 +103,8 @@ void Simulation_Parameters::input(){
   mat_fill[1].field2 = 0.0;   // some other field
 
   // ---- boundary conditions ---- //
-  NB = 2; // number of boundaries
-  NBSF = 1; //number of surface density force conditions
+  NB = 5; // number of boundaries
+  NBSF = 4; //number of surface density force conditions
   NBD = 1; //number of surface sets used to specify a fixed displacement on nodes belonging to respective surfaces
            //note this only implies a fixed displacement on the surface if no other basis functions have support on the surface
     

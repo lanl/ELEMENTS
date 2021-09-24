@@ -3924,7 +3924,7 @@ int Static_Solver_Parallel::solve(){
   global_size_t global_index, reduced_row_count;
   
   // Before we do anything, check that KLU2 is enabled
-  if( !Amesos2::query("SuperLUDist") ){
+  if( !Amesos2::query("KLU2") ){
     std::cerr << "SuperLUDist not enabled in this run.  Exiting..." << std::endl;
     return EXIT_SUCCESS;        // Otherwise CTest will pick it up as
                                 // failure, which it isn't really
@@ -4271,7 +4271,7 @@ int Static_Solver_Parallel::solve(){
   //return !EXIT_SUCCESS;
   // Create solver interface to KLU2 with Amesos2 factory method
   
-  Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
+  Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
   
   //declare non-contiguous map
   //Create a Teuchos::ParameterList to hold solver parameters

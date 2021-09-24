@@ -40,6 +40,6 @@ namespace swage2vtk {
   // Initializing a VTK grid from a SWAGE mesh and solution data and writing it
   // to a file
   VtkGrid init_vtk_grid(SwageMesh &mesh, const std::string &solution_name, 
-      const CArray<NumType> &solution);
+      const CArray<double> &solution);
   void write_grid(const VtkGrid &grid, const std::string &file_name);
 }

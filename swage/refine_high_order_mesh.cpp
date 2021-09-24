@@ -1,5 +1,7 @@
 // Includes for barycentric Lagrange interpolation
 #include "swage.h"
+#include "lagrange_element.h"
+#include "point_distributions.h"
 
 namespace swage {
   void refine_high_order_mesh(mesh_t &input_mesh, mesh_t &mesh) {
@@ -31,30 +33,26 @@ namespace swage {
     //  ------------------------------------------------------------------------
 
     // Initialize temporary array to store node coordinates
-    auto g_points_in_mesh = CArray<NumType>(num_elems*num_g_pts, dim);
+    auto g_points_in_mesh = CArray<Real>(num_elems*num_g_pts, dim);
 
     // Assume vertices in reference element of input mesh are equispaced
-    CArray<NumType> vert_coords_1d(num_verts_1d);
-    NumType lower_bound = -1.0, upper_bound = 1.0;
-    lagrange::equispaced_points(num_verts_1d, lower_bound, upper_bound, 
+    CArray<Real> vert_coords_1d(num_verts_1d);
+    Real lower_bound = -1.0, upper_bound = 1.0;
+    equispaced_points(num_verts_1d, lower_bound, upper_bound, 
         vert_coords_1d.get_pointer());
 
-    // Get barycentric Lagrange weights for equispaced vertices
-    CArray<NumType> lagrange_weights(num_g_pts_1d);
-    lagrange::compute_barycentric_weights(num_verts_1d, 
-        vert_coords_1d.get_pointer(), lagrange_weights.get_pointer());
+    // Create reference element
+    LagrangeElement<Real> elem(SizeType(elem_order), 
+        vert_coords_1d.get_pointer());
 
     // Assume Lobatto nodes for quadrature
-    CArray<NumType> lobatto_nodes(num_g_pts_1d);
+    CArray<Real> lobatto_nodes(num_g_pts_1d);
     lobatto_nodes_1D_tmp(lobatto_nodes, num_g_pts_1d);
 
-    // Allocate workspace for interpolation
-    CArray<NumType> workspace(3*num_verts_1d+1);
-
     // Loop over elements and...
-    CArray<NumType> vert_x_coords(num_verts);
-    CArray<NumType> vert_y_coords(num_verts);
-    CArray<NumType> vert_z_coords(num_verts);
+    CArray<Real> vert_x_coords(num_verts);
+    CArray<Real> vert_y_coords(num_verts);
+    CArray<Real> vert_z_coords(num_verts);
     int g_point_count = 0;
     for (int elem_gid = 0; elem_gid < num_elems; elem_gid++) {
       // ...get spatial coordinates of vertices from input mesh
@@ -73,33 +71,24 @@ namespace swage {
 
         // Get IJK coordinates of quadrature point
         const SizeType num_rad = 3;
-        SizeType radices[num_rad] = {SizeType(num_g_pts_1d), SizeType(num_g_pts_1d), 
-            SizeType(num_g_pts_1d)};
-        SizeType IJK[num_rad];
-        common::base_10_to_mixed_radix(num_rad, radices, node_lid, IJK);
+        SizeType radices[num_rad] = {SizeType(num_g_pts_1d), 
+            SizeType(num_g_pts_1d), SizeType(num_g_pts_1d)};
+        SizeType ijk[num_rad];
+        common::base_10_to_mixed_radix(num_rad, radices, node_lid, ijk);
 
         // Get reference coordinates of quadrature point
-        NumType X[3];
-        X[0] = lobatto_nodes(IJK[0]);
-        X[1] = lobatto_nodes(IJK[1]);
-        X[2] = lobatto_nodes(IJK[2]);
+        Real X[3];
+        X[0] = lobatto_nodes(ijk[0]);
+        X[1] = lobatto_nodes(ijk[1]);
+        X[2] = lobatto_nodes(ijk[2]);
 
-        // Interpolate (result stored in last entry of workspace)
-        SizeType derivative_encoding = 0; // no derivative
-        lagrange::evaluate_3d(derivative_encoding, num_verts_1d, 
-            vert_coords_1d.get_pointer(), lagrange_weights.get_pointer(), X, 
-            vert_x_coords.get_pointer(), workspace.get_pointer()); 
-        g_points_in_mesh(g_point_count, 0) = workspace(3*num_verts_1d);
-
-        lagrange::evaluate_3d(derivative_encoding, num_verts_1d, 
-            vert_coords_1d.get_pointer(), lagrange_weights.get_pointer(), X, 
-            vert_y_coords.get_pointer(), workspace.get_pointer());
-        g_points_in_mesh(g_point_count, 1) = workspace(3*num_verts_1d);
-
-        lagrange::evaluate_3d(derivative_encoding, num_verts_1d, 
-            vert_coords_1d.get_pointer(), lagrange_weights.get_pointer(), X, 
-            vert_z_coords.get_pointer(), workspace.get_pointer());
-        g_points_in_mesh(g_point_count, 2) = workspace(3*num_verts_1d);
+        // Interpolate
+        g_points_in_mesh(g_point_count, 0) = elem.eval_approx(
+            vert_x_coords.get_pointer(), X);
+        g_points_in_mesh(g_point_count, 1) = elem.eval_approx(
+            vert_x_coords.get_pointer(), X);
+        g_points_in_mesh(g_point_count, 2) = elem.eval_approx(
+            vert_x_coords.get_pointer(), X);
 
         g_point_count++;
       }
@@ -111,8 +100,8 @@ namespace swage {
     //  node index. 
     //  ------------------------------------------------------------------------
 
-    NumType pos_max[dim];
-    NumType pos_min[dim];
+    Real pos_max[dim];
+    Real pos_min[dim];
 
     for (int i = 0; i < dim; i++) {
       pos_max[i] = NUM_MIN;
@@ -121,7 +110,7 @@ namespace swage {
 
     // Find the minimum and maximum vertex coordinates
     for (int vert_id = 0; vert_id < input_mesh.num_nodes(); vert_id++) {
-      NumType position[3]; 
+      Real position[3]; 
       for(int i = 0; i < dim; i++){
         position[i] = input_mesh.node_coords(vert_id, i);
         pos_max[i] = fmax(pos_max[i], position[i]);
@@ -130,23 +119,23 @@ namespace swage {
     }
 
     // Get minimum/maximum distance between any two vertices in the mesh
-    NumType min_dist_elem = NUM_MAX;
-    NumType max_dist_elem = 0.0;
+    Real min_dist_elem = NUM_MAX;
+    Real max_dist_elem = 0.0;
     for (int elem_id = 0; elem_id < input_mesh.num_elems(); elem_id++) {
       // Loop over combinations of two vertices in element
       for (int j = 0; j < num_verts_1d; j++) {        // index of first vertex
         for (int i = j + 1; i < num_verts_1d; i++) {  // index of second vertex
           // Get coordinates of vertices
-          NumType x1 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, j), 0);
-          NumType y1 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, j), 1);
-          NumType z1 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, j), 2);
+          Real x1 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, j), 0);
+          Real y1 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, j), 1);
+          Real z1 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, j), 2);
 
-          NumType x2 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, i), 0);
-          NumType y2 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, i), 1);
-          NumType z2 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, i), 2);
+          Real x2 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, i), 0);
+          Real y2 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, i), 1);
+          Real z2 = input_mesh.node_coords(input_mesh.nodes_in_elem(elem_id, i), 2);
           
           // Compute distance between vertices
-          NumType dist = std::sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1) 
+          Real dist = std::sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1) 
               + (z2 - z1)*(z1 - z1));
 
           // Compare distance to current minimum/maximum
@@ -156,19 +145,19 @@ namespace swage {
       }
     }
 
-    NumType min_dist = min_dist_elem;
-    NumType max_dist = max_dist_elem;
+    Real min_dist = min_dist_elem;
+    Real max_dist = max_dist_elem;
 
     std::cout << "minimum distance between vertices: " << min_dist << std::endl;
 
     // Define hashing distance (size of bins)
-    NumType num_inter = elem_order;         // intervals between vertices in 1D
-    NumType h = min_dist/(7.0*(num_inter)); // subdivisions between any two points
+    Real num_inter = elem_order;         // intervals between vertices in 1D
+    Real h = min_dist/(7.0*(num_inter)); // subdivisions between any two points
 
     std::cout << "hashing distance:                  " << h << std::endl;
 
     // Calculate number of bins in each dimension
-    NumType float_bins[3];
+    Real float_bins[3];
     for (int i = 0; i < dim; i++) {
       // TODO ask Jacob about reasoning here
       float_bins[i] = fmax(1e-16, (pos_max[i] - pos_min[i] + 1.0 + 1e-14)/h); //1e-14
@@ -181,7 +170,7 @@ namespace swage {
       int_bins[i] = (int)float_bins[i];
     }
 
-    NumType float_idx[3];   // float values for index
+    Real float_idx[3];   // float values for index
     int int_idx[3];        // int values for index
     
     int key;            // hash key 
@@ -190,7 +179,7 @@ namespace swage {
     // Getting hash keys from x,y,z positions and largest key value
     int h_keys[num_g_pts*num_elems];
     for (int g_pt = 0; g_pt < num_g_pts*num_elems; g_pt++) {
-      NumType coords[3];
+      Real coords[3];
 
       for (int i = 0; i < dim; i++) {
         coords[i] = g_points_in_mesh(g_pt, i);

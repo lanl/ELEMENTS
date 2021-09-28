@@ -37,9 +37,16 @@ The **SWAGE** sub-library contains a large suite of mesh data structures, a rich
 ## geometry
 The **geometry** sub-library combines **SWAGE** with **elements** to deliver the required capabilities to implement a large range of numerical methods on unstructured linear or high-order meshes.
 
-## examples
-The examples folder contains a simple code to calculate an average from the cells to nodes and then back.  A figures folder within the examples folder contains diagrams to illustrate, for instance, the code project layout, geometric index spaces, and various capabilties supported by the **ELEMENTS** library. When beginning your exploration of 
-ELEMENTS, the file `/examples/average/test/average.cpp` is a good place to start seeing how all the pieces fit together. Additionally, the Fierro project https://github.com/lanl/Fierro shows a much more comprehensive usage.
+## Examples
+The examples folder contains a simple code to calculate an average from the
+cells to nodes and then back.  A figures folder within the examples folder
+contains diagrams to illustrate, for instance, the code project layout,
+geometric index spaces, and various capabilties supported by the **ELEMENTS**
+library. When beginning your exploration of ELEMENTS, the file
+`/examples/average/test/average.cpp` is a good place to start seeing how all the
+pieces fit together. See the README in the examples folder for additional
+information. Additionally, the Fierro project https://github.com/lanl/Fierro
+shows a much more comprehensive usage.
 
 
 ## Cloning, Building, and Installation
@@ -91,12 +98,46 @@ To install the **ELEMENTS** libraries and header files (with an in-place build o
 ```
 make install
 ```
-at the command line.
-This will copy the **ELEMENTS** libraries to the directory specified by the `CMAKE_INSTALL_PREFIX` variable.
-In particular, the libraries will be copied to a `lib/` subdirectory and the header files will be copied to a `include/` subdirectory.
-If the install prefix is not specified in a configuration file, CMake will use the default, which on Linux is `/usr/local/` and the copy will require administrative privileges.
+at the command line. This will copy the **ELEMENTS** libraries to the directory
+specified by the `CMAKE_INSTALL_PREFIX` variable. In particular, the libraries
+will be copied to a `lib/` subdirectory and the header files will be copied to a
+`include/` subdirectory. If the install prefix is not specified in a
+configuration file, CMake will use the default, which on Linux is `/usr/local/`
+and the copy will require administrative privileges.
 
-Warning: if linking against the `libelements` library, you must define a global variable `elem` that specifies the class of element.
+Warning: if linking against the `libelements` library, you must define a global
+variable `elem` that specifies the class of element.
+
+## Using ELEMENTS as a library in a standalone application
+
+If ELEMENTS is installed as a library via `make install`, using it is straightforward. In a cmake
+build system, something like the following will be necessary. In an appropriate
+CMakeLists.txt add:
+```
+# Add the ELEMENTS include directory and find the appropriate libraries
+include_directories(${ELEMENTS_DIR}/include)
+find_library(COMMON_LIBRARY NAMES common HINTS ${ELEMENTS_DIR}/lib)
+find_library(ELEMENTS_LIBRARY NAMES elements HINTS ${ELEMENTS_DIR}/lib)
+find_library(GEOMETRY_LIBRARY NAMES geometry HINTS ${ELEMENTS_DIR}/lib)
+find_library(SWAGE_LIBRARY NAMES swage HINTS ${ELEMENTS_DIR}/lib)
+
+# Make includes and linking work
+# For an executable named "Average"
+add_executable(Average ${Average_SRC_CXX})
+target_link_libraries (Average ${COMMON_LIBRARY})
+target_link_libraries (Average ${ELEMENTS_LIBRARY})
+target_link_libraries (Average ${GEOMETRY_LIBRARY})
+target_link_libraries (Average ${SWAGE_LIBRARY})
+
+```
+and on the command line for cmake add :
+```
+cmake \
+  -D ELEMENTS_DIR=/path/to/ELEMENTS \
+  ...
+```
+Where `/path/to/ELEMENTS` should be
+the directory immediately containing `/include` and `/lib`.
 
 ## Citation
 ```

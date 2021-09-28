@@ -15,7 +15,7 @@ where "my_mesh.geo" is the supplied mesh.  The user must supply a mesh when exec
 ```
 examples/average/meshes
 ```
-
+The output of the "Average" program, in EnSight format, can be found in the "ensight" directory. To visualize open "enisght/Testing.case" with Paraview.
 
 
 ### Index naming conventions

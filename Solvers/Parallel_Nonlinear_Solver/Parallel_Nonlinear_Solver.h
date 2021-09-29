@@ -100,6 +100,8 @@ public:
 
   void compute_nodal_gradients(const_host_vec_array design_densities, host_vec_array objective_gradients);
 
+  void compute_adjoint_gradients(const_host_vec_array design_densities, host_vec_array constraint_gradients);
+
   void compute_nodal_strains();
 
   void setup_optimization_problem();
@@ -121,6 +123,8 @@ public:
   void tecplot_writer();
 
   void Element_Material_Properties(size_t, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density);
+
+  void Gradient_Element_Material_Properties(size_t, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density);
 
   void Displacement_Boundary_Conditions();
 

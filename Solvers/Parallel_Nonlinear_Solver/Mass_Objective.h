@@ -1,11 +1,8 @@
 #ifndef MASS_OBJECTIVE_TOPOPT_H
 #define MASS_OBJECTIVE_TOPOPT_H
 
-#include "utilities.h"
-#include "../Solver.h"
 #include "matar.h"
 #include "elements.h"
-#include "node_combination.h"
 #include <Teuchos_ScalarTraits.hpp>
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_oblackholestream.hpp>
@@ -15,19 +12,13 @@
 #include <Tpetra_Core.hpp>
 #include <Tpetra_Map.hpp>
 #include <Tpetra_MultiVector.hpp>
-#include <Tpetra_CrsMatrix.hpp>
 #include <Kokkos_View.hpp>
-#include <Kokkos_Parallel.hpp>
-#include <Kokkos_Parallel_Reduce.hpp>
 #include "Tpetra_Details_makeColMap.hpp"
 #include "Tpetra_Details_DefaultTypes.hpp"
 
 #include "ROL_Types.hpp"
 #include <ROL_TpetraMultiVector.hpp>
 #include "ROL_Objective.hpp"
-#include "ROL_Bounds.hpp"
-#include "ROL_OptimizationSolver.hpp"
-#include "ROL_ParameterList.hpp"
 #include "ROL_Elementwise_Reduce.hpp"
 #include "Parallel_Nonlinear_Solver.h"
 

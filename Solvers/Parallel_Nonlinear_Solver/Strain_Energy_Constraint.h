@@ -1,11 +1,8 @@
 #ifndef STRAIN_ENERGY_CONSTRAINT_TOPOPT_H
 #define STRAIN_ENERGY_CONSTRAINT_TOPOPT_H
 
-#include "utilities.h"
-#include "../Solver.h"
 #include "matar.h"
 #include "elements.h"
-#include "node_combination.h"
 #include <Teuchos_ScalarTraits.hpp>
 #include <Teuchos_RCP.hpp>
 #include <Teuchos_oblackholestream.hpp>
@@ -15,19 +12,13 @@
 #include <Tpetra_Core.hpp>
 #include <Tpetra_Map.hpp>
 #include <Tpetra_MultiVector.hpp>
-#include <Tpetra_CrsMatrix.hpp>
 #include <Kokkos_View.hpp>
-#include <Kokkos_Parallel.hpp>
-#include <Kokkos_Parallel_Reduce.hpp>
 #include "Tpetra_Details_makeColMap.hpp"
 #include "Tpetra_Details_DefaultTypes.hpp"
 
 #include "ROL_Types.hpp"
 #include <ROL_TpetraMultiVector.hpp>
 #include "ROL_Constraint.hpp"
-#include "ROL_Bounds.hpp"
-#include "ROL_OptimizationSolver.hpp"
-#include "ROL_ParameterList.hpp"
 #include "ROL_Elementwise_Reduce.hpp"
 #include "Parallel_Nonlinear_Solver.h"
 
@@ -107,32 +98,30 @@ public:
 
     (*cp)[0] = current_strain_energy;
   }
-  /*
-  void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
-    g.zero();
-  }
-
-  void gradient_2( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
+  
+  void gradient( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &z, real_t &tol ) {
+     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
+    if(last_comm_step!=current_step){
+      FEM_->update_and_comm_variables();
+      last_comm_step = current_step;
+    }
     //get Tpetra multivector pointer from the ROL vector
-    ROL::Ptr<const MV> up = getVector(u);
-    ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<MV> gp = getVector(g);
+    ROL::Ptr<const MV> zp = getVector(z);
     
-    ROL::Ptr<ROL_MV> ROL_Element_Volumes;
-
-    //communicate ghosts here again? check if variables were updated since last communication
+    ROL_Force = ROL::makePtr<ROL_MV>(FEM_->Global_Nodal_Forces);
 
     //get local view of the data
-    host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+    host_vec_array constraint_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    const_host_vec_array design_displacement = up->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
     int rnum_elem = FEM_->rnum_elem;
 
     if(nodal_density_flag_){
-      FEM_->compute_nodal_gradients(design_densities, objective_gradients);
+      FEM_->compute_adjoint_gradients(design_densities, constraint_gradients);
     }
     else{
+      /*
       //update per element volumes
       FEM_->compute_element_volumes();
       //ROL_Element_Volumes = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Volumes);
@@ -140,10 +129,11 @@ public:
       const_host_vec_array element_volumes = FEM_->Global_Element_Volumes->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
       for(int ig = 0; ig < rnum_elem; ig++)
         objective_gradients(ig,0) = element_volumes(ig,0);
+        */
     }
     
   }
-  
+  /*
   void hessVec_12( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 
                    const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
     

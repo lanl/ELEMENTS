@@ -1,5 +1,5 @@
-#ifndef BOUNDED_STRAIN_CONSTRAINT_TOPOPT_H
-#define BOUNDED_STRAIN_CONSTRAINT_TOPOPT_H
+#ifndef MASS_CONSTRAINT_TOPOPT_H
+#define MASS_CONSTRAINT_TOPOPT_H
 
 #include "matar.h"
 #include "elements.h"
@@ -22,7 +22,7 @@
 #include "ROL_Elementwise_Reduce.hpp"
 #include "Parallel_Nonlinear_Solver.h"
 
-class BoundedStrainConstraint_TopOpt : public ROL::Constraint<real_t> {
+class MassConstraint_TopOpt : public ROL::Constraint<real_t> {
   
   typedef Tpetra::Map<>::local_ordinal_type LO;
   typedef Tpetra::Map<>::global_ordinal_type GO;
@@ -52,11 +52,7 @@ class BoundedStrainConstraint_TopOpt : public ROL::Constraint<real_t> {
 private:
 
   Parallel_Nonlinear_Solver *FEM_;
-  ROL::Ptr<MV> Element_Masses;
   ROL::Ptr<ROL_MV> ROL_Element_Masses;
-  real_t maximum_strain_;
-
-  bool useLC_; // Use linear form of compliance.  Otherwise use quadratic form.
 
   ROL::Ptr<const MV> getVector( const V& x ) {
     return dynamic_cast<const ROL_MV&>(x).getVector();
@@ -70,12 +66,12 @@ public:
   bool nodal_density_flag_;
   size_t last_comm_step, current_step;
 
-  BoundedStrainConstraint_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag, real_t maximum_strain) 
-    : FEM_(FEM), useLC_(true) {
-      nodal_density_flag_ = nodal_density_flag;
-      Element_Masses = ROL::makePtr<MV>(FEM_->element_map,1,true);
-      maximum_strain_ = maximum_strain;
-      last_comm_step = current_step = 0;
+  MassConstraint_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag) 
+    : FEM_(FEM) {
+
+    nodal_density_flag_ = nodal_density_flag;
+    last_comm_step = current_step = 0;
+    ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
   }
 
   void update(const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
@@ -84,77 +80,43 @@ public:
 
   void value(ROL::Vector<real_t> &c, const ROL::Vector<real_t> &z, real_t &tol ) {
     ROL::Ptr<const MV> zp = getVector(z);
-    //ROL::Ptr<MV> cp = getVector(c);
     ROL::Ptr<std::vector<real_t>> cp = dynamic_cast<ROL::StdVector<real_t>&>(c).getVector();
-    int num_dim = FEM_->simparam->num_dim;
-    int strain_count;
-    if(num_dim==3) strain_count = 6;
-    else strain_count = 3;
-    
-
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    const_host_vec_array design_displacements = FEM_->node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    //host_vec_array constraint_view = cp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+    //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
+    if(last_comm_step!=current_step){
+      FEM_->update_and_comm_variables();
+      last_comm_step = current_step;
+    }
+    
+    FEM_->compute_element_masses(design_densities);
+    
+    //sum per element results across all MPI ranks
+    ROL::Elementwise::ReductionSum<real_t> sumreduc;
+    real_t current_mass = ROL_Element_Masses->reduce(sumreduc);
+    //debug print
+    std::cout << "SYSTEM MASS: " << current_mass << std::endl;
+
+    (*cp)[0] = current_mass;
+  }
+  
+  void gradient( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &z, real_t &tol ) {
+     //get Tpetra multivector pointer from the ROL vector
+    ROL::Ptr<const MV> zp = getVector(z);
+    ROL::Ptr<MV> gp = getVector(g);
+    
+    //ROL::Ptr<ROL_MV> ROL_Element_Volumes;
+
+    //get local view of the data
+    host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+    const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    const_host_vec_array design_displacement = FEM_->node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
       FEM_->update_and_comm_variables();
       last_comm_step = current_step;
     }
-
-    FEM_->compute_nodal_strains();
-
-    //get local view of strains
-    const_host_vec_array local_nodal_strains = FEM_->node_strains_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    int nlocal_nodes = FEM_->nlocal_nodes;
-
-    //debug print of strain variables
-    std::ostream &out = std::cout;
-    Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-    if(FEM_->myrank==0)
-    *fos << "Global Strain data :" << std::endl;
-    FEM_->node_strains_distributed->describe(*fos,Teuchos::VERB_EXTREME);
-    *fos << std::endl;
-    std::fflush(stdout);
     
-    //find maximum absolute value of strain component in the model
-    real_t maximum_strain = 0;
-    real_t global_maximum_strain = 0;
-    //loop through all stress components evaluated at node positions (assumes Lagrange interpolation)
-    for(int inode = 0; inode < nlocal_nodes; inode++)
-     for(int istrain = 0; istrain < strain_count; istrain++)
-       if(fabs(local_nodal_strains(inode,istrain)) > maximum_strain)
-         maximum_strain = fabs(local_nodal_strains(inode,istrain));
-
-    //std::cout << "STRAIN VALUE " << maximum_strain << std::endl;
-    //collective comm to find max
-    MPI_Allreduce(&maximum_strain, &global_maximum_strain, 1, MPI_DOUBLE, MPI_MAX, FEM_->world);
-    //debug print
-    //std::cout << "GLOBAL STRAIN VALUE " << global_maximum_strain << std::endl;
-    (*cp)[0] = maximum_strain_ - global_maximum_strain;
-    //debug print
-    std::cout << "CONSTRAINT VALUE " << maximum_strain_ - global_maximum_strain << std::endl;
-  }
-  /*
-  void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
-    g.zero();
-  }
-
-  void gradient_2( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
-    //get Tpetra multivector pointer from the ROL vector
-    ROL::Ptr<const MV> up = getVector(u);
-    ROL::Ptr<const MV> zp = getVector(z);
-    ROL::Ptr<MV> gp = getVector(g);
-    
-    ROL::Ptr<ROL_MV> ROL_Element_Volumes;
-
-    //communicate ghosts here again? check if variables were updated since last communication
-
-    //get local view of the data
-    host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
-    const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    const_host_vec_array design_displacement = up->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-
     int rnum_elem = FEM_->rnum_elem;
 
     if(nodal_density_flag_){
@@ -169,9 +131,8 @@ public:
       for(int ig = 0; ig < rnum_elem; ig++)
         objective_gradients(ig,0) = element_volumes(ig,0);
     }
-    
   }
-  
+  /*
   void hessVec_12( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 
                    const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
     

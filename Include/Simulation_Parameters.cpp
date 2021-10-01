@@ -64,7 +64,7 @@ void Simulation_Parameters::input(){
   mat_fill = (mat_fill_t *) malloc((size_t)(NF*sizeof(mat_fill_t)));
   
   //Static isotropic parameters to move into a child class later
-  Elastic_Modulus = 6000;
+  Elastic_Modulus = 10000;
   Poisson_Ratio = 0.3;
   words_per_line = 1;
   elem_words_per_line = 8;
@@ -81,7 +81,7 @@ void Simulation_Parameters::input(){
 
   //Topology Optimization parameters
   maximum_strain = 0.02;
-  maximum_strain_energy = 0.02;
+  maximum_strain_energy = 0.01;
     
   // Global instructions
   mat_fill[0].volume = region::global;    // fill everywhere

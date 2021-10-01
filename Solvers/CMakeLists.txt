@@ -27,6 +27,6 @@ target_link_libraries (main ${MPI_CXX_LIBRARIES} ${MPI_CXX_LINK_FLAGS} ${MPI_For
 #target_link_libraries(main /usr/lib/gcc/x86_64-linux-gnu/9/libgfortran.a)
 target_link_libraries(main /mnt/c/Scalapack/scalapack/build/libscalapack.a)
 target_link_libraries(main /mnt/c/Scalapack/scalapack/build/libblacs.a)
-set_property(TARGET main PROPERTY LINKER_LANGUAGE Fortran)
+#set_property(TARGET main PROPERTY LINKER_LANGUAGE Fortran)
 
 add_definitions(-DHAVE_KOKKOS=1 -DTRILINOS_INTERFACE=1)

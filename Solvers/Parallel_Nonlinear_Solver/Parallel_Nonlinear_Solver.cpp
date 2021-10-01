@@ -100,6 +100,7 @@ num_cells in element = (p_order*2)^3
 #include "Mass_Constraint.h"
 #include "Bounded_Strain_Constraint.h"
 #include "Strain_Energy_Constraint.h"
+#include "Strain_Energy_Objective.h"
 
 //debug and performance includes
 #include <sys/time.h>
@@ -203,6 +204,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     }
     
     //debug print
+    /*
     Teuchos::RCP<MV> design_gradients_distributed = Teuchos::rcp(new MV(map, 1));
     const_host_vec_array node_densities = node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     host_vec_array design_gradients = design_gradients_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
@@ -214,9 +216,9 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     design_gradients_distributed->describe(*fos,Teuchos::VERB_EXTREME);
     *fos << std::endl;
     std::fflush(stdout);
-
+    */
     //return;
-    //setup_optimization_problem();
+    setup_optimization_problem();
     
     //CPU time
     double current_cpu = CPU_Time();
@@ -1062,7 +1064,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   bool nodal_density_flag = simparam->nodal_density_flag;
 
   // Objective function
-  ROL::Ptr<ROL::Objective<real_t>> obj = ROL::makePtr<MassObjective_TopOpt>(this, nodal_density_flag);
+  ROL::Ptr<ROL::Objective<real_t>> obj = ROL::makePtr<StrainEnergyObjective_TopOpt>(this, nodal_density_flag,simparam->maximum_strain_energy);
   //Design variables to optimize
   ROL::Ptr<ROL::Vector<real_t>> x;
   if(nodal_density_flag)
@@ -1145,11 +1147,11 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > constraint_mul = ROL::makePtr<ROL::StdVector<real_t>>(li_ptr);
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
- 
-  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<StrainEnergyConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
-  //ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
-  
+  /*
+  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<StrainEnergyConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
+  ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
+  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  */
   // fill parameter list with desired algorithmic options or leave as default
   ROL::ParameterList parlist;
   // Instantiate Solver.
@@ -1366,7 +1368,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   for(int ibdy=0; ibdy < num_boundary_sets; ibdy++) Boundary_Condition_Type_List(ibdy) = NONE;
     
   // tag the x=0 plane,  (Direction, value, bdy_set)
-  std::cout << "tagging x = 0 " << std::endl;
+  std::cout << "tagging z = 0 " << std::endl;
   int bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   real_t value = 0.0;
   bdy_set_id = current_bdy_id++;
@@ -1406,26 +1408,42 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << std::endl;
   */
   
-  /*
-  std::cout << "tagging x = 1.2 " << std::endl;
-  bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-  value = 0 * simparam->unit_scaling;
+  
+  std::cout << "tagging z = 2 Force " << std::endl;
+  bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 2 * simparam->unit_scaling;
   //value = 2;
   bdy_set_id = current_bdy_id++;
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0.1/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
-  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 2/simparam->unit_scaling/simparam->unit_scaling;
+  surf_force_set_id++;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
+  std::cout << std::endl;
+  
+  /*
+  std::cout << "tagging beam x = 0 " << std::endl;
+  bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 2 * simparam->unit_scaling;
+  //value = 2;
+  bdy_set_id = current_bdy_id++;
+  //find boundary patches this BC corresponds to
+  tag_boundaries(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 1/simparam->unit_scaling/simparam->unit_scaling;
   surf_force_set_id++;
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
   */
-
-  
-  std::cout << "tagging x = 0 " << std::endl;
+  /*
+  std::cout << "tagging beam -x " << std::endl;
   bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 0 * simparam->unit_scaling;
   //value = 2;
@@ -1441,7 +1459,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
 
-  std::cout << "tagging x = 0.381 " << std::endl;
+  std::cout << "tagging beam +x " << std::endl;
   bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 10 * simparam->unit_scaling;
   //value = 2;
@@ -1457,7 +1475,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
   
-  std::cout << "tagging x = 0 " << std::endl;
+  std::cout << "tagging beam -y " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 0 * simparam->unit_scaling;
   //value = 2;
@@ -1473,7 +1491,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
 
-  std::cout << "tagging x = 0.381 " << std::endl;
+  std::cout << "tagging beam +y " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 10 * simparam->unit_scaling;
   //value = 2;
@@ -1490,17 +1508,17 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << std::endl;
   
   
-  /*
-  std::cout << "tagging x = 1.2 " << std::endl;
-  bc_tag = 0;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
-  value = 0;
-  //value = 2;
+  
+  std::cout << "tagging beam +z force " << std::endl;
+  bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  //value = 0;
+  value = 100;
   bdy_set_id = current_bdy_id++;
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
-  Boundary_Surface_Force_Densities(surf_force_set_id,1) = -1;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
   surf_force_set_id++;
   std::cout << "tagged a set " << std::endl;
@@ -4820,11 +4838,6 @@ void Parallel_Nonlinear_Solver::compute_adjoint_gradients(const_host_vec_array d
         }
       }
 
-      //accumulate CB matrix
-      for(int irow=0; irow < Brows; irow++)
-        for(int icol=0; icol < num_dim*nodes_per_elem; icol++)
-        CB_matrix(irow,icol) += CB_matrix_contribution(irow,icol);
-
       //compute the contributions of this quadrature point to all the local stiffness matrix elements
       for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++){
         for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++){
@@ -4843,7 +4856,9 @@ void Parallel_Nonlinear_Solver::compute_adjoint_gradients(const_host_vec_array d
           inner_product += Local_Matrix_Contribution(ifill, jfill)*current_nodal_displacements(ifill)*current_nodal_displacements(jfill);
         }
       }
-
+      
+      //debug print
+      //std::cout << "contribution for " << igradient + 1 << " is " << inner_product << std::endl;
       design_gradients(local_node_id,0) -= inner_product;
       }
     }

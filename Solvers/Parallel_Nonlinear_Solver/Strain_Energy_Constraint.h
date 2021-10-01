@@ -54,6 +54,8 @@ private:
   Parallel_Nonlinear_Solver *FEM_;
   ROL::Ptr<ROL_MV> ROL_Force;
   ROL::Ptr<ROL_MV> ROL_Displacements;
+  ROL::Ptr<ROL_MV> ROL_Gradients;
+  Teuchos::RCP<MV> constraint_gradients_distributed;
   real_t maximum_strain_energy_;
 
   bool useLC_; // Use linear form of compliance.  Otherwise use quadratic form.
@@ -75,6 +77,7 @@ public:
       nodal_density_flag_ = nodal_density_flag;
       maximum_strain_energy_ = maximum_strain_energy;
       last_comm_step = current_step = 0;
+      constraint_gradients_distributed = Teuchos::rcp(new MV(FEM_->map, 1));
   }
 
   void update(const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
@@ -94,29 +97,28 @@ public:
     ROL_Displacements = ROL::makePtr<ROL_MV>(FEM_->node_displacements_distributed);
 
     real_t current_strain_energy = ROL_Displacements->dot(*ROL_Force);
-    //std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
+    std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
 
     (*cp)[0] = current_strain_energy;
   }
   
-  void gradient( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &z, real_t &tol ) {
+  virtual void applyJacobian(ROL::Vector<real_t> &jv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) {
+    //debug print
+    std::cout << "Constraint Gradient value " << std::endl;
      //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
       FEM_->update_and_comm_variables();
       last_comm_step = current_step;
     }
     //get Tpetra multivector pointer from the ROL vector
-    ROL::Ptr<MV> gp = getVector(g);
-    ROL::Ptr<const MV> zp = getVector(z);
-    
-    ROL_Force = ROL::makePtr<ROL_MV>(FEM_->Global_Nodal_Forces);
+    ROL::Ptr<const MV> zp = getVector(x);
+    ROL::Ptr<std::vector<real_t>> jvp = dynamic_cast<ROL::StdVector<real_t>&>(jv).getVector();
 
     //get local view of the data
-    host_vec_array constraint_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+    host_vec_array constraint_gradients = constraint_gradients_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
     int rnum_elem = FEM_->rnum_elem;
-
     if(nodal_density_flag_){
       FEM_->compute_adjoint_gradients(design_densities, constraint_gradients);
     }
@@ -131,7 +133,12 @@ public:
         objective_gradients(ig,0) = element_volumes(ig,0);
         */
     }
-    
+    ROL_Gradients = ROL::makePtr<ROL_MV>(constraint_gradients_distributed);
+    real_t gradient_dot_v = ROL_Gradients->dot(v);
+    //debug print
+    std::cout << "Constraint Gradient value " << gradient_dot_v << std::endl;
+
+    (*jvp)[0] = gradient_dot_v;
   }
   /*
   void hessVec_12( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 

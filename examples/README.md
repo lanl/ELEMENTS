@@ -11,10 +11,16 @@ where "build" is the name of the folder that the code was built in.  To run the 
 ```
 ./Average my_mesh.geo
 ```
-where "my_mesh.geo" is the supplied mesh.  The user must supply a mesh when executing the code, a range of meshes are provided in the "meshes/" folder in the repository, see
+where "my_mesh.geo" is the supplied mesh.  The user must supply a mesh when executing the code, a range of meshes are provided in the `meshes/` folder in the repository, see
 ```
 examples/average/meshes
 ```
+It is important to realize that the boundary planes specified in `input.cpp`
+need to correspond to the physical extents of the mesh being run. Since each mesh has
+it's own extent, `input.cpp` must be modified accordingly. For example, using
+`mesh_12x1x1.geo`, the values of planes 3,4,5 need to be changed to `1.2, .12,` and
+`.12`, respectively.
+
 The output of the "Average" program, in EnSight format, can be found in the "ensight" directory. To visualize open "enisght/Testing.case" with Paraview.
 
 

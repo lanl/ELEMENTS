@@ -276,6 +276,9 @@ public:
   //file readin variables
   std::ifstream *in;
   int words_per_line, elem_words_per_line;
+
+  //debug flags
+  int gradient_print_sync;
   
 };
 

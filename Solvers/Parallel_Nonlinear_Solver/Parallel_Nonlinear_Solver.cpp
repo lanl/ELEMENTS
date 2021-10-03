@@ -139,7 +139,7 @@ Parallel_Nonlinear_Solver::Parallel_Nonlinear_Solver() : Solver(){
   update_count = 0;
 
   Matrix_alloc=0;
-
+  gradient_print_sync = 0;
   //RCP pointer to *this (Parallel Nonlinear Solver Object)
   //FEM_pass = Teuchos::rcp(this);
 }
@@ -1408,7 +1408,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << std::endl;
   */
   
-  
+  /*
   std::cout << "tagging z = 2 Force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2 * simparam->unit_scaling;
@@ -1425,7 +1425,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
   
-  /*
+  
   std::cout << "tagging beam x = 0 " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2 * simparam->unit_scaling;
@@ -1506,8 +1506,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  
-  
+  */
   
   std::cout << "tagging beam +z force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
@@ -1524,7 +1523,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  */
+  
   /*
   std::cout << "tagging y = 2 " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
@@ -4530,7 +4529,6 @@ void Parallel_Nonlinear_Solver::compute_adjoint_gradients(const_host_vec_array d
   int z_quad,y_quad,x_quad, direct_product_count;
   int solve_flag, zero_strain_flag;
   size_t local_node_id, local_dof_idx, local_dof_idy, local_dof_idz;
-  real_t J_min = std::numeric_limits<real_t>::max();
   GO current_global_index;
 
   direct_product_count = std::pow(num_gauss_points,num_dim);
@@ -4695,7 +4693,6 @@ void Parallel_Nonlinear_Solver::compute_adjoint_gradients(const_host_vec_array d
                JT_row1(1)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
                JT_row1(2)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1));
     if(Jacobian<0) Jacobian = -Jacobian;
-    if(Jacobian < J_min) J_min = Jacobian;
 
     //compute density
     current_density = 0;
@@ -4798,8 +4795,8 @@ void Parallel_Nonlinear_Solver::compute_adjoint_gradients(const_host_vec_array d
       local_node_id = map->getLocalElement(nodes_in_elem(ielem, igradient));
       //look up element material properties at this point as a function of density
       Gradient_Element_Material_Properties(ielem, Element_Modulus_Gradient, Poisson_Ratio, current_density);
-      Elastic_Constant = Element_Modulus_Gradient/(1+Poisson_Ratio)/(1-2*Poisson_Ratio);
-      Shear_Term = 0.5-Poisson_Ratio;
+      Elastic_Constant = Element_Modulus_Gradient/(1 + Poisson_Ratio)/(1 - 2*Poisson_Ratio);
+      Shear_Term = 0.5 - Poisson_Ratio;
       Pressure_Term = 1 - Poisson_Ratio;
 
       //debug print
@@ -4854,6 +4851,9 @@ void Parallel_Nonlinear_Solver::compute_adjoint_gradients(const_host_vec_array d
       for(int ifill=0; ifill < num_dim*nodes_per_elem; ifill++){
         for(int jfill=0; jfill < num_dim*nodes_per_elem; jfill++){
           inner_product += Local_Matrix_Contribution(ifill, jfill)*current_nodal_displacements(ifill)*current_nodal_displacements(jfill);
+          //debug
+          //if(Local_Matrix_Contribution(ifill, jfill)<0) Local_Matrix_Contribution(ifill, jfill) = - Local_Matrix_Contribution(ifill, jfill);
+          //inner_product += Local_Matrix_Contribution(ifill, jfill);
         }
       }
       
@@ -4891,9 +4891,6 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(){
     std::cout << "Linear Solver Error" << std::endl <<std::flush;
     return;
   }
-  
-  //communicate nodal displacements
-  all_node_displacements_distributed->doImport(*node_displacements_distributed, importer, Tpetra::INSERT);
 
   update_count++;
   //if(update_count==1){
@@ -5844,15 +5841,6 @@ int Parallel_Nonlinear_Solver::solve(){
   Teuchos::RCP<MV> X = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, 1));
   //return !EXIT_SUCCESS;
   //X->randomize();
-  
-  
-  //print allocation of the solution vector to check distribution
-  /*
-  if(myrank==0)
-  *fos << "ALLOCATED SOLUTION VECTOR:" << std::endl;
-  X->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
-  */
 
   // Create Kokkos view of RHS B vector (Force Vector)  
   vec_array Bview_pass = vec_array("Bview_pass", local_nrows_reduced,1);
@@ -5901,10 +5889,13 @@ int Parallel_Nonlinear_Solver::solve(){
   //solver->printTiming(*fos);
   
   //Print solution vector
-  //if(myrank==0)
-  //*fos << "Solution :" << std::endl;
-  //X->describe(*fos,Teuchos::VERB_EXTREME);
-  //*fos << std::endl;
+  //print allocation of the solution vector to check distribution
+  /*
+  if(myrank==0)
+  *fos << "Solution:" << std::endl;
+  X->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
+  */
 
   //communicate solution on reduced map to the all node map vector for post processing of strain etc.
   //intermediate storage on the unbalanced reduced system
@@ -5918,6 +5909,9 @@ int Parallel_Nonlinear_Solver::solve(){
   //populate node displacement multivector on the local dof map
   const_host_vec_array reduced_node_displacements_host = reduced_node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   host_vec_array node_displacements_host = node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+
+  for(int init = 0; init < local_dof_map->getNodeNumElements(); init++)
+    node_displacements_host(init,0) = 0;
 
   for(LO i=0; i < local_nrows_reduced; i++){
     access_index = local_dof_map->getLocalElement(Free_Indices(i));

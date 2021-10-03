@@ -99,6 +99,7 @@ public:
     ROL_Displacements = ROL::makePtr<ROL_MV>(FEM_->node_displacements_distributed);
 
     real_t current_strain_energy = ROL_Displacements->dot(*ROL_Force);
+    if(FEM_->myrank==0)
     std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
     return (current_strain_energy - target_strain_energy_)*(current_strain_energy - target_strain_energy_)/2;
   }
@@ -113,11 +114,12 @@ public:
     ROL::Ptr<MV> gp = getVector(g);
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
+    FEM_->gradient_print_sync=1;
     if(last_comm_step!=current_step){
       FEM_->update_and_comm_variables();
       last_comm_step = current_step;
     }
-
+    FEM_->gradient_print_sync=0;
     //get local view of the data
     host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
@@ -128,13 +130,13 @@ public:
     if(nodal_density_flag_){
       FEM_->compute_adjoint_gradients(design_densities, objective_gradients);
       //debug print of gradient
-      std::ostream &out = std::cout;
-      Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-      if(FEM_->myrank==0)
-      *fos << "Gradient data :" << std::endl;
-      gp->describe(*fos,Teuchos::VERB_EXTREME);
-      *fos << std::endl;
-      std::fflush(stdout);
+      //std::ostream &out = std::cout;
+      //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+      //if(FEM_->myrank==0)
+      //*fos << "Gradient data :" << std::endl;
+      //FEM_->all_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+      //*fos << std::endl;
+      //std::fflush(stdout);
       //multiply by difference in energy to get final gradient values
       for(int i = 0; i < FEM_->nlocal_nodes; i++){
         objective_gradients(i,0) *= (current_strain_energy - target_strain_energy_);

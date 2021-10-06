@@ -53,6 +53,9 @@ private:
 
   Parallel_Nonlinear_Solver *FEM_;
   ROL::Ptr<ROL_MV> ROL_Element_Masses;
+  ROL::Ptr<ROL_MV> ROL_Gradients;
+  Teuchos::RCP<MV> constraint_gradients_distributed;
+  real_t initial_mass;
 
   ROL::Ptr<const MV> getVector( const V& x ) {
     return dynamic_cast<const ROL_MV&>(x).getVector();
@@ -72,6 +75,16 @@ public:
     nodal_density_flag_ = nodal_density_flag;
     last_comm_step = current_step = 0;
     ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
+    const_host_vec_array design_densities = FEM_->node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    
+    FEM_->compute_element_masses(design_densities);
+    
+    //sum per element results across all MPI ranks
+    ROL::Elementwise::ReductionSum<real_t> sumreduc;
+    initial_mass = ROL_Element_Masses->reduce(sumreduc);
+    //debug print
+    std::cout << "INITIAL MASS: " << initial_mass << std::endl;
+    constraint_gradients_distributed = Teuchos::rcp(new MV(FEM_->map, 1));
   }
 
   void update(const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
@@ -94,22 +107,21 @@ public:
     ROL::Elementwise::ReductionSum<real_t> sumreduc;
     real_t current_mass = ROL_Element_Masses->reduce(sumreduc);
     //debug print
-    std::cout << "SYSTEM MASS: " << current_mass << std::endl;
+    std::cout << "SYSTEM MASS: " << current_mass/initial_mass << std::endl;
 
-    (*cp)[0] = current_mass;
+    (*cp)[0] = current_mass/initial_mass;
   }
   
-  void gradient( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &z, real_t &tol ) {
+  virtual void applyJacobian(ROL::Vector<real_t> &jv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) {
      //get Tpetra multivector pointer from the ROL vector
-    ROL::Ptr<const MV> zp = getVector(z);
-    ROL::Ptr<MV> gp = getVector(g);
+    ROL::Ptr<const MV> zp = getVector(x);
+    ROL::Ptr<std::vector<real_t>> jvp = dynamic_cast<ROL::StdVector<real_t>&>(jv).getVector();
     
     //ROL::Ptr<ROL_MV> ROL_Element_Volumes;
 
     //get local view of the data
-    host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-    const_host_vec_array design_displacement = FEM_->node_displacements_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    host_vec_array constraint_gradients = constraint_gradients_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
@@ -120,7 +132,10 @@ public:
     int rnum_elem = FEM_->rnum_elem;
 
     if(nodal_density_flag_){
-      FEM_->compute_nodal_gradients(design_densities, objective_gradients);
+      FEM_->compute_nodal_gradients(design_densities, constraint_gradients);
+      for(int i = 0; i < FEM_->nlocal_nodes; i++){
+        constraint_gradients(i,0) /= initial_mass;
+      }
     }
     else{
       //update per element volumes
@@ -129,8 +144,15 @@ public:
       //local view of element volumes
       const_host_vec_array element_volumes = FEM_->Global_Element_Volumes->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
       for(int ig = 0; ig < rnum_elem; ig++)
-        objective_gradients(ig,0) = element_volumes(ig,0);
+        constraint_gradients(ig,0) = element_volumes(ig,0)/initial_mass;
     }
+
+    ROL_Gradients = ROL::makePtr<ROL_MV>(constraint_gradients_distributed);
+    real_t gradient_dot_v = ROL_Gradients->dot(v);
+    //debug print
+    std::cout << "Constraint Gradient value " << gradient_dot_v << std::endl;
+
+    (*jvp)[0] = gradient_dot_v;
   }
   /*
   void hessVec_12( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 

@@ -100,6 +100,7 @@ num_cells in element = (p_order*2)^3
 #include "Mass_Constraint.h"
 #include "Bounded_Strain_Constraint.h"
 #include "Strain_Energy_Constraint.h"
+#include "Strain_Energy_Minimize.h"
 #include "Strain_Energy_Objective.h"
 
 //debug and performance includes
@@ -1064,7 +1065,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   bool nodal_density_flag = simparam->nodal_density_flag;
 
   // Objective function
-  ROL::Ptr<ROL::Objective<real_t>> obj = ROL::makePtr<StrainEnergyObjective_TopOpt>(this, nodal_density_flag,simparam->maximum_strain_energy);
+  ROL::Ptr<ROL::Objective<real_t>> obj = ROL::makePtr<StrainEnergyMinimize_TopOpt>(this, nodal_density_flag);
   //Design variables to optimize
   ROL::Ptr<ROL::Vector<real_t>> x;
   if(nodal_density_flag)
@@ -1142,16 +1143,16 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //problem.addConstraint("Equality Constraint",econ,emul);
   ROL::Ptr<std::vector<real_t> > li_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
   ROL::Ptr<std::vector<real_t> > ll_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
-  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,simparam->maximum_strain_energy);
+  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.50);
 
   ROL::Ptr<ROL::Vector<real_t> > constraint_mul = ROL::makePtr<ROL::StdVector<real_t>>(li_ptr);
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
-  /*
-  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<StrainEnergyConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
+  
+  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
   problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
-  */
+  
   // fill parameter list with desired algorithmic options or leave as default
   ROL::ParameterList parlist;
   // Instantiate Solver.

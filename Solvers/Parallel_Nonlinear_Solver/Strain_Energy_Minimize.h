@@ -1,5 +1,5 @@
-#ifndef STRAIN_ENERGY_OBJECTIVE_TOPOPT_H
-#define STRAIN_ENERGY_OBJECTIVE_TOPOPT_H
+#ifndef STRAIN_ENERGY_MINIMIZE_TOPOPT_H
+#define STRAIN_ENERGY_MINIMIZE_TOPOPT_H
 
 #include "matar.h"
 #include "elements.h"
@@ -22,7 +22,7 @@
 #include "ROL_Elementwise_Reduce.hpp"
 #include "Parallel_Nonlinear_Solver.h"
 
-class StrainEnergyObjective_TopOpt : public ROL::Objective<real_t> {
+class StrainEnergyMinimize_TopOpt : public ROL::Objective<real_t> {
   
   typedef Tpetra::Map<>::local_ordinal_type LO;
   typedef Tpetra::Map<>::global_ordinal_type GO;
@@ -56,7 +56,6 @@ private:
   ROL::Ptr<ROL_MV> ROL_Displacements;
   ROL::Ptr<ROL_MV> ROL_Gradients;
   Teuchos::RCP<MV> constraint_gradients_distributed;
-  real_t target_strain_energy_;
 
   bool useLC_; // Use linear form of compliance.  Otherwise use quadratic form.
 
@@ -72,10 +71,9 @@ public:
   bool nodal_density_flag_;
   size_t last_comm_step, current_step;
 
-  StrainEnergyObjective_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag, real_t target_strain_energy) 
+  StrainEnergyMinimize_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag) 
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
-      target_strain_energy_ = target_strain_energy;
       last_comm_step = current_step = 0;
       constraint_gradients_distributed = Teuchos::rcp(new MV(FEM_->map, 1));
   }
@@ -102,7 +100,7 @@ public:
     std::cout.precision(10);
     if(FEM_->myrank==0)
     std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
-    return (current_strain_energy - target_strain_energy_)*(current_strain_energy - target_strain_energy_)/2;
+    return -current_strain_energy;
   }
 
   //void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
@@ -138,9 +136,8 @@ public:
       //FEM_->all_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
       //*fos << std::endl;
       //std::fflush(stdout);
-      //multiply by difference in energy to get final gradient values
       for(int i = 0; i < FEM_->nlocal_nodes; i++){
-        objective_gradients(i,0) *= (current_strain_energy - target_strain_energy_);
+        objective_gradients(i,0) *= -1;
       }
     }
     else{

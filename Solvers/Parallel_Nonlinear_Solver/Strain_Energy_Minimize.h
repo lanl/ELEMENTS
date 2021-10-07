@@ -100,7 +100,7 @@ public:
     std::cout.precision(10);
     if(FEM_->myrank==0)
     std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
-    return -current_strain_energy;
+    return current_strain_energy;
   }
 
   //void gradient_1( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {
@@ -136,9 +136,9 @@ public:
       //FEM_->all_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
       //*fos << std::endl;
       //std::fflush(stdout);
-      for(int i = 0; i < FEM_->nlocal_nodes; i++){
-        objective_gradients(i,0) *= -1;
-      }
+      //for(int i = 0; i < FEM_->nlocal_nodes; i++){
+        //objective_gradients(i,0) *= -1;
+      //}
     }
     else{
       

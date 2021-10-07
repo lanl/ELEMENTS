@@ -102,7 +102,7 @@ public:
     //*fos << std::endl;
     //std::fflush(stdout);
     
-    FEM_->compute_element_masses(design_densities);
+    FEM_->compute_element_masses(design_densities,false);
     
     //sum per element results across all MPI ranks
     ROL::Elementwise::ReductionSum<real_t> sumreduc;

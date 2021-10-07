@@ -96,7 +96,7 @@ public:
 
   void compute_element_volumes();
 
-  void compute_element_masses(const_host_vec_array design_densities);
+  void compute_element_masses(const_host_vec_array design_densities, bool max_flag);
 
   void compute_nodal_gradients(const_host_vec_array design_densities, host_vec_array objective_gradients);
 

@@ -219,7 +219,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     std::fflush(stdout);
     */
     //return;
-    setup_optimization_problem();
+    //setup_optimization_problem();
     
     //CPU time
     double current_cpu = CPU_Time();
@@ -1149,9 +1149,12 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
   
-  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, simparam->maximum_strain_energy);
+  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
   problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+
+  //finalize problem
+  problem->finalize(false,true,std::cout);
   
   // fill parameter list with desired algorithmic options or leave as default
   ROL::ParameterList parlist;
@@ -2775,9 +2778,32 @@ void Parallel_Nonlinear_Solver::init_design(){
     //notify that the host view is going to be modified in the file readin
     dual_node_densities.modify_host();
 
-    //initialize densities to 1 for now; in the future there might be an option to read in an initial condition for each node
-    for(int inode = 0; inode < nlocal_nodes; inode++)
+    //debug Tecplot file readin of initial densities (only works on runs with 1 MPI rank this way)
+    std::string skip_line, read_line, substring;
+    std::stringstream line_parse;
+    real_t read_density;
+    in = new std::ifstream();
+    in->open("TecplotDensity.dat");
+    //skip 3 lines
+    for (int j = 1; j <= 3; j++) {
+      getline(*in, skip_line);
+      std::cout << skip_line << std::endl;
+    }
+  
+    
+    for(int inode = 0; inode < nlocal_nodes; inode++){
+      getline(*in,read_line);
+      line_parse.clear();
+      line_parse.str(read_line);
+      for(int iword = 0; iword < 10; iword++){
+        //read portions of the line into the substring variable
+        
+        if(iword==3){ line_parse >> read_density;}
+        else {line_parse >> substring;}
+      }
+      //initialize densities to 1 for now; in the future there might be an option to read in an initial condition for each node
       node_densities(inode,0) = 1;
+    }
 
     //sync device view
     dual_node_densities.sync_device();
@@ -4165,7 +4191,7 @@ void Parallel_Nonlinear_Solver::assemble_vector(){
    Compute the mass of each element; estimated with quadrature
 ------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array design_densities){
+void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array design_densities, bool max_flag){
   //local number of uniquely assigned elements
   size_t nonoverlap_nelements = element_map->getNodeNumElements();
   //initialize memory for volume storage
@@ -4323,8 +4349,13 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
 
       //compute density
       current_density = 0;
-      for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
-        current_density += nodal_density(node_loop)*basis_values(node_loop);
+      if(max_flag){
+        current_density = 1;
+      }
+      else{
+        for(int node_loop=0; node_loop < elem->num_basis(); node_loop++){
+          current_density += nodal_density(node_loop)*basis_values(node_loop);
+        }
       }
     
       Element_Masses(nonoverlapping_ielem,0) += current_density*Jacobian;

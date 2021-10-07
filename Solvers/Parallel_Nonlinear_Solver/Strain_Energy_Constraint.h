@@ -72,10 +72,9 @@ public:
   bool nodal_density_flag_;
   size_t last_comm_step, current_step;
 
-  StrainEnergyConstraint_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag, real_t maximum_strain_energy) 
+  StrainEnergyConstraint_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag) 
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
-      maximum_strain_energy_ = maximum_strain_energy;
       last_comm_step = current_step = 0;
       constraint_gradients_distributed = Teuchos::rcp(new MV(FEM_->map, 1));
   }
@@ -102,7 +101,7 @@ public:
     (*cp)[0] = current_strain_energy;
   }
   
-  virtual void applyJacobian(ROL::Vector<real_t> &jv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) {
+  void applyJacobian(ROL::Vector<real_t> &jv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) {
     //debug print
     std::cout << "Constraint Gradient value " << std::endl;
      //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables

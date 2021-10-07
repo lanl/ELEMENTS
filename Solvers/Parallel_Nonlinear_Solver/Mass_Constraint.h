@@ -77,7 +77,7 @@ public:
     ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
     const_host_vec_array design_densities = FEM_->node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     
-    FEM_->compute_element_masses(design_densities);
+    FEM_->compute_element_masses(design_densities,true);
     
     //sum per element results across all MPI ranks
     ROL::Elementwise::ReductionSum<real_t> sumreduc;
@@ -91,7 +91,7 @@ public:
     current_step++;
   }
 
-  void value(ROL::Vector<real_t> &c, const ROL::Vector<real_t> &z, real_t &tol ) {
+  void value(ROL::Vector<real_t> &c, const ROL::Vector<real_t> &z, real_t &tol ) override {
     ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<std::vector<real_t>> cp = dynamic_cast<ROL::StdVector<real_t>&>(c).getVector();
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
@@ -101,18 +101,60 @@ public:
       last_comm_step = current_step;
     }
     
-    FEM_->compute_element_masses(design_densities);
+    FEM_->compute_element_masses(design_densities,false);
     
     //sum per element results across all MPI ranks
     ROL::Elementwise::ReductionSum<real_t> sumreduc;
     real_t current_mass = ROL_Element_Masses->reduce(sumreduc);
     //debug print
-    std::cout << "SYSTEM MASS: " << current_mass/initial_mass << std::endl;
+    std::cout << "SYSTEM MASS RATIO: " << current_mass/initial_mass << std::endl;
 
     (*cp)[0] = current_mass/initial_mass;
   }
-  
-  virtual void applyJacobian(ROL::Vector<real_t> &jv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) {
+
+  void applyAdjointJacobian(ROL::Vector<real_t> &ajv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) override {
+     //get Tpetra multivector pointer from the ROL vector
+    ROL::Ptr<const MV> zp = getVector(x);
+    ROL::Ptr<const std::vector<real_t>> vp = dynamic_cast<const ROL::StdVector<real_t>&>(v).getVector();
+    ROL::Ptr<MV> ajvp = getVector(ajv);
+    
+    //ROL::Ptr<ROL_MV> ROL_Element_Volumes;
+
+    //get local view of the data
+    const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    //host_vec_array constraint_gradients = constraint_gradients_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+    host_vec_array constraint_gradients = ajvp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+    //host_vec_array dual_constraint_vector = vp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+
+    //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
+    if(last_comm_step!=current_step){
+      FEM_->update_and_comm_variables();
+      last_comm_step = current_step;
+    }
+    
+    int rnum_elem = FEM_->rnum_elem;
+
+    if(nodal_density_flag_){
+      FEM_->compute_nodal_gradients(design_densities, constraint_gradients);
+      for(int i = 0; i < FEM_->nlocal_nodes; i++){
+        constraint_gradients(i,0) *= (*vp)[0]/initial_mass;
+      }
+    }
+    else{
+      //update per element volumes
+      FEM_->compute_element_volumes();
+      //ROL_Element_Volumes = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Volumes);
+      //local view of element volumes
+      const_host_vec_array element_volumes = FEM_->Global_Element_Volumes->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+      for(int ig = 0; ig < rnum_elem; ig++)
+        constraint_gradients(ig,0) = element_volumes(ig,0)*(*vp)[0]/initial_mass;
+    }
+
+    //debug print
+    std::cout << "Constraint Gradient value " << std::endl;
+  }
+  /*
+  void applyJacobian(ROL::Vector<real_t> &jv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) override {
      //get Tpetra multivector pointer from the ROL vector
     ROL::Ptr<const MV> zp = getVector(x);
     ROL::Ptr<std::vector<real_t>> jvp = dynamic_cast<ROL::StdVector<real_t>&>(jv).getVector();
@@ -154,6 +196,7 @@ public:
 
     (*jvp)[0] = gradient_dot_v;
   }
+  */
   /*
   void hessVec_12( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 
                    const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {

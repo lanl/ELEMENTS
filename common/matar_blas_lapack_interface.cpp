@@ -90,9 +90,9 @@ void matar2blas::matvec(const CArray<Real> &A,
 		&m_a, &n_a,
 		&alpha,
 		a, &lda,
-		x.get_pointer(), &incx,
+		x.pointer(), &incx,
 		&beta,
-		y.get_pointer(), &incy 	
+		y.pointer(), &incy 	
 	);
 
   delete[] a;
@@ -297,7 +297,7 @@ void matar2lapack::eig_sym_tri(const CArray<Real> &diag,
 
   try {
     lapack_stev(&compute_eigenvectors, &n_diag, diag_copy, 
-        subdiag.get_pointer(), eigvecs.get_pointer(), &n_diag, 
+        subdiag.pointer(), eigvecs.pointer(), &n_diag, 
         work_array, &info);
     if (info != 0) throw FactorizationError(
         "Error: LAPACK eigensolution for symmetric tridiagonal matrix failed");

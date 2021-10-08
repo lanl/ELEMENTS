@@ -22,7 +22,7 @@ void project_function_lagrange(
   CArray<Real> vert_coords_1d(num_verts_1d);
   elements::lobatto_nodes_1D(vert_coords_1d, num_verts_1d);
 
-  LagrangeElement<Real> elem(elem_order, vert_coords_1d.get_pointer());
+  LagrangeElement<Real> elem(elem_order, vert_coords_1d.pointer());
 
   // Quadrature points and weights, assuming Lobatto quadrature and assuming
   // nodes are quadrature points

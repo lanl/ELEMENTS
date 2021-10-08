@@ -37,8 +37,8 @@ struct TestParams {
     // Generate random array of coefficients between 0 and 1
     c = new NumType[elem->Ne];
     for (SizeType i = 0; i < elem->Ne; i++) {
-      c[i] = Real(rand())/RAND_MAX;
-      //c[i] = i == 18 ? 1.0 : 0.0;
+      //c[i] = Real(rand())/RAND_MAX;
+      c[i] = i == 182 ? 1.0 : 0.0;
     }
 
     // Select coordinates between -1 and 1
@@ -119,6 +119,16 @@ bool test2(TestParams<Real> &p) {
   Real rel_error0 = common::abs((d0f - grad_f[0])/d0f);
   Real rel_error1 = common::abs((d1f - grad_f[1])/d1f);
   Real rel_error2 = common::abs((d2f - grad_f[2])/d2f);
+
+  std::cout << d0f << " " 
+            << d1f << " " 
+            << d2f << " " 
+            << std::endl; 
+
+  std::cout << grad_f[0] << " " 
+            << grad_f[1] << " " 
+            << grad_f[2] << " " 
+            << std::endl; 
 
   if (rel_error0 < tol && rel_error1 < tol && rel_error2 < tol) {
     pass = true;

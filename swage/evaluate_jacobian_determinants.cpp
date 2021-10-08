@@ -42,7 +42,7 @@ namespace swage {
 
     // Create reference element
     LagrangeElement<Real> elem(SizeType(elem_order), 
-        vert_coords_1d.get_pointer());
+        vert_coords_1d.pointer());
 
     // Loop over elements and...
     CArray<Real> vert_x_coords(num_verts);
@@ -79,8 +79,8 @@ namespace swage {
         // Evaluate Jacobian determinant
         int node_gid = mesh.nodes_in_elem(elem_id, node_lid);
         mesh.gauss_pt_det_j(node_gid) = elem.eval_det_jac(
-            vert_x_coords.get_pointer(), vert_y_coords.get_pointer(), 
-            vert_z_coords.get_pointer(), X);
+            vert_x_coords.pointer(), vert_y_coords.pointer(), 
+            vert_z_coords.pointer(), X);
       }
     }
   }

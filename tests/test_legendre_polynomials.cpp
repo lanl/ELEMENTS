@@ -100,8 +100,8 @@ bool test2(TestParams<Real> &p) {
   Real sum1 = 0.0;
 
   for (SizeType i = 0; i < p.N; i++) {
-    Real dli = legendre::eval_der(i, p.X);
-    sum1 += p.c[i]*dli;
+    Real dPi = legendre::eval_der(i, 1, p.X);
+    sum1 += p.c[i]*dPi;
   }
 
   Real sum2 = legendre::eval_der_approx(p.N, 1, p.c, p.X);

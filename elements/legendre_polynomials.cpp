@@ -26,11 +26,12 @@ namespace legendre {
    * Parameters
    * ----------
    * n : order of Legendre polynomial
+   * k : order of derivative
    * X : coordinate in reference space [-1, 1]
    */
   template <typename NumType>
-  NumType eval_der(const int n, const NumType X) {
-    return jacobi::eval_der(n, NumType(0.0), NumType(0.0), X);
+  NumType eval_der(const int n, const int k, const NumType X) {
+    return jacobi::eval_der(n, k, 0.0, 0.0, X);
   };
 
   /*
@@ -70,7 +71,7 @@ namespace legendre {
       const NumType X) {
     NumType sum = 0.0;
     for (SizeType j = 0; j < N; j++) {
-      sum += c[j]*eval_der(j, X);
+      sum += c[j]*eval_der(j, k, X);
     }
 
     return sum;
@@ -80,8 +81,8 @@ namespace legendre {
   template Real eval(const int n, const Real X);
   template Complex eval(const int n, const Complex X);
 
-  template Real eval_der(const int n, const Real X);
-  template Complex eval_der(const int n, const Complex X);
+  template Real eval_der(const int n, const int k, const Real X);
+  template Complex eval_der(const int n, const int k, const Complex X);
 
   template Real eval_approx(const SizeType N, const Real *c, const Real X);
   template Complex eval_approx(const SizeType N, const Complex *c, 

@@ -65,9 +65,10 @@ void LegendreElement<NumType>::eval_grad_basis(const SizeType I,
   NumType Pk = legendre::eval(int(ijk[2]), X[2]);
   
   // Evaluate Legendre polynomial derivatives
-  NumType dPi = legendre::eval_der(int(ijk[0]), X[0]);
-  NumType dPj = legendre::eval_der(int(ijk[1]), X[1]);
-  NumType dPk = legendre::eval_der(int(ijk[2]), X[2]);
+  SizeType q = 1;  // order of derivative
+  NumType dPi = legendre::eval_der(int(ijk[0]), q, X[0]);
+  NumType dPj = legendre::eval_der(int(ijk[1]), q, X[1]);
+  NumType dPk = legendre::eval_der(int(ijk[2]), q, X[2]);
 
   // Store partial derivatives in entries of gradient
   grad_phi[0] = dPi*Pj*Pk;
@@ -130,13 +131,13 @@ NumType LegendreElement<NumType>::eval_approx(const NumType *c,
 template <typename NumType>
 void LegendreElement<NumType>::eval_grad_approx(const NumType *c, 
     const NumType *X, NumType *grad_f) {
-  SizeType k = 1;  // order of derivative
+  SizeType q = 1;  // order of derivative
   for (int l = 0; l < Nd; l++) {
     for (int k = 0; k < N; k++) {
       for (int j = 0; j < N; j++) {
         // Collapse first dimension into coefficients for second dimension
         if (l == 0) {
-          C[j] = legendre::eval_der_approx(N, k, &c[j*N+k*N*N], X[0]);
+          C[j] = legendre::eval_der_approx(N, 1, &c[j*N+k*N*N], X[0]);
         } else {
           C[j] = legendre::eval_approx(N, &c[j*N+k*N*N], X[0]);
         }
@@ -144,7 +145,7 @@ void LegendreElement<NumType>::eval_grad_approx(const NumType *c,
 
       // Collapse second dimension into coefficients for third dimension
       if (l == 1) {
-        C[N+k] = legendre::eval_der_approx(N, k, C, X[1]);
+        C[N+k] = legendre::eval_der_approx(N, q, C, X[1]);
       } else {
         C[N+k] = legendre::eval_approx(N, C, X[1]);
       }
@@ -152,7 +153,7 @@ void LegendreElement<NumType>::eval_grad_approx(const NumType *c,
 
     // Collapse third dimension into approximation evaluation
     if (l == 2) {
-      grad_f[l] = legendre::eval_der_approx(N, k, &C[N], X[2]);
+      grad_f[l] = legendre::eval_der_approx(N, q, &C[N], X[2]);
     } else {
       grad_f[l] = legendre::eval_approx(N, &C[N], X[2]);
     }

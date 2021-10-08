@@ -39,11 +39,11 @@ namespace swage {
     CArray<Real> vert_coords_1d(num_verts_1d);
     Real lower_bound = -1.0, upper_bound = 1.0;
     equispaced_points(num_verts_1d, lower_bound, upper_bound, 
-        vert_coords_1d.get_pointer());
+        vert_coords_1d.pointer());
 
     // Create reference element
     LagrangeElement<Real> elem(SizeType(elem_order), 
-        vert_coords_1d.get_pointer());
+        vert_coords_1d.pointer());
 
     // Assume Lobatto nodes for quadrature
     CArray<Real> lobatto_nodes(num_g_pts_1d);
@@ -84,11 +84,11 @@ namespace swage {
 
         // Interpolate
         g_points_in_mesh(g_point_count, 0) = elem.eval_approx(
-            vert_x_coords.get_pointer(), X);
+            vert_x_coords.pointer(), X);
         g_points_in_mesh(g_point_count, 1) = elem.eval_approx(
-            vert_y_coords.get_pointer(), X);
+            vert_y_coords.pointer(), X);
         g_points_in_mesh(g_point_count, 2) = elem.eval_approx(
-            vert_z_coords.get_pointer(), X);
+            vert_z_coords.pointer(), X);
 
         g_point_count++;
       }

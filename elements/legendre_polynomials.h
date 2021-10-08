@@ -8,7 +8,7 @@ namespace legendre {
   NumType eval(const int n, const NumType X);
 
   template <typename NumType>
-  NumType eval_der(const int n, const NumType X);
+  NumType eval_der(const int n, const int k, const NumType X);
 
   // Legendre approximations (sums of products of bases and coefficients)
   template <typename NumType>

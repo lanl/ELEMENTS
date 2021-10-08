@@ -2,7 +2,8 @@
 
 namespace jacobi {
   template <typename NumType>
-  NumType eval(int n, NumType alpha, NumType beta, NumType X) {
+  NumType eval(const int n, const Real alpha, const Real beta, 
+      const NumType X) {
     if (n == -1) return 0.0;
     if (n == 0) return 1.0;
     return (a(alpha, beta, n)*X + b(alpha, beta, n))
@@ -11,16 +12,22 @@ namespace jacobi {
   }
 
   template <typename NumType>
-  NumType eval_der(int n, NumType alpha, NumType beta, NumType X) {
-    if (n == 0) return 0.0;
-    return 0.5*(double(n) + alpha + beta + 1.0)
-        *eval(n-1, alpha + 1.0, beta + 1.0, X);
+  NumType eval_der(const int n, const int k, const Real alpha, 
+      const Real beta, const NumType X) {
+    if (n == 0 || k > n) return 0.0;
+    Real theta = Real(n) + Real(alpha + alpha) + 1.0;
+    return std::pow(0.5, k)*std::tgamma(theta + Real(k))
+        *eval(n - k, alpha + Real(k), beta + Real(k), X)/std::tgamma(theta);
   }
 
   // Explicit instantiations of template functions
-  template Real eval(int n, Real alpha, Real beta, Real X);
-  template Complex eval(int n, Complex alpha, Complex beta, Complex X);
+  template Real eval(const int n, const Real alpha, const Real beta, 
+      const Real X);
+  template Complex eval(const int n, const Real alpha, const Real beta, 
+      const Complex X);
 
-  template Real eval_der(int n, Real alpha, Real beta, Real X);
-  template Complex eval_der(int n, Complex alpha, Complex beta, Complex X);
+  template Real eval_der(const int n, const int k, const Real alpha, 
+      const Real beta, const Real X);
+  template Complex eval_der(const int n, const int k, const Real alpha, 
+      const Real beta, const Complex X);
 }

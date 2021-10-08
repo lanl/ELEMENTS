@@ -86,9 +86,9 @@ namespace swage {
         g_points_in_mesh(g_point_count, 0) = elem.eval_approx(
             vert_x_coords.get_pointer(), X);
         g_points_in_mesh(g_point_count, 1) = elem.eval_approx(
-            vert_x_coords.get_pointer(), X);
+            vert_y_coords.get_pointer(), X);
         g_points_in_mesh(g_point_count, 2) = elem.eval_approx(
-            vert_x_coords.get_pointer(), X);
+            vert_z_coords.get_pointer(), X);
 
         g_point_count++;
       }

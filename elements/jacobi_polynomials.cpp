@@ -2,26 +2,25 @@
 
 namespace jacobi {
   template <typename NumType>
-  NumType evaluate(int n, NumType alpha, NumType beta, NumType ksi) {
+  NumType eval(int n, NumType alpha, NumType beta, NumType X) {
     if (n == -1) return 0.0;
     if (n == 0) return 1.0;
-    return (a(alpha, beta, n)*ksi + b(alpha, beta, n))
-        *evaluate(n - 1, alpha, beta, ksi) 
-        - c(alpha, beta, n)*evaluate(n - 2, alpha, beta, ksi);
+    return (a(alpha, beta, n)*X + b(alpha, beta, n))
+        *eval(n - 1, alpha, beta, X) 
+        - c(alpha, beta, n)*eval(n - 2, alpha, beta, X);
   }
 
   template <typename NumType>
-  NumType evaluate_derivative(int n, NumType alpha, NumType beta, NumType ksi) {
+  NumType eval_der(int n, NumType alpha, NumType beta, NumType X) {
     if (n == 0) return 0.0;
     return 0.5*(double(n) + alpha + beta + 1.0)
-        *evaluate(n-1, alpha + 1.0, beta + 1.0, ksi);
+        *eval(n-1, alpha + 1.0, beta + 1.0, X);
   }
 
   // Explicit instantiations of template functions
-  template Real evaluate(int n, Real alpha, Real beta, Real ksi);
-  template Complex evaluate(int n, Complex alpha, Complex beta, Complex ksi);
+  template Real eval(int n, Real alpha, Real beta, Real X);
+  template Complex eval(int n, Complex alpha, Complex beta, Complex X);
 
-  template Real evaluate_derivative(int n, Real alpha, Real beta, Real ksi);
-  template Complex evaluate_derivative(int n, Complex alpha, Complex beta, 
-      Complex ksi);
+  template Real eval_der(int n, Real alpha, Real beta, Real X);
+  template Complex eval_der(int n, Complex alpha, Complex beta, Complex X);
 }

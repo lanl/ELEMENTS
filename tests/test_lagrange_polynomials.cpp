@@ -55,7 +55,7 @@ struct TestParams {
     lagrange::compute_barycentric_weights(Nv, Z, w);
 
     // Select a random coordinate between -1 and 1
-    X = -Zl + (Zr - Zl)*Real(rand())/Real(RAND_MAX);
+    X = Zl + (Zr - Zl)*Real(rand())/Real(RAND_MAX);
 
     // Select a random vertex ID, between 0 and (Nv - 1)
     I = std::round((Nv - 1)*Real(rand())/Real(RAND_MAX));

@@ -4,19 +4,19 @@
 template <typename NumType>
 LagrangeElement<NumType>::LagrangeElement(const SizeType order, 
     const NumType *vert_coords) : Np(order), Z(vert_coords) {
-  Nv = Np + 1;
-  Nve = std::pow(Nv, Nd);
+  N = Np + 1;
+  Ne = std::pow(N, Nd);
 
-  rad[0] = Nv;
-  rad[1] = Nv;
-  rad[2] = Nv;
+  rad[0] = N;
+  rad[1] = N;
+  rad[2] = N;
 
   // Allocate memory for weights and compute
-  w = new NumType[Nv];
-  lagrange::compute_barycentric_weights(Nv, Z, w);
+  w = new NumType[N];
+  lagrange::compute_barycentric_weights(N, Z, w);
 
   // Allocate memory for intermediate coefficients
-  C = new NumType[3*Nv];
+  C = new NumType[3*N];
 }
 
 template <typename NumType>
@@ -40,14 +40,14 @@ NumType LagrangeElement<NumType>::eval_basis(const SizeType I, const NumType *X)
   common::base_10_to_mixed_radix(Nd, rad, I, ijk);
 
   // Check coincidence of coordinates with vertex coordinates
-  SizeType ix = lagrange::find_coincident_vertex(Nv, Z, X[0]);
-  SizeType iy = lagrange::find_coincident_vertex(Nv, Z, X[1]);
-  SizeType iz = lagrange::find_coincident_vertex(Nv, Z, X[2]);
+  SizeType ix = lagrange::find_coincident_vertex(N, Z, X[0]);
+  SizeType iy = lagrange::find_coincident_vertex(N, Z, X[1]);
+  SizeType iz = lagrange::find_coincident_vertex(N, Z, X[2]);
 
   // Evaluate Lagrange polynomials
-  NumType li = lagrange::eval(Nv, ijk[0], ix, Z, w, X[0]);
-  NumType lj = lagrange::eval(Nv, ijk[1], iy, Z, w, X[1]);
-  NumType lk = lagrange::eval(Nv, ijk[2], iz, Z, w, X[2]);
+  NumType li = lagrange::eval(N, ijk[0], ix, Z, w, X[0]);
+  NumType lj = lagrange::eval(N, ijk[1], iy, Z, w, X[1]);
+  NumType lk = lagrange::eval(N, ijk[2], iz, Z, w, X[2]);
 
   return li*lj*lk;
 }
@@ -72,20 +72,20 @@ void LagrangeElement<NumType>::eval_grad_basis(const SizeType I,
   common::base_10_to_mixed_radix(Nd, rad, I, ijk);
 
   // Check coincidence of coordinates with vertex coordinates
-  SizeType ix = lagrange::find_coincident_vertex(Nv, Z, X[0]);
-  SizeType iy = lagrange::find_coincident_vertex(Nv, Z, X[1]);
-  SizeType iz = lagrange::find_coincident_vertex(Nv, Z, X[2]);
+  SizeType ix = lagrange::find_coincident_vertex(N, Z, X[0]);
+  SizeType iy = lagrange::find_coincident_vertex(N, Z, X[1]);
+  SizeType iz = lagrange::find_coincident_vertex(N, Z, X[2]);
 
   // Evaluate Lagrange polynomials
-  NumType li = lagrange::eval(Nv, ijk[0], ix, Z, w, X[0]);
-  NumType lj = lagrange::eval(Nv, ijk[1], iy, Z, w, X[1]);
-  NumType lk = lagrange::eval(Nv, ijk[2], iz, Z, w, X[2]);
+  NumType li = lagrange::eval(N, ijk[0], ix, Z, w, X[0]);
+  NumType lj = lagrange::eval(N, ijk[1], iy, Z, w, X[1]);
+  NumType lk = lagrange::eval(N, ijk[2], iz, Z, w, X[2]);
   
   // Evaluate Lagrange polynomial derivatives
   SizeType n = 1;  // order of derivative
-  NumType dli = lagrange::eval_der(Nv, n, ijk[0], ix, Z, w, X[0], C);
-  NumType dlj = lagrange::eval_der(Nv, n, ijk[1], iy, Z, w, X[1], C);
-  NumType dlk = lagrange::eval_der(Nv, n, ijk[2], iz, Z, w, X[2], C);
+  NumType dli = lagrange::eval_der(N, n, ijk[0], ix, Z, w, X[0], C);
+  NumType dlj = lagrange::eval_der(N, n, ijk[1], iy, Z, w, X[1], C);
+  NumType dlk = lagrange::eval_der(N, n, ijk[2], iz, Z, w, X[2], C);
 
   // Store partial derivatives in entries of gradient
   grad_phi[0] = dli*lj*lk;
@@ -120,22 +120,22 @@ template <typename NumType>
 NumType LagrangeElement<NumType>::eval_approx(const NumType *c, 
     const NumType *X) {
   // Check the coincidence of the coordinates with vertex coordinates
-  SizeType ix = lagrange::find_coincident_vertex(Nv, Z, X[0]);
-  SizeType iy = lagrange::find_coincident_vertex(Nv, Z, X[1]);
-  SizeType iz = lagrange::find_coincident_vertex(Nv, Z, X[2]);
+  SizeType ix = lagrange::find_coincident_vertex(N, Z, X[0]);
+  SizeType iy = lagrange::find_coincident_vertex(N, Z, X[1]);
+  SizeType iz = lagrange::find_coincident_vertex(N, Z, X[2]);
 
-  for (int k = 0; k < Nv; k++) {
-    for (int j = 0; j < Nv; j++) {
+  for (int k = 0; k < N; k++) {
+    for (int j = 0; j < N; j++) {
       // Collapse first dimension into coefficients for second dimension
-      C[j] = lagrange::eval_interp(Nv, ix, Z, w, X[0], &c[j*Nv+k*Nv*Nv]);
+      C[j] = lagrange::eval_interp(N, ix, Z, w, X[0], &c[j*N+k*N*N]);
     }
 
     // Collapse second dimension into coefficients for third dimension
-    C[Nv+k] = lagrange::eval_interp(Nv, iy, Z, w, X[1], C);
+    C[N+k] = lagrange::eval_interp(N, iy, Z, w, X[1], C);
   }
 
   // Collapse third dimension into interpolant evaluation
-  return lagrange::eval_interp(Nv, iz, Z, w, X[2], &C[Nv]);
+  return lagrange::eval_interp(N, iz, Z, w, X[2], &C[N]);
 }
 
 /*
@@ -166,37 +166,37 @@ void LagrangeElement<NumType>::eval_grad_approx(const NumType *c,
   const SizeType n = 1; // order of partial derivative
 
   // Check the coincidence of the coordinates with vertex coordinates
-  SizeType ix = lagrange::find_coincident_vertex(Nv, Z, X[0]);
-  SizeType iy = lagrange::find_coincident_vertex(Nv, Z, X[1]);
-  SizeType iz = lagrange::find_coincident_vertex(Nv, Z, X[2]);
+  SizeType ix = lagrange::find_coincident_vertex(N, Z, X[0]);
+  SizeType iy = lagrange::find_coincident_vertex(N, Z, X[1]);
+  SizeType iz = lagrange::find_coincident_vertex(N, Z, X[2]);
 
   for (int l = 0; l < Nd; l++) {
-    for (int k = 0; k < Nv; k++) {
-      for (int j = 0; j < Nv; j++) {
+    for (int k = 0; k < N; k++) {
+      for (int j = 0; j < N; j++) {
         // Collapse first dimension into coefficients for second dimension
-        std::copy(c+j*Nv+k*Nv*Nv, c+j*Nv+k*Nv*Nv+Nv, C);  // load first line
+        std::copy(c+j*N+k*N*N, c+j*N+k*N*N+N, C);  // load first line
         if (l == 0) {
-          C[Nv+j] = lagrange::eval_der_interp(Nv, n, ix, Z, w, X[0], C);
+          C[N+j] = lagrange::eval_der_interp(N, n, ix, Z, w, X[0], C);
         } else {
-          C[Nv+j] = lagrange::eval_interp(Nv, ix, Z, w, X[0], C);
+          C[N+j] = lagrange::eval_interp(N, ix, Z, w, X[0], C);
         }
       }
 
       // Collapse second dimension into coefficients for third dimension
-      std::copy(C+Nv, C+2*Nv, C); // second line back into first line
+      std::copy(C+N, C+2*N, C); // second line back into first line
       if (l == 1) {
-        C[2*Nv+k] = lagrange::eval_der_interp(Nv, n, iy, Z, w, X[1], C);
+        C[2*N+k] = lagrange::eval_der_interp(N, n, iy, Z, w, X[1], C);
       } else {
-        C[2*Nv+k] = lagrange::eval_interp(Nv, iy, Z, w, X[1], C);
+        C[2*N+k] = lagrange::eval_interp(N, iy, Z, w, X[1], C);
       }
     }
 
     // Collapse third dimension into interpolant evaluation
-    std::copy(C+2*Nv, C+3*Nv, C); // third line back into first line
+    std::copy(C+2*N, C+3*N, C); // third line back into first line
     if (l == 2) {
-      grad_f[l] = lagrange::eval_der_interp(Nv, n, iz, Z, w, X[2], C);
+      grad_f[l] = lagrange::eval_der_interp(N, n, iz, Z, w, X[2], C);
     } else {
-      grad_f[l] = lagrange::eval_interp(Nv, iz, Z, w, X[2], C);
+      grad_f[l] = lagrange::eval_interp(N, iz, Z, w, X[2], C);
     }
   }
 }

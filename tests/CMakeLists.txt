@@ -1,61 +1,42 @@
-# Testing Lagrange polynomials
+# Test Lagrange polynomials
 add_executable(
-  test_lagrange_1d_derivatives 
-  test_lagrange_1d_derivatives.cpp
+  test_lagrange_polynomials
+  test_lagrange_polynomials.cpp
 )
 target_link_libraries(
-  test_lagrange_1d_derivatives 
-  common
-  polynomials_complex
-)
-target_compile_options(
-  test_lagrange_1d_derivatives 
-  PRIVATE
-  -DUSE_COMPLEX_NUMBERS
-)
-
-add_executable(
-  test_lagrange_3d_derivatives 
-  test_lagrange_3d_derivatives.cpp
-)
-target_link_libraries(
-  test_lagrange_3d_derivatives 
-  common
-  polynomials_complex
-)
-target_compile_options(
-  test_lagrange_3d_derivatives 
-  PRIVATE
-  -DUSE_COMPLEX_NUMBERS
-)
-
-add_executable(
-  test_lagrange_jacobian_determinant 
-  test_lagrange_jacobian_determinant.cpp
-)
-target_link_libraries(
-  test_lagrange_jacobian_determinant 
-  common
+  test_lagrange_polynomials
   elements
 )
 
+# Test Lagrange element
+add_executable(
+  test_lagrange_element
+  test_lagrange_element.cpp
+)
+target_link_libraries(
+  test_lagrange_element
+  elements
+)
 
 # Test Legendre polynomials
 add_executable(
-  test_legendre_1d_derivatives 
-  test_legendre_1d_derivatives.cpp
+  test_legendre_polynomials
+  test_legendre_polynomials.cpp
 )
 target_link_libraries(
-  test_legendre_1d_derivatives 
-  common
-  polynomials_complex
-)
-target_compile_options(
-  test_legendre_1d_derivatives 
-  PRIVATE
-  -DUSE_COMPLEX_NUMBERS
+  test_legendre_polynomials
+  elements
 )
 
+# Test Legendre element
+add_executable(
+  test_legendre_element
+  test_legendre_element.cpp
+)
+target_link_libraries(
+  test_legendre_element
+  elements
+)
 
 # Test Gauss-Jacobi quadrature
 add_executable(
@@ -69,6 +50,3 @@ target_link_libraries(
   ${BLAS_LIBRARIES}
   ${LAPACK_LIBRARIES}
 )
-
-
-# Test capability to read mesh and write solution using VTK

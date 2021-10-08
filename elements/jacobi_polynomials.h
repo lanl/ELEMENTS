@@ -4,28 +4,32 @@
 
 namespace jacobi {
   /* Recurrence relation parameters */
-  inline NumType a(NumType alpha, NumType beta, int n) {
+  inline Real a(Real alpha, Real beta, int n) {
     if (n == 1) return 0.5*(alpha + beta) + 1.0;
-    return (2.0*double(n) + alpha + beta - 1.0)*(2*double(n) + alpha + beta)
-        /(2.0*double(n)*(double(n) + alpha + beta));
+    return (2.0*Real(n) + alpha + beta - 1.0)*(2.0*Real(n) + alpha + beta)
+        /(2.0*Real(n)*(Real(n) + alpha + beta));
   };
 
-  inline NumType b(NumType alpha, NumType beta, int n) {
+  inline Real b(Real alpha, Real beta, int n) {
     if (n == 1) return 0.5*(alpha - beta); 
-    return (alpha*alpha - beta*beta)*(2*double(n) + alpha + beta - 1.0)
-        /(2.0*double(n)*(double(n) + alpha + beta)
-            *(2.0*double(n) + alpha + beta - 2.0));
+    return (alpha*alpha - beta*beta)*(2*Real(n) + alpha + beta - 1.0)
+        /(2.0*Real(n)*(Real(n) + alpha + beta)
+            *(2.0*Real(n) + alpha + beta - 2.0));
   };
 
-  inline NumType c(NumType alpha, NumType beta, int n) {
+  inline Real c(Real alpha, Real beta, int n) {
     if (n == 1) return 0.0;
-    return (double(n) + alpha - 1.0)*(double(n) + beta - 1.0)
-       *(2*double(n) + alpha + beta)
-       /(double(n)*(double(n) + alpha + beta)
-           *(2.0*double(n) + alpha + beta - 2.0));
+    return (Real(n) + alpha - 1.0)*(Real(n) + beta - 1.0)
+       *(2.0*Real(n) + alpha + beta)
+       /(Real(n)*(Real(n) + alpha + beta)
+           *(2.0*Real(n) + alpha + beta - 2.0));
   };
 
   /* Polynomial and polynomial derivative evaluation */
-  NumType evaluate(int n, NumType alpha, NumType beta, NumType ksi);
-  NumType evaluate_derivative(int n, NumType alpha, NumType beta, NumType ksi);
+  template <typename NumType>
+  NumType eval(int n, Real alpha, Real beta, NumType X);
+
+  template <typename NumType>
+  NumType eval_der(const int n, const int k, const Real alpha, 
+      const Real beta, const NumType X);
 }

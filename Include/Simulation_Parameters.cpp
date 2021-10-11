@@ -65,7 +65,7 @@ void Simulation_Parameters::input(){
   
   //Static isotropic parameters to move into a child class later
   Elastic_Modulus = 10000;
-  Poisson_Ratio = 0.3;
+  Poisson_Ratio = 0;
   words_per_line = 1;
   elem_words_per_line = 8;
 

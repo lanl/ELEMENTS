@@ -1,0 +1,38 @@
+Running TO Solver
+This is the 1st description line of the EnSight Gold geometry example
+This is the 2nd description line of the EnSight Gold geometry example
+node id assign
+element id assign
+part
+         1
+Mesh
+coordinates
+declared node count: 12221
+Num nodes assigned to task 0 = 12221
+hexa8
+declared element count: 10000
+before initial mesh initialization
+RNUM ELEMENTS IS: 10000
+Before initial mesh connectivity
+done with ref elem
+End of setup 
+Num elements = 10000
+number of boundary patches on task 0 = 4200
+building boundary sets 
+tagging z = 0 
+ tagged boundary patches 
+tagged a set 
+number of bdy patches in this set = 100
+
+tagging beam +z force 
+ tagged boundary patches 
+tagged a set 
+number of bdy patches in this set = 100
+
+TITLE="results for TO code"
+VARIABLES = "x", "y", "z", "density", "sigmaxx", "sigmayy", "sigmazz", "sigmaxy", "sigmaxz", "sigmayz"
+ZONE T="load step 1", NODES= 12221, ELEMENTS= 10000, DATAPACKING=POINT, ZONETYPE=FEBRICK
+ RUNTIME OF CODE ON TASK 0 is 11.6875
+Local Node Strains :
+
+End of Main file

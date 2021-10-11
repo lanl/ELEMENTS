@@ -56,6 +56,8 @@ private:
   ROL::Ptr<ROL_MV> ROL_Gradients;
   Teuchos::RCP<MV> constraint_gradients_distributed;
   real_t initial_mass;
+  bool inequality_flag_;
+  real_t constraint_value_;
 
   ROL::Ptr<const MV> getVector( const V& x ) {
     return dynamic_cast<const ROL_MV&>(x).getVector();
@@ -69,11 +71,13 @@ public:
   bool nodal_density_flag_;
   size_t last_comm_step, current_step;
 
-  MassConstraint_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag) 
+  MassConstraint_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag, bool inequality_flag=true, real_t constraint_value=0) 
     : FEM_(FEM) {
 
     nodal_density_flag_ = nodal_density_flag;
     last_comm_step = current_step = 0;
+    inequality_flag_ = inequality_flag;
+    constraint_value_ = constraint_value;
     ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
     const_host_vec_array design_densities = FEM_->node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     
@@ -108,8 +112,11 @@ public:
     real_t current_mass = ROL_Element_Masses->reduce(sumreduc);
     //debug print
     std::cout << "SYSTEM MASS RATIO: " << current_mass/initial_mass << std::endl;
-
-    (*cp)[0] = current_mass/initial_mass;
+    
+    if(inequality_flag_)
+      (*cp)[0] = current_mass/initial_mass;
+    else
+      (*cp)[0] = current_mass/initial_mass - constraint_value_;
   }
 
   void applyAdjointJacobian(ROL::Vector<real_t> &ajv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) override {

@@ -112,7 +112,7 @@ num_cells in element = (p_order*2)^3
 #define MAX_WORD 30
 #define MAX_ELEM_NODES 8
 #define STRAIN_EPSILON 0.000000001
-#define DENSITY_EPSILON 0.001
+#define DENSITY_EPSILON 0.1
 
 using namespace utils;
 
@@ -219,7 +219,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     std::fflush(stdout);
     */
     //return;
-    //setup_optimization_problem();
+    setup_optimization_problem();
     
     //CPU time
     double current_cpu = CPU_Time();
@@ -1110,7 +1110,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
     vec_array Element_Densities_Lower_Bound("Element Densities_Lower_Bound", rnum_elem, 1);
     for(int ielem = 0; ielem < rnum_elem; ielem++){
       Element_Densities_Upper_Bound(ielem,0) = 1;
-      Element_Densities_Lower_Bound(ielem,0) = 0;
+      Element_Densities_Lower_Bound(ielem,0) = DENSITY_EPSILON;
     }
 
     //create global vector
@@ -1149,15 +1149,21 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
   
-  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
+  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
+  ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.25);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  problem->addConstraint("Inequality Constraint",eq_constraint,constraint_mul);
 
   //finalize problem
   problem->finalize(false,true,std::cout);
   
   // fill parameter list with desired algorithmic options or leave as default
-  ROL::ParameterList parlist;
+  // Read optimization input parameter list.
+    std::string filename = "input_ex02.xml";
+    //auto parlist = ROL::getParametersFromXmlFile( filename );
+    // Instantiate Solver.
+    ROL::ParameterList parlist;
   // Instantiate Solver.
   ROL::Solver<real_t> solver(problem,parlist);
     
@@ -1510,8 +1516,8 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  */
   
+  */
   std::cout << "tagging beam +z force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   //value = 0;
@@ -2777,31 +2783,34 @@ void Parallel_Nonlinear_Solver::init_design(){
     host_vec_array node_densities = dual_node_densities.view_host();
     //notify that the host view is going to be modified in the file readin
     dual_node_densities.modify_host();
-
+    
     //debug Tecplot file readin of initial densities (only works on runs with 1 MPI rank this way)
-    std::string skip_line, read_line, substring;
-    std::stringstream line_parse;
-    real_t read_density;
-    in = new std::ifstream();
-    in->open("TecplotDensity.dat");
+    //std::string skip_line, read_line, substring;
+    //std::stringstream line_parse;
+    //real_t read_density;
+    //in = new std::ifstream();
+    //in->open("TecplotDensity.dat");
     //skip 3 lines
-    for (int j = 1; j <= 3; j++) {
-      getline(*in, skip_line);
-      std::cout << skip_line << std::endl;
-    }
+    //for (int j = 1; j <= 3; j++) {
+     // getline(*in, skip_line);
+     // std::cout << skip_line << std::endl;
+    //}
   
     
     for(int inode = 0; inode < nlocal_nodes; inode++){
-      getline(*in,read_line);
-      line_parse.clear();
-      line_parse.str(read_line);
-      for(int iword = 0; iword < 10; iword++){
+     // getline(*in,read_line);
+     // line_parse.clear();
+     // line_parse.str(read_line);
+     // for(int iword = 0; iword < 10; iword++){
         //read portions of the line into the substring variable
         
-        if(iword==3){ line_parse >> read_density;}
-        else {line_parse >> substring;}
-      }
+       // if(iword==3){ line_parse >> read_density;}
+        //else {line_parse >> substring;}
+      //}
       //initialize densities to 1 for now; in the future there might be an option to read in an initial condition for each node
+      //if(read_density < 0.3) read_density = 0.01;
+      //node_densities(inode,0) = read_density;
+      
       node_densities(inode,0) = 1;
     }
 
@@ -3146,7 +3155,7 @@ void Parallel_Nonlinear_Solver::local_matrix(int ielem, CArray <real_t> &Local_M
 
     //look up element material properties as a function of density at the point
     Element_Material_Properties((size_t) ielem,Element_Modulus,Poisson_Ratio, current_density);
-    Elastic_Constant = Element_Modulus/(1+Poisson_Ratio)/(1-2*Poisson_Ratio);
+    Elastic_Constant = Element_Modulus/((1 + Poisson_Ratio)*(1 - 2*Poisson_Ratio));
     Shear_Term = 0.5-Poisson_Ratio;
     Pressure_Term = 1 - Poisson_Ratio;
 
@@ -3561,7 +3570,7 @@ void Parallel_Nonlinear_Solver::local_matrix_multiply(int ielem, CArray <real_t>
 
     //look up element material properties at this point as a function of density
     Element_Material_Properties((size_t) ielem,Element_Modulus,Poisson_Ratio, current_density);
-    Elastic_Constant = Element_Modulus/(1+Poisson_Ratio)/(1-2*Poisson_Ratio);
+    Elastic_Constant = Element_Modulus/((1 + Poisson_Ratio)*(1 - 2*Poisson_Ratio));
     Shear_Term = 0.5-Poisson_Ratio;
     Pressure_Term = 1 - Poisson_Ratio;
 
@@ -4827,7 +4836,7 @@ void Parallel_Nonlinear_Solver::compute_adjoint_gradients(const_host_vec_array d
       local_node_id = map->getLocalElement(nodes_in_elem(ielem, igradient));
       //look up element material properties at this point as a function of density
       Gradient_Element_Material_Properties(ielem, Element_Modulus_Gradient, Poisson_Ratio, current_density);
-      Elastic_Constant = Element_Modulus_Gradient/(1 + Poisson_Ratio)/(1 - 2*Poisson_Ratio);
+      Elastic_Constant = Element_Modulus_Gradient/((1 + Poisson_Ratio)*(1 - 2*Poisson_Ratio));
       Shear_Term = 0.5 - Poisson_Ratio;
       Pressure_Term = 1 - Poisson_Ratio;
 

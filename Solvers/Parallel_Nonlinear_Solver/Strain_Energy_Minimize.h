@@ -133,7 +133,7 @@ public:
       //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
       //if(FEM_->myrank==0)
       //*fos << "Gradient data :" << std::endl;
-      //FEM_->all_node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+      //gp->describe(*fos,Teuchos::VERB_EXTREME);
       //*fos << std::endl;
       //std::fflush(stdout);
       //for(int i = 0; i < FEM_->nlocal_nodes; i++){

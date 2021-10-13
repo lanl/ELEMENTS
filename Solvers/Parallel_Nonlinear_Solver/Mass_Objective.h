@@ -88,7 +88,7 @@ public:
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->update_and_comm_variables(zp);
       last_comm_step = current_step;
     }
     
@@ -130,7 +130,7 @@ public:
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->update_and_comm_variables(zp);
       last_comm_step = current_step;
     }
     

@@ -1155,21 +1155,22 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
   
-  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
-  //ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.5);
+  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
+  ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.5);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
-  //problem->addConstraint("Equality Constraint",eq_constraint,constraint_mul);
-  //problem->setProjectionAlgorithm(*parlist);
+  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  problem->addLinearConstraint("Equality Constraint",eq_constraint,constraint_mul);
+  problem->setProjectionAlgorithm(*parlist);
   //finalize problem
   problem->finalize(false,true,std::cout);
+  problem->check(true,std::cout);
 
   // Instantiate Solver.
-  ROL::Solver<real_t> solver(problem,*parlist);
+  //ROL::Solver<real_t> solver(problem,*parlist);
     
   // Solve optimization problem.
   //std::ostream outStream;
-  solver.solve(std::cout);
+  //solver.solve(std::cout);
   
 }
 
@@ -4914,8 +4915,20 @@ void Parallel_Nonlinear_Solver::compute_adjoint_gradients(const_host_vec_array d
    Compute the maximum nodal strains resulting from equivalent nodal integrals of each element
 ---------------------------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::update_and_comm_variables(){
+void Parallel_Nonlinear_Solver::update_and_comm_variables(Teuchos::RCP<const MV> zp){
   
+  //set density vector to the current value chosen by the optimizer
+  *node_densities_distributed = *zp;
+  
+  //debug print of design vector
+      //std::ostream &out = std::cout;
+      //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+      //if(myrank==0)
+      //*fos << "Density data :" << std::endl;
+      //node_densities_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+      //*fos << std::endl;
+      //std::fflush(stdout);
+
   //communicate design densities
   //create import object using local node indices map and all indices map
   Tpetra::Import<LO, GO> importer(map, all_node_map);

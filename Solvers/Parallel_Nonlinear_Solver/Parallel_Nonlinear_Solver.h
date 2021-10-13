@@ -90,7 +90,7 @@ public:
 
   int solve();
 
-  void update_and_comm_variables();
+  void update_and_comm_variables(Teuchos::RCP<const MV> zp);
 
   void collect_information();
 

@@ -91,7 +91,7 @@ public:
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->update_and_comm_variables(zp);
       last_comm_step = current_step;
     }
 
@@ -117,7 +117,7 @@ public:
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     FEM_->gradient_print_sync=1;
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->update_and_comm_variables(zp);
       last_comm_step = current_step;
     }
     FEM_->gradient_print_sync=0;

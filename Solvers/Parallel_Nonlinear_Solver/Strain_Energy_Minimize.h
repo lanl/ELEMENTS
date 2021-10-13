@@ -74,7 +74,8 @@ public:
   StrainEnergyMinimize_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag) 
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
-      last_comm_step = current_step = 0;
+      last_comm_step = -1;
+      current_step = 0;
       constraint_gradients_distributed = Teuchos::rcp(new MV(FEM_->map, 1));
   }
 
@@ -89,7 +90,7 @@ public:
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->update_and_comm_variables(zp);
       last_comm_step = current_step;
     }
 
@@ -98,8 +99,8 @@ public:
 
     real_t current_strain_energy = ROL_Displacements->dot(*ROL_Force);
     std::cout.precision(10);
-    if(FEM_->myrank==0)
-    std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
+    //if(FEM_->myrank==0)
+    //std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
     return current_strain_energy;
   }
 
@@ -115,7 +116,7 @@ public:
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     FEM_->gradient_print_sync=1;
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->update_and_comm_variables(zp);
       last_comm_step = current_step;
     }
     FEM_->gradient_print_sync=0;

@@ -99,9 +99,10 @@ public:
     ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<std::vector<real_t>> cp = dynamic_cast<ROL::StdVector<real_t>&>(c).getVector();
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->update_and_comm_variables(zp);
       last_comm_step = current_step;
     }
     
@@ -111,7 +112,7 @@ public:
     ROL::Elementwise::ReductionSum<real_t> sumreduc;
     real_t current_mass = ROL_Element_Masses->reduce(sumreduc);
     //debug print
-    std::cout << "SYSTEM MASS RATIO: " << current_mass/initial_mass << std::endl;
+    //std::cout << "SYSTEM MASS RATIO: " << current_mass/initial_mass << std::endl;
     
     if(inequality_flag_)
       (*cp)[0] = current_mass/initial_mass;
@@ -135,7 +136,7 @@ public:
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->update_and_comm_variables(zp);
       last_comm_step = current_step;
     }
     

@@ -1,0 +1,32 @@
+Running TO Solver
+This is the 1st description line of the EnSight Gold geometry example
+This is the 2nd description line of the EnSight Gold geometry example
+node id assign
+element id assign
+part
+         1
+Mesh
+coordinates
+declared node count: 27
+Num nodes assigned to task 0 = 27
+hexa8
+declared element count: 8
+before initial mesh initialization
+RNUM ELEMENTS IS: 8
+Before initial mesh connectivity
+done with ref elem
+End of setup 
+Num elements = 8
+number of boundary patches on task 0 = 24
+building boundary sets 
+tagging z = 0 
+ tagged boundary patches 
+tagged a set 
+number of bdy patches in this set = 4
+
+tagging z = 2 Force 
+ tagged boundary patches 
+tagged a set 
+number of bdy patches in this set = 4
+
+INITIAL MASS: 8

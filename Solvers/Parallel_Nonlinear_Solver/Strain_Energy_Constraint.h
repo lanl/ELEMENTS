@@ -84,11 +84,11 @@ public:
   }
 
   void value(ROL::Vector<real_t> &c, const ROL::Vector<real_t> &z, real_t &tol ) {
-
+    ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<std::vector<real_t>> cp = dynamic_cast<ROL::StdVector<real_t>&>(c).getVector();
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->update_and_comm_variables(zp);
       last_comm_step = current_step;
     }
 
@@ -102,16 +102,16 @@ public:
   }
   
   void applyJacobian(ROL::Vector<real_t> &jv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) {
+    //get Tpetra multivector pointer from the ROL vector
+    ROL::Ptr<const MV> zp = getVector(x);
+    ROL::Ptr<std::vector<real_t>> jvp = dynamic_cast<ROL::StdVector<real_t>&>(jv).getVector();
     //debug print
     std::cout << "Constraint Gradient value " << std::endl;
      //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->update_and_comm_variables(zp);
       last_comm_step = current_step;
     }
-    //get Tpetra multivector pointer from the ROL vector
-    ROL::Ptr<const MV> zp = getVector(x);
-    ROL::Ptr<std::vector<real_t>> jvp = dynamic_cast<ROL::StdVector<real_t>&>(jv).getVector();
 
     //get local view of the data
     host_vec_array constraint_gradients = constraint_gradients_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);

@@ -69,12 +69,12 @@ private:
 
 public:
   bool nodal_density_flag_;
-  size_t last_comm_step, current_step;
+  size_t last_comm_step, last_solve_step, current_step;
 
   StrainEnergyMinimize_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag) 
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
-      last_comm_step = -1;
+      last_comm_step = last_solve_step = -1;
       current_step = 0;
       constraint_gradients_distributed = Teuchos::rcp(new MV(FEM_->map, 1));
   }
@@ -90,8 +90,12 @@ public:
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables(zp);
+      FEM_->comm_variables(zp);
       last_comm_step = current_step;
+    }
+    if(last_solve_step!=current_step){
+      FEM_->update_linear_solve(zp);
+      last_solve_step = current_step;
     }
 
     ROL_Force = ROL::makePtr<ROL_MV>(FEM_->Global_Nodal_Forces);
@@ -100,7 +104,7 @@ public:
     real_t current_strain_energy = ROL_Displacements->dot(*ROL_Force);
     std::cout.precision(10);
     //if(FEM_->myrank==0)
-    //std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
+    std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
     return current_strain_energy;
   }
 
@@ -114,12 +118,16 @@ public:
     ROL::Ptr<MV> gp = getVector(g);
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
-    FEM_->gradient_print_sync=1;
+    //FEM_->gradient_print_sync=1;
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables(zp);
+      FEM_->comm_variables(zp);
       last_comm_step = current_step;
     }
-    FEM_->gradient_print_sync=0;
+    if(last_solve_step!=current_step){
+      FEM_->update_linear_solve(zp);
+      last_solve_step = current_step;
+    }
+    //FEM_->gradient_print_sync=0;
     //get local view of the data
     host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);

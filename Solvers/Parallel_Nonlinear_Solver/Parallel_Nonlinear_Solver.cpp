@@ -1159,18 +1159,18 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.5);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
   //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
-  problem->addLinearConstraint("Equality Constraint",eq_constraint,constraint_mul);
-  problem->setProjectionAlgorithm(*parlist);
+  problem->addConstraint("Equality Constraint",eq_constraint,constraint_mul);
+  //problem->setProjectionAlgorithm(*parlist);
   //finalize problem
   problem->finalize(false,true,std::cout);
-  problem->check(true,std::cout);
+  //problem->check(true,std::cout);
 
   // Instantiate Solver.
-  //ROL::Solver<real_t> solver(problem,*parlist);
+  ROL::Solver<real_t> solver(problem,*parlist);
     
   // Solve optimization problem.
   //std::ostream outStream;
-  //solver.solve(std::cout);
+  solver.solve(std::cout);
   
 }
 
@@ -1419,7 +1419,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << std::endl;
   */
   
-  
+  /*
   std::cout << "tagging z = 2 Force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2 * simparam->unit_scaling;
@@ -1436,7 +1436,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
   
-  /*
+  
   std::cout << "tagging beam x = 0 " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2 * simparam->unit_scaling;
@@ -1518,7 +1518,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
   
-  
+  */
   std::cout << "tagging beam +z force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   //value = 0;
@@ -1527,14 +1527,14 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 3/simparam->unit_scaling/simparam->unit_scaling;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
   surf_force_set_id++;
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  */
+  
   /*
   std::cout << "tagging y = 2 " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
@@ -4912,10 +4912,10 @@ void Parallel_Nonlinear_Solver::compute_adjoint_gradients(const_host_vec_array d
 }
 
 /* -------------------------------------------------------------------------------------------
-   Compute the maximum nodal strains resulting from equivalent nodal integrals of each element
+   Communicate ghosts using the current optimization design data
 ---------------------------------------------------------------------------------------------- */
 
-void Parallel_Nonlinear_Solver::update_and_comm_variables(Teuchos::RCP<const MV> zp){
+void Parallel_Nonlinear_Solver::comm_variables(Teuchos::RCP<const MV> zp){
   
   //set density vector to the current value chosen by the optimizer
   *node_densities_distributed = *zp;
@@ -4936,7 +4936,22 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(Teuchos::RCP<const MV>
   //comms to get ghosts
   all_node_densities_distributed->doImport(*node_densities_distributed, importer, Tpetra::INSERT);
 
-  //Assemble updated matrix with densities
+  //update_count++;
+  //if(update_count==1){
+      //MPI_Barrier(world);
+      //MPI_Abort(world,4);
+  //}
+}
+
+/* -------------------------------------------------------------------------------------------
+   update nodal displacement information in accordance with current optimization vector
+---------------------------------------------------------------------------------------------- */
+
+void Parallel_Nonlinear_Solver::update_linear_solve(Teuchos::RCP<const MV> zp){
+  
+  //set density vector to the current value chosen by the optimizer
+  *node_densities_distributed = *zp;
+
   assemble_matrix();
   
   //solve for new nodal displacements
@@ -4945,8 +4960,8 @@ void Parallel_Nonlinear_Solver::update_and_comm_variables(Teuchos::RCP<const MV>
     std::cout << "Linear Solver Error" << std::endl <<std::flush;
     return;
   }
-
-  update_count++;
+  
+  //update_count++;
   //if(update_count==1){
       //MPI_Barrier(world);
       //MPI_Abort(world,4);

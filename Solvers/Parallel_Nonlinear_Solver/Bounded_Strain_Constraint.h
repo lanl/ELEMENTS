@@ -68,14 +68,15 @@ private:
 
 public:
   bool nodal_density_flag_;
-  size_t last_comm_step, current_step;
+  size_t last_comm_step, current_step, last_solve_step;
 
   BoundedStrainConstraint_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag, real_t maximum_strain) 
     : FEM_(FEM), useLC_(true) {
       nodal_density_flag_ = nodal_density_flag;
       Element_Masses = ROL::makePtr<MV>(FEM_->element_map,1,true);
       maximum_strain_ = maximum_strain;
-      last_comm_step = current_step = 0;
+      last_comm_step = last_solve_step = -1;
+      current_step = 0;
   }
 
   void update(const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
@@ -98,8 +99,12 @@ public:
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables(zp);
+      FEM_->comm_variables(zp);
       last_comm_step = current_step;
+    }
+    if(last_solve_step!=current_step){
+      FEM_->update_linear_solve(zp);
+      last_solve_step = current_step;
     }
 
     FEM_->compute_nodal_strains();

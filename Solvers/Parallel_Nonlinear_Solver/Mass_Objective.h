@@ -66,13 +66,14 @@ private:
 
 public:
   bool nodal_density_flag_;
-  size_t last_comm_step, current_step;
+  size_t last_comm_step, current_step, last_solve_step;
 
   MassObjective_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag){
     FEM_ = FEM;
     useLC_ = true;
     nodal_density_flag_ = nodal_density_flag;
-    last_comm_step = current_step = 0;
+    last_comm_step = last_solve_step = -1;
+    current_step = 0;
     ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
   }
 
@@ -88,7 +89,7 @@ public:
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables(zp);
+      FEM_->comm_variables(zp);
       last_comm_step = current_step;
     }
     
@@ -130,7 +131,7 @@ public:
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables(zp);
+      FEM_->comm_variables(zp);
       last_comm_step = current_step;
     }
     

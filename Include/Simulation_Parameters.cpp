@@ -12,12 +12,14 @@ Simulation_Parameters::Simulation_Parameters(){
   mat_pt = new mat_pt_t();
   material = new material_t();
 
-  //initialize flags to defaults
+  //initialize data and flags to defaults
   output_strain_flag = 0;
   report_runtime_flag = 0;
   nodal_density_flag = 1;
   unit_scaling = 1;
   strain_max_flag = 0;
+  nsteps_print = -1;
+  
 }
 
 Simulation_Parameters::~Simulation_Parameters(){

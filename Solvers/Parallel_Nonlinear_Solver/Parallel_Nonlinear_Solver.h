@@ -90,7 +90,9 @@ public:
 
   int solve();
 
-  void update_and_comm_variables(Teuchos::RCP<const MV> zp);
+  void comm_variables(Teuchos::RCP<const MV> zp);
+
+  void update_linear_solve(Teuchos::RCP<const MV> zp);
 
   void collect_information();
 
@@ -276,6 +278,9 @@ public:
   //file readin variables
   std::ifstream *in;
   int words_per_line, elem_words_per_line;
+
+  //file output variables
+  int file_index, nsteps_print;  //file sequence index and print frequency in # of optimization steps
 
   //debug flags
   int gradient_print_sync;

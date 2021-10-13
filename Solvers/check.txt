@@ -30,3 +30,179 @@ tagged a set
 number of bdy patches in this set = 4
 
 INITIAL MASS: 8
+
+  ROL::Problem::finalize
+    Problem Summary:
+      Has Bound Constraint? .............. yes
+      Has Equality Constraint? ........... no
+      Has Inequality Constraint? ......... no
+      Has Linear Equality Constraint? .... yes
+        Names: ........................... Equality Constraint
+        Total: ........................... 1
+      Has Linear Inequality Constraint? .. no
+
+
+  Check primal optimization space vector
+
+********** Begin verification of linear algebra. *********************************************
+
+Commutativity of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Associativity of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Identity element of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Inverse elements of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Identity element of scalar multiplication. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of scalar multiplication with field multiplication. Consistency error: >>>>>>>>>>> 0.000000000000e+00
+Distributivity of scalar multiplication with respect to field addition. Consistency error: >>> 2.037838669420e-17
+Distributivity of scalar multiplication with respect to vector addition. Consistency error: >> 3.379462171739e-16
+Commutativity of dot (inner) product over the field of reals. Consistency error: >>>>>>>>>>>>> 0.000000000000e+00
+Additivity of dot (inner) product. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 2.775557561563e-17
+Consistency of scalar multiplication and norm. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>> 1.110223024625e-16
+Reflexivity. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of apply and dual:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+
+********** End verification of linear algebra. ***********************************************
+
+
+  Check dual optimization space vector
+
+********** Begin verification of linear algebra. *********************************************
+
+Commutativity of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Associativity of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Identity element of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Inverse elements of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Identity element of scalar multiplication. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of scalar multiplication with field multiplication. Consistency error: >>>>>>>>>>> 0.000000000000e+00
+Distributivity of scalar multiplication with respect to field addition. Consistency error: >>> 0.000000000000e+00
+Distributivity of scalar multiplication with respect to vector addition. Consistency error: >> 0.000000000000e+00
+Commutativity of dot (inner) product over the field of reals. Consistency error: >>>>>>>>>>>>> 0.000000000000e+00
+Additivity of dot (inner) product. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of scalar multiplication and norm. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Reflexivity. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of apply and dual:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+
+********** End verification of linear algebra. ***********************************************
+
+
+  Equality Constraint: Check primal linear constraint space vector
+
+********** Begin verification of linear algebra. *********************************************
+
+Commutativity of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Associativity of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Identity element of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Inverse elements of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Identity element of scalar multiplication. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of scalar multiplication with field multiplication. Consistency error: >>>>>>>>>>> 0.000000000000e+00
+Distributivity of scalar multiplication with respect to field addition. Consistency error: >>> 0.000000000000e+00
+Distributivity of scalar multiplication with respect to vector addition. Consistency error: >> 0.000000000000e+00
+Commutativity of dot (inner) product over the field of reals. Consistency error: >>>>>>>>>>>>> 0.000000000000e+00
+Additivity of dot (inner) product. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of scalar multiplication and norm. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Reflexivity. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of apply and dual:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+
+********** End verification of linear algebra. ***********************************************
+
+
+  Equality Constraint: Check dual linear constraint space vector
+
+********** Begin verification of linear algebra. *********************************************
+
+Commutativity of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Associativity of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Identity element of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Inverse elements of addition. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Identity element of scalar multiplication. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of scalar multiplication with field multiplication. Consistency error: >>>>>>>>>>> 0.000000000000e+00
+Distributivity of scalar multiplication with respect to field addition. Consistency error: >>> 0.000000000000e+00
+Distributivity of scalar multiplication with respect to vector addition. Consistency error: >> 0.000000000000e+00
+Commutativity of dot (inner) product over the field of reals. Consistency error: >>>>>>>>>>>>> 0.000000000000e+00
+Additivity of dot (inner) product. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of scalar multiplication and norm. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Reflexivity. Consistency error: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+Consistency of apply and dual:>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 0.000000000000e+00
+
+********** End verification of linear algebra. ***********************************************
+
+
+  ROL::Problem::checkLinearity
+    Constraint Equality Constraint:  ||c(x+alpha*y) - (c(x)+alpha*(c(y)-c(0)))|| = 1.38777878e-17
+
+
+  Check objective function
+
+           Step size           grad'*dir           FD approx           abs error
+           ---------           ---------           ---------           ---------
+   1.00000000000e+00   1.54044528237e+00   8.07588958556e-01   7.32856323816e-01
+   1.00000000000e-01   1.54044528237e+00  -1.26333445737e+01   1.41737898560e+01
+   1.00000000000e-02   1.54044528237e+00  -8.67536430820e+00   1.02158095906e+01
+   1.00000000000e-03   1.54044528237e+00  -8.33183224675e+00   9.87227752912e+00
+   1.00000000000e-04   1.54044528237e+00  -8.30125263508e+00   9.84169791745e+00
+   1.00000000000e-05   1.54044528237e+00  -8.29822786788e+00   9.83867315025e+00
+   1.00000000000e-06   1.54044528237e+00  -8.29792569335e+00   9.83837097572e+00
+   1.00000000000e-07   1.54044528237e+00  -8.29789541412e+00   9.83834069649e+00
+   1.00000000000e-08   1.54044528237e+00  -8.29789235102e+00   9.83833763339e+00
+   1.00000000000e-09   1.54044528237e+00  -8.29788082690e+00   9.83832610927e+00
+   1.00000000000e-10   1.54044528237e+00  -8.29803559199e+00   9.83848087436e+00
+   1.00000000000e-11   1.54044528237e+00  -8.29856183771e+00   9.83900712008e+00
+   1.00000000000e-12   1.54044528237e+00  -8.31201774076e+00   9.85246302314e+00
+           Step size      norm(Hess*vec)     norm(FD approx)     norm(abs error)
+           ---------      --------------     ---------------     ---------------
+   1.00000000000e+00   1.06285468677e+02   8.54885906082e+00   1.12999768312e+02
+   1.00000000000e-01   1.06285468677e+02   6.67149236862e+02   5.89582512535e+02
+   1.00000000000e-02   1.06285468677e+02   1.26339872795e+02   2.17079558263e+01
+   1.00000000000e-03   1.06285468677e+02   1.07991198808e+02   1.85226891484e+00
+   1.00000000000e-04   1.06285468677e+02   1.06453628344e+02   1.82643190246e-01
+   1.00000000000e-05   1.06285468677e+02   1.06302237070e+02   1.82056388355e-02
+   1.00000000000e-06   1.06285468677e+02   1.06287119824e+02   1.78590091731e-03
+   1.00000000000e-07   1.06285468677e+02   1.06285601358e+02   1.41225902174e-04
+   1.00000000000e-08   1.06285468677e+02   1.06285423896e+02   5.52905480987e-05
+   1.00000000000e-09   1.06285468677e+02   1.06284541055e+02   1.53060423690e-03
+   1.00000000000e-10   1.06285468677e+02   1.06286828180e+02   2.12917809467e-03
+   1.00000000000e-11   1.06285468677e+02   1.06251672824e+02   8.72438257680e-02
+   1.00000000000e-12   1.06285468677e+02   1.06365802495e+02   3.81086479085e-01
+          <w, H(x)v>          <v, H(x)w>           abs error
+   5.00015958097e+01  -1.40450671644e+02   1.90452267454e+02
+
+  Equality Constraint: Check constraint function
+
+           Step size       norm(Jac*vec)     norm(FD approx)     norm(abs error)
+           ---------       -------------     ---------------     ---------------
+   1.00000000000e+00   5.34843601931e-02   5.34843608181e-02   6.25025677048e-10
+   1.00000000000e-01   5.34843601931e-02   5.34843608181e-02   6.25025232959e-10
+   1.00000000000e-02   5.34843601931e-02   5.34843608181e-02   6.25023012513e-10
+   1.00000000000e-03   5.34843601931e-02   5.34843608181e-02   6.24989705822e-10
+   1.00000000000e-04   5.34843601931e-02   5.34843608180e-02   6.24878683519e-10
+   1.00000000000e-05   5.34843601931e-02   5.34843608180e-02   6.24878676581e-10
+   1.00000000000e-06   5.34843601931e-02   5.34843608291e-02   6.35980913766e-10
+   1.00000000000e-07   5.34843601931e-02   5.34843602740e-02   8.08694014531e-11
+   1.00000000000e-08   5.34843601931e-02   5.34843613842e-02   1.19109242608e-09
+   1.00000000000e-09   5.34843601931e-02   5.34843280775e-02   3.21155983196e-08
+   1.00000000000e-10   5.34843601931e-02   5.34838839883e-02   4.76204808163e-07
+   1.00000000000e-11   5.34843601931e-02   5.34794430962e-02   4.91709690666e-06
+   1.00000000000e-12   5.34843601931e-02   5.35127497869e-02   2.83895938321e-05
+
+Test Consistency of Jacobian and its adjoint: 
+  |<w,Jv> - <adj(J)w,v>| = 5.78035734e+01
+  |<w,Jv>|               = 5.77893848e+01
+  Relative Error         = 1.00024552e+00
+           Step size   norm(adj(H)(u,v))     norm(FD approx)     norm(abs error)
+           ---------   -----------------     ---------------     ---------------
+   1.00000000000e+00   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-01   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-02   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-03   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-04   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-05   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-06   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-07   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-08   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-09   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-10   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-11   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+   1.00000000000e-12   0.00000000000e+00   0.00000000000e+00   0.00000000000e+00
+ RUNTIME OF CODE ON TASK 0 is 0.171875
+Local Node Strains :
+
+End of Main file

@@ -79,6 +79,9 @@ class Simulation_Parameters
   char *format_specification;  //per line file format when reading dofs
   real_t unit_scaling;
 
+  //file output parameters
+  int nsteps_print;
+
   //debug and performance reporting flags
   int report_runtime_flag;
 

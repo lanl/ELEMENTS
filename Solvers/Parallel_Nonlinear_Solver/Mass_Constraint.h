@@ -69,13 +69,14 @@ private:
 
 public:
   bool nodal_density_flag_;
-  size_t last_comm_step, current_step;
+  size_t last_comm_step, current_step, last_solve_step;
 
   MassConstraint_TopOpt(Parallel_Nonlinear_Solver *FEM, bool nodal_density_flag, bool inequality_flag=true, real_t constraint_value=0) 
     : FEM_(FEM) {
 
     nodal_density_flag_ = nodal_density_flag;
-    last_comm_step = current_step = 0;
+    last_comm_step = last_solve_step = -1;
+    current_step = 0;
     inequality_flag_ = inequality_flag;
     constraint_value_ = constraint_value;
     ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
@@ -102,7 +103,7 @@ public:
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables(zp);
+      FEM_->comm_variables(zp);
       last_comm_step = current_step;
     }
     
@@ -112,7 +113,7 @@ public:
     ROL::Elementwise::ReductionSum<real_t> sumreduc;
     real_t current_mass = ROL_Element_Masses->reduce(sumreduc);
     //debug print
-    //std::cout << "SYSTEM MASS RATIO: " << current_mass/initial_mass << std::endl;
+    std::cout << "SYSTEM MASS RATIO: " << current_mass/initial_mass << std::endl;
     
     if(inequality_flag_)
       (*cp)[0] = current_mass/initial_mass;
@@ -136,7 +137,7 @@ public:
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables(zp);
+      FEM_->comm_variables(zp);
       last_comm_step = current_step;
     }
     

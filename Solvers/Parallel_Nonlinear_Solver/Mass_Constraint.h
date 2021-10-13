@@ -143,6 +143,14 @@ public:
 
     if(nodal_density_flag_){
       FEM_->compute_nodal_gradients(design_densities, constraint_gradients);
+      //debug print of gradient
+      //std::ostream &out = std::cout;
+      //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+      //if(FEM_->myrank==0)
+      //*fos << "Gradient data :" << std::endl;
+      //ajvp->describe(*fos,Teuchos::VERB_EXTREME);
+      //*fos << std::endl;
+      //std::fflush(stdout);
       for(int i = 0; i < FEM_->nlocal_nodes; i++){
         constraint_gradients(i,0) *= (*vp)[0]/initial_mass;
       }
@@ -158,7 +166,7 @@ public:
     }
 
     //debug print
-    std::cout << "Constraint Gradient value " << std::endl;
+    //std::cout << "Constraint Gradient value " << std::endl;
   }
   /*
   void applyJacobian(ROL::Vector<real_t> &jv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) override {

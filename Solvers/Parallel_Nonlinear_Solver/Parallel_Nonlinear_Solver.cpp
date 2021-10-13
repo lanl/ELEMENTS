@@ -1063,6 +1063,12 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
+  
+  // fill parameter list with desired algorithmic options or leave as default
+  // Read optimization input parameter list.
+  std::string filename = "input_ex01.xml";
+  auto parlist = ROL::getParametersFromXmlFile( filename );
+  //ROL::ParameterList parlist;
 
   // Objective function
   ROL::Ptr<ROL::Objective<real_t>> obj = ROL::makePtr<StrainEnergyMinimize_TopOpt>(this, nodal_density_flag);
@@ -1149,23 +1155,17 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
   
-  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
-  ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.25);
+  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
+  //ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.5);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
-  problem->addConstraint("Inequality Constraint",eq_constraint,constraint_mul);
-
+  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  //problem->addConstraint("Equality Constraint",eq_constraint,constraint_mul);
+  //problem->setProjectionAlgorithm(*parlist);
   //finalize problem
   problem->finalize(false,true,std::cout);
-  
-  // fill parameter list with desired algorithmic options or leave as default
-  // Read optimization input parameter list.
-    std::string filename = "input_ex02.xml";
-    //auto parlist = ROL::getParametersFromXmlFile( filename );
-    // Instantiate Solver.
-    ROL::ParameterList parlist;
+
   // Instantiate Solver.
-  ROL::Solver<real_t> solver(problem,parlist);
+  ROL::Solver<real_t> solver(problem,*parlist);
     
   // Solve optimization problem.
   //std::ostream outStream;
@@ -1418,7 +1418,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << std::endl;
   */
   
-  /*
+  
   std::cout << "tagging z = 2 Force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2 * simparam->unit_scaling;
@@ -1429,13 +1429,13 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
   Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
-  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 2/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 20/simparam->unit_scaling/simparam->unit_scaling;
   surf_force_set_id++;
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
   
-  
+  /*
   std::cout << "tagging beam x = 0 " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2 * simparam->unit_scaling;
@@ -1517,7 +1517,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
   
-  */
+  
   std::cout << "tagging beam +z force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   //value = 0;
@@ -1526,14 +1526,14 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1/simparam->unit_scaling/simparam->unit_scaling;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
   surf_force_set_id++;
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  
+  */
   /*
   std::cout << "tagging y = 2 " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
@@ -4961,7 +4961,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   int z_quad,y_quad,x_quad, direct_product_count;
   int solve_flag, zero_strain_flag;
   size_t local_node_id, local_dof_idx, local_dof_idy, local_dof_idz;
-  real_t J_min = std::numeric_limits<real_t>::max();
+  //real_t J_min = std::numeric_limits<real_t>::max();
   GO current_global_index;
 
   direct_product_count = std::pow(num_gauss_points,num_dim);
@@ -5082,7 +5082,6 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
     }
     std::cout << " }"<< std::endl;
     */
-    J_min = std::numeric_limits<real_t>::max();
     //loop over quadrature points
     for(int iquad=0; iquad < direct_product_count; iquad++){
 
@@ -5147,7 +5146,6 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
                JT_row1(1)*(JT_row2(0)*JT_row3(2)-JT_row3(0)*JT_row2(2))+
                JT_row1(2)*(JT_row2(0)*JT_row3(1)-JT_row3(0)*JT_row2(1));
     if(Jacobian<0) Jacobian = -Jacobian;
-    if(Jacobian < J_min) J_min = Jacobian;
 
     //compute the contributions of this quadrature point to the B matrix
     if(num_dim==2)

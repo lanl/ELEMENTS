@@ -135,7 +135,7 @@ public:
     host_vec_array constraint_gradients = ajvp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     //host_vec_array dual_constraint_vector = vp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
-    //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
+    //communicate ghosts
     if(last_comm_step!=current_step){
       FEM_->comm_variables(zp);
       last_comm_step = current_step;
@@ -170,7 +170,7 @@ public:
     //debug print
     //std::cout << "Constraint Gradient value " << std::endl;
   }
-  /*
+  
   void applyJacobian(ROL::Vector<real_t> &jv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) override {
      //get Tpetra multivector pointer from the ROL vector
     ROL::Ptr<const MV> zp = getVector(x);
@@ -183,8 +183,9 @@ public:
     host_vec_array constraint_gradients = constraint_gradients_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
 
     //communicate ghosts and solve for nodal degrees of freedom as a function of the current design variables
+    //communicate ghosts
     if(last_comm_step!=current_step){
-      FEM_->update_and_comm_variables();
+      FEM_->comm_variables(zp);
       last_comm_step = current_step;
     }
     
@@ -209,11 +210,11 @@ public:
     ROL_Gradients = ROL::makePtr<ROL_MV>(constraint_gradients_distributed);
     real_t gradient_dot_v = ROL_Gradients->dot(v);
     //debug print
-    std::cout << "Constraint Gradient value " << gradient_dot_v << std::endl;
+    //std::cout << "Constraint Gradient value " << gradient_dot_v << std::endl;
 
     (*jvp)[0] = gradient_dot_v;
   }
-  */
+  
   /*
   void hessVec_12( ROL::Vector<real_t> &hv, const ROL::Vector<real_t> &v, 
                    const ROL::Vector<real_t> &u, const ROL::Vector<real_t> &z, real_t &tol ) {

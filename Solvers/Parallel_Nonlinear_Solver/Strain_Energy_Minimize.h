@@ -132,9 +132,6 @@ public:
     host_vec_array objective_gradients = gp->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
 
-    int rnum_elem = FEM_->rnum_elem;
-    real_t current_strain_energy = ROL_Displacements->dot(*ROL_Force);
-
     if(nodal_density_flag_){
       FEM_->compute_adjoint_gradients(design_densities, objective_gradients);
       //debug print of gradient

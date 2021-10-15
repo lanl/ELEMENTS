@@ -103,6 +103,18 @@ num_cells in element = (p_order*2)^3
 #include "Strain_Energy_Minimize.h"
 #include "Strain_Energy_Objective.h"
 
+//Multigrid Solver
+#include <MueLu.hpp>
+
+#include <MueLu_BaseClass.hpp>
+#ifdef HAVE_MUELU_EXPLICIT_INSTANTIATION
+#include <MueLu_ExplicitInstantiation.hpp>
+#endif
+#include <MueLu_Level.hpp>
+#include <MueLu_MutuallyExclusiveTime.hpp>
+#include <MueLu_ParameterListInterpreter.hpp>
+#include <MueLu_Utilities.hpp>
+
 //debug and performance includes
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -219,7 +231,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     std::fflush(stdout);
     */
     //return;
-    setup_optimization_problem();
+    //setup_optimization_problem();
     
     //CPU time
     double current_cpu = CPU_Time();
@@ -1101,6 +1113,9 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
       node_densities_lower_bound(inode,0) = DENSITY_EPSILON;
     }
 
+    //set lower bounds for nodes on surfaces with boundary and loading conditions
+
+
     //sync device view
     dual_node_densities_upper_bound.sync_device();
     dual_node_densities_lower_bound.sync_device();
@@ -1149,17 +1164,17 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //problem.addConstraint("Equality Constraint",econ,emul);
   ROL::Ptr<std::vector<real_t> > li_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
   ROL::Ptr<std::vector<real_t> > ll_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
-  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.50);
+  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.40);
 
   ROL::Ptr<ROL::Vector<real_t> > constraint_mul = ROL::makePtr<ROL::StdVector<real_t>>(li_ptr);
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
   
-  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
-  ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.5);
+  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
+  //ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.5);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
-  problem->addConstraint("Equality Constraint",eq_constraint,constraint_mul);
+  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  //problem->addConstraint("Equality Constraint",eq_constraint,constraint_mul);
   //problem->setProjectionAlgorithm(*parlist);
   //finalize problem
   problem->finalize(false,true,std::cout);
@@ -3033,7 +3048,7 @@ void Parallel_Nonlinear_Solver::assemble_matrix(){
 void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density){
   real_t unit_scaling = simparam->unit_scaling;
   //relationship between density and stiffness
-  Element_Modulus = density*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
+  Element_Modulus = density*density*density*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
   Poisson_Ratio = simparam->Poisson_Ratio;
 
 }
@@ -3045,7 +3060,7 @@ void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t
 void Parallel_Nonlinear_Solver::Gradient_Element_Material_Properties(size_t ielem, real_t &Element_Modulus_Derivative, real_t &Poisson_Ratio, real_t density){
   real_t unit_scaling = simparam->unit_scaling;
   //relationship between density and stiffness
-  Element_Modulus_Derivative = simparam->Elastic_Modulus/unit_scaling/unit_scaling;
+  Element_Modulus_Derivative = 3*density*density*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
   Poisson_Ratio = simparam->Poisson_Ratio;
 
 }

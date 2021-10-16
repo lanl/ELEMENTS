@@ -85,6 +85,9 @@ class Simulation_Parameters
   //debug and performance reporting flags
   int report_runtime_flag;
 
+  //Linear Solver Flags
+  bool direct_solver_flag;
+
   //Topology Optimization flags
   bool nodal_density_flag;
 

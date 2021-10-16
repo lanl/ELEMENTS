@@ -90,6 +90,8 @@ public:
 
   int solve();
 
+  void linear_solver_parameters();
+
   void comm_variables(Teuchos::RCP<const MV> zp);
 
   void update_linear_solve(Teuchos::RCP<const MV> zp);

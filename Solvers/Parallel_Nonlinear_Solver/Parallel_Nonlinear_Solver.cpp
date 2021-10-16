@@ -104,6 +104,9 @@ num_cells in element = (p_order*2)^3
 #include "Strain_Energy_Objective.h"
 
 //Multigrid Solver
+#include <Xpetra_Operator.hpp>
+#include <Xpetra_Map.hpp>
+#include <Xpetra_MultiVector.hpp>
 #include <MueLu.hpp>
 
 #include <MueLu_BaseClass.hpp>
@@ -114,6 +117,7 @@ num_cells in element = (p_order*2)^3
 #include <MueLu_MutuallyExclusiveTime.hpp>
 #include <MueLu_ParameterListInterpreter.hpp>
 #include <MueLu_Utilities.hpp>
+#include <DriverCore.hpp>
 
 //debug and performance includes
 #include <sys/time.h>
@@ -209,6 +213,8 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     //return;
     //find each element's volume
     compute_element_volumes();
+
+    linear_solver_parameters();
     
     int solver_exit = solve();
     if(solver_exit == EXIT_SUCCESS){
@@ -5609,6 +5615,22 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
    Solve the FEA linear system
 ------------------------------------------------------------------------- */
 
+void Parallel_Nonlinear_Solver::linear_solver_parameters(){
+  if(simparam->direct_solver_flag){
+    
+  
+  }
+  else{
+    Teuchos::ParameterList paramList;
+    std::string xmlFileName = "simple.xml";
+    Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&paramList), *comm);
+  }
+}
+
+/* ----------------------------------------------------------------------
+   Solve the FEA linear system
+------------------------------------------------------------------------- */
+
 int Parallel_Nonlinear_Solver::solve(){
   //local variable for host view in the dual view
   const_host_vec_array node_coords = node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
@@ -5953,8 +5975,8 @@ int Parallel_Nonlinear_Solver::solve(){
   //Tpetra::MatrixMarket::Writer<MAT>::writeSparseFile("A_matrix.txt", *balanced_A, "A_matrix", "Stores stiffness matrix values");
   //return !EXIT_SUCCESS;
   // Create solver interface to KLU2 with Amesos2 factory method
-  
-  Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
+  if(simparam->direct_solver_flag){
+    Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
   //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
   //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
   
@@ -5965,7 +5987,14 @@ int Parallel_Nonlinear_Solver::solve(){
   //solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
   
   //Solve the system
-  solver->symbolicFactorization().numericFactorization().solve();
+    solver->symbolicFactorization().numericFactorization().solve();
+  }
+  else{
+    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> xbalanced_B = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(balanced_B));
+    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> xX = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(X));
+    Teuchos::RCP<Xpetra::CrsMatrix<real_t,LO,GO,node_type>> xbalanced_A = Teuchos::rcp(new Xpetra::TpetraCrsMatrix<real_t,LO,GO,node_type>(balanced_A));
+    Teuchos::RCP<Xpetra::Matrix<real_t,LO,GO,node_type>> xwrap_balanced_A = Teuchos::rcp(new Xpetra::CrsMatrixWrap<real_t,LO,GO,node_type>(xbalanced_A));
+  }
   //return !EXIT_SUCCESS;
   //timing statistics for LU solver
   //solver->printTiming(*fos);

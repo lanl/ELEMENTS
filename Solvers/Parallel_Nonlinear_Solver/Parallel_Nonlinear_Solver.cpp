@@ -239,6 +239,12 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     //return;
     //setup_optimization_problem();
     
+    //solver_exit = solve();
+    //if(solver_exit == EXIT_SUCCESS){
+      //std::cout << "Linear Solver Error" << std::endl <<std::flush;
+      //return;
+    //}
+    
     //CPU time
     double current_cpu = CPU_Time();
     std::cout << " RUNTIME OF CODE ON TASK " << myrank << " is "<< current_cpu-initial_CPU_time <<std::endl;
@@ -5621,9 +5627,8 @@ void Parallel_Nonlinear_Solver::linear_solver_parameters(){
   
   }
   else{
-    Teuchos::ParameterList paramList;
     std::string xmlFileName = "simple.xml";
-    Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&paramList), *comm);
+    Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&Linear_Solve_Params), *comm);
   }
 }
 
@@ -5990,10 +5995,46 @@ int Parallel_Nonlinear_Solver::solve(){
     solver->symbolicFactorization().numericFactorization().solve();
   }
   else{
+    // Instead of checking each time for rank, create a rank 0 stream
+    Teuchos::RCP<Teuchos::FancyOStream> fancy = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
+    Teuchos::FancyOStream& out = *fancy;
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> xbalanced_B = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(balanced_B));
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> xX = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(X));
+    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> coordinates;
+    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> nullspace;
+    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> material;
     Teuchos::RCP<Xpetra::CrsMatrix<real_t,LO,GO,node_type>> xbalanced_A = Teuchos::rcp(new Xpetra::TpetraCrsMatrix<real_t,LO,GO,node_type>(balanced_A));
     Teuchos::RCP<Xpetra::Matrix<real_t,LO,GO,node_type>> xwrap_balanced_A = Teuchos::rcp(new Xpetra::CrsMatrixWrap<real_t,LO,GO,node_type>(xbalanced_A));
+    int num_iter = 200;
+    double solve_tol = 1e-12;
+    int cacheSize = 0;
+    std::string solveType         = "none";
+    std::string belosType         = "cg";
+    // =========================================================================
+    // Preconditioner construction
+    // =========================================================================
+    bool useML   = Linear_Solve_Params.isParameter("use external multigrid package") && (Linear_Solve_Params.get<std::string>("use external multigrid package") == "ml");
+    out<<"*********** MueLu ParameterList ***********"<<std::endl;
+    out<<Linear_Solve_Params;
+    out<<"*******************************************"<<std::endl;
+    
+    Teuchos::RCP<MueLu::Hierarchy<real_t,LO,GO,node_type>> H;
+    Teuchos::RCP<Xpetra::Operator<real_t,LO,GO,node_type>> Prec;
+    {
+      comm->barrier();
+      //PreconditionerSetup(A,coordinates,nullspace,material,paramList,false,false,useML,0,H,Prec);
+      PreconditionerSetup(xwrap_balanced_A,coordinates,nullspace,material,Linear_Solve_Params,false,false,useML,0,H,Prec);
+      comm->barrier();
+    }
+
+    // =========================================================================
+    // System solution (Ax = b)
+    // =========================================================================
+    {
+      comm->barrier();
+      SystemSolve(xwrap_balanced_A,xX,xbalanced_B,H,Prec,out,solveType,belosType,false,false,useML,cacheSize,0,true,true,num_iter,solve_tol);
+      comm->barrier();
+    }
   }
   //return !EXIT_SUCCESS;
   //timing statistics for LU solver

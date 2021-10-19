@@ -1546,6 +1546,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << std::endl;
   
   */
+  
   std::cout << "tagging beam +z force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   //value = 0;
@@ -1561,8 +1562,8 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  
   /*
+  
   std::cout << "tagging y = 2 " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2.0;
@@ -2813,33 +2814,33 @@ void Parallel_Nonlinear_Solver::init_design(){
     dual_node_densities.modify_host();
     
     //debug Tecplot file readin of initial densities (only works on runs with 1 MPI rank this way)
-    //std::string skip_line, read_line, substring;
-    //std::stringstream line_parse;
-    //real_t read_density;
-    //in = new std::ifstream();
-    //in->open("TecplotDensity.dat");
+    std::string skip_line, read_line, substring;
+    std::stringstream line_parse;
+    real_t read_density;
+    in = new std::ifstream();
+    in->open("TecplotDensity.dat");
     //skip 3 lines
-    //for (int j = 1; j <= 3; j++) {
-     // getline(*in, skip_line);
-     // std::cout << skip_line << std::endl;
-    //}
+    for (int j = 1; j <= 3; j++) {
+      getline(*in, skip_line);
+     std::cout << skip_line << std::endl;
+    }
   
     
     for(int inode = 0; inode < nlocal_nodes; inode++){
-     // getline(*in,read_line);
-     // line_parse.clear();
-     // line_parse.str(read_line);
-     // for(int iword = 0; iword < 10; iword++){
+      getline(*in,read_line);
+      line_parse.clear();
+      line_parse.str(read_line);
+      for(int iword = 0; iword < 10; iword++){
         //read portions of the line into the substring variable
         
-       // if(iword==3){ line_parse >> read_density;}
-        //else {line_parse >> substring;}
-      //}
+       if(iword==3){ line_parse >> read_density;}
+        else {line_parse >> substring;}
+      }
       //initialize densities to 1 for now; in the future there might be an option to read in an initial condition for each node
       //if(read_density < 0.3) read_density = 0.01;
-      //node_densities(inode,0) = read_density;
+      node_densities(inode,0) = read_density;
       
-      node_densities(inode,0) = 1;
+      //node_densities(inode,0) = 1;
     }
 
     //sync device view
@@ -5623,11 +5624,15 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
 
 void Parallel_Nonlinear_Solver::linear_solver_parameters(){
   if(simparam->direct_solver_flag){
-    
+    Linear_Solve_Params = Teuchos::ParameterList("Amesos2");
+    Teuchos::ParameterList superlu_params = Linear_Solve_Params.sublist("SuperLU_DIST");
+    //superlu_params.set("Trans","TRANS","Whether to solve with A^T");
+    superlu_params.set("Equil",true,"Whether to equilibrate the system before solve");
+    //superlu_params.set("ColPerm","NATURAL","Use 'natural' ordering of columns");
   
   }
   else{
-    std::string xmlFileName = "simple.xml";
+    std::string xmlFileName = "simple_test.xml";
     Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&Linear_Solve_Params), *comm);
   }
 }
@@ -5984,7 +5989,7 @@ int Parallel_Nonlinear_Solver::solve(){
     Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
   //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
   //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
-  
+    solver->setParameters( Teuchos::rcpFromRef(Linear_Solve_Params) );
   //declare non-contiguous map
   //Create a Teuchos::ParameterList to hold solver parameters
   //Teuchos::ParameterList amesos2_params("Amesos2");
@@ -6000,15 +6005,30 @@ int Parallel_Nonlinear_Solver::solve(){
     Teuchos::FancyOStream& out = *fancy;
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> xbalanced_B = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(balanced_B));
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> xX = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(X));
-    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> coordinates;
-    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> nullspace;
-    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> material;
+    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> coordinates = Teuchos::null;
+    //nullspace vector
+    Teuchos::RCP<MV> tnullspace = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, 1));
+    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> nullspace = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(tnullspace));
+    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> material = Teuchos::null;
     Teuchos::RCP<Xpetra::CrsMatrix<real_t,LO,GO,node_type>> xbalanced_A = Teuchos::rcp(new Xpetra::TpetraCrsMatrix<real_t,LO,GO,node_type>(balanced_A));
     Teuchos::RCP<Xpetra::Matrix<real_t,LO,GO,node_type>> xwrap_balanced_A = Teuchos::rcp(new Xpetra::CrsMatrixWrap<real_t,LO,GO,node_type>(xbalanced_A));
-    int num_iter = 200;
+
+    //randomize initial vector
+    xX->setSeed(100);
+    xX->randomize();
+    nullspace->putScalar(1);
+    
+    //debug print
+    //if(myrank==0)
+    //*fos << "Xpetra A matrix :" << std::endl;
+    //xX->describe(*fos,Teuchos::VERB_EXTREME);
+    //*fos << std::endl;
+    //std::fflush(stdout);
+    
+    int num_iter = 20;
     double solve_tol = 1e-12;
     int cacheSize = 0;
-    std::string solveType         = "none";
+    std::string solveType         = "standalone";
     std::string belosType         = "cg";
     // =========================================================================
     // Preconditioner construction
@@ -6023,8 +6043,9 @@ int Parallel_Nonlinear_Solver::solve(){
     {
       comm->barrier();
       //PreconditionerSetup(A,coordinates,nullspace,material,paramList,false,false,useML,0,H,Prec);
-      PreconditionerSetup(xwrap_balanced_A,coordinates,nullspace,material,Linear_Solve_Params,false,false,useML,0,H,Prec);
+      PreconditionerSetup(xwrap_balanced_A,coordinates,nullspace,material,Linear_Solve_Params,false,false,false,0,H,Prec);
       comm->barrier();
+      //H->Write(-1, -1);
     }
 
     // =========================================================================
@@ -6032,7 +6053,7 @@ int Parallel_Nonlinear_Solver::solve(){
     // =========================================================================
     {
       comm->barrier();
-      SystemSolve(xwrap_balanced_A,xX,xbalanced_B,H,Prec,out,solveType,belosType,false,false,useML,cacheSize,0,true,true,num_iter,solve_tol);
+      SystemSolve(xwrap_balanced_A,xX,xbalanced_B,H,Prec,out,solveType,belosType,false,false,false,cacheSize,0,true,true,num_iter,solve_tol);
       comm->barrier();
     }
   }
@@ -6042,12 +6063,12 @@ int Parallel_Nonlinear_Solver::solve(){
   
   //Print solution vector
   //print allocation of the solution vector to check distribution
-  /*
+  
   if(myrank==0)
   *fos << "Solution:" << std::endl;
   X->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
-  */
+  
 
   //communicate solution on reduced map to the all node map vector for post processing of strain etc.
   //intermediate storage on the unbalanced reduced system

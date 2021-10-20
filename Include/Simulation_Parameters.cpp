@@ -19,7 +19,7 @@ Simulation_Parameters::Simulation_Parameters(){
   unit_scaling = 1;
   strain_max_flag = 0;
   nsteps_print = -1;
-  direct_solver_flag = 0;
+  direct_solver_flag = 1;
 }
 
 Simulation_Parameters::~Simulation_Parameters(){

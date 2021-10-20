@@ -128,7 +128,7 @@ num_cells in element = (p_order*2)^3
 #define MAX_WORD 30
 #define MAX_ELEM_NODES 8
 #define STRAIN_EPSILON 0.000000001
-#define DENSITY_EPSILON 0.1
+#define DENSITY_EPSILON 0.01
 
 using namespace utils;
 
@@ -237,7 +237,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     std::fflush(stdout);
     */
     //return;
-    //setup_optimization_problem();
+    setup_optimization_problem();
     
     //solver_exit = solve();
     //if(solver_exit == EXIT_SUCCESS){
@@ -1555,7 +1555,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 2/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1/simparam->unit_scaling/simparam->unit_scaling;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
   surf_force_set_id++;
@@ -2817,30 +2817,30 @@ void Parallel_Nonlinear_Solver::init_design(){
     std::string skip_line, read_line, substring;
     std::stringstream line_parse;
     real_t read_density;
-    in = new std::ifstream();
-    in->open("TecplotDensity.dat");
+    //in = new std::ifstream();
+    //in->open("TecplotDensity.dat");
     //skip 3 lines
-    for (int j = 1; j <= 3; j++) {
-      getline(*in, skip_line);
-     std::cout << skip_line << std::endl;
-    }
+    //for (int j = 1; j <= 3; j++) {
+      //getline(*in, skip_line);
+    // std::cout << skip_line << std::endl;
+    //}
   
     
     for(int inode = 0; inode < nlocal_nodes; inode++){
-      getline(*in,read_line);
-      line_parse.clear();
-      line_parse.str(read_line);
-      for(int iword = 0; iword < 10; iword++){
+      //getline(*in,read_line);
+      //line_parse.clear();
+      //line_parse.str(read_line);
+      //for(int iword = 0; iword < 10; iword++){
         //read portions of the line into the substring variable
         
-       if(iword==3){ line_parse >> read_density;}
-        else {line_parse >> substring;}
-      }
+       //if(iword==3){ line_parse >> read_density;}
+        //else {line_parse >> substring;}
+      //}
       //initialize densities to 1 for now; in the future there might be an option to read in an initial condition for each node
-      //if(read_density < 0.3) read_density = 0.01;
-      node_densities(inode,0) = read_density;
+      //if(read_density < 0.3) read_density = 0.1;
+      //node_densities(inode,0) = read_density;
       
-      //node_densities(inode,0) = 1;
+      node_densities(inode,0) = 1;
     }
 
     //sync device view
@@ -3062,6 +3062,7 @@ void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t
   real_t unit_scaling = simparam->unit_scaling;
   //relationship between density and stiffness
   Element_Modulus = density*density*density*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
+  //Element_Modulus = density*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
   Poisson_Ratio = simparam->Poisson_Ratio;
 
 }
@@ -3074,6 +3075,7 @@ void Parallel_Nonlinear_Solver::Gradient_Element_Material_Properties(size_t iele
   real_t unit_scaling = simparam->unit_scaling;
   //relationship between density and stiffness
   Element_Modulus_Derivative = 3*density*density*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
+  //Element_Modulus_Derivative = simparam->Elastic_Modulus/unit_scaling/unit_scaling;
   Poisson_Ratio = simparam->Poisson_Ratio;
 
 }
@@ -5624,8 +5626,8 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
 
 void Parallel_Nonlinear_Solver::linear_solver_parameters(){
   if(simparam->direct_solver_flag){
-    Linear_Solve_Params = Teuchos::ParameterList("Amesos2");
-    Teuchos::ParameterList superlu_params = Linear_Solve_Params.sublist("SuperLU_DIST");
+    Linear_Solve_Params = Teuchos::rcp(new Teuchos::ParameterList("Amesos2"));
+    Teuchos::ParameterList superlu_params = Linear_Solve_Params->sublist("SuperLU_DIST");
     //superlu_params.set("Trans","TRANS","Whether to solve with A^T");
     superlu_params.set("Equil",true,"Whether to equilibrate the system before solve");
     //superlu_params.set("ColPerm","NATURAL","Use 'natural' ordering of columns");
@@ -5633,7 +5635,7 @@ void Parallel_Nonlinear_Solver::linear_solver_parameters(){
   }
   else{
     std::string xmlFileName = "simple_test.xml";
-    Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&Linear_Solve_Params), *comm);
+    Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&(*Linear_Solve_Params)), *comm);
   }
 }
 
@@ -5989,7 +5991,10 @@ int Parallel_Nonlinear_Solver::solve(){
     Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
   //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
   //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
-    solver->setParameters( Teuchos::rcpFromRef(Linear_Solve_Params) );
+  Teuchos::ParameterList amesos2_params("Amesos2");
+  auto superlu_params = Teuchos::sublist(Teuchos::rcpFromRef(amesos2_params), "SuperLU_DIST");
+  superlu_params->set("Equil", true);
+  solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
   //declare non-contiguous map
   //Create a Teuchos::ParameterList to hold solver parameters
   //Teuchos::ParameterList amesos2_params("Amesos2");
@@ -6033,9 +6038,9 @@ int Parallel_Nonlinear_Solver::solve(){
     // =========================================================================
     // Preconditioner construction
     // =========================================================================
-    bool useML   = Linear_Solve_Params.isParameter("use external multigrid package") && (Linear_Solve_Params.get<std::string>("use external multigrid package") == "ml");
+    bool useML   = Linear_Solve_Params->isParameter("use external multigrid package") && (Linear_Solve_Params->get<std::string>("use external multigrid package") == "ml");
     out<<"*********** MueLu ParameterList ***********"<<std::endl;
-    out<<Linear_Solve_Params;
+    out<<*Linear_Solve_Params;
     out<<"*******************************************"<<std::endl;
     
     Teuchos::RCP<MueLu::Hierarchy<real_t,LO,GO,node_type>> H;
@@ -6043,7 +6048,7 @@ int Parallel_Nonlinear_Solver::solve(){
     {
       comm->barrier();
       //PreconditionerSetup(A,coordinates,nullspace,material,paramList,false,false,useML,0,H,Prec);
-      PreconditionerSetup(xwrap_balanced_A,coordinates,nullspace,material,Linear_Solve_Params,false,false,false,0,H,Prec);
+      PreconditionerSetup(xwrap_balanced_A,coordinates,nullspace,material,*Linear_Solve_Params,false,false,false,0,H,Prec);
       comm->barrier();
       //H->Write(-1, -1);
     }
@@ -6064,10 +6069,10 @@ int Parallel_Nonlinear_Solver::solve(){
   //Print solution vector
   //print allocation of the solution vector to check distribution
   
-  if(myrank==0)
-  *fos << "Solution:" << std::endl;
-  X->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //if(myrank==0)
+  //*fos << "Solution:" << std::endl;
+  //X->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
   
 
   //communicate solution on reduced map to the all node map vector for post processing of strain etc.

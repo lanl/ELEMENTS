@@ -288,7 +288,7 @@ public:
   int gradient_print_sync;
 
   //linear solver parameters
-  Teuchos::ParameterList Linear_Solve_Params;
+  Teuchos::RCP<Teuchos::ParameterList> Linear_Solve_Params;
   
 };
 

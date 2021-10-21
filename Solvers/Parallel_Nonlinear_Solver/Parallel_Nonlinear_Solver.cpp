@@ -4239,10 +4239,12 @@ void Parallel_Nonlinear_Solver::compute_element_masses(const_host_vec_array desi
   const_host_vec_array Element_Volumes = Global_Element_Volumes->getLocalView<HostSpace>(Tpetra::Access::ReadOnly);
   //local variable for host view in the dual view
   const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-  const_host_vec_array all_design_densities = all_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  const_host_vec_array all_design_densities;
+  bool nodal_density_flag = simparam->nodal_density_flag;
+  if(nodal_density_flag)
+  all_design_densities = all_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   const_host_elem_conn_array nodes_in_elem = nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
-  bool nodal_density_flag = simparam->nodal_density_flag;
   int nodes_per_elem = elem->num_basis();
   int num_gauss_points = simparam->num_gauss_points;
   int z_quad,y_quad,x_quad, direct_product_count;
@@ -4425,7 +4427,10 @@ void Parallel_Nonlinear_Solver::compute_nodal_gradients(const_host_vec_array des
   const_host_vec_array all_node_coords = all_node_coords_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   const_host_elem_conn_array nodes_in_elem = nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int num_dim = simparam->num_dim;
+  const_host_vec_array all_node_densities;
   bool nodal_density_flag = simparam->nodal_density_flag;
+  if(nodal_density_flag)
+  all_node_densities = all_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   int nodes_per_elem = elem->num_basis();
   int num_gauss_points = simparam->num_gauss_points;
   int z_quad,y_quad,x_quad, direct_product_count;
@@ -4458,7 +4463,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_gradients(const_host_vec_array des
   ViewCArray<real_t> basis_derivative_s2(pointer_basis_derivative_s2,elem->num_basis());
   ViewCArray<real_t> basis_derivative_s3(pointer_basis_derivative_s3,elem->num_basis());
   CArray<real_t> nodal_positions(elem->num_basis(),num_dim);
-  CArray<real_t> nodal_variable(elem->num_basis());
+  CArray<real_t> nodal_density(elem->num_basis());
 
   //initialize weights
   elements::legendre_nodes_1D(legendre_nodes_1D,num_gauss_points);
@@ -4476,7 +4481,7 @@ void Parallel_Nonlinear_Solver::compute_nodal_gradients(const_host_vec_array des
       nodal_positions(node_loop,0) = all_node_coords(local_node_id,0);
       nodal_positions(node_loop,1) = all_node_coords(local_node_id,1);
       nodal_positions(node_loop,2) = all_node_coords(local_node_id,2);
-      nodal_variable(node_loop) = design_variables(local_node_id,0);
+      if(nodal_density_flag) nodal_density(node_loop) = all_node_densities(local_node_id,0);
       /*
       if(myrank==1&&nodal_positions(node_loop,2)>10000000){
         std::cout << " LOCAL MATRIX DEBUG ON TASK " << myrank << std::endl;
@@ -5627,9 +5632,9 @@ void Parallel_Nonlinear_Solver::compute_element_volumes(){
 void Parallel_Nonlinear_Solver::linear_solver_parameters(){
   if(simparam->direct_solver_flag){
     Linear_Solve_Params = Teuchos::rcp(new Teuchos::ParameterList("Amesos2"));
-    Teuchos::ParameterList superlu_params = Linear_Solve_Params->sublist("SuperLU_DIST");
+    auto superlu_params = Teuchos::sublist(Teuchos::rcpFromRef(*Linear_Solve_Params), "SuperLU_DIST");
+    superlu_params->set("Equil", true);
     //superlu_params.set("Trans","TRANS","Whether to solve with A^T");
-    superlu_params.set("Equil",true,"Whether to equilibrate the system before solve");
     //superlu_params.set("ColPerm","NATURAL","Use 'natural' ordering of columns");
   
   }
@@ -5989,20 +5994,20 @@ int Parallel_Nonlinear_Solver::solve(){
   // Create solver interface to KLU2 with Amesos2 factory method
   if(simparam->direct_solver_flag){
     Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
-  //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
-  //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
-  Teuchos::ParameterList amesos2_params("Amesos2");
-  auto superlu_params = Teuchos::sublist(Teuchos::rcpFromRef(amesos2_params), "SuperLU_DIST");
-  superlu_params->set("Equil", true);
-  solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
-  //declare non-contiguous map
-  //Create a Teuchos::ParameterList to hold solver parameters
-  //Teuchos::ParameterList amesos2_params("Amesos2");
-  //amesos2_params.sublist("KLU2").set("IsContiguous", false, "Are GIDs Contiguous");
-  //solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
+    //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
+    //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("KLU2", balanced_A, X, balanced_B);
   
-  //Solve the system
+    solver->setParameters( Teuchos::rcpFromRef(*Linear_Solve_Params) );
+    //declare non-contiguous map
+    //Create a Teuchos::ParameterList to hold solver parameters
+    //Teuchos::ParameterList amesos2_params("Amesos2");
+    //amesos2_params.sublist("KLU2").set("IsContiguous", false, "Are GIDs Contiguous");
+    //solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
+  
+    //Solve the system
+    std::cout << "BEFORE LINEAR SOLVE" << std::endl << std::flush;
     solver->symbolicFactorization().numericFactorization().solve();
+    std::cout << "AFTER LINEAR SOLVE" << std::endl<< std::flush;
   }
   else{
     // Instead of checking each time for rank, create a rank 0 stream

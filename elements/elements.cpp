@@ -4151,7 +4151,7 @@ representative linear element for visualization
             HexN_Verts_ = CArray <real_t> (num_verts_, 3);
 
 
-            Vert_Node_map_ = CArray <real_t> (num_verts_, 3);
+            Vert_Node_map_ = CArray <size_t> (num_verts_);
 
             order_ = elem_order+1;
 
@@ -4178,7 +4178,7 @@ representative linear element for visualization
             HexN_Verts_ = CArray <real_t> (num_verts_, 3);
 
 
-            Vert_Node_map_ = CArray <real_t> (num_verts_, 3);
+            Vert_Node_map_ = CArray <size_t> (num_verts_);
 
             order_ = elem_order;
 

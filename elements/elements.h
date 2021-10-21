@@ -1049,7 +1049,7 @@ class Hex8: public Element3D {
             CArray <real_t> HexN_Verts_1d_;
             CArray <real_t> HexN_Verts_;
 
-            CArray <real_t> Vert_Node_map_;
+            CArray <size_t> Vert_Node_map_;
             
             int order_;
 

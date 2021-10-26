@@ -1832,7 +1832,7 @@ void mesh_t::tag_bdys(int this_bc_tag, real_t val, int bdy_set){
 
 
 
-// routine for checking to see if a vertix is on a boundary
+// routine for checking to see if a vertex is on a boundary
 // bc_tag = 0 xplane, 1 yplane, 3 zplane, 4 cylinder, 5 is shell
 // val = plane value, radius, radius
 int mesh_t::check_bdy(int patch_gid, int this_bc_tag, real_t val){
@@ -1939,7 +1939,7 @@ void refine_mesh(
     }
 
     //  ---------------------------------------------------------------------------
-    //  Initailize Element and cell information in on high order mesh
+    //  Initialize Element and cell information in on high order mesh
     //  ---------------------------------------------------------------------------
 
     mesh.init_element(p_order, dim, num_elem);

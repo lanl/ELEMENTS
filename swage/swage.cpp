@@ -664,7 +664,10 @@ int& mesh_t::elems_in_cell (int cell_gid) const
     return elems_in_cell_list_(cell_gid);
 }
     
-    
+int mesh_t::patches_in_cell (int cell_gid, int patch_lid) const
+{
+    return patch_in_cell_list_(cell_gid, patch_lid);
+}
 
 // ---- VERTICES ---- //
 
@@ -1424,9 +1427,14 @@ void mesh_t::build_patch_connectivity(){
     // create memory for the patch structures
     // two cells per patch
     cells_in_patch_list_ = CArray <int> (num_patches_ * 2);
+    
     // four nodes per patch in hex
     patch_nodes_list_    = CArray <int> (num_patches_ * 4);
+    
+    // six patches in each cell
+    patch_in_cell_list_ = CArray <int> (num_cells_, num_patches_hex_);
 
+    
     // initialize the cells_in_patch_list to -1
     for (int patch_gid = 0; patch_gid < 2*num_patches_; patch_gid++){
         cells_in_patch_list_(patch_gid) = -1;
@@ -1445,6 +1453,9 @@ void mesh_t::build_patch_connectivity(){
             
             // get the patch_id
             patch_gid = hash_table(hash_keys[hash_count]);
+            
+            // save the patch_gid for this local patch on the cell
+            patch_in_cell_list_(cell_gid, patch_lid) = patch_gid;
 
             // a temp variable for storing the node global ids on the patch
             int these_nodes[num_nodes_patch_];
@@ -1475,7 +1486,7 @@ void mesh_t::build_patch_connectivity(){
                     patch_nodes_list_(this_index + patchnode_lid) = these_nodes[patchnode_lid];
                 }
             }
-
+            //
             else{
                 // it is the other cell connected to this patch
 

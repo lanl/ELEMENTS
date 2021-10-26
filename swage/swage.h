@@ -133,6 +133,7 @@ private:
     CArray <int> cells_in_cell_list_;
     CArray <int> elems_in_cell_list_;
     CArray <int> gauss_in_cell_list_;
+    CArray <int> patch_in_cell_list_;
 
 
     // ---- VERTICES ---- //
@@ -283,6 +284,9 @@ public:
 
     // return the element this cell belongs to
     int& elems_in_cell (int cell_gid) const;
+    
+    // return the patch ids for the cell
+    int patches_in_cell (int cell_gid, int patch_lid) const;
 
 
     // ---- VERTICES ---- //

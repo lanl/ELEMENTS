@@ -134,6 +134,7 @@ private:
     CArray <int> elems_in_cell_list_;
     CArray <int> gauss_in_cell_list_;
     CArray <int> patch_in_cell_list_;
+    CArray <int> sides_in_cell_list_;
 
 
     // ---- VERTICES ---- //
@@ -151,6 +152,7 @@ private:
     CArray <int> elems_in_node_list_start_;
     CArray <int> elems_in_node_list_;
 
+    
     // ---- GAUSS POINTS ---- //
     int   num_g_pts_;
 
@@ -170,7 +172,8 @@ private:
 
     CArray <int> patch_nodes_list_;
     CArray <int> cells_in_patch_list_;
-
+    CArray <int> sides_in_patch_list_;
+    
 
     // ---- BOUNDARY ---- //
     int num_bdy_patches_;
@@ -181,6 +184,10 @@ private:
     CArray <int> start_index_bdy_set_;
     CArray <int> num_bdy_patches_set_;
 
+    
+    // ---- SIDES ---- //
+    int num_sides_;
+    
 
 // ---- MESH GEOMETRIC STATE ---- //
 
@@ -288,7 +295,10 @@ public:
     // return the patch ids for the cell
     int patches_in_cell (int cell_gid, int patch_lid) const;
 
+    // return the side ids for the cell
+    int sides_in_cell(int cell_gid, int side_lid) const;
 
+    
     // ---- VERTICES ---- //
 
 
@@ -360,6 +370,9 @@ public:
     // returns the nodes in the patch
     int node_in_patch(int patch_gid, int patchnode_lid) const;
 
+    // returns the two sides in a patch
+    int sides_in_patch(int patch_gid, int slide_lid) const;
+    
 
     // ---- Boundary ---- //
 
@@ -376,6 +389,8 @@ public:
     int bdy_patches_in_set (int bdy_set, int this_patch);
 
 
+
+    
 
     // ==== MESH STATE FUNCTIONS ==== // 
 

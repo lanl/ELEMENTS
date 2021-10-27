@@ -668,6 +668,11 @@ int mesh_t::patches_in_cell (int cell_gid, int patch_lid) const
 {
     return patch_in_cell_list_(cell_gid, patch_lid);
 }
+    
+int mesh_t::sides_in_cell (int cell_gid, int side_lid) const
+{
+    return sides_in_cell_list_(cell_gid, side_lid);
+}
 
 // ---- VERTICES ---- //
 
@@ -816,6 +821,16 @@ int mesh_t::node_in_patch(int patch_gid, int patchnode_lid) const
     return patch_nodes_list_(this_index + patchnode_lid);
 }
 
+// returns the global id for a side that is connected to the patch
+int mesh_t::sides_in_patch(int patch_gid, int this_side) const
+{
+    // get the 1D index
+    int this_index = patch_gid*2 + this_side;  // this_side = 0 or 1
+    
+    // return the global id for the cell
+    return sides_in_patch_list_(this_index);
+}
+    
 
 // ---- Boundary ---- //
 
@@ -1434,10 +1449,16 @@ void mesh_t::build_patch_connectivity(){
     // six patches in each cell
     patch_in_cell_list_ = CArray <int> (num_cells_, num_patches_hex_);
 
+    // six sides in each cell
+    sides_in_cell_list_ = CArray <int> (num_cells_, num_patches_hex_);
+    
+    // two sides per patch
+    sides_in_patch_list_ = CArray <int> (num_patches_ * 2);
     
     // initialize the cells_in_patch_list to -1
     for (int patch_gid = 0; patch_gid < 2*num_patches_; patch_gid++){
         cells_in_patch_list_(patch_gid) = -1;
+        sides_in_patch_list_(patch_gid) = -1;
     }   
 
     for (int patch_gid = 0; patch_gid < 4*num_patches_; patch_gid++){
@@ -1446,6 +1467,8 @@ void mesh_t::build_patch_connectivity(){
 
 
     hash_count = 0;
+    
+    int side_gid = 0;
     
     // save the cell_gid to the cells_in_patch_list
     for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
@@ -1456,6 +1479,9 @@ void mesh_t::build_patch_connectivity(){
             
             // save the patch_gid for this local patch on the cell
             patch_in_cell_list_(cell_gid, patch_lid) = patch_gid;
+            
+            // save the sides
+            sides_in_cell_list_(cell_gid, patch_lid) = side_gid;
 
             // a temp variable for storing the node global ids on the patch
             int these_nodes[num_nodes_patch_];
@@ -1474,10 +1500,12 @@ void mesh_t::build_patch_connectivity(){
             // save the cell_gid to the cells_in_patch_list
             if (cells_in_patch_list_(patch_gid*2) == -1){
                 
-                // save the cell index for this patch
+                // save the cell and side indices for this patch
                 int this_index = patch_gid*2;  // index in the list
                 
                 cells_in_patch_list_(this_index) = cell_gid;
+                
+                sides_in_patch_list_(this_index) = side_gid;
                 
                 // save the nodes for this patch
                 this_index = patch_gid*4;
@@ -1488,17 +1516,24 @@ void mesh_t::build_patch_connectivity(){
             }
             //
             else{
-                // it is the other cell connected to this patch
+                // it is the other cell and side connected to this patch
 
                 int this_index = patch_gid*2 + 1; // + num_patches_; // index in the list
 
                 cells_in_patch_list_(this_index) = cell_gid;
+                
+                sides_in_patch_list_(this_index) = side_gid;
             }
+            
+            side_gid ++;  // increment the number of sides saved
 
             hash_count++;
 
         } // end for patch_lid
     } // end for cell_gid
+    
+    num_sides_ = side_gid; // save the total number of sides in the mesh
+    
 } // end of build patches
 
 

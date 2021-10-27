@@ -86,8 +86,8 @@ int main(int argc, char *argv[]) {
   Teuchos::oblackholestream blackhole;
 
   bool printMatrix   = false;
-  bool printSolution = false;
-  bool printTiming   = false;
+  bool printSolution = true;
+  bool printTiming   = true;
   bool allprint      = false;
   bool verbose = (myRank==0);
   std::string filename("A_matrix.txt");
@@ -156,6 +156,12 @@ int main(int argc, char *argv[]) {
 
   solver = Amesos2::create<MAT,MV>("SuperLUDist", A, X, B);
 
+  //parameters
+  Teuchos::RCP<Teuchos::ParameterList> Linear_Solve_Params = Teuchos::rcp(new Teuchos::ParameterList("Amesos2"));
+  auto superlu_params = Teuchos::sublist(Teuchos::rcpFromRef(*Linear_Solve_Params), "SuperLU_DIST");
+  superlu_params->set("Equil", true);
+  solver->setParameters( Teuchos::rcpFromRef(*Linear_Solve_Params) );
+
   solver->symbolicFactorization().numericFactorization().solve();
 
   if( printSolution ){
@@ -178,7 +184,7 @@ int main(int argc, char *argv[]) {
     // Print some timing statistics
     solver->printTiming(*fos);
   }
-  Teuchos::TimeMonitor::summarize();
+  //Teuchos::TimeMonitor::summarize();
 
   // We are done.
   return 0;

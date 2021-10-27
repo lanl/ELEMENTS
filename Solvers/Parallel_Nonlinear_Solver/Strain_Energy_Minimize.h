@@ -81,9 +81,13 @@ public:
 
   void update(const ROL::Vector<real_t> &z, ROL::UpdateType type, int iter = -1 ) {
     current_step++;
+    //decide to output current optimization state
+    if(current_step%FEM_->simparam->optimization_output_freq==0)
+      FEM_->tecplot_writer();
   }
 
   real_t value(const ROL::Vector<real_t> &z, real_t &tol) {
+    std::cout << "Started obj value on task " <<FEM_->myrank  << std::endl;
     ROL::Ptr<const MV> zp = getVector(z);
     real_t c = 0.0;
 
@@ -93,18 +97,31 @@ public:
       FEM_->comm_variables(zp);
       last_comm_step = current_step;
     }
+
     if(last_solve_step!=current_step){
+      //std::cout << "UPDATED DISPLACEMENTS" << std::endl;
       FEM_->update_linear_solve(zp);
       last_solve_step = current_step;
     }
 
+    //debug print of displacements
+    //std::ostream &out = std::cout;
+    //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+    //if(FEM_->myrank==0)
+    //*fos << "Displacement data :" << std::endl;
+    //FEM_->node_displacements_distributed->describe(*fos,Teuchos::VERB_EXTREME);
+    //*fos << std::endl;
+    //std::fflush(stdout);
+    
     ROL_Force = ROL::makePtr<ROL_MV>(FEM_->Global_Nodal_Forces);
     ROL_Displacements = ROL::makePtr<ROL_MV>(FEM_->node_displacements_distributed);
 
     real_t current_strain_energy = ROL_Displacements->dot(*ROL_Force);
     std::cout.precision(10);
-    //if(FEM_->myrank==0)
+    if(FEM_->myrank==0)
     std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
+
+    std::cout << "Ended obj value on task " <<FEM_->myrank  << std::endl;
     return current_strain_energy;
   }
 
@@ -113,6 +130,7 @@ public:
   //}
   
   void gradient( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &z, real_t &tol ) {
+    std::cout << "Started obj gradient on task " <<FEM_->myrank  << std::endl;
     //get Tpetra multivector pointer from the ROL vector
     ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<MV> gp = getVector(g);
@@ -166,6 +184,7 @@ public:
     //gp->describe(*fos,Teuchos::VERB_EXTREME);
     //*fos << std::endl;
     //std::fflush(stdout);
+    std::cout << "ended obj gradient on task " <<FEM_->myrank  << std::endl;
   }
   
   /*

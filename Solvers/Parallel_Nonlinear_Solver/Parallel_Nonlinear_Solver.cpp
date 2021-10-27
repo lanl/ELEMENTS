@@ -154,6 +154,7 @@ Parallel_Nonlinear_Solver::Parallel_Nonlinear_Solver() : Solver(){
   element_select = new elements::element_selector();
   num_nodes = 0;
   update_count = 0;
+  file_index = 0;
 
   Matrix_alloc=0;
   gradient_print_sync = 0;
@@ -1087,6 +1088,13 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
+  CArrayKokkos<size_t, array_layout, device_type, memory_traits> Surface_Nodes;
+  GO current_node_index;
+  LO local_node_index;
+  int num_bdy_patches_in_set;
+  size_t node_id, patch_id;
+  int num_boundary_sets = num_boundary_conditions;
+  int current_element_index, local_surface_id;
   
   // fill parameter list with desired algorithmic options or leave as default
   // Read optimization input parameter list.
@@ -1126,8 +1134,31 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
     }
 
     //set lower bounds for nodes on surfaces with boundary and loading conditions
+    for(int iboundary = 0; iboundary < num_boundary_sets; iboundary++){
 
+      num_bdy_patches_in_set = NBoundary_Condition_Patches(iboundary);
 
+      //loop over boundary patches for this boundary set
+      for (int bdy_patch_gid = 0; bdy_patch_gid < num_bdy_patches_in_set; bdy_patch_gid++){
+                
+      // get the global id for this boundary patch
+      patch_id = Boundary_Condition_Patches(iboundary, bdy_patch_gid);
+      Surface_Nodes = Boundary_Patches(patch_id).node_set;
+      local_surface_id = Boundary_Patches(patch_id).local_patch_id;
+      //debug print of local surface ids
+      //std::cout << " LOCAL SURFACE IDS " << std::endl;
+      //std::cout << local_surface_id << std::endl;
+      //acquire set of nodes for this face
+      for(int node_loop=0; node_loop < Surface_Nodes.size(); node_loop++){
+        current_node_index = Surface_Nodes(node_loop);
+        if(map->isNodeGlobalElement(current_node_index)){
+          local_node_index = map->getLocalElement(current_node_index);
+          node_densities_lower_bound(local_node_index,0) = 1;
+        }
+      }
+      }
+    }
+  
     //sync device view
     dual_node_densities_upper_bound.sync_device();
     dual_node_densities_lower_bound.sync_device();
@@ -1176,7 +1207,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //problem.addConstraint("Equality Constraint",econ,emul);
   ROL::Ptr<std::vector<real_t> > li_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
   ROL::Ptr<std::vector<real_t> > ll_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
-  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.40);
+  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.20);
 
   ROL::Ptr<ROL::Vector<real_t> > constraint_mul = ROL::makePtr<ROL::StdVector<real_t>>(li_ptr);
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
@@ -1457,7 +1488,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
   Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
-  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 20/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 10/simparam->unit_scaling/simparam->unit_scaling;
   surf_force_set_id++;
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
@@ -1555,9 +1586,9 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
-  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 2/simparam->unit_scaling/simparam->unit_scaling;
   surf_force_set_id++;
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
@@ -1854,10 +1885,11 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
 
   //compared to primitive unit cell, assumes orthogonal primitive unit cell
   if(displace_geometry){
-    if(myrank==0){
+    if(myrank==0&&file_index==0){
       //initial undeformed geometry
       count_temp.str("");
-      count_temp << 1;
+      count_temp << file_index;
+      file_index++;
 	    file_count = count_temp.str();
     
       current_file_name = base_file_name + file_count + file_extension;
@@ -1908,7 +1940,8 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
     if(myrank==0){
       //deformed geometry
       count_temp.str("");
-      count_temp << 2;
+      count_temp << file_index;
+      file_index++;
 	    file_count = count_temp.str();
     
       current_file_name = base_file_name + file_count + file_extension;
@@ -1959,7 +1992,11 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
   }
   else{
     if(myrank==0){
-      current_file_name = base_file_name + file_extension;
+      count_temp << file_index;
+      file_index++;
+	    file_count = count_temp.str();
+    
+      current_file_name = base_file_name + file_count + file_extension;
       std::ofstream myfile (current_file_name.c_str()); //output filestream object for file output
 	    //read in position data
 	    myfile << std::fixed << std::setprecision(8);
@@ -3994,7 +4031,9 @@ void Parallel_Nonlinear_Solver::assemble_vector(){
   //local variable for host view in the dual view
   host_vec_array Nodal_Forces = Global_Nodal_Forces->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
   int num_bdy_patches_in_set;
-  size_t current_node_index, node_id, patch_id;
+  size_t node_id, patch_id;
+  GO current_node_index;
+  LO local_node_index;
   int num_boundary_sets = num_boundary_conditions;
   int surface_force_set_id = 0;
   int num_dim = simparam->num_dim;
@@ -4122,10 +4161,10 @@ void Parallel_Nonlinear_Solver::assemble_vector(){
       //acquire set of nodes for this face
       for(int node_loop=0; node_loop < 4; node_loop++){
         current_node_index = Surface_Nodes(node_loop);
-        current_node_index = all_node_map->getLocalElement(current_node_index);
-        nodal_positions(node_loop,0) = all_node_coords(current_node_index,0);
-        nodal_positions(node_loop,1) = all_node_coords(current_node_index,1);
-        nodal_positions(node_loop,2) = all_node_coords(current_node_index,2);
+        local_node_index = all_node_map->getLocalElement(current_node_index);
+        nodal_positions(node_loop,0) = all_node_coords(local_node_index,0);
+        nodal_positions(node_loop,1) = all_node_coords(local_node_index,1);
+        nodal_positions(node_loop,2) = all_node_coords(local_node_index,2);
       }
 
       if(local_surface_id<2){
@@ -4996,7 +5035,7 @@ void Parallel_Nonlinear_Solver::update_linear_solve(Teuchos::RCP<const MV> zp){
     return;
   }
   
-  //update_count++;
+  update_count++;
   //if(update_count==1){
       //MPI_Barrier(world);
       //MPI_Abort(world,4);
@@ -5988,8 +6027,10 @@ int Parallel_Nonlinear_Solver::solve(){
   //*fos << std::endl;
 
   //debug print
-  //Tpetra::MatrixMarket::Writer<MAT> market_writer();
-  //Tpetra::MatrixMarket::Writer<MAT>::writeSparseFile("A_matrix.txt", *balanced_A, "A_matrix", "Stores stiffness matrix values");
+  //if(update_count==42){
+    //Tpetra::MatrixMarket::Writer<MAT> market_writer();
+    //Tpetra::MatrixMarket::Writer<MAT>::writeSparseFile("A_matrix.txt", *balanced_A, "A_matrix", "Stores stiffness matrix values");
+  //}
   //return !EXIT_SUCCESS;
   // Create solver interface to KLU2 with Amesos2 factory method
   if(simparam->direct_solver_flag){
@@ -6005,9 +6046,17 @@ int Parallel_Nonlinear_Solver::solve(){
     //solver->setParameters( Teuchos::rcpFromRef(amesos2_params) );
   
     //Solve the system
-    std::cout << "BEFORE LINEAR SOLVE" << std::endl << std::flush;
+    //std::cout << "BEFORE LINEAR SOLVE" << std::endl << std::flush;
     solver->symbolicFactorization().numericFactorization().solve();
-    std::cout << "AFTER LINEAR SOLVE" << std::endl<< std::flush;
+    //debug print of displacements
+    //std::ostream &out = std::cout;
+    //Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
+    //if(myrank==0)
+    //*fos << "balanced_X: " << update_count << std::endl;
+    //X->describe(*fos,Teuchos::VERB_EXTREME);
+    //*fos << std::endl;
+    //std::fflush(stdout);
+    //std::cout << "AFTER LINEAR SOLVE" << std::endl<< std::flush;
   }
   else{
     // Instead of checking each time for rank, create a rank 0 stream

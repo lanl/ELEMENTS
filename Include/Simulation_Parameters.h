@@ -80,7 +80,7 @@ class Simulation_Parameters
   real_t unit_scaling;
 
   //file output parameters
-  int nsteps_print;
+  int optimization_output_freq;
 
   //debug and performance reporting flags
   int report_runtime_flag;

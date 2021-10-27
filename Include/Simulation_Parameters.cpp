@@ -18,7 +18,7 @@ Simulation_Parameters::Simulation_Parameters(){
   nodal_density_flag = 1;
   unit_scaling = 1;
   strain_max_flag = 0;
-  nsteps_print = -1;
+  optimization_output_freq = 100;
   direct_solver_flag = 1;
 }
 

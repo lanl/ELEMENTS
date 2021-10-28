@@ -795,39 +795,39 @@ void mat_inverse(
 }
 
 
-/**************************************************************************************//**
-*  mat_mult is a light weight function for multiplying two 3X3 matrices
-*****************************************************************************************/
-void mat_mult(
-    CArray <real_t> &result,
-    CArray <real_t> &A,
-    CArray <real_t> &B){
+// /**************************************************************************************//**
+// *  mat_mult is a light weight function for multiplying two 3X3 matrices
+// *****************************************************************************************/
+// void mat_mult(
+//     CArray <real_t> &result,
+//     CArray <real_t> &A,
+//     CArray <real_t> &B){
+//
+//     result(0, 0) = A(0, 0)*B(0, 0) + A(0, 1)*B(1, 0) + A(0, 2)*B(2, 0);
+//     result(0, 1) = A(0, 0)*B(0, 1) + A(0, 1)*B(1, 1) + A(0, 2)*B(2, 1);
+//     result(0, 2) = A(0, 0)*B(0, 2) + A(0, 1)*B(1, 2) + A(0, 2)*B(2, 2);
+//     result(1, 0) = A(1, 0)*B(0, 0) + A(1, 1)*B(1, 0) + A(1, 2)*B(2, 0);
+//     result(1, 1) = A(1, 0)*B(0, 1) + A(1, 1)*B(1, 1) + A(1, 2)*B(2, 1);
+//     result(1, 2) = A(1, 0)*B(0, 2) + A(1, 1)*B(1, 2) + A(1, 2)*B(2, 2);
+//     result(2, 0) = A(2, 0)*B(0, 0) + A(2, 1)*B(1, 0) + A(2, 2)*B(2, 0);
+//     result(2, 1) = A(2, 0)*B(0, 1) + A(2, 1)*B(1, 1) + A(2, 2)*B(2, 1);
+//     result(2, 2) = A(2, 0)*B(0, 2) + A(2, 1)*B(1, 2) + A(2, 2)*B(2, 2);
+// }
 
-    result(0, 0) = A(0, 0)*B(0, 0) + A(0, 1)*B(1, 0) + A(0, 2)*B(2, 0);
-    result(0, 1) = A(0, 0)*B(0, 1) + A(0, 1)*B(1, 1) + A(0, 2)*B(2, 1);
-    result(0, 2) = A(0, 0)*B(0, 2) + A(0, 1)*B(1, 2) + A(0, 2)*B(2, 2);
-    result(1, 0) = A(1, 0)*B(0, 0) + A(1, 1)*B(1, 0) + A(1, 2)*B(2, 0);
-    result(1, 1) = A(1, 0)*B(0, 1) + A(1, 1)*B(1, 1) + A(1, 2)*B(2, 1);
-    result(1, 2) = A(1, 0)*B(0, 2) + A(1, 1)*B(1, 2) + A(1, 2)*B(2, 2);
-    result(2, 0) = A(2, 0)*B(0, 0) + A(2, 1)*B(1, 0) + A(2, 2)*B(2, 0);
-    result(2, 1) = A(2, 0)*B(0, 1) + A(2, 1)*B(1, 1) + A(2, 2)*B(2, 1);
-    result(2, 2) = A(2, 0)*B(0, 2) + A(2, 1)*B(1, 2) + A(2, 2)*B(2, 2);
-}
 
-
-/**************************************************************************************//**
-*  mat_mult is a light weight function for inverting a 3X3 matrix
-*****************************************************************************************/
-void mat_trans(
-    CArray <real_t> &trans,
-    CArray <real_t> &mat){
-
-    for(int i = 0; i < 3; i++){
-        for(int j = 0; j < 3; j++){
-            trans(i, j) = mat(j, i);    
-        }
-    }
-}
+// /**************************************************************************************//**
+// *  mat_mult is a light weight function for transposing a 3X3 matrix
+// *****************************************************************************************/
+// void mat_trans(
+//     CArray <real_t> &trans,
+//     CArray <real_t> &mat){
+//
+//     for(int i = 0; i < 3; i++){
+//         for(int j = 0; j < 3; j++){
+//             trans(i, j) = mat(j, i);
+//         }
+//     }
+// }
 
 
 /**************************************************************************************//**
@@ -1829,7 +1829,7 @@ void ref_element::init(int p_order, int num_dim){
         num_g_pts_1d = 2 * p_order + 1; // num gauss points in 1d
         num_ref_nodes_1D_ = num_g_pts_1d;
         num_ref_verts_1d_ = p_order+1;
-        num_zones_1d_ = num_ref_cells_1D_ / 2;
+        num_zones_1d_ = (num_ref_nodes_1D_ - 1) / 2;
         num_zones_in_elem_ = num_zones_1d_*num_zones_1d_*num_zones_1d_;
 
         cells_in_zone_list_ = CArray <int> (num_zones_in_elem_, 8);
@@ -1851,6 +1851,10 @@ void ref_element::init(int p_order, int num_dim){
     
     num_ref_cells_in_elem_ =
         (num_ref_nodes_1D_-1)*(num_ref_nodes_1D_-1)*(num_ref_nodes_1D_-1);
+
+    std::cout<<"Num cells in element reference  = "<<num_ref_cells_in_elem_<<std::endl;
+    
+    cell_nodes_in_elem_list_ = CArray <int> (num_ref_cells_in_elem_, 8);
     
     num_ref_corners_in_cell_ = 8;
     
@@ -1888,6 +1892,12 @@ void ref_element::init(int p_order, int num_dim){
 
     // --- build reference index spaces for 3D ---
     if(num_dim_ == 3){
+        
+        int N_1d = num_ref_nodes_1D_; // a temporary variable
+        num_ref_inside_nodes_in_elem_  = (N_1d - 2)*(N_1d - 2)*(N_1d - 2);
+        num_ref_surface_nodes_in_elem_ = N_1d*N_1d*N_1d  - num_ref_inside_nodes_in_elem_;
+        ref_surface_nodes_in_elem_ = CArray <int> (num_ref_surface_nodes_in_elem_);
+        ref_inside_nodes_in_elem_  = CArray <int> (num_ref_inside_nodes_in_elem_);
         
         // --- build gauss nodal positions and weights ---
         auto lob_nodes_1D = CArray <real_t> (num_ref_nodes_1D_);
@@ -1997,6 +2007,28 @@ void ref_element::init(int p_order, int num_dim){
             }
 
         }
+        
+        // Save the node in cell lid to node rid in elem map
+        int cell_lid = 0;
+        int num_ref_cells_1d = (num_ref_nodes_1D_-1);
+        for(int k = 0; k < num_ref_cells_1d; k++){
+            for(int j = 0; j < num_ref_cells_1d; j++){
+                for(int i = 0; i < num_ref_cells_1d; i++){
+                    
+                    cell_nodes_in_elem(cell_lid, 0) = node_rid(i  , j,   k);
+                    cell_nodes_in_elem(cell_lid, 1) = node_rid(i+1, j,   k);
+                    cell_nodes_in_elem(cell_lid, 2) = node_rid(i  , j+1, k);
+                    cell_nodes_in_elem(cell_lid, 3) = node_rid(i+1, j+1, k);
+                    cell_nodes_in_elem(cell_lid, 4) = node_rid(i  , j,   k+1);
+                    cell_nodes_in_elem(cell_lid, 5) = node_rid(i+1, j,   k+1);
+                    cell_nodes_in_elem(cell_lid, 6) = node_rid(i  , j+1, k+1);
+                    cell_nodes_in_elem(cell_lid, 7) = node_rid(i+1, j+1, k+1);
+                    
+                    cell_lid++;
+                }
+            }
+        }
+        
         // i,j,k indicies are for corners
         for(int k = 0; k < num_ref_corners_1D_; k++){
             for(int j = 0; j < num_ref_corners_1D_; j++){
@@ -2164,10 +2196,44 @@ void ref_element::init(int p_order, int num_dim){
             }
         }
         
+        // build a local rlid for the interior and surface nodes of the ref element
+        // remember that N_1d = num_ref_nodes_1D_;
+        int count_surf = 0;
+        int count_inside = 0;
+        for (int k=0; k<N_1d; k++){
+            for (int j=0; j<N_1d; j++){
+                for (int i=0; i<N_1d; i++){
+                    
+                    int rid = node_rid(i,j,k); // follows i,j,k convention
+                    
+                    if (i>0 && i<N_1d-1 &&
+                        j>0 && j<N_1d-1 &&
+                        k>0 && k<N_1d-1)
+                    {
+                        ref_inside_nodes_in_elem_(count_inside) = rid;
+                        count_inside ++;
+                    }
+                    else
+                    {
+                        ref_surface_nodes_in_elem_(count_surf) = rid;
+                        count_surf ++;
+                    }
+                    
+                } // end for
+            } // end for
+        } // end for
+        // checking the data structure
+        if (num_ref_inside_nodes_in_elem_ < count_inside) {
+            std::cout << "*** Error in inside nodes in ref elem ***" << std::endl;
+        }
+        if (num_ref_surface_nodes_in_elem_ < count_surf) {
+            std::cout << "*** Error in surface nodes in ref elem ***" << std::endl;
+        }
+        
     } // end of 3D scope
 
 
-};
+}; // end of member function
 
 int ref_element::num_dim() const
 {
@@ -2225,11 +2291,31 @@ int ref_element::ref_nodes_in_cell(int cell_rid, int node_rlid) const
     return ref_nodes_in_cell_(node_rlid + cell_rid*num_ref_corners_in_cell_);
 };
 
-real_t ref_element::ref_node_positions(int node_rid, int dim) const 
+int ref_element::ref_surface_nodes_in_elem(int node_rlid) const
+{
+    return ref_surface_nodes_in_elem_(node_rlid);
+};
+    
+int ref_element::ref_inside_nodes_in_elem(int node_rlid) const
+{
+    return ref_inside_nodes_in_elem_(node_rlid);
+};
+ 
+int ref_element::num_ref_surface_nodes_in_elem() const
+{
+    return num_ref_surface_nodes_in_elem_;
+};
+
+int ref_element::num_ref_inside_nodes_in_elem() const
+{
+    return num_ref_inside_nodes_in_elem_;
+};
+
+real_t ref_element::ref_node_positions(int node_rid, int dim) const
 {
     //DANreturn ref_node_positions_[dim + node_rid*num_dim_];
     return ref_node_positions_(node_rid, dim);
-}
+};
 
 real_t ref_element::ref_corner_surface_normals(int corner_rid, int surf_rlid, int dim) const 
 {
@@ -2268,11 +2354,14 @@ real_t& ref_element::ref_nodal_basis(int node_rid, int basis_id) const{
 }
 
 int& ref_element::cell_lid_in_zone(int zone_lid, int cell_lid) const{
-
     return cells_in_zone_list_(zone_lid, cell_lid);
-
 }
 
+
+int& ref_element::cell_nodes_in_elem(int cell_lid, int node_lid) const{
+    return cell_nodes_in_elem_list_(cell_lid, node_lid);
+}
+    
 int ref_element::vert_node_map(int vert_lid){
     return elem.vert_node_map(vert_lid);
 }
@@ -4244,7 +4333,7 @@ representative linear element for visualization
     };
 
 
-    real_t HexN::vert_node_map(int vert_rid) const
+    int HexN::vert_node_map(int vert_rid) const
     {
         return Vert_Node_map_(vert_rid);
     }

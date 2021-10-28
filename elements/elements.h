@@ -88,14 +88,14 @@ namespace elements{
         ViewCArray <real_t> &mat_inv,
         ViewCArray <real_t> &matrix);
 
-    void mat_mult(
-        CArray <real_t> &result,
-        CArray <real_t> &A,
-        CArray <real_t> &B);
+//    void mat_mult(
+//        CArray <real_t> &result,
+//        CArray <real_t> &A,
+//        CArray <real_t> &B);
 
-    void mat_trans(
-        CArray <real_t> &trans,
-        CArray <real_t> &mat);
+//   void mat_trans(
+//       CArray <real_t> &trans,
+//       CArray <real_t> &mat);
 
     void set_nodes_wgts(
         CArray <real_t> &lab_nodes_1D,
@@ -104,10 +104,10 @@ namespace elements{
         CArray <real_t> &sub_weights_1D, 
         int p_order);
 
-    void sub_cells(
-        CArray <real_t> &lab_nodes_1D,
-        int &p_order, 
-        int &dim);
+//   void sub_cells(
+//       CArray <real_t> &lab_nodes_1D,
+//       int &p_order,
+//       int &dim);
 
     //DANvoid set_unit_normals(ViewCArray <real_t> &unit_normals);
     void set_unit_normals(CArray <real_t> &unit_normals);
@@ -226,6 +226,9 @@ class ref_element{
         int num_ref_cells_1D_;
         int num_ref_corners_1D_;
 
+        int num_ref_surface_nodes_in_elem_;
+        int num_ref_inside_nodes_in_elem_;
+    
         // Zones
         int num_zones_1d_;
         int num_zones_in_elem_;
@@ -240,10 +243,14 @@ class ref_element{
         int num_ref_nodes_in_cell_;
 
         CArray <int> ref_nodes_in_cell_;
-
+        CArray <int> ref_surface_nodes_in_elem_;
+        CArray <int> ref_inside_nodes_in_elem_;
+    
         CArray <real_t> ref_node_positions_;
         CArray <real_t> ref_node_g_weights_;
 
+        CArray <int> cell_nodes_in_elem_list_;
+    
         // Vertices
         int num_ref_verts_1d_;
         int num_ref_verts_in_elem_;
@@ -291,6 +298,11 @@ class ref_element{
         int ref_corners_in_cell(int cell_rid, int corner_rlid) const;
         int ref_nodes_in_cell(int cell_rid, int node_rlid) const;
 
+        int ref_surface_nodes_in_elem(int node_rlid) const;
+        int ref_inside_nodes_in_elem(int node_rlid) const;
+        int num_ref_surface_nodes_in_elem() const;
+        int num_ref_inside_nodes_in_elem() const;
+    
         real_t ref_node_positions(int node_rid, int dim) const;
 
         real_t ref_corner_surface_normals(int corner_rid, int surf_rlid, int dim) const;
@@ -309,6 +321,8 @@ class ref_element{
         
         int& cell_lid_in_zone(int zone_lid, int cell_lid) const;
 
+        int& cell_nodes_in_elem(int cell_lid, int node_lid) const;
+    
         int vert_node_map(int vert_lid);
 
         // Deconstructor
@@ -394,7 +408,7 @@ class ref_element{
             const ViewCArray <real_t>  &xi_point) = 0;
 
         // Map from vertex to node
-        virtual inline int vert_node_map( const int vert_lid) = 0;
+        virtual inline int vert_node_map(const int vert_lid) = 0;
 
         // Reference vertices location
         virtual real_t& ref_locs(const int vert_lid, const int dim) = 0;
@@ -827,7 +841,7 @@ class Hex8: public Element3D {
                 const ViewCArray <real_t>  &xi_point);
 
             // Map from vertex to node
-            inline int vert_node_map( const int vert_lid);
+            inline int vert_node_map(const int vert_lid);
 
             real_t& ref_locs(const int vert_lid, const int dim);
 
@@ -906,7 +920,7 @@ class Hex8: public Element3D {
                 const ViewCArray <real_t>  &xi_point);
 
             // Map from vertex to node
-            inline int vert_node_map( const int vert_lid);
+            inline int vert_node_map(const int vert_lid);
 
             real_t& ref_locs(const int vert_lid, const int dim);
 
@@ -993,7 +1007,7 @@ class Hex8: public Element3D {
                 const ViewCArray <real_t>  &xi_point);
 
             // Map from vertex to node
-            int vert_node_map( const int vert_lid);
+            int vert_node_map(const int vert_lid);
 
             real_t& ref_locs(const int vert_lid, const int dim);
 
@@ -1068,7 +1082,7 @@ class Hex8: public Element3D {
             real_t &node_coords(int node_rlid, int dim);
 
 
-            real_t vert_node_map(int vert_rid) const;
+            int vert_node_map(int vert_rid) const;
             
             // Evaluate the basis at a given point
             void basis(

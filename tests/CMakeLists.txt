@@ -3,11 +3,21 @@ add_executable(
   test_lagrange_1d_derivatives 
   test_lagrange_1d_derivatives.cpp
 )
+
+add_executable(
+  test_slam_math
+  test_slam_math.cpp
+)
+target_link_libraries(
+  slam
+)
+
 target_link_libraries(
   test_lagrange_1d_derivatives 
   common
   polynomials_complex
 )
+
 target_compile_options(
   test_lagrange_1d_derivatives 
   PRIVATE

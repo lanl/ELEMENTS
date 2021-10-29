@@ -143,8 +143,7 @@ double LU_determ(
 
 
 
-
-
+// place math functors here
 
 
 

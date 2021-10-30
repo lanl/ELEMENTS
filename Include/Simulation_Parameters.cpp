@@ -20,6 +20,7 @@ Simulation_Parameters::Simulation_Parameters(){
   strain_max_flag = 0;
   optimization_output_freq = 100;
   direct_solver_flag = 1;
+  penalty_power = 3;
 }
 
 Simulation_Parameters::~Simulation_Parameters(){
@@ -82,6 +83,7 @@ void Simulation_Parameters::input(){
   nodal_density_flag = 1;
 
   //Topology Optimization parameters
+  penalty_power = 4;
   maximum_strain = 0.02;
   maximum_strain_energy = 1000;
     

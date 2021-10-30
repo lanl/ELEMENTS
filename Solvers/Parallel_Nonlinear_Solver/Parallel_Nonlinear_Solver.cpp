@@ -128,7 +128,7 @@ num_cells in element = (p_order*2)^3
 #define MAX_WORD 30
 #define MAX_ELEM_NODES 8
 #define STRAIN_EPSILON 0.000000001
-#define DENSITY_EPSILON 0.01
+#define DENSITY_EPSILON 0.001
 
 using namespace utils;
 
@@ -1222,13 +1222,14 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //finalize problem
   problem->finalize(false,true,std::cout);
   //problem->check(true,std::cout);
+  obj->checkGradient(rol_x, rol_d);
 
   // Instantiate Solver.
   ROL::Solver<real_t> solver(problem,*parlist);
     
   // Solve optimization problem.
   //std::ostream outStream;
-  solver.solve(std::cout);
+  //solver.solve(std::cout);
   
 }
 
@@ -1475,9 +1476,9 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  */
   
-  /*
+  
+  
   std::cout << "tagging z = 2 Force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2 * simparam->unit_scaling;
@@ -1493,7 +1494,23 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  
+  */
+  std::cout << "tagging z = 1 Force " << std::endl;
+  bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
+  value = 1 * simparam->unit_scaling;
+  //value = 2;
+  bdy_set_id = current_bdy_id++;
+  //find boundary patches this BC corresponds to
+  tag_boundaries(bc_tag, value, bdy_set_id);
+  Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 10/simparam->unit_scaling/simparam->unit_scaling;
+  surf_force_set_id++;
+  std::cout << "tagged a set " << std::endl;
+  std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
+  std::cout << std::endl;
+  /*
   
   std::cout << "tagging beam x = 0 " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
@@ -1577,7 +1594,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << std::endl;
   
   */
-  
+  /*
   std::cout << "tagging beam +z force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   //value = 0;
@@ -1586,14 +1603,14 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 0;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1/simparam->unit_scaling/simparam->unit_scaling;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
-  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 2/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
   surf_force_set_id++;
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  /*
+  
   
   std::cout << "tagging y = 2 " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
@@ -3097,8 +3114,11 @@ void Parallel_Nonlinear_Solver::assemble_matrix(){
 
 void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density){
   real_t unit_scaling = simparam->unit_scaling;
+  real_t penalty_product = 1;
+  for(int i = 0; i < simparam->penalty_power; i++)
+    penalty_product *= density;
   //relationship between density and stiffness
-  Element_Modulus = density*density*density*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
+  Element_Modulus = (DENSITY_EPSILON + (1 - DENSITY_EPSILON)*penalty_product)*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
   //Element_Modulus = density*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
   Poisson_Ratio = simparam->Poisson_Ratio;
 
@@ -3110,8 +3130,11 @@ void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t
 
 void Parallel_Nonlinear_Solver::Gradient_Element_Material_Properties(size_t ielem, real_t &Element_Modulus_Derivative, real_t &Poisson_Ratio, real_t density){
   real_t unit_scaling = simparam->unit_scaling;
+  real_t penalty_product = 1;
+  for(int i = 0; i < simparam->penalty_power - 1; i++)
+    penalty_product *= density;
   //relationship between density and stiffness
-  Element_Modulus_Derivative = 3*density*density*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
+  Element_Modulus_Derivative = simparam->penalty_power*(1 - DENSITY_EPSILON)*penalty_product*simparam->Elastic_Modulus/unit_scaling/unit_scaling;
   //Element_Modulus_Derivative = simparam->Elastic_Modulus/unit_scaling/unit_scaling;
   Poisson_Ratio = simparam->Poisson_Ratio;
 

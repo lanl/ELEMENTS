@@ -87,7 +87,7 @@ public:
   }
 
   real_t value(const ROL::Vector<real_t> &z, real_t &tol) {
-    std::cout << "Started obj value on task " <<FEM_->myrank  << std::endl;
+    //std::cout << "Started obj value on task " <<FEM_->myrank  << std::endl;
     ROL::Ptr<const MV> zp = getVector(z);
     real_t c = 0.0;
 
@@ -121,7 +121,7 @@ public:
     if(FEM_->myrank==0)
     std::cout << "CURRENT STRAIN ENERGY " << current_strain_energy << std::endl;
 
-    std::cout << "Ended obj value on task " <<FEM_->myrank  << std::endl;
+    //std::cout << "Ended obj value on task " <<FEM_->myrank  << std::endl;
     return current_strain_energy;
   }
 
@@ -130,7 +130,7 @@ public:
   //}
   
   void gradient( ROL::Vector<real_t> &g, const ROL::Vector<real_t> &z, real_t &tol ) {
-    std::cout << "Started obj gradient on task " <<FEM_->myrank  << std::endl;
+    //std::cout << "Started obj gradient on task " <<FEM_->myrank  << std::endl;
     //get Tpetra multivector pointer from the ROL vector
     ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<MV> gp = getVector(g);
@@ -184,7 +184,7 @@ public:
     //gp->describe(*fos,Teuchos::VERB_EXTREME);
     //*fos << std::endl;
     //std::fflush(stdout);
-    std::cout << "ended obj gradient on task " <<FEM_->myrank  << std::endl;
+    //std::cout << "ended obj gradient on task " <<FEM_->myrank  << std::endl;
   }
   
   /*

@@ -21,6 +21,8 @@ Simulation_Parameters::Simulation_Parameters(){
   optimization_output_freq = 100;
   direct_solver_flag = 1;
   penalty_power = 3;
+  restart_file = false;
+  tecplot_input = false;
 }
 
 Simulation_Parameters::~Simulation_Parameters(){
@@ -30,7 +32,9 @@ Simulation_Parameters::~Simulation_Parameters(){
 }
 
 void Simulation_Parameters::input(){
-  // ---- time varaibles and cycle info ---- //
+  //file input flags
+  tecplot_input = false;
+  restart_file = false;
 
   //simulation spatial dimension
   num_dim = 3;

@@ -78,6 +78,8 @@ class Simulation_Parameters
   int words_per_line, elem_words_per_line;
   char *format_specification;  //per line file format when reading dofs
   real_t unit_scaling;
+  bool restart_file;
+  bool tecplot_input;
 
   //file output parameters
   int optimization_output_freq;

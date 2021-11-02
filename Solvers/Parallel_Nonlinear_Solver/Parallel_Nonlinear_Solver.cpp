@@ -192,6 +192,8 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
 
     // ---- Read intial mesh, refine, and build connectivity ---- //
     read_mesh(argv[1]);
+
+    init_maps();
     
     std::cout << "Num elements = " << rnum_elem << std::endl;
     
@@ -280,11 +282,15 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   int num_dim = simparam->num_dim;
   int p_order = simparam->p_order;
   real_t unit_scaling = simparam->unit_scaling;
-  int local_node_index, global_node_index, current_column_index;
+  int local_node_index, current_column_index;
   size_t strain_count;
   std::string skip_line, read_line, substring;
   std::stringstream line_parse;
   CArray <char> read_buffer;
+  int buffer_loop, buffer_iteration, scan_loop;
+  size_t read_index_start, node_rid, elem_gid;
+  GO node_gid;
+  real_t dof_value;
   //Nodes_Per_Element_Type =  elements::elem_types::Nodes_Per_Element_Type;
 
   //read the mesh
@@ -297,10 +303,20 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   in = new std::ifstream();
   in->open(MESH);  
     
-  //skip 8 lines
-  for (int j = 1; j <= 8; j++) {
-    getline(*in, skip_line);
-    std::cout << skip_line << std::endl;
+  
+  if(simparam->tecplot_input){
+    //skip 2 lines
+    for (int j = 1; j <= 2; j++) {
+      getline(*in, skip_line);
+      std::cout << skip_line << std::endl;
+    } //for
+  }
+  else{
+    //skip 8 lines
+    for (int j = 1; j <= 8; j++) {
+      getline(*in, skip_line);
+      std::cout << skip_line << std::endl;
+    } //for
   }
   }
 
@@ -362,11 +378,7 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //allocate read buffer
   read_buffer = CArray<char>(BUFFER_LINES,words_per_line,MAX_WORD);
 
-  //depends on file input format; this is for ensight
   int dof_limit = num_nodes;
-  int buffer_loop, buffer_iteration, scan_loop;
-  size_t read_index_start, node_gid, node_rid, elem_gid;
-  real_t dof_value;
   int buffer_iterations = dof_limit/BUFFER_LINES;
   if(dof_limit%BUFFER_LINES!=0) buffer_iterations++;
   
@@ -695,13 +707,17 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
     }
     read_index_start+=BUFFER_LINES;
   }
+
+  // Close mesh input file
+  if(myrank==0)
+  in->close();
   
   std::cout << "RNUM ELEMENTS IS: " << rnum_elem << std::endl;
   //copy temporary element storage to multivector storage
   max_nodes_per_element = MAX_ELEM_NODES;
 
-  dual_elem_conn_array dual_nodes_in_elem("dual_nodes_in_elem", rnum_elem, max_nodes_per_element);
-  host_elem_conn_array nodes_in_elem = dual_nodes_in_elem.view_host();
+  dual_nodes_in_elem = dual_elem_conn_array("dual_nodes_in_elem", rnum_elem, max_nodes_per_element);
+  nodes_in_elem = dual_nodes_in_elem.view_host();
   dual_nodes_in_elem.modify_host();
 
   Element_Types = CArray<elements::elem_types::elem_type>(rnum_elem);
@@ -723,22 +739,6 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //construct overlapping element map (since different ranks can own the same elements due to the local node map)
   all_element_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),All_Element_Global_Indices.get_kokkos_view(),0,comm));
 
-  //debug print element edof
-  /*
-  std::cout << " ------------ELEMENT EDOF ON TASK " << myrank << " --------------"<<std::endl;
-
-  for (int ielem = 0; ielem < rnum_elem; ielem++){
-    std::cout << "elem:  " << ielem+1 << std::endl;
-    for (int lnode = 0; lnode < 8; lnode++){
-        std::cout << "{ ";
-          std::cout << lnode+1 << " = " << nodes_in_elem(ielem,lnode) + 1 << " ";
-        
-        std::cout << " }"<< std::endl;
-    }
-    std::cout << std::endl;
-  }
-  */
- 
   //simplified for now
   for(int ielem = 0; ielem < rnum_elem; ielem++)
     Element_Types(ielem) = elements::elem_types::Hex8;
@@ -799,22 +799,41 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
     }
   }
 
-  // Build all connectivity in initial mesh
-  std::cout<<"Before initial mesh connectivity"<<std::endl;
+  //debug print element edof
+  /*
+  std::cout << " ------------ELEMENT EDOF ON TASK " << myrank << " --------------"<<std::endl;
+
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
+    std::cout << "elem:  " << ielem+1 << std::endl;
+    for (int lnode = 0; lnode < 8; lnode++){
+        std::cout << "{ ";
+          std::cout << lnode+1 << " = " << nodes_in_elem(ielem,lnode) + 1 << " ";
+        
+        std::cout << " }"<< std::endl;
+    }
+    std::cout << std::endl;
+  }
+  */
+ 
+} // end read_mesh
+
+/* ----------------------------------------------------------------------
+   Initialize Ghost and Non-Overlapping Element Maps
+------------------------------------------------------------------------- */
+
+void Parallel_Nonlinear_Solver::init_maps(){
+  char ch;
+  int num_dim = simparam->num_dim;
+  int p_order = simparam->p_order;
+  real_t unit_scaling = simparam->unit_scaling;
+  int local_node_index, current_column_index;
+  size_t strain_count;
+  std::stringstream line_parse;
+  CArray <char> read_buffer;
+  int nodes_per_element;
+  GO node_gid;
   
   if(rnum_elem >= 1) {
-
-    // -- NODE TO CELL CONNECTIVITY -- //
-    //mesh->build_node_cell_connectivity(); 
-
-    // -- CORNER CONNECTIVITY -- //
-    //mesh->build_corner_connectivity(); 
-
-    // -- CELL TO CELL CONNECTIVITY -- //
-    //mesh->build_cell_cell_connectivity(); 
-
-    // -- PATCHES -- //
-    //mesh->build_patch_connectivity();
 
     //Construct set of ghost nodes; start with a buffer with upper limit
     size_t buffer_limit = 0;
@@ -886,10 +905,6 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
 
   }
 
-  // Close mesh input file
-  if(myrank==0)
-  in->close();
-
   // create a Map for ghost node indices
   ghost_node_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),ghost_nodes.get_kokkos_view(),0,comm));
 
@@ -931,9 +946,9 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
     nodes_per_element = elem2D->num_nodes();
     my_element_flag = 1;
     for (int lnode = 0; lnode < nodes_per_element; lnode++){
-      global_node_index = nodes_in_elem(ielem, lnode);
-      if(ghost_node_map->isNodeGlobalElement(global_node_index)){
-        local_node_index = ghost_node_map->getLocalElement(global_node_index);
+      node_gid = nodes_in_elem(ielem, lnode);
+      if(ghost_node_map->isNodeGlobalElement(node_gid)){
+        local_node_index = ghost_node_map->getLocalElement(node_gid);
         if(ghost_node_ranks(local_node_index) < myrank) my_element_flag = 0;
       }
     }
@@ -948,9 +963,9 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
     nodes_per_element = elem->num_nodes();
     my_element_flag = 1;
     for (int lnode = 0; lnode < nodes_per_element; lnode++){
-      global_node_index = nodes_in_elem(ielem, lnode);
-      if(ghost_node_map->isNodeGlobalElement(global_node_index)){
-        local_node_index = ghost_node_map->getLocalElement(global_node_index);
+      node_gid = nodes_in_elem(ielem, lnode);
+      if(ghost_node_map->isNodeGlobalElement(node_gid)){
+        local_node_index = ghost_node_map->getLocalElement(node_gid);
         if(ghost_node_ranks(local_node_index) < myrank) my_element_flag = 0;
       }
     }
@@ -1078,8 +1093,8 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
   //}
      
   //std::cout << "number of patches = " << mesh->num_patches() << std::endl;
-  std::cout << "End of setup " << std::endl;
-} // end read_mesh
+  std::cout << "End of map setup " << std::endl;
+}
 
 /* ----------------------------------------------------------------------
    Setup Optimization Problem Object, Relevant Objective, and Constraints
@@ -1222,7 +1237,18 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //finalize problem
   problem->finalize(false,true,std::cout);
   //problem->check(true,std::cout);
-  obj->checkGradient(rol_x, rol_d);
+  ROL::Ptr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>> rol_x =
+   ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>>(node_densities_distributed);
+  //construct direction vector for check
+  Teuchos::RCP<MV> directions_distributed = Teuchos::rcp(new MV(map, 1));
+  directions_distributed->putScalar(-0.00001);
+  ROL::Ptr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>> rol_d =
+   ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>>(directions_distributed);
+  obj->checkGradient(*rol_x, *rol_d);
+  directions_distributed->putScalar(-0.000001);
+  obj->checkGradient(*rol_x, *rol_d);
+  directions_distributed->putScalar(-0.0000001);
+  obj->checkGradient(*rol_x, *rol_d);
 
   // Instantiate Solver.
   ROL::Solver<real_t> solver(problem,*parlist);
@@ -1477,7 +1503,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "number of bdy patches in this set = " << mesh->num_bdy_patches_in_set(bdy_set_id) << std::endl;
   std::cout << std::endl;
   
-  
+  */
   
   std::cout << "tagging z = 2 Force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
@@ -1494,7 +1520,8 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  */
+  
+  /*
   std::cout << "tagging z = 1 Force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 1 * simparam->unit_scaling;
@@ -1510,7 +1537,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  /*
+  
   
   std::cout << "tagging beam x = 0 " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell

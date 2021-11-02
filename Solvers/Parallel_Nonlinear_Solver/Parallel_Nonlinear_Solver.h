@@ -79,6 +79,9 @@ public:
 
   void read_mesh(char *MESH);
   
+  //setup ghosts and element maps
+  void init_maps();
+  
   //initializes memory for arrays used in the global stiffness matrix assembly
   void init_assembly();
 
@@ -161,6 +164,8 @@ public:
   dual_vec_array dual_node_displacements; //first three indices of second dim should be positions
   dual_vec_array dual_node_densities; //topology optimization design variable
   dual_vec_array dual_nodal_forces;
+  dual_elem_conn_array dual_nodes_in_elem; //dual view of element connectivity to nodes
+  host_elem_conn_array nodes_in_elem; //host view of element connectivity to nodes
   CArray<elements::elem_types::elem_type> Element_Types;
   CArray<size_t> Nodes_Per_Element_Type;
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Global_Stiffness_Matrix_Assembly_Map;

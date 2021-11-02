@@ -98,7 +98,7 @@ public:
   }
 
   void value(ROL::Vector<real_t> &c, const ROL::Vector<real_t> &z, real_t &tol ) override {
-    std::cout << "Started constraint value on task " <<FEM_->myrank <<std::endl;
+    //std::cout << "Started constraint value on task " <<FEM_->myrank <<std::endl;
     ROL::Ptr<const MV> zp = getVector(z);
     ROL::Ptr<std::vector<real_t>> cp = dynamic_cast<ROL::StdVector<real_t>&>(c).getVector();
     const_host_vec_array design_densities = zp->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
@@ -123,11 +123,11 @@ public:
     else
       (*cp)[0] = current_mass/initial_mass - constraint_value_;
 
-    std::cout << "Ended constraint value on task " <<FEM_->myrank <<std::endl;
+    //std::cout << "Ended constraint value on task " <<FEM_->myrank <<std::endl;
   }
 
   void applyAdjointJacobian(ROL::Vector<real_t> &ajv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) override {
-    std::cout << "Started constraint adjoint grad on task " <<FEM_->myrank << std::endl;
+    //std::cout << "Started constraint adjoint grad on task " <<FEM_->myrank << std::endl;
      //get Tpetra multivector pointer from the ROL vector
     ROL::Ptr<const MV> zp = getVector(x);
     ROL::Ptr<const std::vector<real_t>> vp = dynamic_cast<const ROL::StdVector<real_t>&>(v).getVector();
@@ -173,13 +173,13 @@ public:
         constraint_gradients(ig,0) = element_volumes(ig,0)*(*vp)[0]/initial_mass;
     }
     
-    std::cout << "Ended constraint adjoint grad on task " <<FEM_->myrank  << std::endl;
+    //std::cout << "Ended constraint adjoint grad on task " <<FEM_->myrank  << std::endl;
     //debug print
     //std::cout << "Constraint Gradient value " << std::endl;
   }
   
   void applyJacobian(ROL::Vector<real_t> &jv, const ROL::Vector<real_t> &v, const ROL::Vector<real_t> &x, real_t &tol) override {
-    std::cout << "Started constraint grad on task " <<FEM_->myrank  << std::endl;
+    //std::cout << "Started constraint grad on task " <<FEM_->myrank  << std::endl;
      //get Tpetra multivector pointer from the ROL vector
     ROL::Ptr<const MV> zp = getVector(x);
     ROL::Ptr<std::vector<real_t>> jvp = dynamic_cast<ROL::StdVector<real_t>&>(jv).getVector();
@@ -221,7 +221,7 @@ public:
     //std::cout << "Constraint Gradient value " << gradient_dot_v << std::endl;
 
     (*jvp)[0] = gradient_dot_v;
-    std::cout << "Ended constraint grad on task " <<FEM_->myrank  << std::endl;
+    //std::cout << "Ended constraint grad on task " <<FEM_->myrank  << std::endl;
   }
   
   /*

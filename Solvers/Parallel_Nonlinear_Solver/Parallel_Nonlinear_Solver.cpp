@@ -179,6 +179,14 @@ Parallel_Nonlinear_Solver::~Parallel_Nonlinear_Solver(){
 void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     
     std::cout << "Running TO Solver" << std::endl;
+     // check to see of a mesh was supplied when running the code
+    if (argc == 1) {
+        std::cout << "\n\n**********************************\n\n";
+        std::cout << " ERROR:\n";
+        std::cout << " Please supply a mesh file as the second command line argument \n";
+        std::cout << "**********************************\n\n" << std::endl;
+        return;
+    }
     //MPI info
     world = MPI_COMM_WORLD; //used for convenience to represent all the ranks in the job
     MPI_Comm_rank(world,&myrank);
@@ -191,7 +199,10 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     //if(argc < 2)
 
     // ---- Read intial mesh, refine, and build connectivity ---- //
-    read_mesh(argv[1]);
+    if(simparam->tecplot_input)
+      read_mesh_tecplot(argv[1]);
+    else
+      read_mesh_ensight(argv[1]);
 
     init_maps();
     
@@ -270,13 +281,10 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     std::cout << "End of Main file" << std::endl;
 }
 
-//==============================================================================
-//   Function Definitions
-//==============================================================================
-
-
-// Input and setup
-void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
+/* ----------------------------------------------------------------------
+   Read Ensight format mesh file
+------------------------------------------------------------------------- */
+void Parallel_Nonlinear_Solver::read_mesh_ensight(char *MESH){
 
   char ch;
   int num_dim = simparam->num_dim;
@@ -798,6 +806,443 @@ void Parallel_Nonlinear_Solver::read_mesh(char *MESH){
       nodes_in_elem(cell_rid, node_lid) = tmp_ijk_indx(node_lid);
     }
   }
+  
+  //synchronize device data
+  dual_node_coords.sync_device();
+  dual_node_coords.modify_device();
+  //debug print element edof
+  /*
+  std::cout << " ------------ELEMENT EDOF ON TASK " << myrank << " --------------"<<std::endl;
+
+  for (int ielem = 0; ielem < rnum_elem; ielem++){
+    std::cout << "elem:  " << ielem+1 << std::endl;
+    for (int lnode = 0; lnode < 8; lnode++){
+        std::cout << "{ ";
+          std::cout << lnode+1 << " = " << nodes_in_elem(ielem,lnode) + 1 << " ";
+        
+        std::cout << " }"<< std::endl;
+    }
+    std::cout << std::endl;
+  }
+  */
+ 
+} // end read_mesh
+
+/* ----------------------------------------------------------------------
+   Read Tecplot format mesh file
+------------------------------------------------------------------------- */
+void Parallel_Nonlinear_Solver::read_mesh_tecplot(char *MESH){
+
+  char ch;
+  int num_dim = simparam->num_dim;
+  int p_order = simparam->p_order;
+  real_t unit_scaling = simparam->unit_scaling;
+  bool restart_file = simparam->restart_file;
+  int local_node_index, current_column_index;
+  size_t strain_count;
+  std::string skip_line, read_line, substring;
+  std::stringstream line_parse;
+  CArray <char> read_buffer;
+  int buffer_loop, buffer_iteration, scan_loop;
+  size_t read_index_start, node_rid, elem_gid;
+  GO node_gid;
+  real_t dof_value;
+  //Nodes_Per_Element_Type =  elements::elem_types::Nodes_Per_Element_Type;
+
+  //read the mesh
+  //PLACEHOLDER: ensight_format(MESH);
+  // abaqus_format(MESH);
+  // vtk_format(MESH)
+
+  //task 0 reads file
+  if(myrank==0){
+  in = new std::ifstream();
+  in->open(MESH);  
+    //skip 2 lines
+    for (int j = 1; j <= 2; j++) {
+      getline(*in, skip_line);
+      std::cout << skip_line << std::endl;
+    } //for
+  }
+  
+
+  // --- Read the number of nodes in the mesh --- //
+  if(myrank==0){
+    getline(*in, read_line);
+    line_parse.str(read_line);
+    //stop when the NODES= string is reached
+    while (!line_parse.eof()){
+      line_parse >> substring;
+      if(!substring.compare("NODES=")){
+        line_parse >> num_nodes;
+      }
+      if(!substring.compare("ELEMENTS=")){
+        line_parse >> num_elem;
+      }
+    } //while
+    std::cout << "declared node count: " << num_nodes << std::endl;
+    std::cout << "declared element count: " << num_elem << std::endl;
+    if(num_elem <= 0) std::cout << "ERROR, NO ELEMENTS IN MESH!!!!" << std::endl;
+  }
+  
+  //broadcast number of nodes
+  MPI_Bcast(&num_nodes,1,MPI_INT,0,world);
+  
+  //construct contiguous parallel row map now that we know the number of nodes
+  map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes,0,comm));
+
+  // set the vertices in the mesh read in
+  global_size_t local_nrows = map->getNodeNumElements();
+  nlocal_nodes = local_nrows;
+  //populate local row offset data from global data
+  global_size_t min_gid = map->getMinGlobalIndex();
+  global_size_t max_gid = map->getMaxGlobalIndex();
+  global_size_t index_base = map->getIndexBase();
+  //debug print
+  //std::cout << "local node count on task: " << " " << nlocal_nodes << std::endl;
+  //construct dof map that follows from the node map (used for distributed matrix and vector objects later)
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> local_dof_indices(nlocal_nodes*num_dim, "local_dof_indices");
+  for(int i = 0; i < nlocal_nodes; i++){
+    for(int j = 0; j < num_dim; j++)
+    local_dof_indices(i*num_dim + j) = map->getGlobalElement(i)*num_dim + j;
+  }
+  
+  local_dof_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes*num_dim,local_dof_indices.get_kokkos_view(),0,comm) );
+
+  //allocate node storage with dual view
+  dual_node_coords = dual_vec_array("dual_node_coords", nlocal_nodes,num_dim);
+  if(restart_file)
+    dual_node_densities = dual_vec_array("dual_node_densities", nlocal_nodes,1);
+  dual_nodal_forces = dual_vec_array("dual_nodal_forces", nlocal_nodes*num_dim,1);
+
+  //local variable for host view in the dual view
+  host_vec_array node_coords = dual_node_coords.view_host();
+  if(restart_file)
+    host_vec_array node_densities = dual_node_densities.view_host();
+  //notify that the host view is going to be modified in the file readin
+  dual_node_coords.modify_host();
+  if(restart_file)
+    dual_node_densities.modify_host();
+
+  //old swage method
+  //mesh->init_nodes(local_nrows); // add 1 for index starting at 1
+    
+  std::cout << "Num nodes assigned to task " << myrank << " = " << nlocal_nodes << std::endl;
+
+  // read the initial mesh coordinates
+  // x-coords
+  /*only task 0 reads in nodes and elements from the input file
+  stores node data in a buffer and communicates once the buffer cap is reached
+  or the data ends*/
+
+  words_per_line = simparam->tecplot_words_per_line;
+  if(restart_file) words_per_line++;
+  elem_words_per_line = simparam->elem_words_per_line;
+
+  //allocate read buffer
+  read_buffer = CArray<char>(BUFFER_LINES,words_per_line,MAX_WORD);
+
+  int dof_limit = num_nodes;
+  int buffer_iterations = dof_limit/BUFFER_LINES;
+  if(dof_limit%BUFFER_LINES!=0) buffer_iterations++;
+  
+  //read coords, also density if restarting
+  read_index_start = 0;
+  for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
+    //pack buffer on rank 0
+    if(myrank==0&&buffer_iteration<buffer_iterations-1){
+      for (buffer_loop = 0; buffer_loop < BUFFER_LINES; buffer_loop++) {
+        getline(*in,read_line);
+        line_parse.clear();
+        line_parse.str(read_line);
+        
+        for(int iword = 0; iword < words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //debug print
+        //std::cout<<" "<< substring <<std::endl;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+      }
+    }
+    else if(myrank==0){
+      buffer_loop=0;
+      while(buffer_iteration*BUFFER_LINES+buffer_loop < num_nodes) {
+        getline(*in,read_line);
+        line_parse.clear();
+        line_parse.str(read_line);
+        for(int iword = 0; iword < words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+        buffer_loop++;
+      }
+      
+    }
+
+    //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
+    MPI_Bcast(read_buffer.pointer(),BUFFER_LINES*words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    //broadcast how many nodes were read into this buffer iteration
+    MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
+
+    //debug_print
+    //std::cout << "NODE BUFFER LOOP IS: " << buffer_loop << std::endl;
+    //for(int iprint=0; iprint < buffer_loop; iprint++)
+      //std::cout<<"buffer packing: " << std::string(&read_buffer(iprint,0,0)) << std::endl;
+    //return;
+
+    //determine which data to store in the swage mesh members (the local node data)
+    //loop through read buffer
+    for(scan_loop = 0; scan_loop < buffer_loop; scan_loop++){
+      //set global node id (ensight specific order)
+      node_gid = read_index_start + scan_loop;
+      //let map decide if this node id belongs locally; if yes store data
+      if(map->isNodeGlobalElement(node_gid)){
+        //set local node index in this mpi rank
+        node_rid = map->getLocalElement(node_gid);
+        //extract nodal position from the read buffer
+        //for tecplot format this is the three coords in the same line
+        dof_value = atof(&read_buffer(scan_loop,0,0));
+        node_coords(node_rid, 0) = dof_value * unit_scaling;
+        dof_value = atof(&read_buffer(scan_loop,1,0));
+        node_coords(node_rid, 1) = dof_value * unit_scaling;
+        dof_value = atof(&read_buffer(scan_loop,2,0));
+        node_coords(node_rid, 2) = dof_value * unit_scaling;
+        if(restart_file){
+          dof_value = atof(&read_buffer(scan_loop,3,0));
+          node_densities(node_rid, 0) = dof_value;
+        }
+        //extract density if restarting
+      }
+    }
+    read_index_start+=BUFFER_LINES;
+  }
+
+  
+  //debug print of nodal data
+  
+  //debug print nodal positions and indices
+  /*
+  std::cout << " ------------NODAL POSITIONS ON TASK " << myrank << " --------------"<<std::endl;
+  for (int inode = 0; inode < local_nrows; inode++){
+      std::cout << "node: " << map->getGlobalElement(inode) + 1 << " { ";
+    for (int istride = 0; istride < num_dim; istride++){
+        std::cout << node_coords(inode,istride) << " , ";
+    }
+    std::cout << " }"<< std::endl;
+  }
+  */
+
+  //check that local assignments match global total
+
+  
+  //read in element info (supported tecplot format currently assumes one type)
+
+  num_elem = 0;
+  rnum_elem = 0;
+  CArray<int> node_store(elem_words_per_line);
+  
+  //broadcast number of elements
+  MPI_Bcast(&num_elem,1,MPI_INT,0,world);
+
+  std::cout<<"before initial mesh initialization"<<std::endl;
+  
+  //read in element connectivity
+  //we're gonna reallocate for the words per line expected for the element connectivity
+  read_buffer = CArray<char>(BUFFER_LINES,elem_words_per_line,MAX_WORD);
+
+  //calculate buffer iterations to read number of lines
+  buffer_iterations = num_elem/BUFFER_LINES;
+  int assign_flag;
+
+  //dynamic buffer used to store elements before we know how many this rank needs
+  std::vector<size_t> element_temp(BUFFER_LINES*elem_words_per_line);
+  std::vector<size_t> global_indices_temp(BUFFER_LINES);
+  size_t buffer_max = BUFFER_LINES*elem_words_per_line;
+  size_t indices_buffer_max = BUFFER_LINES;
+
+  if(num_elem%BUFFER_LINES!=0) buffer_iterations++;
+  read_index_start = 0;
+  //std::cout << "ELEMENT BUFFER ITERATIONS: " << buffer_iterations << std::endl;
+  rnum_elem = 0;
+  for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
+    //pack buffer on rank 0
+    if(myrank==0&&buffer_iteration<buffer_iterations-1){
+      for (buffer_loop = 0; buffer_loop < BUFFER_LINES; buffer_loop++) {
+        getline(*in,read_line);
+        line_parse.clear();
+        line_parse.str(read_line);
+        for(int iword = 0; iword < elem_words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+      }
+    }
+    else if(myrank==0){
+      buffer_loop=0;
+      while(buffer_iteration*BUFFER_LINES+buffer_loop < num_elem) {
+        getline(*in,read_line);
+        line_parse.clear();
+        line_parse.str(read_line);
+        for(int iword = 0; iword < elem_words_per_line; iword++){
+        //read portions of the line into the substring variable
+        line_parse >> substring;
+        //assign the substring variable as a word of the read buffer
+        strcpy(&read_buffer(buffer_loop,iword,0),substring.c_str());
+        }
+        buffer_loop++;
+        //std::cout<<" "<< node_coords(node_gid, 0)<<std::endl;
+      }
+    }
+
+    //broadcast buffer to all ranks; each rank will determine which nodes in the buffer belong
+    MPI_Bcast(read_buffer.pointer(),BUFFER_LINES*elem_words_per_line*MAX_WORD,MPI_CHAR,0,world);
+    //broadcast how many nodes were read into this buffer iteration
+    MPI_Bcast(&buffer_loop,1,MPI_INT,0,world);
+    
+    //store element connectivity that belongs to this rank
+    //loop through read buffer
+    for(scan_loop = 0; scan_loop < buffer_loop; scan_loop++){
+      //set global node id (ensight specific order)
+      elem_gid = read_index_start + scan_loop;
+      //add this element to the local list if any of its nodes belong to this rank according to the map
+      //get list of nodes for each element line and check if they belong to the map
+      assign_flag = 0;
+      for(int inode = 0; inode < elem_words_per_line; inode++){
+        //as we loop through the nodes belonging to this element we store them
+        //if any of these nodes belongs to this rank this list is used to store the element locally
+        node_gid = atoi(&read_buffer(scan_loop,inode,0));
+        node_store(inode) = node_gid - 1; //subtract 1 since file index start is 1 but code expects 0
+        //first we add the elements to a dynamically allocated list
+        if(map->isNodeGlobalElement(node_gid-1)&&!assign_flag){
+          assign_flag = 1;
+          rnum_elem++;
+        }
+      }
+
+      if(assign_flag){
+        for(int inode = 0; inode < elem_words_per_line; inode++){
+          if((rnum_elem-1)*elem_words_per_line + inode>=buffer_max){ 
+            element_temp.resize((rnum_elem-1)*elem_words_per_line + inode + BUFFER_LINES*elem_words_per_line);
+            buffer_max = (rnum_elem-1)*elem_words_per_line + inode + BUFFER_LINES*elem_words_per_line;
+          }
+          element_temp[(rnum_elem-1)*elem_words_per_line + inode] = node_store(inode); 
+          //std::cout << "VECTOR STORAGE FOR ELEM " << rnum_elem << " ON TASK " << myrank << " NODE " << inode+1 << " IS " << node_store(inode) + 1 << std::endl;
+        }
+        //assign global element id to temporary list
+        if(rnum_elem-1>=indices_buffer_max){ 
+          global_indices_temp.resize(rnum_elem-1 + BUFFER_LINES);
+          indices_buffer_max = rnum_elem-1 + BUFFER_LINES;
+        }
+        global_indices_temp[rnum_elem-1] = elem_gid;
+      }
+    }
+    read_index_start+=BUFFER_LINES;
+  }
+
+  // Close mesh input file
+  if(myrank==0)
+  in->close();
+  
+  std::cout << "RNUM ELEMENTS IS: " << rnum_elem << std::endl;
+  //copy temporary element storage to multivector storage
+  max_nodes_per_element = MAX_ELEM_NODES;
+
+  dual_nodes_in_elem = dual_elem_conn_array("dual_nodes_in_elem", rnum_elem, max_nodes_per_element);
+  nodes_in_elem = dual_nodes_in_elem.view_host();
+  dual_nodes_in_elem.modify_host();
+
+  Element_Types = CArray<elements::elem_types::elem_type>(rnum_elem);
+  for(int ielem = 0; ielem < rnum_elem; ielem++)
+    for(int inode = 0; inode < elem_words_per_line; inode++)
+      nodes_in_elem(ielem, inode) = element_temp[ielem*elem_words_per_line + inode];
+
+  //view storage for all local elements connected to local nodes on this rank
+  CArrayKokkos<GO, array_layout, device_type, memory_traits> All_Element_Global_Indices(rnum_elem);
+
+  //copy temporary global indices storage to view storage
+  for(int ielem = 0; ielem < rnum_elem; ielem++)
+    All_Element_Global_Indices(ielem) = global_indices_temp[ielem];
+
+  //delete temporary element connectivity and index storage
+  std::vector<size_t>().swap(element_temp);
+  std::vector<size_t>().swap(global_indices_temp);
+  
+  //construct overlapping element map (since different ranks can own the same elements due to the local node map)
+  all_element_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),All_Element_Global_Indices.get_kokkos_view(),0,comm));
+
+  //simplified for now
+  for(int ielem = 0; ielem < rnum_elem; ielem++)
+    Element_Types(ielem) = elements::elem_types::Hex8;
+
+  //element type selection (subject to change)
+  // ---- Set Element Type ---- //
+  // allocate element type memory
+  //elements::elem_type_t* elem_choice;
+
+  int NE = 1; // number of element types in problem
+    
+  //set base type pointer to one of the existing derived type object references
+  if(simparam->num_dim==2)
+  element_select->choose_2Delem_type(Element_Types(0), elem2D);
+  else if(simparam->num_dim==3)
+  element_select->choose_3Delem_type(Element_Types(0), elem);
+
+  // Convert ijk index system to the finite element numbering convention
+  // for vertices in cell
+  CArray<size_t> convert_ensight_to_ijk(max_nodes_per_element);
+  CArray<size_t> tmp_ijk_indx(max_nodes_per_element);
+  convert_ensight_to_ijk(0) = 0;
+  convert_ensight_to_ijk(1) = 1;
+  convert_ensight_to_ijk(2) = 3;
+  convert_ensight_to_ijk(3) = 2;
+  convert_ensight_to_ijk(4) = 4;
+  convert_ensight_to_ijk(5) = 5;
+  convert_ensight_to_ijk(6) = 7;
+  convert_ensight_to_ijk(7) = 6;
+    
+  int nodes_per_element;
+  
+  if(num_dim==2)
+  for (int cell_rid = 0; cell_rid < rnum_elem; cell_rid++) {
+    //set nodes per element
+    element_select->choose_2Delem_type(Element_Types(cell_rid), elem2D);
+    nodes_per_element = elem2D->num_nodes();
+    for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
+      tmp_ijk_indx(node_lid) = nodes_in_elem(cell_rid, convert_ensight_to_ijk(node_lid));
+    }   
+        
+    for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
+      nodes_in_elem(cell_rid, node_lid) = tmp_ijk_indx(node_lid);
+    }
+  }
+
+  if(num_dim==3)
+  for (int cell_rid = 0; cell_rid < rnum_elem; cell_rid++) {
+    //set nodes per element
+    element_select->choose_3Delem_type(Element_Types(cell_rid), elem);
+    nodes_per_element = elem->num_nodes();
+    for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
+      tmp_ijk_indx(node_lid) = nodes_in_elem(cell_rid, convert_ensight_to_ijk(node_lid));
+    }   
+        
+    for (int node_lid = 0; node_lid < nodes_per_element; node_lid++){
+      nodes_in_elem(cell_rid, node_lid) = tmp_ijk_indx(node_lid);
+    }
+  }
+
+  //synchronize device data
+  dual_node_coords.sync_device();
+  dual_node_coords.modify_device();
+  if(restart_file){
+    dual_node_densities.sync_device();
+    dual_node_densities.modify_device();
+  }
 
   //debug print element edof
   /*
@@ -907,10 +1352,6 @@ void Parallel_Nonlinear_Solver::init_maps(){
 
   // create a Map for ghost node indices
   ghost_node_map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(Teuchos::OrdinalTraits<GO>::invalid(),ghost_nodes.get_kokkos_view(),0,comm));
-
-  //synchronize device data
-  dual_node_coords.sync_device();
-  dual_node_coords.modify_device();
     
   // Create reference element
   ref_elem->init(p_order, num_dim, elem->num_basis());
@@ -1237,6 +1678,8 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //finalize problem
   problem->finalize(false,true,std::cout);
   //problem->check(true,std::cout);
+  //debug checks
+  /*
   ROL::Ptr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>> rol_x =
    ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>>(node_densities_distributed);
   //construct direction vector for check
@@ -1245,17 +1688,18 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>> rol_d =
    ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>>(directions_distributed);
   obj->checkGradient(*rol_x, *rol_d);
-  directions_distributed->putScalar(-0.000001);
+  //directions_distributed->putScalar(-0.000001);
   obj->checkGradient(*rol_x, *rol_d);
-  directions_distributed->putScalar(-0.0000001);
+  //directions_distributed->putScalar(-0.0000001);
   obj->checkGradient(*rol_x, *rol_d);
+  */
 
   // Instantiate Solver.
   ROL::Solver<real_t> solver(problem,*parlist);
     
   // Solve optimization problem.
   //std::ostream outStream;
-  //solver.solve(std::cout);
+  solver.solve(std::cout);
   
 }
 
@@ -1504,7 +1948,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << std::endl;
   
   */
-  
+  /*
   std::cout << "tagging z = 2 Force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2 * simparam->unit_scaling;
@@ -1521,7 +1965,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
   
-  /*
+  
   std::cout << "tagging z = 1 Force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 1 * simparam->unit_scaling;
@@ -1621,7 +2065,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << std::endl;
   
   */
-  /*
+  
   std::cout << "tagging beam +z force " << std::endl;
   bc_tag = 2;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   //value = 0;
@@ -1637,7 +2081,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  
+  /*
   
   std::cout << "tagging y = 2 " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
@@ -2881,33 +3325,31 @@ void Parallel_Nonlinear_Solver::init_assembly(){
 -------------------------------------------------------------------------------- */
 
 void Parallel_Nonlinear_Solver::init_design(){
-  //initialize memory for volume storage
-  vec_array Element_Densities("Element Densities", rnum_elem, 1);
-
   int num_dim = simparam->num_dim;
   bool nodal_density_flag = simparam->nodal_density_flag;
 
   //set densities
   if(nodal_density_flag){
-    dual_node_densities = dual_vec_array("dual_node_densities", nlocal_nodes, 1);
-    host_vec_array node_densities = dual_node_densities.view_host();
-    //notify that the host view is going to be modified in the file readin
-    dual_node_densities.modify_host();
+    if(!simparam->restart_file){
+      dual_node_densities = dual_vec_array("dual_node_densities", nlocal_nodes, 1);
+      host_vec_array node_densities = dual_node_densities.view_host();
+      //notify that the host view is going to be modified in the file readin
+      dual_node_densities.modify_host();
     
-    //debug Tecplot file readin of initial densities (only works on runs with 1 MPI rank this way)
-    std::string skip_line, read_line, substring;
-    std::stringstream line_parse;
-    real_t read_density;
-    //in = new std::ifstream();
-    //in->open("TecplotDensity.dat");
-    //skip 3 lines
-    //for (int j = 1; j <= 3; j++) {
+      //debug Tecplot file readin of initial densities (only works on runs with 1 MPI rank this way)
+      std::string skip_line, read_line, substring;
+      std::stringstream line_parse;
+      real_t read_density;
+      //in = new std::ifstream();
+      //in->open("TecplotDensity.dat");
+      //skip 3 lines
+      //for (int j = 1; j <= 3; j++) {
       //getline(*in, skip_line);
-    // std::cout << skip_line << std::endl;
-    //}
+      // std::cout << skip_line << std::endl;
+      //}
   
     
-    for(int inode = 0; inode < nlocal_nodes; inode++){
+      for(int inode = 0; inode < nlocal_nodes; inode++){
       //getline(*in,read_line);
       //line_parse.clear();
       //line_parse.str(read_line);
@@ -2926,7 +3368,7 @@ void Parallel_Nonlinear_Solver::init_design(){
 
     //sync device view
     dual_node_densities.sync_device();
-    
+    }
     //allocate global vector information
     node_densities_distributed = Teuchos::rcp(new MV(map, dual_node_densities));
     all_node_densities_distributed = Teuchos::rcp(new MV(all_node_map, 1));
@@ -2949,6 +3391,8 @@ void Parallel_Nonlinear_Solver::init_design(){
   
   }
   else{
+    //initialize memory for volume storage
+    vec_array Element_Densities("Element Densities", rnum_elem, 1);
     for(int ielem = 0; ielem < rnum_elem; ielem++)
       Element_Densities(ielem,0) = 1;
 

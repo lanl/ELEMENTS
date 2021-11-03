@@ -75,7 +75,7 @@ class Simulation_Parameters
   int p_order;
 
   //file input parameters 
-  int words_per_line, elem_words_per_line;
+  int words_per_line, elem_words_per_line, tecplot_words_per_line;
   char *format_specification;  //per line file format when reading dofs
   real_t unit_scaling;
   bool restart_file;

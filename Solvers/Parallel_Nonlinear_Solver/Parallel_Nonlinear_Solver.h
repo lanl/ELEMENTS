@@ -77,7 +77,9 @@ public:
 
   void run(int argc, char *argv[]);
 
-  void read_mesh(char *MESH);
+  void read_mesh_ensight(char *MESH);
+
+  void read_mesh_tecplot(char *MESH);
   
   //setup ghosts and element maps
   void init_maps();

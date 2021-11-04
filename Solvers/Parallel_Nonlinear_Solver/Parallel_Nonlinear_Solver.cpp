@@ -251,7 +251,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     std::fflush(stdout);
     */
     //return;
-    setup_optimization_problem();
+    //setup_optimization_problem();
     
     //solver_exit = solve();
     //if(solver_exit == EXIT_SUCCESS){
@@ -847,6 +847,7 @@ void Parallel_Nonlinear_Solver::read_mesh_tecplot(char *MESH){
   size_t read_index_start, node_rid, elem_gid;
   GO node_gid;
   real_t dof_value;
+  host_vec_array node_densities;
   //Nodes_Per_Element_Type =  elements::elem_types::Nodes_Per_Element_Type;
 
   //read the mesh
@@ -918,7 +919,7 @@ void Parallel_Nonlinear_Solver::read_mesh_tecplot(char *MESH){
   //local variable for host view in the dual view
   host_vec_array node_coords = dual_node_coords.view_host();
   if(restart_file)
-    host_vec_array node_densities = dual_node_densities.view_host();
+    node_densities = dual_node_densities.view_host();
   //notify that the host view is going to be modified in the file readin
   dual_node_coords.modify_host();
   if(restart_file)
@@ -1025,23 +1026,23 @@ void Parallel_Nonlinear_Solver::read_mesh_tecplot(char *MESH){
   //debug print of nodal data
   
   //debug print nodal positions and indices
-  /*
-  std::cout << " ------------NODAL POSITIONS ON TASK " << myrank << " --------------"<<std::endl;
-  for (int inode = 0; inode < local_nrows; inode++){
-      std::cout << "node: " << map->getGlobalElement(inode) + 1 << " { ";
-    for (int istride = 0; istride < num_dim; istride++){
-        std::cout << node_coords(inode,istride) << " , ";
-    }
-    std::cout << " }"<< std::endl;
-  }
-  */
+  
+  //std::cout << " ------------NODAL POSITIONS ON TASK " << myrank << " --------------"<<std::endl;
+  //for (int inode = 0; inode < local_nrows; inode++){
+      //std::cout << "node: " << map->getGlobalElement(inode) + 1 << " { ";
+    //for (int istride = 0; istride < num_dim; istride++){
+       //std::cout << node_coords(inode,istride) << " , ";
+    //}
+    //std::cout << node_densities(inode,0);
+    //std::cout << " }"<< std::endl;
+  //}
+  
 
   //check that local assignments match global total
 
   
   //read in element info (supported tecplot format currently assumes one type)
 
-  num_elem = 0;
   rnum_elem = 0;
   CArray<int> node_store(elem_words_per_line);
   
@@ -2074,7 +2075,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 2/simparam->unit_scaling/simparam->unit_scaling;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
   surf_force_set_id++;
@@ -5982,8 +5983,8 @@ void Parallel_Nonlinear_Solver::compute_nodal_strains(){
   
   std::ostream &out = std::cout;
   Teuchos::RCP<Teuchos::FancyOStream> fos = Teuchos::fancyOStream(Teuchos::rcpFromRef(out));
-  if(myrank==0)
-  *fos << "Local Node Strains :" << std::endl;
+  //if(myrank==0)
+  //*fos << "Local Node Strains :" << std::endl;
   //all_node_strains_distributed->describe(*fos,Teuchos::VERB_EXTREME);
   *fos << std::endl;
   std::fflush(stdout);
@@ -6565,6 +6566,7 @@ int Parallel_Nonlinear_Solver::solve(){
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> material = Teuchos::null;
     Teuchos::RCP<Xpetra::CrsMatrix<real_t,LO,GO,node_type>> xbalanced_A = Teuchos::rcp(new Xpetra::TpetraCrsMatrix<real_t,LO,GO,node_type>(balanced_A));
     Teuchos::RCP<Xpetra::Matrix<real_t,LO,GO,node_type>> xwrap_balanced_A = Teuchos::rcp(new Xpetra::CrsMatrixWrap<real_t,LO,GO,node_type>(xbalanced_A));
+    xwrap_balanced_A->SetFixedBlockSize(num_dim);
 
     //randomize initial vector
     xX->setSeed(100);

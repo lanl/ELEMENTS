@@ -215,6 +215,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     // ---- Find Boundaries on mesh ---- //
     generate_bcs();
     
+    std::cout << "Starting init assembly" << std::endl <<std::flush;
     //allocate and fill sparse structures needed for global solution
     init_assembly();
 
@@ -223,6 +224,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     
     //assemble the global solution (stiffness matrix etc. and nodal forces)
     assemble_matrix();
+    std::cout << "Finished matrix assembly" << std::endl <<std::flush;
     assemble_vector();
     //return;
     //find each element's volume
@@ -230,6 +232,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
 
     linear_solver_parameters();
     
+    std::cout << "Starting First Solve" << std::endl <<std::flush;
     int solver_exit = solve();
     if(solver_exit == EXIT_SUCCESS){
       std::cout << "Linear Solver Error" << std::endl <<std::flush;
@@ -1714,6 +1717,7 @@ void Parallel_Nonlinear_Solver::Get_Boundary_Patches(){
   int num_dim = simparam->num_dim;
   CArrayKokkos<size_t, array_layout, device_type, memory_traits> Surface_Nodes;
   const_host_elem_conn_array nodes_in_elem = nodes_in_elem_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  //Surface_Nodes = CArrayKokkos<size_t, array_layout, device_type, memory_traits>(4, "Surface_Nodes");
   
   std::set<Node_Combination> my_patches;
   //inititializes type for the pair variable (finding the iterator type is annoying)
@@ -1736,15 +1740,16 @@ void Parallel_Nonlinear_Solver::Get_Boundary_Patches(){
     element_npatches = elem->nsurfaces;
     npatches_repeat += element_npatches;
   }
-  
+  std::cout << "Starting boundary patch allocation of size " << npatches_repeat << std::endl <<std::flush;
   //information for all patches on this rank
   CArrayKokkos<Node_Combination,array_layout, device_type, memory_traits> Patch_Nodes(npatches_repeat, "Patch_Nodes");
   CArrayKokkos<size_t,array_layout, device_type, memory_traits> Patch_Boundary_Flags(npatches_repeat, "Patch_Boundary_Flags");
-  
+  std::cout << "Done with boundary patch allocation" << std::endl <<std::flush;
   //initialize boundary patch flags
   for(int init = 0; init < npatches_repeat; init++)
     Patch_Boundary_Flags(init) = 1;
 
+  std::cout << "Done with boundary patch flags init" << std::endl <<std::flush;
   //use set of nodal combinations to find boundary set
   //boundary patches will not try to add nodal combinations twice
   //loop through elements in this rank to find boundary patches
@@ -1824,7 +1829,7 @@ void Parallel_Nonlinear_Solver::Get_Boundary_Patches(){
     std::cout << std::endl;
   }
   */
-
+  std::cout << "Done with boundary patch loop" << std::endl <<std::flush;
   //loop through patch boundary flags to isolate boundary patches
   nboundary_patches = 0;
   for(int iflags = 0 ; iflags < npatches_repeat; iflags++){
@@ -1886,8 +1891,9 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
     
   // build boundary mesh patches
   //mesh->build_bdy_patches();
+  //std::cout << "Starting boundary patch setup" << std::endl <<std::flush;
   Get_Boundary_Patches();
-
+  //std::cout << "Done with boundary patch setup" << std::endl <<std::flush;
   std::cout << "number of boundary patches on task " << myrank << " = " << nboundary_patches << std::endl;
   std::cout << "building boundary sets " << std::endl;
   // set the number of boundary sets
@@ -2082,8 +2088,8 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  /*
   
+  /*
   std::cout << "tagging y = 2 " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2.0;
@@ -6173,6 +6179,7 @@ void Parallel_Nonlinear_Solver::linear_solver_parameters(){
   
   }
   else{
+    Linear_Solve_Params = Teuchos::rcp(new Teuchos::ParameterList("MueLu"));
     std::string xmlFileName = "simple_test.xml";
     Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&(*Linear_Solve_Params)), *comm);
   }
@@ -6528,6 +6535,7 @@ int Parallel_Nonlinear_Solver::solve(){
   //}
   //return !EXIT_SUCCESS;
   // Create solver interface to KLU2 with Amesos2 factory method
+  std::cout << "Creating solver" << std::endl <<std::flush;
   if(simparam->direct_solver_flag){
     Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
     //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
@@ -6561,12 +6569,14 @@ int Parallel_Nonlinear_Solver::solve(){
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> xX = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(X));
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> coordinates = Teuchos::null;
     //nullspace vector
+    Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > reduced_node_map = 
+    Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced/num_dim,0,comm));
     Teuchos::RCP<MV> tnullspace = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, 1));
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> nullspace = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(tnullspace));
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> material = Teuchos::null;
     Teuchos::RCP<Xpetra::CrsMatrix<real_t,LO,GO,node_type>> xbalanced_A = Teuchos::rcp(new Xpetra::TpetraCrsMatrix<real_t,LO,GO,node_type>(balanced_A));
     Teuchos::RCP<Xpetra::Matrix<real_t,LO,GO,node_type>> xwrap_balanced_A = Teuchos::rcp(new Xpetra::CrsMatrixWrap<real_t,LO,GO,node_type>(xbalanced_A));
-    xwrap_balanced_A->SetFixedBlockSize(num_dim);
+    xwrap_balanced_A->SetFixedBlockSize(1);
 
     //randomize initial vector
     xX->setSeed(100);
@@ -6580,10 +6590,10 @@ int Parallel_Nonlinear_Solver::solve(){
     //*fos << std::endl;
     //std::fflush(stdout);
     
-    int num_iter = 20;
+    int num_iter = 2000;
     double solve_tol = 1e-12;
     int cacheSize = 0;
-    std::string solveType         = "standalone";
+    std::string solveType         = "belos";
     std::string belosType         = "cg";
     // =========================================================================
     // Preconditioner construction
@@ -6601,6 +6611,7 @@ int Parallel_Nonlinear_Solver::solve(){
       PreconditionerSetup(xwrap_balanced_A,coordinates,nullspace,material,*Linear_Solve_Params,false,false,false,0,H,Prec);
       comm->barrier();
       //H->Write(-1, -1);
+      H->describe(*fos,Teuchos::VERB_EXTREME);
     }
 
     // =========================================================================
@@ -6619,10 +6630,10 @@ int Parallel_Nonlinear_Solver::solve(){
   //Print solution vector
   //print allocation of the solution vector to check distribution
   
-  //if(myrank==0)
-  //*fos << "Solution:" << std::endl;
-  //X->describe(*fos,Teuchos::VERB_EXTREME);
-  //*fos << std::endl;
+  if(myrank==0)
+  *fos << "Solution:" << std::endl;
+  X->describe(*fos,Teuchos::VERB_EXTREME);
+  *fos << std::endl;
   
 
   //communicate solution on reduced map to the all node map vector for post processing of strain etc.

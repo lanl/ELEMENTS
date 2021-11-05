@@ -19,7 +19,7 @@ Simulation_Parameters::Simulation_Parameters(){
   unit_scaling = 1;
   strain_max_flag = 0;
   optimization_output_freq = 100;
-  direct_solver_flag = 1;
+  direct_solver_flag = false;
   penalty_power = 3;
   restart_file = false;
   tecplot_input = false;
@@ -72,7 +72,7 @@ void Simulation_Parameters::input(){
   
   //Static isotropic parameters to move into a child class later
   Elastic_Modulus = 10000;
-  Poisson_Ratio = 0.3;
+  Poisson_Ratio = 0;
   words_per_line = 1;
   tecplot_words_per_line = 3;
   elem_words_per_line = 8;

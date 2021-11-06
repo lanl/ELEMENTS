@@ -242,7 +242,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     //debug print
     /*
     Teuchos::RCP<MV> design_gradients_distributed = Teuchos::rcp(new MV(map, 1));
-    const_host_vec_array node_densities = node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    const_host_vec_array node_densities = design_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     host_vec_array design_gradients = design_gradients_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
     compute_adjoint_gradients(node_densities, design_gradients);
     std::ostream &out = std::cout;
@@ -254,7 +254,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     std::fflush(stdout);
     */
     //return;
-    //setup_optimization_problem();
+    setup_optimization_problem();
     
     //solver_exit = solve();
     //if(solver_exit == EXIT_SUCCESS){
@@ -1567,7 +1567,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //Design variables to optimize
   ROL::Ptr<ROL::Vector<real_t>> x;
   if(nodal_density_flag)
-    x = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(node_densities_distributed);
+    x = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(design_node_densities_distributed);
   else
     x = ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO>>(Global_Element_Densities);
   //optimization problem interface that can have constraints added to it before passing to solver object
@@ -1673,30 +1673,31 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
   
-  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
-  //ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.5);
+  //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
+  ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.2);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
-  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  problem->addLinearConstraint("Inequality Constraint",eq_constraint,constraint_mul,constraint_bnd);
   //problem->addConstraint("Equality Constraint",eq_constraint,constraint_mul);
-  //problem->setProjectionAlgorithm(*parlist);
+  problem->setProjectionAlgorithm(*parlist);
   //finalize problem
   problem->finalize(false,true,std::cout);
   //problem->check(true,std::cout);
+
   //debug checks
-  /*
   ROL::Ptr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>> rol_x =
-   ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>>(node_densities_distributed);
+   ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>>(design_node_densities_distributed);
   //construct direction vector for check
   Teuchos::RCP<MV> directions_distributed = Teuchos::rcp(new MV(map, 1));
-  directions_distributed->putScalar(-0.00001);
+  directions_distributed->putScalar(-0.1);
   ROL::Ptr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>> rol_d =
    ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>>(directions_distributed);
-  obj->checkGradient(*rol_x, *rol_d);
+  //obj->checkGradient(*rol_x, *rol_d);
   //directions_distributed->putScalar(-0.000001);
-  obj->checkGradient(*rol_x, *rol_d);
+  //obj->checkGradient(*rol_x, *rol_d);
   //directions_distributed->putScalar(-0.0000001);
-  obj->checkGradient(*rol_x, *rol_d);
-  */
+  //obj->checkGradient(*rol_x, *rol_d);
+  
 
   // Instantiate Solver.
   ROL::Solver<real_t> solver(problem,*parlist);
@@ -2088,8 +2089,8 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   std::cout << "tagged a set " << std::endl;
   std::cout << "number of bdy patches in this set = " << NBoundary_Condition_Patches(bdy_set_id) << std::endl;
   std::cout << std::endl;
-  
   /*
+  
   std::cout << "tagging y = 2 " << std::endl;
   bc_tag = 1;  // bc_tag = 0 xplane, 1 yplane, 2 zplane, 3 cylinder, 4 is shell
   value = 2.0;
@@ -2291,7 +2292,7 @@ void Parallel_Nonlinear_Solver::collect_information(){
   Teuchos::RCP<MV> collected_node_densities_distributed = Teuchos::rcp(new MV(global_reduce_map, 1));
 
   //comms to collect
-  collected_node_densities_distributed->doImport(*node_densities_distributed, node_collection_importer, Tpetra::INSERT);
+  collected_node_densities_distributed->doImport(*design_node_densities_distributed, node_collection_importer, Tpetra::INSERT);
 
   //collect element connectivity data
   if(myrank==0) nreduce_elem = num_elem;
@@ -3377,7 +3378,7 @@ void Parallel_Nonlinear_Solver::init_design(){
     dual_node_densities.sync_device();
     }
     //allocate global vector information
-    node_densities_distributed = Teuchos::rcp(new MV(map, dual_node_densities));
+    design_node_densities_distributed = Teuchos::rcp(new MV(map, dual_node_densities));
     all_node_densities_distributed = Teuchos::rcp(new MV(all_node_map, 1));
 
     //communicate ghost information to the all vector
@@ -3385,7 +3386,7 @@ void Parallel_Nonlinear_Solver::init_design(){
     Tpetra::Import<LO, GO> importer(map, all_node_map);
 
     //comms to get ghosts
-    all_node_densities_distributed->doImport(*node_densities_distributed, importer, Tpetra::INSERT);
+    all_node_densities_distributed->doImport(*design_node_densities_distributed, importer, Tpetra::INSERT);
 
     //debug print
     //std::ostream &out = std::cout;
@@ -5493,7 +5494,7 @@ void Parallel_Nonlinear_Solver::compute_adjoint_gradients(const_host_vec_array d
 void Parallel_Nonlinear_Solver::comm_variables(Teuchos::RCP<const MV> zp){
   
   //set density vector to the current value chosen by the optimizer
-  *node_densities_distributed = *zp;
+  test_node_densities_distributed = zp;
   
   //debug print of design vector
       //std::ostream &out = std::cout;
@@ -5509,7 +5510,7 @@ void Parallel_Nonlinear_Solver::comm_variables(Teuchos::RCP<const MV> zp){
   Tpetra::Import<LO, GO> importer(map, all_node_map);
 
   //comms to get ghosts
-  all_node_densities_distributed->doImport(*node_densities_distributed, importer, Tpetra::INSERT);
+  all_node_densities_distributed->doImport(*test_node_densities_distributed, importer, Tpetra::INSERT);
 
   //update_count++;
   //if(update_count==1){
@@ -5525,7 +5526,7 @@ void Parallel_Nonlinear_Solver::comm_variables(Teuchos::RCP<const MV> zp){
 void Parallel_Nonlinear_Solver::update_linear_solve(Teuchos::RCP<const MV> zp){
   
   //set density vector to the current value chosen by the optimizer
-  *node_densities_distributed = *zp;
+  test_node_densities_distributed = zp;
 
   assemble_matrix();
   
@@ -6535,7 +6536,7 @@ int Parallel_Nonlinear_Solver::solve(){
   //}
   //return !EXIT_SUCCESS;
   // Create solver interface to KLU2 with Amesos2 factory method
-  std::cout << "Creating solver" << std::endl <<std::flush;
+  //std::cout << "Creating solver" << std::endl <<std::flush;
   if(simparam->direct_solver_flag){
     Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
     //Teuchos::RCP<Amesos2::Solver<MAT,MV>> solver = Amesos2::create<MAT,MV>("SuperLUDist", balanced_A, X, balanced_B);
@@ -6630,10 +6631,10 @@ int Parallel_Nonlinear_Solver::solve(){
   //Print solution vector
   //print allocation of the solution vector to check distribution
   
-  if(myrank==0)
-  *fos << "Solution:" << std::endl;
-  X->describe(*fos,Teuchos::VERB_EXTREME);
-  *fos << std::endl;
+  //if(myrank==0)
+  //*fos << "Solution:" << std::endl;
+  //X->describe(*fos,Teuchos::VERB_EXTREME);
+  //*fos << std::endl;
   
 
   //communicate solution on reduced map to the all node map vector for post processing of strain etc.

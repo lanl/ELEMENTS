@@ -209,7 +209,8 @@ public:
   Teuchos::RCP<MV> all_node_coords_distributed;
   Teuchos::RCP<MV> all_node_displacements_distributed;
   Teuchos::RCP<MV> all_node_strains_distributed;
-  Teuchos::RCP<MV> node_densities_distributed;
+  Teuchos::RCP<MV> design_node_densities_distributed;
+  Teuchos::RCP<const MV> test_node_densities_distributed;
   Teuchos::RCP<MV> all_node_densities_distributed;
   Teuchos::RCP<MAT> Global_Stiffness_Matrix;
   Teuchos::RCP<MV> Global_Nodal_Forces;

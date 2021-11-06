@@ -80,7 +80,7 @@ public:
     inequality_flag_ = inequality_flag;
     constraint_value_ = constraint_value;
     ROL_Element_Masses = ROL::makePtr<ROL_MV>(FEM_->Global_Element_Masses);
-    const_host_vec_array design_densities = FEM_->node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+    const_host_vec_array design_densities = FEM_->design_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
     
     FEM_->compute_element_masses(design_densities,true);
     

@@ -1555,6 +1555,8 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   size_t node_id, patch_id;
   int num_boundary_sets = num_boundary_conditions;
   int current_element_index, local_surface_id;
+  const_host_vec_array design_densities;
+  typedef ROL::TpetraMultiVector<real_t,LO,GO,node_type> ROL_MV;
   
   // fill parameter list with desired algorithmic options or leave as default
   // Read optimization input parameter list.
@@ -1667,19 +1669,32 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //problem.addConstraint("Equality Constraint",econ,emul);
   ROL::Ptr<std::vector<real_t> > li_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
   ROL::Ptr<std::vector<real_t> > ll_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
-  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.20);
+  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.30);
 
   ROL::Ptr<ROL::Vector<real_t> > constraint_mul = ROL::makePtr<ROL::StdVector<real_t>>(li_ptr);
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
   ROL::Ptr<ROL::Vector<real_t> > lu = ROL::makePtr<ROL::StdVector<real_t>>(lu_ptr);
   
   //ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
-  ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.2);
+  //compute initial mass
+  ROL::Ptr<ROL_MV> ROL_Element_Masses = ROL::makePtr<ROL_MV>(Global_Element_Masses);
+  ROL::Elementwise::ReductionSum<real_t> sumreduc;
+  if(nodal_density_flag)
+    design_densities = design_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  else
+    design_densities = Global_Element_Densities->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
+  compute_element_masses(design_densities,false);
+  
+  real_t initial_mass = ROL_Element_Masses->reduce(sumreduc);
+
+  //define constrain objects
+  //ROL::Ptr<ROL::Constraint<real_t>> eq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag, false, 0.2);
+  ROL::Ptr<ROL::Constraint<real_t>> ineq_constraint = ROL::makePtr<MassConstraint_TopOpt>(this, nodal_density_flag);
   ROL::Ptr<ROL::BoundConstraint<real_t>> constraint_bnd = ROL::makePtr<ROL::Bounds<real_t>>(ll,lu);
   //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
-  problem->addLinearConstraint("Inequality Constraint",eq_constraint,constraint_mul,constraint_bnd);
-  //problem->addConstraint("Equality Constraint",eq_constraint,constraint_mul);
-  problem->setProjectionAlgorithm(*parlist);
+  problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
+  //problem->addLinearConstraint("Equality Constraint",eq_constraint,constraint_mul);
+  //problem->setProjectionAlgorithm(*parlist);
   //finalize problem
   problem->finalize(false,true,std::cout);
   //problem->check(true,std::cout);
@@ -1705,7 +1720,12 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   // Solve optimization problem.
   //std::ostream outStream;
   solver.solve(std::cout);
-  
+
+  //print mass constraint for final design vector
+  compute_element_masses(design_densities,false);
+  real_t final_mass = ROL_Element_Masses->reduce(sumreduc);
+  if(myrank==0)
+    std::cout << "Final Mass Constraint is " << final_mass/initial_mass << std::endl;
 }
 
 /* ----------------------------------------------------------------------

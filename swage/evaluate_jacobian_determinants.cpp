@@ -1,3 +1,5 @@
+#include "lagrange_polynomials.h"
+
 #include "swage.h"
 
 namespace swage {

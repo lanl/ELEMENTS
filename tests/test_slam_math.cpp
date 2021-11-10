@@ -148,7 +148,7 @@ void ViewCArrayMath::Multiply21::operator()(ViewCArray <double> &c_){
     
     assert(c_.dims(0) == A_.dims(0) && "ViewCArray Multiply21 dimensions do not match, output and first input array have different first dimensions!");
     assert(c_.dims(1) == 0 && "ViewCArray Multiply21 dimensions do not match, output array should be a 1D array!");
-    assert(A_.dims(1) == B_.dims(0) && "ViewCArray Multiply21 dimensions do not match, input arrays A(i,j)*b(j) have wong j dimension!");
+    assert(A_.dims(1) == b_.dims(0) && "ViewCArray Multiply21 dimensions do not match, input arrays A(i,j)*b(j) have wong j dimension!");
     
     // initialize to zero
     for (size_t i=0; i<c_.dims(0); i++){

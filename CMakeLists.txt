@@ -20,6 +20,8 @@ endif (CMAKE_VECTOR_VERBOSE)
 
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
+
+option(ENABLE_VTK "Build ELEMENTS with VTK" OFF)
 find_package(VTK NO_MODULE)
 
 INCLUDE(cmake/Modules/TargetDistclean.cmake OPTIONAL)

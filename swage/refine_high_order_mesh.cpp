@@ -1,4 +1,5 @@
-// Includes for barycentric Lagrange interpolation
+#include "lagrange_polynomials.h"
+
 #include "swage.h"
 
 namespace swage {

@@ -468,7 +468,7 @@ void SystemSolve(Teuchos::RCP<Xpetra::Matrix<Scalar,LocalOrdinal,GlobalOrdinal,N
       }
 
       // Get the number of iterations for this solve.
-      out << "Number of iterations performed for this solve: " << numIts << std::endl;
+      //out << "Number of iterations performed for this solve: " << numIts << std::endl;
 
       // Check convergence
       if (ret != Belos::Converged)

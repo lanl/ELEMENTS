@@ -128,7 +128,7 @@ num_cells in element = (p_order*2)^3
 #define MAX_WORD 30
 #define MAX_ELEM_NODES 8
 #define STRAIN_EPSILON 0.000000001
-#define DENSITY_EPSILON 0.001
+#define DENSITY_EPSILON 0.0001
 
 using namespace utils;
 
@@ -254,7 +254,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     std::fflush(stdout);
     */
     //return;
-    setup_optimization_problem();
+    //setup_optimization_problem();
     
     //solver_exit = solve();
     //if(solver_exit == EXIT_SUCCESS){
@@ -1669,7 +1669,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //problem.addConstraint("Equality Constraint",econ,emul);
   ROL::Ptr<std::vector<real_t> > li_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
   ROL::Ptr<std::vector<real_t> > ll_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
-  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.30);
+  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.15);
 
   ROL::Ptr<ROL::Vector<real_t> > constraint_mul = ROL::makePtr<ROL::StdVector<real_t>>(li_ptr);
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
@@ -1704,7 +1704,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
    ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>>(design_node_densities_distributed);
   //construct direction vector for check
   Teuchos::RCP<MV> directions_distributed = Teuchos::rcp(new MV(map, 1));
-  directions_distributed->putScalar(-0.1);
+  directions_distributed->putScalar(0.1);
   ROL::Ptr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>> rol_d =
    ROL::makePtr<ROL::TpetraMultiVector<real_t,LO,GO,node_type>>(directions_distributed);
   //obj->checkGradient(*rol_x, *rol_d);
@@ -2102,7 +2102,7 @@ void Parallel_Nonlinear_Solver::generate_bcs(){
   //find boundary patches this BC corresponds to
   tag_boundaries(bc_tag, value, bdy_set_id);
   Boundary_Condition_Type_List(bdy_set_id) = LOADING_CONDITION;
-  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 2/simparam->unit_scaling/simparam->unit_scaling;
+  Boundary_Surface_Force_Densities(surf_force_set_id,0) = 1/simparam->unit_scaling/simparam->unit_scaling;
   Boundary_Surface_Force_Densities(surf_force_set_id,1) = 0;
   Boundary_Surface_Force_Densities(surf_force_set_id,2) = 0;
   surf_force_set_id++;
@@ -6201,7 +6201,7 @@ void Parallel_Nonlinear_Solver::linear_solver_parameters(){
   }
   else{
     Linear_Solve_Params = Teuchos::rcp(new Teuchos::ParameterList("MueLu"));
-    std::string xmlFileName = "simple_test.xml";
+    std::string xmlFileName = "scaling.xml";
     Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&(*Linear_Solve_Params)), *comm);
   }
 }
@@ -6220,7 +6220,10 @@ int Parallel_Nonlinear_Solver::solve(){
   int local_node_index, current_row, current_column;
   size_t reduced_index;
   int max_stride = 0;
-  global_size_t global_index, reduced_row_count;
+  size_t access_index, row_access_index, row_counter;
+  global_size_t reduced_row_count;
+  GO global_index, global_dof_index;
+  LO reduced_local_dof_index;
 
   //ROL::Ptr<MV> > x_ptr  = ROL::makePtr<MV>(2);
   //assumes ROL::Ptr<T> was compiled as Teuchos::RCP<T>
@@ -6286,8 +6289,6 @@ int Parallel_Nonlinear_Solver::solve(){
     
   
   //compute reduced matrix strides
-  size_t access_index, row_access_index, row_counter;
-  GO global_dof_index, reduced_local_dof_index;
   for(LO i=0; i < local_nrows_reduced; i++){
     access_index = local_dof_map->getLocalElement(Free_Indices(i));
     reduced_row_count = 0;
@@ -6583,17 +6584,125 @@ int Parallel_Nonlinear_Solver::solve(){
     //std::cout << "AFTER LINEAR SOLVE" << std::endl<< std::flush;
   }
   else{
+    //dimension of the nullspace for linear elasticity
+    int nulldim = 6;
+    if(num_dim == 2) nulldim = 3;
+    using impl_scalar_type =
+      typename Kokkos::Details::ArithTraits<real_t>::val_type;
+    using mag_type = typename Kokkos::ArithTraits<impl_scalar_type>::mag_type;
     // Instead of checking each time for rank, create a rank 0 stream
     Teuchos::RCP<Teuchos::FancyOStream> fancy = Teuchos::fancyOStream(Teuchos::rcpFromRef(std::cout));
     Teuchos::FancyOStream& out = *fancy;
+
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> xbalanced_B = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(balanced_B));
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> xX = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(X));
-    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> coordinates = Teuchos::null;
+    //Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > reduced_node_map = 
+    //Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced/num_dim,0,comm));
+
+    //set coordinates vector
+    Teuchos::RCP<MV> unbalanced_coordinates_distributed = Teuchos::rcp(new MV(local_reduced_dof_map, num_dim));
+    //loop through dofs and set coordinates, duplicated for each dim to imitate MueLu example for now (no idea why this was done that way)
+
+    host_vec_array unbalanced_coordinates_view = unbalanced_coordinates_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+    int dim_index;
+    real_t node_x, node_y, node_z;
+    //set coordinates components
+      for(LO i=0; i < local_nrows_reduced; i++){
+        global_dof_index = Free_Indices(i);
+        global_index = Free_Indices(i)/num_dim;
+        dim_index = global_dof_index % num_dim;
+        access_index = map->getLocalElement(global_index);
+        node_x = node_coords(access_index, 0);
+        node_y = node_coords(access_index, 1);
+        node_z = node_coords(access_index, 2);
+
+        unbalanced_coordinates_view(i,0) = node_x;
+        unbalanced_coordinates_view(i,1) = node_y;
+        unbalanced_coordinates_view(i,2) = node_z;
+      }// for
+    
+    //balanced coordinates vector
+    Teuchos::RCP<MV> tcoordinates = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, num_dim));
+    //rebalance coordinates vector
+    tcoordinates->doImport(*unbalanced_coordinates_distributed, Bvec_importer, Tpetra::INSERT);
+    Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> coordinates = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(tcoordinates));
+    
     //nullspace vector
-    Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > reduced_node_map = 
-    Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(nrows_reduced/num_dim,0,comm));
-    Teuchos::RCP<MV> tnullspace = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, 1));
+    Teuchos::RCP<MV> unbalanced_nullspace_distributed = Teuchos::rcp(new MV(local_reduced_dof_map, nulldim));
+    //set nullspace components
+    //init
+    unbalanced_nullspace_distributed->putScalar(0);
+    //loop through dofs and compute nullspace components for each
+    host_vec_array unbalanced_nullspace_view = unbalanced_nullspace_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadWrite);
+
+    //compute center
+    // Calculate center
+	  real_t cx = tcoordinates->getVector(0)->meanValue();
+	  real_t cy = tcoordinates->getVector(1)->meanValue();
+    real_t cz;
+    if(num_dim==3)
+	    cz = tcoordinates->getVector(2)->meanValue();
+
+    if(num_dim==3){
+      for(LO i=0; i < local_nrows_reduced; i++){
+        global_dof_index = Free_Indices(i);
+        global_index = Free_Indices(i)/num_dim;
+        dim_index = global_dof_index % num_dim;
+        access_index = map->getLocalElement(global_index);
+        node_x = node_coords(access_index, 0);
+        node_y = node_coords(access_index, 1);
+        node_z = node_coords(access_index, 2);
+        //set translational component
+        unbalanced_nullspace_view(i,dim_index) = 1;
+        //set rotational components
+        if(dim_index==0){
+          unbalanced_nullspace_view(i,3) = -node_y + cy;
+          unbalanced_nullspace_view(i,5) = node_z - cz;
+        }
+        if(dim_index==1){
+          unbalanced_nullspace_view(i,3) = node_x - cx;
+          unbalanced_nullspace_view(i,4) = -node_z + cz;
+        }
+        if(dim_index==2){
+          unbalanced_nullspace_view(i,4) = node_y - cy;
+          unbalanced_nullspace_view(i,5) = -node_x + cx;
+        }
+      }// for
+    }
+    else{
+      for(LO i=0; i < local_nrows_reduced; i++){
+        global_dof_index = Free_Indices(i);
+        global_index = Free_Indices(i)/num_dim;
+        dim_index = global_dof_index % num_dim;
+        access_index = map->getLocalElement(global_index);
+        node_x = node_coords(access_index, 0);
+        node_y = node_coords(access_index, 1);
+        //set translational component
+        unbalanced_nullspace_view(i,dim_index) = 1;
+        //set rotational components
+        if(dim_index==0){
+          unbalanced_nullspace_view(i,3) = -node_y + cy;
+        }
+        if(dim_index==1){
+          unbalanced_nullspace_view(i,3) = node_x - cx;
+        }
+      }// for
+    }
+    
+    //balanced nullspace vector
+    Teuchos::RCP<MV> tnullspace = Teuchos::rcp(new MV(local_balanced_reduced_dof_map, nulldim));
+    //rebalance nullspace vector
+    tnullspace->doImport(*unbalanced_nullspace_distributed, Bvec_importer, Tpetra::INSERT);
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> nullspace = Teuchos::rcp(new Xpetra::TpetraMultiVector<real_t,LO,GO,node_type>(tnullspace));
+
+    //normalize components
+    Kokkos::View<mag_type*, Kokkos::HostSpace> norms2("norms2", nulldim);
+    tnullspace->norm2(norms2);
+    Kokkos::View<impl_scalar_type*, device_type> scaling_values("scaling_values", nulldim);
+    for (int i = 0; i < nulldim; i++)
+        scaling_values(i) = norms2(0) / norms2(i);
+    tnullspace->scale(scaling_values);
+
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> material = Teuchos::null;
     Teuchos::RCP<Xpetra::CrsMatrix<real_t,LO,GO,node_type>> xbalanced_A = Teuchos::rcp(new Xpetra::TpetraCrsMatrix<real_t,LO,GO,node_type>(balanced_A));
     Teuchos::RCP<Xpetra::Matrix<real_t,LO,GO,node_type>> xwrap_balanced_A = Teuchos::rcp(new Xpetra::CrsMatrixWrap<real_t,LO,GO,node_type>(xbalanced_A));
@@ -6602,7 +6711,7 @@ int Parallel_Nonlinear_Solver::solve(){
     //randomize initial vector
     xX->setSeed(100);
     xX->randomize();
-    nullspace->putScalar(1);
+    
     
     //debug print
     //if(myrank==0)
@@ -6620,9 +6729,9 @@ int Parallel_Nonlinear_Solver::solve(){
     // Preconditioner construction
     // =========================================================================
     bool useML   = Linear_Solve_Params->isParameter("use external multigrid package") && (Linear_Solve_Params->get<std::string>("use external multigrid package") == "ml");
-    out<<"*********** MueLu ParameterList ***********"<<std::endl;
-    out<<*Linear_Solve_Params;
-    out<<"*******************************************"<<std::endl;
+    //out<<"*********** MueLu ParameterList ***********"<<std::endl;
+    //out<<*Linear_Solve_Params;
+    //out<<"*******************************************"<<std::endl;
     
     Teuchos::RCP<MueLu::Hierarchy<real_t,LO,GO,node_type>> H;
     Teuchos::RCP<Xpetra::Operator<real_t,LO,GO,node_type>> Prec;
@@ -6632,7 +6741,7 @@ int Parallel_Nonlinear_Solver::solve(){
       PreconditionerSetup(xwrap_balanced_A,coordinates,nullspace,material,*Linear_Solve_Params,false,false,false,0,H,Prec);
       comm->barrier();
       //H->Write(-1, -1);
-      H->describe(*fos,Teuchos::VERB_EXTREME);
+      //H->describe(*fos,Teuchos::VERB_EXTREME);
     }
 
     // =========================================================================
@@ -6678,7 +6787,7 @@ int Parallel_Nonlinear_Solver::solve(){
     node_displacements_host(access_index,0) = reduced_node_displacements_host(i,0);
   }
   
-  //import for displacement ghosts
+  //import for displacement of ghosts
   Tpetra::Import<LO, GO> ghost_displacement_importer(local_dof_map, all_dof_map);
 
   //comms to get displacements on all node map

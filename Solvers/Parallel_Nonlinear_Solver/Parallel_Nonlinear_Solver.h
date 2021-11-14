@@ -192,7 +192,7 @@ public:
   dual_vec_array dual_all_node_densities; //includes ghost data of the topology optimization design variable
 
   //Global FEA data
-  size_t num_nodes, num_elem;
+  long long int num_nodes, num_elem;
   Teuchos::RCP<const Teuchos::Comm<int> > comm;
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > map; //map of node indices
   Teuchos::RCP<Tpetra::Map<LO,GO,node_type> > ghost_node_map; //map of node indices with ghosts on each rank

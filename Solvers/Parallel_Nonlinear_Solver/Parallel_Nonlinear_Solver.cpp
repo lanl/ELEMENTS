@@ -254,7 +254,7 @@ void Parallel_Nonlinear_Solver::run(int argc, char *argv[]){
     std::fflush(stdout);
     */
     //return;
-    //setup_optimization_problem();
+    setup_optimization_problem();
     
     //solver_exit = solve();
     //if(solver_exit == EXIT_SUCCESS){
@@ -340,7 +340,7 @@ void Parallel_Nonlinear_Solver::read_mesh_ensight(char *MESH){
   }
   
   //broadcast number of nodes
-  MPI_Bcast(&num_nodes,1,MPI_INT,0,world);
+  MPI_Bcast(&num_nodes,1,MPI_LONG_LONG_INT,0,world);
   
   //construct contiguous parallel row map now that we know the number of nodes
   map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes,0,comm));
@@ -620,7 +620,7 @@ void Parallel_Nonlinear_Solver::read_mesh_ensight(char *MESH){
   }
   
   //broadcast number of elements
-  MPI_Bcast(&num_elem,1,MPI_INT,0,world);
+  MPI_Bcast(&num_elem,1,MPI_LONG_LONG_INT,0,world);
 
   std::cout<<"before initial mesh initialization"<<std::endl;
   
@@ -890,7 +890,7 @@ void Parallel_Nonlinear_Solver::read_mesh_tecplot(char *MESH){
   }
   
   //broadcast number of nodes
-  MPI_Bcast(&num_nodes,1,MPI_INT,0,world);
+  MPI_Bcast(&num_nodes,1,MPI_LONG_LONG_INT,0,world);
   
   //construct contiguous parallel row map now that we know the number of nodes
   map = Teuchos::rcp( new Tpetra::Map<LO,GO,node_type>(num_nodes,0,comm));
@@ -1046,12 +1046,10 @@ void Parallel_Nonlinear_Solver::read_mesh_tecplot(char *MESH){
   
   //read in element info (supported tecplot format currently assumes one type)
 
-  rnum_elem = 0;
   CArray<int> node_store(elem_words_per_line);
   
   //broadcast number of elements
-  MPI_Bcast(&num_elem,1,MPI_INT,0,world);
-
+  MPI_Bcast(&num_elem,1,MPI_LONG_LONG_INT,0,world);
   std::cout<<"before initial mesh initialization"<<std::endl;
   
   //read in element connectivity
@@ -1072,6 +1070,7 @@ void Parallel_Nonlinear_Solver::read_mesh_tecplot(char *MESH){
   read_index_start = 0;
   //std::cout << "ELEMENT BUFFER ITERATIONS: " << buffer_iterations << std::endl;
   rnum_elem = 0;
+  std::cout << "BUFFER ITERATIONS IS: " << buffer_iterations << std::endl;
   for(buffer_iteration = 0; buffer_iteration < buffer_iterations; buffer_iteration++){
     //pack buffer on rank 0
     if(myrank==0&&buffer_iteration<buffer_iterations-1){
@@ -1249,20 +1248,20 @@ void Parallel_Nonlinear_Solver::read_mesh_tecplot(char *MESH){
   }
 
   //debug print element edof
-  /*
-  std::cout << " ------------ELEMENT EDOF ON TASK " << myrank << " --------------"<<std::endl;
+  
+  //std::cout << " ------------ELEMENT EDOF ON TASK " << myrank << " --------------"<<std::endl;
 
-  for (int ielem = 0; ielem < rnum_elem; ielem++){
-    std::cout << "elem:  " << ielem+1 << std::endl;
-    for (int lnode = 0; lnode < 8; lnode++){
-        std::cout << "{ ";
-          std::cout << lnode+1 << " = " << nodes_in_elem(ielem,lnode) + 1 << " ";
+  //for (int ielem = 0; ielem < rnum_elem; ielem++){
+    //std::cout << "elem:  " << ielem+1 << std::endl;
+    //for (int lnode = 0; lnode < 8; lnode++){
+        //std::cout << "{ ";
+          //std::cout << lnode+1 << " = " << nodes_in_elem(ielem,lnode) + 1 << " ";
         
-        std::cout << " }"<< std::endl;
-    }
-    std::cout << std::endl;
-  }
-  */
+        //std::cout << " }"<< std::endl;
+    //}
+    //std::cout << std::endl;
+  //}
+  
  
 } // end read_mesh
 
@@ -1683,7 +1682,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
     design_densities = design_node_densities_distributed->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
   else
     design_densities = Global_Element_Densities->getLocalView<HostSpace> (Tpetra::Access::ReadOnly);
-  compute_element_masses(design_densities,false);
+  compute_element_masses(design_densities,true);
   
   real_t initial_mass = ROL_Element_Masses->reduce(sumreduc);
 
@@ -6201,7 +6200,7 @@ void Parallel_Nonlinear_Solver::linear_solver_parameters(){
   }
   else{
     Linear_Solve_Params = Teuchos::rcp(new Teuchos::ParameterList("MueLu"));
-    std::string xmlFileName = "scaling.xml";
+    std::string xmlFileName = "elasticity3D.xml";
     Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&(*Linear_Solve_Params)), *comm);
   }
 }
@@ -6706,7 +6705,7 @@ int Parallel_Nonlinear_Solver::solve(){
     Teuchos::RCP<Xpetra::MultiVector<real_t,LO,GO,node_type>> material = Teuchos::null;
     Teuchos::RCP<Xpetra::CrsMatrix<real_t,LO,GO,node_type>> xbalanced_A = Teuchos::rcp(new Xpetra::TpetraCrsMatrix<real_t,LO,GO,node_type>(balanced_A));
     Teuchos::RCP<Xpetra::Matrix<real_t,LO,GO,node_type>> xwrap_balanced_A = Teuchos::rcp(new Xpetra::CrsMatrixWrap<real_t,LO,GO,node_type>(xbalanced_A));
-    xwrap_balanced_A->SetFixedBlockSize(1);
+    //xwrap_balanced_A->SetFixedBlockSize(1);
 
     //randomize initial vector
     xX->setSeed(100);
@@ -6722,13 +6721,13 @@ int Parallel_Nonlinear_Solver::solve(){
     
     int num_iter = 2000;
     double solve_tol = 1e-12;
-    int cacheSize = 0;
+    int cacheSize = 1000;
     std::string solveType         = "belos";
     std::string belosType         = "cg";
     // =========================================================================
     // Preconditioner construction
     // =========================================================================
-    bool useML   = Linear_Solve_Params->isParameter("use external multigrid package") && (Linear_Solve_Params->get<std::string>("use external multigrid package") == "ml");
+    //bool useML   = Linear_Solve_Params->isParameter("use external multigrid package") && (Linear_Solve_Params->get<std::string>("use external multigrid package") == "ml");
     //out<<"*********** MueLu ParameterList ***********"<<std::endl;
     //out<<*Linear_Solve_Params;
     //out<<"*******************************************"<<std::endl;

@@ -2375,6 +2375,7 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
   size_t num_dim = simparam->num_dim;
 	std::string current_file_name;
 	std::string base_file_name= "TecplotTO";
+  std::string base_file_name_undeformed= "TecplotTO_undeformed";
 	std::stringstream ss;
 	std::string file_extension= ".dat";
   std::string file_count;
@@ -2400,14 +2401,14 @@ void Parallel_Nonlinear_Solver::tecplot_writer(){
 
   //compared to primitive unit cell, assumes orthogonal primitive unit cell
   if(displace_geometry){
-    if(myrank==0&&file_index==0){
+    if(myrank==0){
       //initial undeformed geometry
       count_temp.str("");
       count_temp << file_index;
-      file_index++;
+      //file_index++;
 	    file_count = count_temp.str();
     
-      current_file_name = base_file_name + file_count + file_extension;
+      current_file_name = base_file_name_undeformed + file_count + file_extension;
       std::ofstream myfile (current_file_name.c_str()); //output filestream object for file output
 	    //read in position data
 	    myfile << std::fixed << std::setprecision(8);
@@ -3589,6 +3590,18 @@ void Parallel_Nonlinear_Solver::assemble_matrix(){
   Global_Stiffness_Matrix->fillComplete();
   Matrix_alloc = 1;
   }
+
+  //filter small negative numbers from floating point error
+  for (int idof = 0; idof < num_dim*nlocal_nodes; idof++){
+    for (int istride = 0; istride < Stiffness_Matrix_Strides(idof); istride++){
+      if(Stiffness_Matrix(idof,istride)<0&&Stiffness_Matrix(idof,istride)>-0.00000000001)
+      Stiffness_Matrix(idof,istride) = 0;
+      //debug print
+      //std::cout << "{" <<istride + 1 << "," << DOF_Graph_Matrix(idof,istride) << "} ";
+    }
+    //debug print
+    //std::cout << std::endl;
+  }
   //This completes the setup for A matrix of the linear system
   
   //file to debug print
@@ -3613,6 +3626,7 @@ void Parallel_Nonlinear_Solver::assemble_matrix(){
 void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t &Element_Modulus, real_t &Poisson_Ratio, real_t density){
   real_t unit_scaling = simparam->unit_scaling;
   real_t penalty_product = 1;
+  if(density < 0) density = 0;
   for(int i = 0; i < simparam->penalty_power; i++)
     penalty_product *= density;
   //relationship between density and stiffness
@@ -3629,6 +3643,7 @@ void Parallel_Nonlinear_Solver::Element_Material_Properties(size_t ielem, real_t
 void Parallel_Nonlinear_Solver::Gradient_Element_Material_Properties(size_t ielem, real_t &Element_Modulus_Derivative, real_t &Poisson_Ratio, real_t density){
   real_t unit_scaling = simparam->unit_scaling;
   real_t penalty_product = 1;
+  if(density < 0) density = 0;
   for(int i = 0; i < simparam->penalty_power - 1; i++)
     penalty_product *= density;
   //relationship between density and stiffness
@@ -6200,7 +6215,8 @@ void Parallel_Nonlinear_Solver::linear_solver_parameters(){
   }
   else{
     Linear_Solve_Params = Teuchos::rcp(new Teuchos::ParameterList("MueLu"));
-    std::string xmlFileName = "elasticity3D.xml";
+    //std::string xmlFileName = "elasticity3D.xml";
+    std::string xmlFileName = "simple_test.xml";
     Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&(*Linear_Solve_Params)), *comm);
   }
 }

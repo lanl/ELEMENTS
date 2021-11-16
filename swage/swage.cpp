@@ -794,7 +794,7 @@ int mesh_t::num_patches () const
 int mesh_t::node_in_patch_in_cell(int cell_id, int this_patch, int patchnode_lid) const
 {
     // get the local node index in the cell
-    int this_node = this_node_in_patch_in_cell_[patchnode_lid + this_patch*num_nodes_patch_];
+    int this_node = node_rlid_in_patch_in_cell_[patchnode_lid + this_patch*num_nodes_patch_];
     
     // return the global id for the local node index
     return nodes_in_cell(cell_id, this_node);

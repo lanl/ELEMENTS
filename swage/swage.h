@@ -86,13 +86,16 @@ private:
     const int num_patches_hex_ = 6;
     
     const int num_nodes_patch_ = 4;
-    const int this_node_in_patch_in_cell_[24] = // this assumes i,j,k structures nodes
-        {0,1,3,2,
-         4,5,7,6,
-         0,1,5,4,
-         2,3,7,6,
-         0,2,6,4,
-         1,3,7,5};
+    const int node_rlid_in_patch_in_cell_[24] = // this assumes i,j,k structures nodes
+        {0,2,6,4,
+         1,3,7,5,
+         //
+         0,4,5,1,
+         2,6,7,3,
+         //
+         0,1,3,2,
+         4,5,7,6
+        };
 
     int indx_; //useful for returning from internal function
 

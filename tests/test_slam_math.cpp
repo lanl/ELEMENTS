@@ -103,10 +103,13 @@ ViewCArrayMath::Add22::Add22(ViewCArray <double> &A, ViewCArray <double> &B){
 
 void ViewCArrayMath::Add22::operator()(ViewCArray <double> &C_){
     
-    assert(C_.dims(0) == A_.dims(0) && "ViewCArray Multiply22 dimensions do not match, output and first input array have different first dimensions!");
-    assert(C_.dims(1) == B_.dims(1) && "ViewCArray Multiply22 dimensions do not match, output and second input array have different second dimensions!");
-    assert(A_.dims(0) == B_.dims(0) && "ViewCArray Multiply22 dimensions do not match, input arrays A(i,j)+B(i,j) have wong i dimension!");
-    assert(A_.dims(1) == B_.dims(1) && "ViewCArray Multiply22 dimensions do not match, input arrays A(i,j)+B(i,j) have wong j dimension!");
+    assert(A_.order() == 2 && "ViewCArray Add22 dimensions do not match, first input array should be a 2D array!");
+    assert(B_.order() == 2 && "ViewCArray Add22 dimensions do not match, second input array should be a 2D array!");
+    assert(C_.order() == 2 && "ViewCArray Add22 dimensions do not match, second input array should be a 2D array!");
+    assert(C_.dims(0) == A_.dims(0) && "ViewCArray Add22 dimensions do not match, output and first input array have different first dimensions!");
+    assert(C_.dims(1) == B_.dims(1) && "ViewCArray Add22 dimensions do not match, output and second input array have different second dimensions!");
+    assert(A_.dims(0) == B_.dims(0) && "ViewCArray Add22 dimensions do not match, input arrays A(i,j)+B(i,j) have wong i dimension!");
+    assert(A_.dims(1) == B_.dims(1) && "ViewCArray Add22 dimensions do not match, input arrays A(i,j)+B(i,j) have wong j dimension!");
     
     // execute functor Multiply
     for (size_t i=0; i<A_.dims(0); i++){
@@ -125,8 +128,8 @@ ViewCArrayMath::Multiply11::Multiply11(ViewCArray <double> &a, ViewCArray <doubl
 
 void ViewCArrayMath::Multiply11::operator()(double &c_){
     
-    assert(a_.dims(1) == 0 && "ViewCArray Multiply11 dimensions do not match, first input array should be a 1D array!");
-    assert(b_.dims(1) == 0 && "ViewCArray Multiply11 dimensions do not match, second input array should be a 1D array!");
+    assert(a_.order() == 1 && "ViewCArray Multiply11 dimensions do not match, first input array should be a 1D array!");
+    assert(b_.order() == 1 && "ViewCArray Multiply11 dimensions do not match, second input array should be a 1D array!");
     
     // initialize to zero
     c_ = 0.0;
@@ -146,6 +149,9 @@ ViewCArrayMath::Multiply21::Multiply21(ViewCArray <double> &A, ViewCArray <doubl
 
 void ViewCArrayMath::Multiply21::operator()(ViewCArray <double> &c_){
     
+    assert(A_.order() == 2 && "ViewCArray Multiply21 dimensions do not match, first input array should be a 2D array!");
+    assert(b_.order() == 1 && "ViewCArray Multiply21 dimensions do not match, second input array should be a 1D array!");
+    assert(c_.order() == 1 && "ViewCArray Multiply21 dimensions do not match, second input array should be a 1D array!");
     assert(c_.dims(0) == A_.dims(0) && "ViewCArray Multiply21 dimensions do not match, output and first input array have different first dimensions!");
     assert(c_.dims(1) == 0 && "ViewCArray Multiply21 dimensions do not match, output array should be a 1D array!");
     assert(A_.dims(1) == b_.dims(0) && "ViewCArray Multiply21 dimensions do not match, input arrays A(i,j)*b(j) have wong j dimension!");
@@ -172,6 +178,9 @@ ViewCArrayMath::Multiply22::Multiply22(ViewCArray <double> &A, ViewCArray <doubl
 
 void ViewCArrayMath::Multiply22::operator()(ViewCArray <double> &C_){
     
+    assert(A_.order() == 2 && "ViewCArray Multiply22 dimensions do not match, first input array should be a 2D array!");
+    assert(B_.order() == 2 && "ViewCArray Multiply22 dimensions do not match, second input array should be a 2D array!");
+    assert(C_.order() == 2 && "ViewCArray Multiply22 dimensions do not match, second input array should be a 2D array!");
     assert(C_.dims(0) == A_.dims(0) && "ViewCArray Multiply22 dimensions do not match, output and first input array have different first dimensions!");
     assert(C_.dims(1) == B_.dims(1) && "ViewCArray Multiply22 dimensions do not match, output and second input array have different second dimensions!");
     assert(A_.dims(1) == B_.dims(0) && "ViewCArray Multiply22 dimensions do not match, input arrays A(i,j)*B(j,k) have wong j dimension!");

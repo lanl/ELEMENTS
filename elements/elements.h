@@ -59,11 +59,13 @@ using namespace utils;
 
 namespace elements{
 
-//==============================================================================
-//   Function Declaration
-//==============================================================================
+    
+    //==============================================================================
+    //   Function Declaration
+    //==============================================================================
 
     // Used by Lobatto 1D/2D to set Lobatto quadrature points
+
     void lobatto_nodes_1D(
         CArray <real_t> &lob_nodes_1D,
         const int &num);
@@ -71,6 +73,16 @@ namespace elements{
     void lobatto_weights_1D(
         CArray <real_t> &lob_weights_1D,  // Labbatto weights
         const int &num);
+
+    
+    void legendre_nodes_1D(
+                          CArray <real_t> &leg_nodes_1D,
+                          const int &num);
+    
+    void legendre_weights_1D(
+                            CArray <real_t> &leg_weights_1D,  // Legendre weights
+                            const int &num);
+    
 
     void length_weights(
         CArray <real_t> &len_weights_1D,  // Labbatto weights
@@ -219,7 +231,30 @@ namespace elements{
 
 class ref_element{
     private:
-        
+    
+        // this assumes i,j,k structured indexing of nodes
+        const int node_rlid_in_patch_in_cell_[24] = {
+            // patches in xi-dir
+            0,2,6,4,
+            1,3,7,5,
+            // patches in eta-dir
+            0,4,5,1,
+            2,6,7,3,
+            // patches in mu-dir
+            0,1,3,2,
+            4,5,7,6
+        };
+    
+        // return the local ref id for the same patch in the cell-patch neighbor
+        const int patch_rlid_cell_neighbor_[6] = {
+            1,  // xi left side of my cell
+            0,  // xi right side of my cell
+            3,  // eta bottom side of my cell
+            2,  // eta top side of my cell
+            5,  // mu front side of my cell
+            4  // mu back side of my cell
+        };
+    
         int num_dim_;
         
         int num_ref_nodes_1D_;
@@ -265,6 +300,11 @@ class ref_element{
         CArray <real_t> ref_corner_g_weights_;
         CArray <real_t> ref_corner_surf_g_weights_;
 
+        // patches
+        int num_patches_in_elem_;
+    
+        CArray <int> ref_patches_in_cell_list_;
+    
         // Num basis functions
         int num_basis_;
 
@@ -322,6 +362,12 @@ class ref_element{
         int& cell_lid_in_zone(int zone_lid, int cell_lid) const;
 
         int& cell_nodes_in_elem(int cell_lid, int node_lid) const;
+    
+        int node_in_patch_in_cell(int patch_lid, int node_lid) const;
+    
+        int patch_rlid_in_cell_neighbor(int patch_rlid) const;
+    
+        int ref_patches_in_cell(int cell_lid, int patch_rlid) const;
     
         int vert_node_map(int vert_lid);
 

@@ -1,9 +1,4 @@
-[submodule "Matar/Kokkify/MatarTest/Kokkos/kokkos"]
-	path = Matar/Kokkify/MatarTest/Kokkos/kokkos
-	url = git@github.com:kokkos/kokkos.git
-[submodule "Matar/Kokkify/MatarTest/Kokkos/kokkos-tools"]
-	path = Matar/Kokkify/MatarTest/Kokkos/kokkos-tools
-	url = git@github.com:kokkos/kokkos-tools.git
-[submodule "Elements_examples/Pseudo_laplace/elements/MATAR"]
-	path = Elements_examples/Pseudo_laplace/elements/MATAR
-	url = git@github.com:nathanielmorgan/MATAR.git
+[submodule "matar"]
+	path = matar
+	url = https://github.com/lanl/MATAR.git
+	branch = main

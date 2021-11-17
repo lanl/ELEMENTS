@@ -18,7 +18,7 @@ Simulation_Parameters::Simulation_Parameters(){
   nodal_density_flag = 1;
   unit_scaling = 1;
   strain_max_flag = 0;
-  optimization_output_freq = 100;
+  optimization_output_freq = 20;
   direct_solver_flag = false;
   penalty_power = 3;
   restart_file = false;
@@ -72,7 +72,7 @@ void Simulation_Parameters::input(){
   
   //Static isotropic parameters to move into a child class later
   Elastic_Modulus = 10000;
-  Poisson_Ratio = 0;
+  Poisson_Ratio = 0.3;
   words_per_line = 1;
   tecplot_words_per_line = 3;
   elem_words_per_line = 8;
@@ -88,7 +88,7 @@ void Simulation_Parameters::input(){
   nodal_density_flag = 1;
 
   //Topology Optimization parameters
-  penalty_power = 4;
+  penalty_power = 6;
   maximum_strain = 0.02;
   maximum_strain_energy = 1000;
     

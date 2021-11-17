@@ -1668,7 +1668,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //problem.addConstraint("Equality Constraint",econ,emul);
   ROL::Ptr<std::vector<real_t> > li_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
   ROL::Ptr<std::vector<real_t> > ll_ptr = ROL::makePtr<std::vector<real_t>>(1,0.0);
-  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.15);
+  ROL::Ptr<std::vector<real_t> > lu_ptr = ROL::makePtr<std::vector<real_t>>(1,0.20);
 
   ROL::Ptr<ROL::Vector<real_t> > constraint_mul = ROL::makePtr<ROL::StdVector<real_t>>(li_ptr);
   ROL::Ptr<ROL::Vector<real_t> > ll = ROL::makePtr<ROL::StdVector<real_t>>(ll_ptr);
@@ -1693,7 +1693,7 @@ void Parallel_Nonlinear_Solver::setup_optimization_problem(){
   //problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
   problem->addConstraint("Inequality Constraint",ineq_constraint,constraint_mul,constraint_bnd);
   //problem->addLinearConstraint("Equality Constraint",eq_constraint,constraint_mul);
-  //problem->setProjectionAlgorithm(*parlist);
+  problem->setProjectionAlgorithm(*parlist);
   //finalize problem
   problem->finalize(false,true,std::cout);
   //problem->check(true,std::cout);
@@ -6215,8 +6215,8 @@ void Parallel_Nonlinear_Solver::linear_solver_parameters(){
   }
   else{
     Linear_Solve_Params = Teuchos::rcp(new Teuchos::ParameterList("MueLu"));
-    //std::string xmlFileName = "elasticity3D.xml";
-    std::string xmlFileName = "simple_test.xml";
+    std::string xmlFileName = "elasticity3D.xml";
+    //std::string xmlFileName = "simple_test.xml";
     Teuchos::updateParametersFromXmlFileAndBroadcast(xmlFileName, Teuchos::Ptr<Teuchos::ParameterList>(&(*Linear_Solve_Params)), *comm);
   }
 }

@@ -40,14 +40,13 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **********************************************************************************************/
 
 
-/**************************************************************************************//**
-*  Swage contains a mesh class usefeul for defining geometric entities required for a broad
-*  range of numerical methods defined on an nth order hexahedral element.
-*****************************************************************************************/
+// NOTE: Rename patch to patch
+// NOTE: Fence Cells and Elements
 
 #include <iostream>  // std::cout etc.
 #include <cmath>
 
+#include "Simulation_Parameters.h"
 #include "swage.h"
 
 namespace swage{
@@ -55,348 +54,58 @@ namespace swage{
 // Mesh_t function definitions  //
 //******************************//
 
-/**************************************************************************************//**
-*  lobatto_nodes_1D_tmp creates nodal positions defined on [-1,1] using the Gauss-Lobatto 
-*  quadrature points. This is used in the refine_mesh code to map the new nodal positions
-*  from reference space to physical space.
-*****************************************************************************************/
-void lobatto_nodes_1D_tmp(
-    CArray <real_t> &lob_nodes_1D,
-    const int &num){
-    if (num == 1){
-        lob_nodes_1D(0) = 0.0;
-    }
-    else if (num == 2){
-        lob_nodes_1D(0) = -1.0;
-        lob_nodes_1D(1) =  1.0;
-    }
-    else if (num == 3){
-        lob_nodes_1D(0) = -1.0;
-        lob_nodes_1D(1) =  0.0;
-        lob_nodes_1D(2) =  1.0;
-    }
-    else if (num == 4){
-        lob_nodes_1D(0) = -1.0;
-        lob_nodes_1D(1) = -1.0/5.0*sqrt(5.0);
-        lob_nodes_1D(2) =  1.0/5.0*sqrt(5.0);
-        lob_nodes_1D(3) =  1.0;
-    }
-    else if (num == 5){
-        lob_nodes_1D(0) = -1.0;
-        lob_nodes_1D(1) = -1.0/7.0*sqrt(21.0);
-        lob_nodes_1D(2) =  0.0;
-        lob_nodes_1D(3) =  1.0/7.0*sqrt(21.0);
-        lob_nodes_1D(4) =  1.0;
-    }
-    else if (num == 6){
-        lob_nodes_1D(0) = -1.0;
-        lob_nodes_1D(1) = -sqrt(1.0/21.0*(7.0 + 2.0*sqrt(7.0)));
-        lob_nodes_1D(2) = -sqrt(1.0/21.0*(7.0 - 2.0*sqrt(7.0)));
-        lob_nodes_1D(3) =  sqrt(1.0/21.0*(7.0 - 2.0*sqrt(7.0)));
-        lob_nodes_1D(4) =  sqrt(1.0/21.0*(7.0 +2.0*sqrt(7.0)));
-        lob_nodes_1D(5) =  1.0;
-    }
-    else if (num == 7){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.830223896278566929872032213967E+00;
-        lob_nodes_1D(2) =  - 0.468848793470714213803771881909E+00;
-        lob_nodes_1D(3) =    0.0E+00;
-        lob_nodes_1D(4) =    0.468848793470714213803771881909E+00;
-        lob_nodes_1D(5) =    0.830223896278566929872032213967E+00;
-        lob_nodes_1D(6) =    1.0E+00;
-    }
-    else if (num == 8){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.871740148509606615337445761221E+00;
-        lob_nodes_1D(2) =  - 0.591700181433142302144510731398E+00;
-        lob_nodes_1D(3) =  - 0.209299217902478868768657260345E+00;
-        lob_nodes_1D(4) =    0.209299217902478868768657260345E+00;
-        lob_nodes_1D(5) =    0.591700181433142302144510731398E+00;
-        lob_nodes_1D(6) =    0.871740148509606615337445761221E+00;
-        lob_nodes_1D(7) =    1.0E+00;
-    }
-    else if (num == 9){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.899757995411460157312345244418E+00;
-        lob_nodes_1D(2) =  - 0.677186279510737753445885427091E+00;
-        lob_nodes_1D(3) =  - 0.363117463826178158710752068709E+00;
-        lob_nodes_1D(4) =    0.0E+00;
-        lob_nodes_1D(5) =    0.363117463826178158710752068709E+00;
-        lob_nodes_1D(6) =    0.677186279510737753445885427091E+00;
-        lob_nodes_1D(7) =    0.899757995411460157312345244418E+00;
-        lob_nodes_1D(8) =    1.0E+00;
-    }
-    else if (num == 10){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.919533908166458813828932660822E+00;
-        lob_nodes_1D(2) =  - 0.738773865105505075003106174860E+00;
-        lob_nodes_1D(3) =  - 0.477924949810444495661175092731E+00;
-        lob_nodes_1D(4) =  - 0.165278957666387024626219765958E+00;
-        lob_nodes_1D(5) =    0.165278957666387024626219765958E+00;
-        lob_nodes_1D(6) =    0.477924949810444495661175092731E+00;
-        lob_nodes_1D(7) =    0.738773865105505075003106174860E+00;
-        lob_nodes_1D(8) =    0.919533908166458813828932660822E+00;
-        lob_nodes_1D(9) =   1.0E+00;
-
-    }
-    else if (num == 11){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.934001430408059134332274136099E+00;
-        lob_nodes_1D(2) =  - 0.784483473663144418622417816108E+00;
-        lob_nodes_1D(3) =  - 0.565235326996205006470963969478E+00;
-        lob_nodes_1D(4) =  - 0.295758135586939391431911515559E+00;
-        lob_nodes_1D(5) =    0.0E+00;
-        lob_nodes_1D(6) =    0.295758135586939391431911515559E+00;
-        lob_nodes_1D(7) =    0.565235326996205006470963969478E+00;
-        lob_nodes_1D(8) =    0.784483473663144418622417816108E+00;
-        lob_nodes_1D(9) =   0.934001430408059134332274136099E+00;
-        lob_nodes_1D(10) =   1.0E+00;
-    }
-
-    else if (num == 12){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.944899272222882223407580138303E+00;
-        lob_nodes_1D(2) =  - 0.819279321644006678348641581717E+00;
-        lob_nodes_1D(3) =  - 0.632876153031869677662404854444E+00;
-        lob_nodes_1D(4) =  - 0.399530940965348932264349791567E+00;
-        lob_nodes_1D(5) =  - 0.136552932854927554864061855740E+00;
-        lob_nodes_1D(6) =    0.136552932854927554864061855740E+00;
-        lob_nodes_1D(7) =    0.399530940965348932264349791567E+00;
-        lob_nodes_1D(8) =    0.632876153031869677662404854444E+00;
-        lob_nodes_1D(9) =   0.819279321644006678348641581717E+00;
-        lob_nodes_1D(10) =   0.944899272222882223407580138303E+00;
-        lob_nodes_1D(11) =   1.0E+00;
-    }
-
-    else if (num == 13){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.953309846642163911896905464755E+00;
-        lob_nodes_1D(2) =  - 0.846347564651872316865925607099E+00;
-        lob_nodes_1D(3) =  - 0.686188469081757426072759039566E+00;
-        lob_nodes_1D(4) =  - 0.482909821091336201746937233637E+00;
-        lob_nodes_1D(5) =  - 0.249286930106239992568673700374E+00;
-        lob_nodes_1D(6) =    0.0E+00;
-        lob_nodes_1D(7) =    0.249286930106239992568673700374E+00;
-        lob_nodes_1D(8) =    0.482909821091336201746937233637E+00;
-        lob_nodes_1D(9) =   0.686188469081757426072759039566E+00;
-        lob_nodes_1D(10) =   0.846347564651872316865925607099E+00;
-        lob_nodes_1D(11) =   0.953309846642163911896905464755E+00;
-        lob_nodes_1D(12) =   1.0E+00;
-    }
-
-    else if (num == 14){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.959935045267260901355100162015E+00;
-        lob_nodes_1D(2) =  - 0.867801053830347251000220202908E+00;
-        lob_nodes_1D(3) =  - 0.728868599091326140584672400521E+00;
-        lob_nodes_1D(4) =  - 0.550639402928647055316622705859E+00;
-        lob_nodes_1D(5) =  - 0.342724013342712845043903403642E+00;
-        lob_nodes_1D(6) =  - 0.116331868883703867658776709736E+00;
-        lob_nodes_1D(7) =    0.116331868883703867658776709736E+00;
-        lob_nodes_1D(8) =    0.342724013342712845043903403642E+00;
-        lob_nodes_1D(9) =   0.550639402928647055316622705859E+00;
-        lob_nodes_1D(10) =   0.728868599091326140584672400521E+00;
-        lob_nodes_1D(11) =   0.867801053830347251000220202908E+00;
-        lob_nodes_1D(12) =   0.959935045267260901355100162015E+00;
-        lob_nodes_1D(13) =   1.0E+00;
-    }
-
-    else if (num == 15){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.965245926503838572795851392070E+00;
-        lob_nodes_1D(2) =  - 0.885082044222976298825401631482E+00;
-        lob_nodes_1D(3) =  - 0.763519689951815200704118475976E+00;
-        lob_nodes_1D(4) =  - 0.606253205469845711123529938637E+00;
-        lob_nodes_1D(5) =  - 0.420638054713672480921896938739E+00;
-        lob_nodes_1D(6) =  - 0.215353955363794238225679446273E+00;
-        lob_nodes_1D(7) =    0.0E+00;
-        lob_nodes_1D(8) =    0.215353955363794238225679446273E+00;
-        lob_nodes_1D(9) =   0.420638054713672480921896938739E+00;
-        lob_nodes_1D(10) =   0.606253205469845711123529938637E+00;
-        lob_nodes_1D(11) =   0.763519689951815200704118475976E+00;
-        lob_nodes_1D(12) =   0.885082044222976298825401631482E+00;
-        lob_nodes_1D(13) =   0.965245926503838572795851392070E+00;
-        lob_nodes_1D(14) =   1.0E+00;
-    }
-
-    else if (num == 16){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.969568046270217932952242738367E+00;
-        lob_nodes_1D(2) =  - 0.899200533093472092994628261520E+00;
-        lob_nodes_1D(3) =  - 0.792008291861815063931088270963E+00;
-        lob_nodes_1D(4) =  - 0.652388702882493089467883219641E+00;
-        lob_nodes_1D(5) =  - 0.486059421887137611781890785847E+00;
-        lob_nodes_1D(6) =  - 0.299830468900763208098353454722E+00;
-        lob_nodes_1D(7) =  - 0.101326273521949447843033005046E+00;
-        lob_nodes_1D(8) =    0.101326273521949447843033005046E+00;
-        lob_nodes_1D(9) =   0.299830468900763208098353454722E+00;
-        lob_nodes_1D(10) =   0.486059421887137611781890785847E+00;
-        lob_nodes_1D(11) =   0.652388702882493089467883219641E+00;
-        lob_nodes_1D(12) =   0.792008291861815063931088270963E+00;
-        lob_nodes_1D(13) =   0.899200533093472092994628261520E+00;
-        lob_nodes_1D(14) =   0.969568046270217932952242738367E+00;
-        lob_nodes_1D(15) =   1.0E+00;
-    }
-
-    else if (num == 17){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.973132176631418314156979501874E+00;
-        lob_nodes_1D(2) =  - 0.910879995915573595623802506398E+00;
-        lob_nodes_1D(3) =  - 0.815696251221770307106750553238E+00;
-        lob_nodes_1D(4) =  - 0.691028980627684705394919357372E+00;
-        lob_nodes_1D(5) =  - 0.541385399330101539123733407504E+00;
-        lob_nodes_1D(6) =  - 0.372174433565477041907234680735E+00;
-        lob_nodes_1D(7) =  - 0.189511973518317388304263014753E+00;
-        lob_nodes_1D(8) =    0.0E+00;
-        lob_nodes_1D(9) =    0.189511973518317388304263014753E+00;
-        lob_nodes_1D(10) =   0.372174433565477041907234680735E+00;
-        lob_nodes_1D(11) =   0.541385399330101539123733407504E+00;
-        lob_nodes_1D(12) =   0.691028980627684705394919357372E+00;
-        lob_nodes_1D(13) =   0.815696251221770307106750553238E+00;
-        lob_nodes_1D(14) =   0.910879995915573595623802506398E+00;
-        lob_nodes_1D(15) =   0.973132176631418314156979501874E+00;
-        lob_nodes_1D(16) =   1.0E+00;
-    }
-
-    else if (num == 18){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.976105557412198542864518924342E+00;
-        lob_nodes_1D(2) =  - 0.920649185347533873837854625431E+00;
-        lob_nodes_1D(3) =  - 0.835593535218090213713646362328E+00;
-        lob_nodes_1D(4) =  - 0.723679329283242681306210365302E+00;
-        lob_nodes_1D(5) =  - 0.588504834318661761173535893194E+00;
-        lob_nodes_1D(6) =  - 0.434415036912123975342287136741E+00;
-        lob_nodes_1D(7) =  - 0.266362652878280984167665332026E+00;
-        lob_nodes_1D(8) =  - 0.897490934846521110226450100886E-01;
-        lob_nodes_1D(9) =    0.897490934846521110226450100886E-01;
-        lob_nodes_1D(10) =   0.266362652878280984167665332026E+00;
-        lob_nodes_1D(11) =   0.434415036912123975342287136741E+00;
-        lob_nodes_1D(12) =   0.588504834318661761173535893194E+00;
-        lob_nodes_1D(13) =   0.723679329283242681306210365302E+00;
-        lob_nodes_1D(14) =   0.835593535218090213713646362328E+00;
-        lob_nodes_1D(15) =   0.920649185347533873837854625431E+00;
-        lob_nodes_1D(16) =   0.976105557412198542864518924342E+00;
-        lob_nodes_1D(17) =   1.0E+00;
-    }
-
-    else if (num == 19) {
-        lob_nodes_1D(0)=   - 1.0E+00;
-        lob_nodes_1D(1)=   - 0.978611766222080095152634063110E+00;
-        lob_nodes_1D(2)=   - 0.928901528152586243717940258797E+00;
-        lob_nodes_1D(3)=   - 0.852460577796646093085955970041E+00;
-        lob_nodes_1D(4)=   - 0.751494202552613014163637489634E+00;
-        lob_nodes_1D(5)=   - 0.628908137265220497766832306229E+00;
-        lob_nodes_1D(6)=   - 0.488229285680713502777909637625E+00;
-        lob_nodes_1D(7)=   - 0.333504847824498610298500103845E+00;
-        lob_nodes_1D(8)=   - 0.169186023409281571375154153445E+00;
-        lob_nodes_1D(9)=     0.0E+00;
-        lob_nodes_1D(10) =   0.169186023409281571375154153445E+00;
-        lob_nodes_1D(11) =   0.333504847824498610298500103845E+00;
-        lob_nodes_1D(12) =   0.488229285680713502777909637625E+00;
-        lob_nodes_1D(13) =   0.628908137265220497766832306229E+00;
-        lob_nodes_1D(14) =   0.751494202552613014163637489634E+00;
-        lob_nodes_1D(15) =   0.852460577796646093085955970041E+00;
-        lob_nodes_1D(16) =   0.928901528152586243717940258797E+00;
-        lob_nodes_1D(17) =   0.978611766222080095152634063110E+00;
-        lob_nodes_1D(18) =   1.0E+00;
-
-    } // end if
-
-    else if (num == 20){
-        lob_nodes_1D(0) =  - 1.0E+00;
-        lob_nodes_1D(1) =  - 0.980743704893914171925446438584E+00;
-        lob_nodes_1D(2) =  - 0.935934498812665435716181584931E+00;
-        lob_nodes_1D(3) =  - 0.866877978089950141309847214616E+00;
-        lob_nodes_1D(4) =  - 0.775368260952055870414317527595E+00;
-        lob_nodes_1D(5) =  - 0.663776402290311289846403322971E+00;
-        lob_nodes_1D(6) =  - 0.534992864031886261648135961829E+00;
-        lob_nodes_1D(7) =  - 0.392353183713909299386474703816E+00;
-        lob_nodes_1D(8) =  - 0.239551705922986495182401356927E+00;
-        lob_nodes_1D(9) =  - 0.805459372388218379759445181596E-01;
-        lob_nodes_1D(10) =   0.805459372388218379759445181596E-01;
-        lob_nodes_1D(11) =   0.239551705922986495182401356927E+00;
-        lob_nodes_1D(12) =   0.392353183713909299386474703816E+00;
-        lob_nodes_1D(13) =   0.534992864031886261648135961829E+00;
-        lob_nodes_1D(14) =   0.663776402290311289846403322971E+00;
-        lob_nodes_1D(15) =   0.775368260952055870414317527595E+00;
-        lob_nodes_1D(16) =   0.866877978089950141309847214616E+00;
-        lob_nodes_1D(17) =   0.935934498812665435716181584931E+00;
-        lob_nodes_1D(18) =   0.980743704893914171925446438584E+00;
-        lob_nodes_1D(19) =   1.0E+00;
-    }
-} // end of lobbato_nodes_1D function
-
+mesh_t::mesh_t (Simulation_Parameters *simparam) {
+  local_index_set_flag = 0;
+  num_dim_ = simparam->num_dim;
+}
 
 // ==== MESH CONSTANTS ==== // 
  
 
-/**************************************************************************************//**
-*  mesh_t::num_dim() returns the dimensionality of the mesh.  For now, this should always 
-*  be 3. 
-*****************************************************************************************/
+// returns the number of dimensions in the mesh
 int mesh_t::num_dim () const
 {
     return num_dim_;
 }
 
-/**************************************************************************************//**
-*  mesh_t::elem_order() returns the polynomial order used to define the deformation of 
-*  the element.
-*****************************************************************************************/
+// returns the polynomial order of the element
 int mesh_t::elem_order () const
 {
     return elem_order_;
 }
 
-
+// returns the polynomial order of the CCH reconstruction
+// int& mesh_t::recon_order ()
+// {
+//     return recon_order_;
+// }
 
 // ==== INDEX SPACE INITIALIZATIONS ==== //
 
 // ---- ELEMENT ---- //
-
-/**************************************************************************************//**
-*  mesh_t::init_element takes in the polynomial order used to define the deformation of 
-*  the element, the dimensionality of the mesh (for now, always 3) and the total number 
-*  of elements from the mesh that was read in. This information is used to allocate 
-*  memeory for the geometric entitities local to the element as well as the index maps 
-*  between them.
-*****************************************************************************************/
-void mesh_t::init_element(int e_order, int dim, int num_elem){
+void mesh_t::init_element (int e_order, int dim, int num_elem){
     
     elem_order_ = e_order;
 
     int num_g_pts_1d;
     int num_g_pts;
     int num_subcells_per_elem;
-
-    int num_cells_1d;
     
     if(e_order == 0){
         
         num_g_pts_1d = 2;
         num_g_pts  = pow(num_g_pts_1d, dim);
-
-        num_cells_1d = num_g_pts_1d - 1;
-
         num_subcells_per_elem = pow((num_g_pts_1d - 1), dim);
-        num_zones_in_elem_ = 1;
     }
 
     else{
 
         num_g_pts_1d = 2 * e_order + 1;
         num_g_pts    = pow(num_g_pts_1d, dim);
-
-        num_cells_1d = num_g_pts_1d - 1;
-
         num_subcells_per_elem = pow((2 * e_order), dim);
-
-
-        num_zones_in_elem_ = pow(num_cells_1d/2, dim);
     }
 
-    num_cells_in_zone_ = 8;
-    
+
     num_elem_ = num_elem;
 
     num_g_pts_in_elem_ = num_g_pts;
@@ -408,96 +117,106 @@ void mesh_t::init_element(int e_order, int dim, int num_elem){
 
     num_cells_ = num_elem * num_subcells_per_elem;
 
+    //DANcells_in_elem_ = new int[num_elem * num_subcells_per_elem]();
     cells_in_elem_ = CArray <int> (num_elem, num_subcells_per_elem);
 
+    //DANelem_vol_ = new real_t[num_elem]();
     elem_vol_ = CArray <real_t> (num_elem);
 
     // WARNING: FOLLOWING CODE ASSUMES LOBATTO 
     num_nodes_in_elem_ = num_g_pts;
 
+    //DANnodes_in_elem_list_ = new int[num_elem_ * num_g_pts_in_elem_]();
     nodes_in_elem_list_ = CArray <int> (num_elem_, num_g_pts_in_elem_);
 
+    //DANnum_elems_in_elem_ = new int[num_elem_ ]();
     num_elems_in_elem_ = CArray <int> (num_elem_);
 
+    //DANelems_in_elem_list_start_ = new int[num_elem_ + 1]();
     elems_in_elem_list_start_ = CArray <int> (num_elem_ + 1);
-
-    // Zones in element is a purely local index space in ref_elem
-
 }
 
-
 // ---- CELLS ---- //
-
-/**************************************************************************************//**
-*  mesh_t::init_cells takes in the total number of cells necessary for the requested level
-*  of refinement. This information is used to allocate  memeory for the geometric entitities 
-*   local to the cell as well as the index maps between them.
-*****************************************************************************************/
 void mesh_t::init_cells (int ncells){
 
     
     num_cells_ = ncells;
 
+    //DANcell_vol_  = new real_t[num_cells_]();
     cell_vol_ = CArray <real_t> (num_cells_);
+    //DANcell_coords_ = new real_t[num_cells_*num_dim_]();
     cell_coords_ = CArray <real_t> (num_cells_, num_dim_);
 
 
+    //DANnodes_in_cell_list_   = new int[num_cells_*num_nodes_hex_]();
     nodes_in_cell_list_ = CArray <int> (num_cells_, num_nodes_hex_);
-    gauss_in_cell_list_ = CArray <int> (num_cells_, num_nodes_hex_);
+    //DANcorners_in_cell_list_ = new int[num_cells_*num_nodes_hex_]();
     corners_in_cell_list_ = CArray <int> (num_cells_, num_nodes_hex_);
+    
+    //DANnum_cells_in_cell_       = new int[num_cells_](); 
     num_cells_in_cell_ = CArray <int> (num_cells_);
+    //DANcells_in_cell_list_start_ = new int[num_cells_+1]();
     cells_in_cell_list_start_ = CArray <int> (num_cells_ + 1);
+
+    //DANelems_in_cell_list_ = new int[num_cells_]();
     elems_in_cell_list_ = CArray <int> (num_cells_);
 }
 
 
 // ---- VERTICES ---- //
-// The vertices are accessed as a subset of the nodes using the vert_node_map in ref_elem
-// Currently, no global index space is allocated for the vertices. This is because it can 
-// be equally represented by an index map from vertices to the nodes that are physically
-// co-located with the vertices.
-
 
 // ---- NODES ---- //
-
-/**************************************************************************************//**
-*  mesh_t::init_cells takes in the total number of cells necessary for the requested level
-*  of refinement. This information is used to allocate  memeory for the geometric entitities 
-*   local to the cell as well as the index maps between them.
-*****************************************************************************************/
 void mesh_t::init_nodes (int num_nodes) {
   
     num_nodes_ = num_nodes;
     
+    //DANnode_coords_   = new real_t[num_nodes_*num_dim_]();
     node_coords_   = CArray <real_t> (num_nodes_, num_dim_);
 
+    //DANnum_cells_in_node_        = new int[num_nodes_]();
     num_cells_in_node_ = CArray <int> (num_nodes_);
+    //DANcells_in_node_list_start_ = new int[num_nodes_+1]();
     cells_in_node_list_start_ = CArray <int> (num_nodes_ + 1);
 
+    //DANnum_corners_in_node_      = new int[num_nodes_]();
     num_corners_in_node_ = CArray <int> (num_nodes_);
 
+    //DANnum_elems_in_node_        = new int[num_nodes_]();
     num_elems_in_node_   = CArray <int> (num_nodes_);
+    //DANelems_in_node_list_start_ = new int[num_nodes_+1]();
     elems_in_node_list_start_ = CArray <int> (num_nodes_ + 1);
 
+    //DANnode_jacobian_  = new real_t[num_nodes_ * num_dim_ * num_dim_]();
+    node_jacobian_ = CArray <real_t> (num_nodes_, num_dim_, num_dim_);
+    
+    node_jacobian_inverse_ = CArray <real_t> (num_nodes_, num_dim_, num_dim_);
+
+    //DANnode_det_j_  = new real_t[num_nodes_]();
+    node_det_j_ = CArray <real_t> (num_nodes_);
+}
+
+// ---- GHOST NODES ---- //
+void mesh_t::init_ghost_nodes (int num_ghost_nodes) {
+  
+    num_nodes_ = num_ghost_nodes;
+    
+    ghost_node_coords_   = CArray <real_t> (num_nodes_, num_dim_);
 }
 
 
 // ---- GAUSS LOBATTO POINTS ---- //
-
-/**************************************************************************************//**
-*  mesh_t::init_gauss_pts allocates memeory for the quadrature points and the geometric 
-*  entitities associated with them. 
-*****************************************************************************************/
 void mesh_t::init_gauss_pts (){
 
     // Index maps
     num_g_pts_ = num_elem_ * num_g_pts_in_elem_;
+    //DANnode_in_gauss_list_ = new int[num_g_pts_];
     node_in_gauss_list_ = CArray <int> (num_g_pts_);
 
     // geometric state
-    gauss_pt_jacobian_ = CArray <real_t> (num_g_pts_, num_dim_, num_dim_);
-    gauss_pt_jacobian_inverse_ = CArray <real_t> (num_g_pts_, num_dim_, num_dim_);
-    gauss_pt_det_j_ = CArray <real_t> (num_g_pts_);
+    //DANjacobians_ = new real_t[num_g_pts_*num_dim_*num_dim_];
+    jacobians_ = CArray <real_t> (num_g_pts_, num_dim_, num_dim_);
+    //DANjacobian_determinant_ = new real_t[num_g_pts_];
+    jacobian_determinant_ = CArray <real_t> (num_g_pts_);
 }
 
 
@@ -509,12 +228,7 @@ void mesh_t::init_gauss_pts (){
 
 // ---- BOUNDARY ---- //
 
-
-/**************************************************************************************//**
-*  mesh_t::init_bdy_sets takes in the number of boundary sets and allocates memeory for 
-*  them as well as the memory required to represent the boundary conditions associated 
-*  with each set. 
-*****************************************************************************************/
+// initializes the number of bdy sets
 void mesh_t::init_bdy_sets (int num_sets){
     
     // A check
@@ -523,9 +237,12 @@ void mesh_t::init_bdy_sets (int num_sets){
         num_sets = 1;
     }
     num_bdy_sets_ = num_sets;
+    //DANnum_bdy_patches_set_ = new int [num_sets];
     num_bdy_patches_set_ = CArray <int> (num_sets);
+    //DANstart_index_bdy_set_ = new int [num_sets+1];
     start_index_bdy_set_ = CArray <int> (num_sets + 1);
-    bdy_set_list_ = CArray <int> (num_sets*num_bdy_patches_);
+    //DANbdy_set_list_   = new int [num_sets*num_bdy_patches_]; // largest size possible
+    bdy_set_list_ = CArray <int> (num_sets, num_bdy_patches_);
 }
     
 
@@ -560,18 +277,27 @@ int mesh_t::num_cells_in_elem () const
 // returns the nodes in an element
 int& mesh_t::nodes_in_elem (int elem_gid, int node_lid)
 {
+    //DANreturn nodes_in_elem_list_[elem_gid * num_g_pts_in_elem_ + node_lid];
     return nodes_in_elem_list_(elem_gid, node_lid);
 } 
 
 // return array of elements connected to element (corners+patches)
 int& mesh_t::elems_in_elem (int elem_gid, int elem_lid) 
 {
+    // shift index by 1 so that it is consistent with matrix syntax
+    //DANint start_indx = elems_in_elem_list_start_(elem_gid);
+    
+    // get the index in the global 1D array
+    //DANint index = start_indx + elem_lid;
+    
+    //DANreturn elems_in_elem_list_(index);
     return elems_in_elem_list_(elem_gid, elem_lid);
 }
 
 // return the the global cell id from local element cell id
 int& mesh_t::cells_in_elem (int elem_gid, int cell_lid) 
 {
+    //DANreturn cells_in_elem_[cell_lid + num_cells_in_elem_*(elem_gid)];
     return cells_in_elem_(elem_gid, cell_lid);
 }
 
@@ -587,19 +313,6 @@ int& mesh_t::num_mat_pt_in_elem ()
     return num_mat_pts_in_elem_;
 }
 
-// return number of zones in an element
-int mesh_t::num_zones_in_elem () const
-{
-    return num_zones_in_elem_;
-}
-
-// return number of cells in an zone
-int mesh_t::num_cells_in_zone () const
-{
-    return num_cells_in_zone_;
-}
-
-
 // ---- CELLS ---- //
 
 // returns the number of cells
@@ -608,35 +321,24 @@ int mesh_t::num_cells () const
     return num_cells_;
 }
 
-// return the number of nodes in a cell
+// return the node ids local to the cell
 int mesh_t::num_nodes_in_cell () const
 {
     return num_nodes_hex_;
 }
 
-// return the number of nodes in a cell (WARNING: same as num nodes in cell)
-int mesh_t::num_gauss_in_cell () const
-{
-    return num_nodes_hex_;
-}
-
-
 // return the node ids local to the cell
 int& mesh_t::nodes_in_cell (int cell_gid, int node_lid) const
 {
+    //DANreturn nodes_in_cell_list_[node_lid + cell_gid*num_nodes_hex_];
     return nodes_in_cell_list_(cell_gid, node_lid);
-}
-
-// return the gauss pt ids local to the cell
-int& mesh_t::gauss_in_cell (int cell_gid, int gauss_lid) const
-{
-    return gauss_in_cell_list_(cell_gid, gauss_lid);
 }
 
 
 // return the number of cells around the cell
 int& mesh_t::num_cells_in_cell (int cell_gid) const
 {
+    //DANreturn num_cells_in_cell_[cell_gid];
     return num_cells_in_cell_(cell_gid);
 }
 
@@ -655,24 +357,18 @@ int& mesh_t::cells_in_cell (int cell_gid, int cell_lid) const
 // return corners connected to a cell
 int& mesh_t::corners_in_cell (int cell_gid, int corner_lid) const
 {
+    //DANreturn corners_in_cell_list_[corner_lid + cell_gid*num_nodes_hex_];
     return corners_in_cell_list_(cell_gid, corner_lid);
 }
 
 
 int& mesh_t::elems_in_cell (int cell_gid) const
 {
+    //DANreturn elems_in_cell_list_[cell_gid];
     return elems_in_cell_list_(cell_gid);
 }
     
-int mesh_t::patches_in_cell (int cell_gid, int patch_lid) const
-{
-    return patch_in_cell_list_(cell_gid, patch_lid);
-}
     
-int mesh_t::sides_in_cell (int cell_gid, int side_lid) const
-{
-    return sides_in_cell_list_(cell_gid, side_lid);
-}
 
 // ---- VERTICES ---- //
 
@@ -688,12 +384,14 @@ int mesh_t::num_nodes ()
 // returns number of cells around a node
 int& mesh_t::num_cells_in_node (int node_gid) const
 {
+    //DANreturn num_cells_in_node_[node_gid];
     return num_cells_in_node_(node_gid);
 }
 
 // returns number of elements around a node
 int& mesh_t::num_elems_in_node (int node_gid) const
 {
+    //DANreturn num_elems_in_node_[node_gid];
     return num_elems_in_node_(node_gid);
 }
 
@@ -721,13 +419,40 @@ int& mesh_t::elems_in_node (int node_gid, int elem_lid) const
     
     return elems_in_node_list_(index);
 }
+    
+// return the Jacobian at a node
+real_t & mesh_t::node_jacobian (int node_gid, int dim_i, int dim_j) const
+{
+
+    //DANint index = node_gid*num_dim_*num_dim_ + dim_i*num_dim_ + dim_j;
+
+    //DANreturn node_jacobian_[index];
+    return node_jacobian_(node_gid, dim_i, dim_j);
+
+}
+
+real_t & mesh_t::node_jacobian_inv (int node_gid, int dim_i, int dim_j) const
+{
+
+    return node_jacobian_inverse_(node_gid, dim_i, dim_j);
+}
+
+
+
+// return the determinant of the Jacobian at a node
+real_t & mesh_t::node_det_j (int node_gid) const
+{
+
+    return node_det_j_(node_gid);
+}
+
 
 
 // ---- GAUSS POINTS ---- //
 
 
 // return number of gauss points in mesh
-int mesh_t::num_gauss_pts () const
+int mesh_t::num_gauss () const
 {
     return num_g_pts_;
 }
@@ -748,8 +473,6 @@ int& mesh_t::gauss_in_elem (int elem_gid, int gauss_lid)
 }
 
 
-
-
 // ---- CORNERS ---- //
 
 // returns the number of corners
@@ -758,14 +481,11 @@ int mesh_t::num_corners () const
     return num_corners_;
 }
 
-int mesh_t::num_corners_in_cell () const
-{
-    return num_nodes_hex_;
-}
 
 // return number of corners connected to a node
 int mesh_t::num_corners_in_node (int node_gid) const
 {
+    //DANreturn num_corners_in_node_[node_gid];
     return num_corners_in_node_(node_gid);
 }
 
@@ -773,7 +493,7 @@ int mesh_t::num_corners_in_node (int node_gid) const
 int mesh_t::corners_in_node (int node_gid, int corner_lid) const
 {
     // Note: cell_in_node_list_start_ is the exact same as 
-    // corner_in_node_list_start_
+    //       corner_in_node_list_start_
     int start_indx = cells_in_node_list_start_(node_gid);
 
     // get the index in the global 1D array
@@ -794,7 +514,7 @@ int mesh_t::num_patches () const
 int mesh_t::node_in_patch_in_cell(int cell_id, int this_patch, int patchnode_lid) const
 {
     // get the local node index in the cell
-    int this_node = node_rlid_in_patch_in_cell_[patchnode_lid + this_patch*num_nodes_patch_];
+    int this_node = this_node_in_patch_in_cell_[patchnode_lid + this_patch*num_nodes_patch_];
     
     // return the global id for the local node index
     return nodes_in_cell(cell_id, this_node);
@@ -802,6 +522,7 @@ int mesh_t::node_in_patch_in_cell(int cell_id, int this_patch, int patchnode_lid
 
 
 // returns the global id for a cell that is connected to the patch
+// DANIELLOOK
 int mesh_t::cells_in_patch(int patch_gid, int this_cell) const
 {
     // get the 1D index
@@ -810,8 +531,20 @@ int mesh_t::cells_in_patch(int patch_gid, int this_cell) const
     // return the global id for the cell
     return cells_in_patch_list_(this_index);
 }
+
+// returns the global id for a cell that is connected to the patch
+// DANIELLOOK
+int mesh_t::cells_in_patch_local_id(int patch_gid, int this_cell) const
+{
+    // get the 1D index
+    int this_index = patch_gid*2 + this_cell;  // this_cell = 0 or 1
+
+    // return the global id for the cell
+    return cells_in_patch_local_id_list_(this_index);
+}
       
 // returns the nodes in the patch
+// DANIELLOOK
 int mesh_t::node_in_patch(int patch_gid, int patchnode_lid) const
 {
     // get the 1D index
@@ -821,16 +554,6 @@ int mesh_t::node_in_patch(int patch_gid, int patchnode_lid) const
     return patch_nodes_list_(this_index + patchnode_lid);
 }
 
-// returns the global id for a side that is connected to the patch
-int mesh_t::sides_in_patch(int patch_gid, int this_side) const
-{
-    // get the 1D index
-    int this_index = patch_gid*2 + this_side;  // this_side = 0 or 1
-    
-    // return the global id for the cell
-    return sides_in_patch_list_(this_index);
-}
-    
 
 // ---- Boundary ---- //
 
@@ -851,6 +574,7 @@ int mesh_t::bdy_patches(int this_bdy_patch) const
 
 // returns the number per bdy-patches in a particular set
 int mesh_t::num_bdy_patches_in_set (int bdy_set){
+    //DANreturn num_bdy_patches_set_[bdy_set];
     return num_bdy_patches_set_(bdy_set);
 }
 
@@ -859,10 +583,10 @@ int mesh_t::num_bdy_patches_in_set (int bdy_set){
 int mesh_t::bdy_patches_in_set (int bdy_set, int this_patch){
     
     int start = start_index_bdy_set_(bdy_set);
+    
+    //DANreturn bdy_set_list_[start+this_patch];
     return bdy_set_list_(start+this_patch);
 }
-
-
 
 
 // ==== MESH STATE FUNCTIONS ==== // 
@@ -870,6 +594,7 @@ int mesh_t::bdy_patches_in_set (int bdy_set, int this_patch){
 // ---- ELEMENTS ---- //
 real_t& mesh_t::elem_vol(int elem_gid) const
 {
+    //DANreturn elem_vol_[elem_gid];
     return elem_vol_(elem_gid);
 }
 
@@ -885,19 +610,25 @@ real_t& mesh_t::cell_vol(int cell_gid) const
 // return the cell coordinate position
 real_t& mesh_t::cell_coords(int cell_gid, int this_dim)
 {
-
+    
+    //DANcell_coords_[this_dim + cell_gid*num_dim_] = 0;
     cell_coords_(cell_gid, this_dim) = 0;
     
     // #pragma omp simd
     for (int node_lid = 0; node_lid < num_nodes_hex_; node_lid++){
         
         int node_gid = nodes_in_cell(cell_gid, node_lid); // get the global_id
+        
+        //DANcell_coords_[this_dim + cell_gid*num_dim_] += node_coords(node_gid, this_dim);
         cell_coords_(cell_gid, this_dim) += node_coords(node_gid, this_dim);
         
     } // end for loop over vertices in the cell
     
     // divide by the number of vertices
+    //DANcell_coords_[this_dim + cell_gid*num_dim_] /= ( (real_t)num_nodes_hex_ );
     cell_coords_(cell_gid, this_dim) /= ( (real_t)num_nodes_hex_ );
+    
+    //DANreturn cell_coords_[cell_gid*num_dim_ + this_dim];
     return cell_coords_(cell_gid, this_dim);
 }
 
@@ -910,30 +641,42 @@ real_t& mesh_t::cell_coords(int cell_gid, int this_dim)
 // return the node coordinates
 real_t& mesh_t::node_coords(int node_gid, int this_dim) const
 {
+    //DANreturn node_coords_[node_gid*num_dim_ + this_dim];
     return node_coords_(node_gid, this_dim);
 }
 
-
+// ---- GHOST NODES ---- //
+// return the node coordinates
+real_t& mesh_t::ghost_node_coords(int node_gid, int this_dim) const
+{
+    //DANreturn node_coords_[node_gid*num_dim_ + this_dim];
+    return ghost_node_coords_(node_gid, this_dim);
+}
 
 
 // ---- QUADRATURE POINTS ---- //
 
 // return jacobian at quadrature point
-real_t& mesh_t::gauss_pt_jacobian(int gauss_gid, int i, int j) const
+real_t& mesh_t::jacobian(int gauss_gid, int i, int j) const
 {
-    return gauss_pt_jacobian_(gauss_gid, i, j);
+    //int index = elem_gid*num_g_pts_in_elem_*num_dim_*num_dim_
+    //            + gauss_lid*num_dim_*num_dim_
+    //            + i*num_dim_
+    //            + j;
+    
+    //DANreturn jacobians_[index];
+    return jacobians_(gauss_gid, i, j);
 }
 
-
-real_t& mesh_t::gauss_pt_jacobian_inverse(int gauss_gid, int i, int j) const
-{
-    return gauss_pt_jacobian_inverse_(gauss_gid, i, j);
-}
 
 // return determinant of jacobian at quadrature point
-real_t& mesh_t::gauss_pt_det_j(int gauss_gid) const
+real_t& mesh_t::det_j(int gauss_gid) const
 {
-    return gauss_pt_det_j_(gauss_gid);
+    //int index = elem_gid*num_g_pts_in_elem_
+    //            + gauss_lid;
+    
+    //DANreturn jacobian_determinant_[index];
+    return jacobian_determinant_(gauss_gid);
 }
 
 
@@ -948,24 +691,23 @@ real_t mesh_t::patch_coords(int patch_id, int this_dim) const
     real_t this_patch_coord = 0.0;
 
     // loop over all the vertices on the this patch
-    for (int this_patchnode = 0; this_patchnode < num_nodes_patch_; this_patchnode++){
+    for (int this_patchvert = 0; this_patchvert < num_nodes_patch_; this_patchvert++){
         
         // get the global vertex id
-        int vert_gid = node_in_patch(patch_id, this_patchnode);
+        int vert_gid = node_in_patch(patch_id, this_patchvert);
         
         // calc the coord
         this_patch_coord += node_coords(vert_gid, this_dim)/((real_t)num_nodes_patch_);
 
-    } // end for this_patchnode
+    } // end for this_patchvert
     
     return this_patch_coord;
+    
 } // end of patch_coords
 
 
 
 // ---- BOUNDARY ---- //
-
-
 
 
 // ==== MESH CONNECTIVITY FUNCTIONS ==== // 
@@ -1024,6 +766,7 @@ void mesh_t::build_node_cell_connectivity(){
     // create memory for a list for all cell-node pairs
     //DANcells_in_node_list_ = new int [num_corners];
     cells_in_node_list_ = CArray <int> (num_corners);
+    if(local_index_set_flag) local_index_list_ = CArray <int> (num_corners);
     
 
     // Loop over nodes to set the start point of the ragged right array indices
@@ -1045,11 +788,16 @@ void mesh_t::build_node_cell_connectivity(){
             // increment the number of corners attached to this point
             int node_gid = nodes_in_cell(cell_gid, node_lid); // get the global_id of the node
 
-            // Assign global index values to nodes_in_cell_list_            
+            // Assign global index values to nodes_in_cell_list_
+            //DANnodes_in_cell_list_[node_lid + cell_gid*num_nodes_hex_] = node_gid;
+            // nodes_in_cell_list_(cell_gid, node_lid) = node_gid;
+            
+            // the global index in the cells_in_node_list_
             int index = cells_in_node_list_start_(node_gid) + num_corners_saved[node_gid];
             
             // save the global cell index to the list
             cells_in_node_list_(index) = cell_gid;
+            if(local_index_set_flag) local_index_list_(index) = node_lid;
             
             // each point-cell pair makes a corner
             num_corners_saved[node_gid] ++;  //number of corners saved to this node
@@ -1082,6 +830,7 @@ void mesh_t::build_corner_connectivity(){
     num_corners_ = num_corners;
 
     // create memory for a list of all corners in node
+    //DANcorners_in_node_list_ = new int [num_corners];
     corners_in_node_list_ = CArray <int> (num_corners);
 
     // populate the cells connected to a node list and corners in a node
@@ -1120,6 +869,7 @@ void mesh_t::build_corner_connectivity(){
 void mesh_t::build_cell_cell_connectivity(){
     
     // initializing the number of cell-cell pairs to be zero
+    
     int num_cell_cell_saved[num_cells_]; // local variable
     for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
         num_cells_in_cell_(cell_gid) = 0;
@@ -1217,6 +967,7 @@ void mesh_t::build_cell_cell_connectivity(){
     
     
     // create memory for the list of cells around a cell
+    //DANcells_in_cell_list_ = new int [actual_size];
     cells_in_cell_list_ = CArray <int> (actual_size);
     
     // update the number of cells around a cell (because the estimate had duplicates)
@@ -1249,6 +1000,10 @@ void mesh_t::build_cell_cell_connectivity(){
             
         } // end for i
     }// end for cell_gid
+    
+    // delete the temporary list of cells around a cell
+    //DANdelete[] temp_cell_in_cell_list;
+
 } // end of build_cell_cell_connectivity
 
 
@@ -1340,7 +1095,7 @@ void mesh_t::build_patch_connectivity(){
     }
 
     node_hash_delta = fmin(node_hash_delta, dist_min);
-    node_hash_delta = node_hash_delta/3.0;
+    node_hash_delta = node_hash_delta/2.0;
 
     // calculate the 1d array length of the hash table for nodes
     real_t num_bins[num_dim_];
@@ -1411,6 +1166,7 @@ void mesh_t::build_patch_connectivity(){
 
 
     // Allocate hash table and initialize key locations to -1
+    //DANint * hash_table = new int [max_key + 10];
     auto hash_table = CArray <int> (max_key + 10);
     
     for (int key_idx = 0; key_idx < hash_count; key_idx++){
@@ -1440,25 +1196,16 @@ void mesh_t::build_patch_connectivity(){
     num_patches_ = patch_gid;
 
     // create memory for the patch structures
-    // two cells per patch
+    //DANcells_in_patch_list_ = new int [num_patches_*2];   // two cells per patch
     cells_in_patch_list_ = CArray <int> (num_patches_ * 2);
-    
-    // four nodes per patch in hex
+    cells_in_patch_local_id_list_ = CArray <int> (num_patches_ * 2);
+    //DANpatch_nodes_list_    = new int [num_patches_*4];   // four nodes per patch in hex
     patch_nodes_list_    = CArray <int> (num_patches_ * 4);
-    
-    // six patches in each cell
-    patch_in_cell_list_ = CArray <int> (num_cells_, num_patches_hex_);
 
-    // six sides in each cell
-    sides_in_cell_list_ = CArray <int> (num_cells_, num_patches_hex_);
-    
-    // two sides per patch
-    sides_in_patch_list_ = CArray <int> (num_patches_ * 2);
-    
     // initialize the cells_in_patch_list to -1
     for (int patch_gid = 0; patch_gid < 2*num_patches_; patch_gid++){
         cells_in_patch_list_(patch_gid) = -1;
-        sides_in_patch_list_(patch_gid) = -1;
+        cells_in_patch_local_id_list_(patch_gid) = -1;
     }   
 
     for (int patch_gid = 0; patch_gid < 4*num_patches_; patch_gid++){
@@ -1468,20 +1215,12 @@ void mesh_t::build_patch_connectivity(){
 
     hash_count = 0;
     
-    int side_gid = 0;
-    
     // save the cell_gid to the cells_in_patch_list
     for (int cell_gid = 0; cell_gid < num_cells_; cell_gid++){
         for (int patch_lid = 0; patch_lid < num_patches_hex_; patch_lid++){
             
             // get the patch_id
             patch_gid = hash_table(hash_keys[hash_count]);
-            
-            // save the patch_gid for this local patch on the cell
-            patch_in_cell_list_(cell_gid, patch_lid) = patch_gid;
-            
-            // save the sides
-            sides_in_cell_list_(cell_gid, patch_lid) = side_gid;
 
             // a temp variable for storing the node global ids on the patch
             int these_nodes[num_nodes_patch_];
@@ -1500,12 +1239,11 @@ void mesh_t::build_patch_connectivity(){
             // save the cell_gid to the cells_in_patch_list
             if (cells_in_patch_list_(patch_gid*2) == -1){
                 
-                // save the cell and side indices for this patch
+                // save the cell index for this patch
                 int this_index = patch_gid*2;  // index in the list
                 
                 cells_in_patch_list_(this_index) = cell_gid;
-                
-                sides_in_patch_list_(this_index) = side_gid;
+                cells_in_patch_local_id_list_(this_index) = patch_lid;
                 
                 // save the nodes for this patch
                 this_index = patch_gid*4;
@@ -1514,26 +1252,24 @@ void mesh_t::build_patch_connectivity(){
                     patch_nodes_list_(this_index + patchnode_lid) = these_nodes[patchnode_lid];
                 }
             }
-            //
+
             else{
-                // it is the other cell and side connected to this patch
+                // it is the other cell connected to this patch
 
                 int this_index = patch_gid*2 + 1; // + num_patches_; // index in the list
 
                 cells_in_patch_list_(this_index) = cell_gid;
-                
-                sides_in_patch_list_(this_index) = side_gid;
+                cells_in_patch_local_id_list_(this_index) = patch_lid;
             }
-            
-            side_gid ++;  // increment the number of sides saved
 
             hash_count++;
 
         } // end for patch_lid
     } // end for cell_gid
-    
-    num_sides_ = side_gid; // save the total number of sides in the mesh
-    
+
+    // Delete memeory for the hash table
+    //DANdelete[] hash_table;
+
 } // end of build patches
 
 
@@ -1582,7 +1318,10 @@ void mesh_t::build_element_connectivity(){
         elems_in_node_list_start_(node_gid+1) = elems_in_node_list_start_(node_gid) + num_elems_in_node_(node_gid);
     }
 
+    // std::cout<<"Before getting size of elems in node list"<<std::endl;
+
     // create memory for elems_in_node_list_
+    //DANelems_in_node_list_ = new int [elem_in_node_size];
     elems_in_node_list_ = CArray <int> (elem_in_node_size);
 
     for(int elem_gid = 0; elem_gid < num_elem_; elem_gid++){
@@ -1601,14 +1340,14 @@ void mesh_t::build_element_connectivity(){
     }
 
     // verify that things makes sense
-    for(int node_gid = 0; node_gid < num_nodes_; node_gid++){
+    // for(int node_gid = 0; node_gid < num_nodes_; node_gid++){
 
-        int test = num_elems_in_node_(node_gid) - times_hit[node_gid];
+    //     int test = num_elems_in_node_[node_gid] - times_hit[node_gid];
 
-        if (test != 0){
-            std::cout<<"ERROR IN ELEMENTS IN NODE"<<std::endl;
-        }
-    }
+    //     if (test != 0){
+    //         std::cout<<"ERROR IN ELEMENTS IN NODE"<<std::endl;
+    //     }
+    // }
 
     // Find all elements connected to an element (same coding as cells_in_cell)
 
@@ -1712,7 +1451,9 @@ void mesh_t::build_element_connectivity(){
     
     
     // create memory for the list of cells around a cell
-    auto eiels = CArray <size_t> (num_elem_+1); // element in element list start
+    //DANelems_in_elem_list_ = new int [actual_size];
+    //elems_in_elem_list_ = CArray <int> (actual_size);
+    auto eiels = CArray <size_t> (num_elem_+1);
     for (int tempi = 0; tempi < num_elem_+1; tempi++) {
         eiels(tempi) = elems_in_elem_list_start_(tempi);
     }
@@ -1720,13 +1461,19 @@ void mesh_t::build_element_connectivity(){
     //printf("My start %d, also %d\n", num_elem_, actual_size);
     for (int shift = 0; shift < num_elem_; shift++) {
         // change start list to stride
+        //printf("%d) %d,%d -> ", shift, eiels(shift), eiels(shift+1));
         eiels(shift) = eiels(shift+1) - eiels(shift);
-
+        //printf("%d\n", eiels(shift));
+        //elems_in_elem_list_start_(shift) = elems_in_elem_list_start_(shift+1) - elems_in_elem_list_start(shift);
     }
     elems_in_elem_list_ = RaggedRightArray <int> (eiels);
+    for (int check = 0; check < num_elem_; check++) {
+       // printf("stride %d\n", elems_in_elem_list_.stride(check));
+    }
 
     // update the number of cells around a cell (because the estimate had duplicates)
     int index = 0;
+    //DANelems_in_elem_list_(0) = 0;
     
     for (int elem_gid = 0; elem_gid < num_elem_; elem_gid++){
         
@@ -1741,10 +1488,15 @@ void mesh_t::build_element_connectivity(){
         int list_start = elems_in_elem_list_start_(elem_gid);
         int list_stop  = list_start + num_elem_elem_saved[elem_gid];
         
+        //DANelems_in_elem_list_start_(elem_gid) = index; // update the index
+        
         // save the neighbors to the list
+        //DANfor (int i = list_start; i < list_stop; i++){
+        //DANfor (int i = 0; i < elems_in_elem_list_.stride(elem_gid); i++){
         for (int i = 0, j = list_start; i < num_elem_elem_saved[elem_gid]; i++, j++) {
             
             // save neighboring elem_gid to the final list
+            //DANelems_in_elem_list_(index) = temp_elems_in_elem_list(i);
             elems_in_elem_list_(elem_gid, i) = temp_elems_in_elem_list(j);
             
             // increment the global index
@@ -1752,6 +1504,20 @@ void mesh_t::build_element_connectivity(){
             
         } // end for i
     }// end for elem_gid
+
+
+    printf("ragged check\n");
+    for (int elem_gid = 0; elem_gid < num_elem_; elem_gid++) {
+        for (int i = 0; i < num_elem_elem_saved[elem_gid]; i++) {
+            printf("%d ", elems_in_elem_list_(elem_gid, i));
+        }
+    }
+    printf("\n");
+    
+    
+    // delete the temporary list of cells around a cell
+    //DANdelete[] temp_elems_in_elem_list;
+
 } // end build element connectivity
 
 
@@ -1781,6 +1547,7 @@ void mesh_t::build_bdy_patches (){
     num_bdy_patches_ = bdy_patch_gid;
     
     // allocate the memory for the boundary patches array
+    //DANbdy_patches_ = new int[num_bdy_patches_];
     bdy_patches_ = CArray <int> (num_bdy_patches_);
     
     
@@ -1861,13 +1628,50 @@ void mesh_t::tag_bdys(int this_bc_tag, real_t val, int bdy_set){
     // save the starting index for the next bdy_set
     start_index_bdy_set_(bdy_set+1) = start_index_bdy_set_(bdy_set) + counter;
     
+    
+    // compress the list to reduce the memory if it is the last set
+    //DANif (bdy_set == num_bdy_sets_-1){
+        //compress_bdy_set();
+    //}
+    
     std::cout << " tagged boundary patches " << std::endl;
     
 } // end of method
 
 
+// compress the bdy_set_list to reduce the memory
+/*//DAN
+void mesh_t::compress_bdy_set(){
+    
+    // the actual size of the bdy set list
+    int length = start_index_bdy_set_(num_bdy_sets_);
+    
+    // create a temp array of correct size
+    int * temp_bdy_list = new int [length];
+    
+    // save the values to the temp array
+    for (int i = 0; i < length; i++){
+        temp_bdy_list[i] = bdy_set_list_(i);
+    }
+    
+    // delete original array and make a new one of correct size
+    DANdelete[] bdy_set_list_;
 
-// routine for checking to see if a vertex is on a boundary
+    bdy_set_list_ = new int [length];
+    
+    // save the values to the bdy_set_list
+    for (int i = 0; i < length; i++){
+        bdy_set_list_[i] = temp_bdy_list[i];
+    }
+    
+    // delete the temp array
+    delete[] temp_bdy_list;
+    
+} // end of compress_bdy_set
+*/
+
+
+// routine for checking to see if a vertix is on a boundary
 // bc_tag = 0 xplane, 1 yplane, 3 zplane, 4 cylinder, 5 is shell
 // val = plane value, radius, radius
 int mesh_t::check_bdy(int patch_gid, int this_bc_tag, real_t val){
@@ -1935,6 +1739,73 @@ int mesh_t::check_bdy(int patch_gid, int this_bc_tag, real_t val){
 // deconstructor
 mesh_t::~mesh_t () {
     
+    // ---- ELEMENTS ---- //
+    //DANdelete[] cells_in_elem_;
+    //DANdelete[] num_elems_in_elem_;
+    //DANdelete[] elems_in_elem_list_start_;
+    //DANdelete[] elems_in_elem_list_;
+    //DANdelete[] nodes_in_elem_list_;
+
+
+    // ---- CELLS ---- //
+    //DANdelete[] nodes_in_cell_list_;
+    //DANdelete[] num_cells_in_cell_;
+    //DANdelete[] cells_in_cell_list_start_;
+    //DANdelete[] cells_in_cell_list_;
+    //DANdelete[] elems_in_cell_list_;
+
+
+    // ---- VERTICES ---- //
+
+    
+    // ---- NODES ---- //
+    //DANdelete[] num_cells_in_node_;
+    //DANdelete[] cells_in_node_list_start_;
+    //DANdelete[] cells_in_node_list_;
+
+    //DANdelete[] num_elems_in_node_;
+    //DANdelete[] elems_in_node_list_start_;
+    //DANdelete[] elems_in_node_list_;
+
+    // ---- GAUSS POINTS ---- //
+    //DANdelete[] node_in_gauss_list_;
+
+
+    // ---- CORNERS ---- //
+    //DANdelete[] num_corners_in_node_;
+    //DANdelete[] corners_in_cell_list_;
+    //DANdelete[] corners_in_node_list_start_;
+    //DANdelete[] corners_in_node_list_;
+
+
+    // ---- PATCHES ---- //
+    //DANdelete[] patch_nodes_list_;       
+    //DANdelete[] cells_in_patch_list_;  
+
+    // ---- BOUNDARY ---- //
+    //DANdelete[] bdy_patches_;
+    //DANdelete[] bdy_set_list_;
+    //DANdelete[] start_index_bdy_set_;
+    //DANdelete[] num_bdy_patches_set_; 
+
+    // ---- MESH STATE ---- //
+    // ---- ELEMENT ---- //
+    //DANdelete[] elem_vol_; 
+    
+
+    // ---- CELLS ---- //
+    //DANdelete[] cell_vol_;
+    //DANdelete[] cell_coords_;
+
+
+    // ---- NODES ---- //
+    //DANdelete[] node_coords_;
+
+
+    // ---- QUADRATURE POINTS ---- //
+    //DANdelete[] jacobians_;            // size of num_g_pts_*num_dim_*num_dim_
+    //DANdelete[] jacobian_determinant_; // size of num_g_pts_
+
 } // end of mesh deconstructor
 
 
@@ -1953,13 +1824,11 @@ void refine_mesh(
 
     int num_elem = init_mesh.num_cells();
 
-    // If p_order = 0, then a special case must be created such that there is only one 
-    // cell per element.  This is required for the standard CCH P0 and SGH solvers
     if(p_order == 0){
-
+                
         num_sub_1d   = 1;
         num_g_pts_1d = 2;
-
+        
         num_g_pts  = pow(num_g_pts_1d, dim);
         num_subcells_per_elem = pow((num_g_pts_1d-1), dim);
     }
@@ -1974,8 +1843,11 @@ void refine_mesh(
     }
 
     //  ---------------------------------------------------------------------------
-    //  Initialize Element and cell information in on high order mesh
+    //  Initailize Element and cell information in on high order mesh
     //  ---------------------------------------------------------------------------
+
+    // PLACEHOLDER CCH RECONSTRUCTION ORDER
+    int r_order = 0; 
 
     mesh.init_element(p_order, dim, num_elem);
     mesh.init_cells(num_elem*num_subcells_per_elem);
@@ -1987,20 +1859,20 @@ void refine_mesh(
 
     auto temp_pts = CArray<real_t> (num_g_pts_1d, num_g_pts_1d, num_g_pts_1d, 3);
 
-    // Using lobatto spacing to map from reference to real space
-    auto lobatto_nodes = CArray <real_t> (num_g_pts_1d);
-
-    lobatto_nodes_1D_tmp(lobatto_nodes, num_g_pts_1d);
+    double dx = 2.0/((double)num_g_pts_1d - 1.0);  // len/(num_nodes-1)
+    double dy = 2.0/((double)num_g_pts_1d - 1.0);  // len/(num_nodes-1)
+    double dz = 2.0/((double)num_g_pts_1d - 1.0);  // len/(num_nodes-1)
 
     for(int k = 0; k < num_g_pts_1d; k++){
         for(int j = 0; j < num_g_pts_1d; j++){
             for(int i = 0; i < num_g_pts_1d; i++){
-                temp_pts(i, j, k, 0) = lobatto_nodes(i);
-                temp_pts(i, j, k, 1) = lobatto_nodes(j);
-                temp_pts(i, j, k, 2) = lobatto_nodes(k);
+                temp_pts(i, j, k, 0) = -1.0 + (double)i*dx;
+                temp_pts(i, j, k, 1) = -1.0 + (double)j*dy;
+                temp_pts(i, j, k, 2) = -1.0 + (double)k*dz;
             }
         }
     }
+
 
     //  ---------------------------------------------------------------------------
     //  Map new points to real space using basis functions
@@ -2008,10 +1880,12 @@ void refine_mesh(
 
     // temp array to hold positions
     CArray <real_t> temp_gauss_point_coords;
+    //DANtemp_gauss_point_coords = CArray <real_t> (num_elem*num_g_pts, dim);
     auto g_points_in_mesh = CArray <real_t> (num_elem*num_g_pts, dim);
+    //DANauto g_points_in_mesh = ViewCArray <real_t> (temp_gauss_point_coords, num_elem*num_g_pts, dim);
 
 
-    // Reference node positions for element (currently p1, replace with element library, WIP)
+    // Reference node positions for element (currently p1, replace with element library)
     real_t ref_vert[8][3] = // listed as {Xi, Eta, Mu}
         {
         // Bottom Nodes
@@ -2225,6 +2099,7 @@ void refine_mesh(
     }
 
     // Allocating array for hash table
+    //DANint * hash; 
     CArray <int> hash;
     hash = CArray <int> (max_key+10); 
 
@@ -2234,6 +2109,8 @@ void refine_mesh(
     }
 
     // Temporary array for gauss->node map and node->gauss map
+
+    //DANint * node_to_gauss_map;
     CArray <int> node_to_gauss_map;
 
     node_to_gauss_map = CArray <int> (num_g_pts*num_elem);
@@ -2279,6 +2156,9 @@ void refine_mesh(
         }
     }
 
+    // remove hash table
+    //DANdelete[] hash;
+
     // Initialize nodes on sub_mesh
     mesh.init_nodes(num_nodes);
 
@@ -2293,6 +2173,12 @@ void refine_mesh(
         }
     }
 
+    // delete unneeded arrays
+    //DANdelete[] temp_gauss_point_coords;
+    //DANdelete[] node_to_gauss_map;
+
+
+
     //  ---------------------------------------------------------------------------
     //  Get gauss points and nodes associated with each cell, 
     //  as well as the cells associated with each element
@@ -2300,13 +2186,17 @@ void refine_mesh(
 
     // auto gauss_id_in_cell = CArray<int> (sub_mesh.num_cells(), num_sub_1d*num_sub_1d*num_sub_1d, 8);
     int sub_in_elem = num_sub_1d*num_sub_1d*num_sub_1d;
+    //int * gauss_id_in_cell;
 
-    // gauss_in_cell
+    //DANgauss_id_in_cell = new int[mesh.num_cells()*sub_in_elem*8];
+    auto gauss_in_cell = CArray<int> (mesh.num_cells(), sub_in_elem, 8);
 
     int p0, p1, p2, p3, p4, p5, p6, p7;
     p0 = p1 = p2 = p3 = p4 = p5 = p6 = p7 = 0;
     
     int num_1d = num_g_pts_1d;
+    int cell_index = 0;
+    int cell_mesh_index = 0;
 
     for(int elem_gid = 0; elem_gid < num_elem; elem_gid++){
         for(int k = 0; k < num_sub_1d; k++){
@@ -2332,22 +2222,24 @@ void refine_mesh(
                     p6 += num_1d*num_1d*num_1d*(elem_gid); 
                     p7 += num_1d*num_1d*num_1d*(elem_gid); 
 
-                    int cell_lid = i + j*num_sub_1d + k*num_sub_1d*num_sub_1d;
+                    cell_index = i + j*num_sub_1d + k*num_sub_1d*num_sub_1d;
 
-                    int cell_gid = cell_lid + num_sub_1d*num_sub_1d*num_sub_1d*(elem_gid);
+                    cell_mesh_index = cell_index + num_sub_1d*num_sub_1d*num_sub_1d*(elem_gid);
 
-                    mesh.gauss_in_cell(cell_gid, 0) = p0;
-                    mesh.gauss_in_cell(cell_gid, 1) = p1;
-                    mesh.gauss_in_cell(cell_gid, 2) = p2;
-                    mesh.gauss_in_cell(cell_gid, 3) = p3;
-                    mesh.gauss_in_cell(cell_gid, 4) = p4;
-                    mesh.gauss_in_cell(cell_gid, 5) = p5;
-                    mesh.gauss_in_cell(cell_gid, 6) = p6;
-                    mesh.gauss_in_cell(cell_gid, 7) = p7;
+                    // if(cell_mesh_index != elem_gid) std::cout<<"ERROR IN REFINE MESH"<<std::endl;
 
-                    mesh.cells_in_elem(elem_gid, cell_lid) = cell_gid;
+                    gauss_in_cell(elem_gid, cell_index, 0) = p0;
+                    gauss_in_cell(elem_gid, cell_index, 1) = p1;
+                    gauss_in_cell(elem_gid, cell_index, 2) = p2;
+                    gauss_in_cell(elem_gid, cell_index, 3) = p3;
+                    gauss_in_cell(elem_gid, cell_index, 4) = p4;
+                    gauss_in_cell(elem_gid, cell_index, 5) = p5;
+                    gauss_in_cell(elem_gid, cell_index, 6) = p6;
+                    gauss_in_cell(elem_gid, cell_index, 7) = p7;
 
-                    mesh.elems_in_cell(cell_gid) = elem_gid;
+                    mesh.cells_in_elem(elem_gid, cell_index) = cell_mesh_index;
+
+                    mesh.elems_in_cell(cell_mesh_index) = elem_gid;
 
                 }
             }
@@ -2390,13 +2282,9 @@ void refine_mesh(
         }
     }
 
+    //DANdelete [] gauss_id_in_cell;
+
     mesh.build_connectivity();
 }
 
-
-
 } // end namespace swage
-
-// declaration of the initial mesh and high order mesh created from the initial mesh
-swage::mesh_t init_mesh;
-swage::mesh_t mesh;

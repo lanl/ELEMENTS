@@ -417,9 +417,6 @@ class ref_element{
         // Map from vertex to node
         virtual int vert_node_map( const int vert_lid) = 0;
 
-        protected:
-            const static int num_dim_ = 2;
-
     }; // end of 2D element class
 
     class Element3D {
@@ -566,6 +563,8 @@ class ref_element{
 
         public:
 
+            Quad4();
+            ~Quad4();
 
             int num_verts();
             int num_nodes();
@@ -636,7 +635,9 @@ class ref_element{
             static const int vert_to_node[num_verts_];
 
         public:
-
+        
+            Quad8();
+            ~Quad8();
 
             int num_verts();
             int num_nodes();
@@ -707,7 +708,9 @@ class ref_element{
             static const int vert_to_node[num_verts_];
 
         public:
-
+        
+            Quad12();
+            ~Quad12();
 
             int num_verts();
             int num_nodes();
@@ -865,7 +868,9 @@ class Hex8: public Element3D {
             static const int vert_to_node[num_verts_];
 
         public:
-
+        
+            Hex8();
+            ~Hex8();
 
             int num_verts();
             int num_nodes();
@@ -944,7 +949,9 @@ class Hex8: public Element3D {
             static const int vert_to_node[num_verts_];
 
         public:
-
+        
+            Hex20();
+            ~Hex20();
 
             int num_verts();
             int num_nodes();
@@ -1031,7 +1038,9 @@ class Hex8: public Element3D {
             static const int vert_to_node[num_verts_];
 
         public:
-
+        
+            Hex32();
+            ~Hex32();
 
             int num_verts();
             int num_nodes();

@@ -6,10 +6,6 @@ set (CMAKE_CXX_STANDARD 14)
 # Packages & modules
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
-find_path(BLAS_INCLUDE_DIRS cblas.h
-  /usr/include
-  /usr/local/include
-  $ENV{BLAS_HOME}/include)
 
 # Set module path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/)

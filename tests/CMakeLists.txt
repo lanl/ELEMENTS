@@ -68,10 +68,16 @@ target_compile_options(
 
 
 # Test Gauss-Jacobi quadrature
-#add_executable(
-  #test_gauss_jacobi_quadrature
-  #test_gauss_jacobi_quadrature.cpp
-#)
+add_executable(
+  test_gauss_jacobi_quadrature
+  test_gauss_jacobi_quadrature.cpp
+)
+target_link_libraries(
+  test_gauss_jacobi_quadrature
+  common
+  elements
+  ${LAPACK_LIBRARIES}
+)
 #target_link_libraries(
   #test_gauss_jacobi_quadrature
   #common

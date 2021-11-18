@@ -1284,13 +1284,6 @@ class Hex8: public Element3D {
                 const ViewCArray <real_t> &xi_point);                                          
     }; // End of Tess16 Element Class
 
-
-// Everything is HexN
-extern elements::HexN      elem;
-
-// Reference element
-extern elements::ref_element  ref_elem;
-
 /* Add enumerated list of element types to choose from */
 
 namespace elem_types
@@ -1362,5 +1355,11 @@ class element_selector{
 
 
 } // end namespace elements
+
+// Everything is HexN
+extern elements::HexN      elem;
+
+// Reference element
+extern elements::ref_element  ref_elem;
 
 #endif //ELEMENTS_H

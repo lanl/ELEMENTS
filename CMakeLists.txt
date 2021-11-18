@@ -1,12 +1,19 @@
 project(ELEMENTS)
 cmake_minimum_required(VERSION 3.2)
-
+enable_language(CXX)
 set (CMAKE_CXX_STANDARD 14)
+
+# Packages & modules
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+find_path(BLAS_INCLUDE_DIRS cblas.h
+  /usr/include
+  /usr/local/include
+  $ENV{BLAS_HOME}/include)
 
 # Set module path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/)
 
-# Packages & modules
 find_package(Vector)
 if (CMAKE_VECTOR_NOVEC)
   set(VECTOR_C_FLAGS "${VECTOR_NOVEC_C_FLAGS}")
@@ -17,9 +24,6 @@ if (CMAKE_VECTOR_VERBOSE)
   set(VECTOR_CXX_FLAGS "${VECTOR_CXX_FLAGS} ${VECTOR_CXX_VERBOSE}")
   set(VECTOR_Fortran_FLAGS "${VECTOR_Fortran_FLAGS} ${VECTOR_Fortran_VERBOSE}")
 endif (CMAKE_VECTOR_VERBOSE)
-
-find_package(BLAS REQUIRED)
-find_package(LAPACK REQUIRED)
 
 option(ENABLE_VTK "Build ELEMENTS with VTK" OFF)
 find_package(VTK NO_MODULE)
@@ -53,6 +57,7 @@ include_directories(geometry)
 include_directories(slam)
 include_directories(swage)
 include_directories(io)
+include_directories(BLAS_INCLUDE_DIRS)
 
 # Libraries
 add_subdirectory(common)

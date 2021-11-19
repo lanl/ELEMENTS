@@ -1,28 +1,15 @@
 add_library(
-  elements 
+  elements
   elements.cpp
   lagrange_polynomials.cpp
+  lagrange_element.cpp
   legendre_polynomials.cpp
+  legendre_element.cpp
   jacobi_polynomials.cpp
   gauss_jacobi_quadrature.cpp
+  point_distributions.cpp
 )
 target_link_libraries(
   elements
   common
-)
-
-add_library(
-  polynomials_complex
-  lagrange_polynomials.cpp
-  legendre_polynomials.cpp
-  jacobi_polynomials.cpp
-)
-target_link_libraries(
-  polynomials_complex
-  common
-)
-target_compile_options(
-  polynomials_complex
-  PRIVATE
-  -DUSE_COMPLEX_NUMBERS
 )

@@ -5,5 +5,5 @@
 #include "error.h"
 #include "common.h"
 
-void compute_gauss_jacobi_quadrature_rule(SizeType n, NumType alpha, 
-    NumType beta, CArray<NumType> &points, CArray<NumType> &weights);
+void compute_gauss_jacobi_quadrature_rule(SizeType n, Real alpha, 
+    Real beta, CArray<Real> &points, CArray<Real> &weights);

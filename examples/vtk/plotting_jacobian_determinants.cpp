@@ -1,43 +1,44 @@
-#include "lagrange_polynomials.h"
+#include "lagrange_element.h"
+#include "point_distributions.h"
 #include "vtk_io.h"
 #include "common.h"
 
 void create_annular_mesh(int elem_order, SwageMesh &mesh) {
   int Nd  = 3;
-  int Ne  = 2;
+  int Nh  = 2;
   int Np  = elem_order;
-  int Nvd = Np + 1;
-  int Nve = std::pow(Nvd, Nd);
-  int Nv  = Nve*Ne - Nvd*Nvd;
+  int N = Np + 1;
+  int Ne = std::pow(N, Nd);
+  int Nv  = Ne*Nh - N*N;
 
-  NumType ri = 0.5; // 0.5*C/M_PI - 0.5*dr;
-  NumType ro = 2.5; // 0.5*C/M_PI + 0.5*dr;
+  Real ri = 0.5; // 0.5*C/M_PI - 0.5*dr;
+  Real ro = 2.5; // 0.5*C/M_PI + 0.5*dr;
 
   mesh.init_nodes(Nv);
-  mesh.init_element(Np, Nd, Ne);
+  mesh.init_element(Np, Nd, Nh);
 
   // Add vertices and connectivity for first element
   int vert_cnt = 0;
-  NumType theta_lb = 0.0;
-  NumType theta_ub = 0.5*M_PI;
-  for (int k = 0; k < Nvd; k++) {
-    for (int j = 0; j < Nvd; j++) {
-      for (int i = 0; i < Nvd; i++) {
-        NumType theta = theta_lb + i*(theta_ub - theta_lb)/(Nvd - 1);
-        NumType r = ri + j*(ro - ri)/(Nvd - 1);
+  Real theta_lb = 0.0;
+  Real theta_ub = 0.5*M_PI;
+  for (int k = 0; k < N; k++) {
+    for (int j = 0; j < N; j++) {
+      for (int i = 0; i < N; i++) {
+        Real theta = theta_lb + i*(theta_ub - theta_lb)/(N - 1);
+        Real r = ri + j*(ro - ri)/(N - 1);
 
-        NumType x = -r*std::cos(theta);
-        NumType y = r*std::sin(theta);
-        NumType z = -1.0 + 2.0*k/(Nvd - 1);
+        Real x = -r*std::cos(theta);
+        Real y = r*std::sin(theta);
+        Real z = -1.0 + 2.0*k/(N - 1);
 
         mesh.node_coords(vert_cnt, 0) = x;
         mesh.node_coords(vert_cnt, 1) = y;
         mesh.node_coords(vert_cnt, 2) = z;
 
-        int ii = i + j*Nvd + k*Nvd*Nvd;
+        int ii = i + j*N + k*N*N;
         mesh.nodes_in_elem(0, ii) = vert_cnt;
 
-        if (i == Nvd - 1) {
+        if (i == N - 1) {
           mesh.nodes_in_elem(1, ii - i) = vert_cnt;
         }
 
@@ -49,21 +50,21 @@ void create_annular_mesh(int elem_order, SwageMesh &mesh) {
   // Add vertices and connectivity for second element
   theta_lb = 0.5*M_PI;
   theta_ub = M_PI;
-  for (int k = 0; k < Nvd; k++) {
-    for (int j = 0; j < Nvd; j++) {
-      for (int i = 1; i < Nvd; i++) {
-        NumType theta = theta_lb + i*(theta_ub - theta_lb)/(Nvd - 1);
-        NumType r = ri + j*(ro - ri)/(Nvd - 1);
+  for (int k = 0; k < N; k++) {
+    for (int j = 0; j < N; j++) {
+      for (int i = 1; i < N; i++) {
+        Real theta = theta_lb + i*(theta_ub - theta_lb)/(N - 1);
+        Real r = ri + j*(ro - ri)/(N - 1);
 
-        NumType x = -r*std::cos(theta);
-        NumType y = r*std::sin(theta);
-        NumType z = -1.0 + 2.0*k/(Nvd - 1);
+        Real x = -r*std::cos(theta);
+        Real y = r*std::sin(theta);
+        Real z = -1.0 + 2.0*k/(N - 1);
 
         mesh.node_coords(vert_cnt, 0) = x;
         mesh.node_coords(vert_cnt, 1) = y;
         mesh.node_coords(vert_cnt, 2) = z;
 
-        int ii = i + j*Nvd + k*Nvd*Nvd;
+        int ii = i + j*N + k*N*N;
         mesh.nodes_in_elem(1, ii) = vert_cnt;
 
         vert_cnt++;
@@ -72,46 +73,38 @@ void create_annular_mesh(int elem_order, SwageMesh &mesh) {
   }
 }
 
-CArray<NumType> compute_jacobian_determinants(SwageMesh &mesh) {
-  int Nd  = 3;                  // number of dimensions
-  int Ne  = mesh.num_elems();   // number of elements
+CArray<Real> compute_jacobian_determinants(SwageMesh &mesh) {
+  int Nh  = mesh.num_elems();   // number of hex elements
   int Np  = mesh.elem_order();  // polynomial order
-  int Nvd = Np + 1;             // number of vertices in 1D
-  int Nve = std::pow(Nvd, Nd);  // number of vertices per element
+  int Nv  = Np + 1;             // number of vertices in 1D
 
-  CArray<NumType> jacobian_determinants(mesh.num_elems(), Nve);
+  Real Zl = -1.0, Zr = 1.0;
+  Real Ze[Nv]; 
+  equispaced_points(Nv, Zl, Zr, Ze);
 
-  NumType ze[Nve]; 
-  NumType we[Nve]; 
-  NumType cx[Nve]; 
-  NumType cy[Nve]; 
-  NumType cz[Nve]; 
-  NumType g[3*Nvd+1];
-  NumType zl = -1.0, zr = 1.0;
-  lagrange::equispaced_points(Nvd, zl, zr, ze);
-  lagrange::compute_barycentric_weights(Nvd, ze, we);
+  // Create reference element
+  LagrangeElement<Real> elem(Np, Ze);
 
-  for (int elem_id = 0; elem_id < Ne; elem_id++) {
-    // Extract the vertex coordinates into the cx, cy, cz arrays
-    for (int vert_lid = 0; vert_lid < Nve; vert_lid++) {
+  Real x[elem.Ne]; 
+  Real y[elem.Ne]; 
+  Real z[elem.Ne]; 
+  CArray<Real> jacobian_determinants(Nh, elem.Ne);
+  for (int elem_id = 0; elem_id < Nh; elem_id++) {
+    // Extract the vertex coordinates into the x, y, z arrays
+    for (int vert_lid = 0; vert_lid < elem.Ne; vert_lid++) {
       int vert_gid = mesh.nodes_in_elem(elem_id, vert_lid);
-      cx[vert_lid] = mesh.node_coords(vert_gid, 0);
-      cy[vert_lid] = mesh.node_coords(vert_gid, 1);
-      cz[vert_lid] = mesh.node_coords(vert_gid, 2);
+      x[vert_lid] = mesh.node_coords(vert_gid, 0);
+      y[vert_lid] = mesh.node_coords(vert_gid, 1);
+      z[vert_lid] = mesh.node_coords(vert_gid, 2);
     }
 
-    // Compute Jacobian at each node
-    for (int k = 0; k < Nvd; k++) {
-      for (int j = 0; j < Nvd; j++) {
-        for (int i = 0; i < Nvd; i++) {
-          int ii = i + j*Nvd + k*Nvd*Nvd;
-          NumType X[3] = {ze[i], ze[j], ze[k]};
-          NumType J;
-
-          SizeType N = Nvd;
-          lagrange::compute_jacobian_determinant(
-              N, ze, we, cx, cy, cz, g, X, J);
-          jacobian_determinants(elem_id, ii) = J;
+    // Compute Jacobian at each vertex
+    for (int k = 0; k < Nv; k++) {
+      for (int j = 0; j < Nv; j++) {
+        for (int i = 0; i < Nv; i++) {
+          int ii = i + j*Nv + k*Nv*Nv;
+          Real X[3] = {Ze[i], Ze[j], Ze[k]};
+          jacobian_determinants(elem_id, ii) = elem.eval_det_jac(x, y, z, X);
         }
       }
     }
@@ -127,7 +120,7 @@ int main() {
   create_annular_mesh(elem_order, mesh);
 
   // Compute the Jacobians on the vertices of the input mesh
-  CArray<NumType> jac_dets = compute_jacobian_determinants(mesh);
+  CArray<Real> jac_dets = compute_jacobian_determinants(mesh);
 
   // Initialize a VTK grid file from the  the mesh and output
   std::string sol_name("j");

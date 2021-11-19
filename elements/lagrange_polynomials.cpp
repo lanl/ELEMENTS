@@ -2,90 +2,6 @@
 
 namespace lagrange {
   /*
-   * Assess equality of two double precision floating point numbers of the same
-   * order of magnitude
-   *
-   * Paramters
-   * ---------
-   * a : a double precision number
-   * b : another double precision number
-   *
-   * Returns
-   * -------
-   *   a boolean 
-   */
-  inline bool almost_equal(NumType a, NumType b) {
-    return common::abs(a - b) < 2.0*NUM_EPS;
-  }
-
-
-  /*
-   * Branchless choice between two SizeType variables based on a logical
-   * condition
-   *
-   * Parameters
-   * ----------
-   * c : condition 
-   * a : to be returned if condition is true
-   * b : to be returned if condition is false
-   *
-   * Returns
-   * -------
-   *   decision between the two variables based on the condition
-   */
-  inline SizeType branchless_choice(bool c, SizeType a, SizeType b) {
-    return a ^ ((b ^ a) & -(!c));
-  }
-
-  /*
-   * Fill an array with points equally spaced between end points (inclusive)
-   *
-   * Parameters
-   * ----------
-   * N  : number of points
-   * zl : left end point 
-   * zr : right end point 
-   *
-   * Returns
-   * -------
-   * z : array of equispaced points
-   */
-  void equispaced_points(SizeType N, NumType &zl, NumType &zr, 
-      NumType *z) {
-    for (SizeType i = 0; i < N; i++)
-      z[i] = zl + double(i)/double(N - 1)*(zr - zl);
-  }
-
-  /*
-   * Fill an array with Chebyshev points of the second kind in the interval
-   * defined by the specified end points. The symmetry-preserving technique from
-   * Chebfun (chebtech1/chebpts.m) is used.
-   *
-   * Parameters
-   * ----------
-   * N  : number of points
-   * zl : left end point 
-   * zr : right end point 
-   *
-   * Returns
-   * -------
-   * z : array of Chebyshev points
-   */
-  void chebyshev_points(SizeType N, NumType &zl, NumType &zr, 
-      NumType *z) {
-    // Evaluate the points using sine function to preserve symmetry
-    NumType f = 0.5*M_PI/double(N);
-    for (SizeType i = 0; i < N; i++) {
-      int j = (-1*int(N) + 1) + 2*int(i);
-      z[i] = sin(f*double(j));
-    }
-
-    // Scale the points to fit the domain
-    for (int i = 0; i < N; i++)
-      z[i] = 0.5*(1.0 - z[i])*zl + 0.5*(1.0 + z[i])*zr;
-  }
-
-  /*
    * If the input coordinate is coincident with any of the input vertices,
    * return the index of the vertex with which it coincides
    *
@@ -101,21 +17,20 @@ namespace lagrange {
    * N : number of vertices
    * z : vertex coordinates
    * x : coordinate to test
-   * 
-   * Returns
-   * -------
-   * k : index of coincident vertex
    */
-  void find_coincident_vertex(const SizeType &N, const NumType *z, 
-      const NumType &x, SizeType &k) {
+  template <typename NumType>
+  SizeType find_coincident_vertex(const SizeType &N, const NumType *z, 
+      const NumType &x) {
     // The largest number an unsigned integer can be
-    k = -1;
+    SizeType k = -1;
 
     // Adding to -1 in unsigned rolls over zero
     for (SizeType j = 0; j < N; j++) {
       //k += (j + 1)*SizeType(z[j] - x == 0.0);
-      k += (j + 1)*SizeType(lagrange::almost_equal(z[j], x));
+      k += (j + 1)*SizeType(common::almost_equal(z[j], x));
     }
+
+    return k;
   }
 
   /*
@@ -138,6 +53,7 @@ namespace lagrange {
    * formula of the first kind (also called the modified Lagrange formula), I
    * cannot and do not scale the weights 
    */
+  template <typename NumType>
   void compute_barycentric_weights(const SizeType &N, const NumType *z, 
       NumType *w) {
     // Compute weights
@@ -151,216 +67,229 @@ namespace lagrange {
   };
 
   /*
-   * Evaluation of (derivative of) 1D Lagrange interpolant 
-   *
-   * The implementation of the evaluation of the interpolant uses the modified
-   * Lagrange formula (barycentric formula of the first kind). The evaluation
-   * of derivatives (up to order 2) is based on the formula for the derivative
-   * of a rational interpolant given in "Some New Aspects of Rational
-   * Interpolation" (Schneider and Werner, 1986).
+   * Return evaluation of Lagrange polynomial associated with a given vertex at
+   * a given coordinate
    *
    * Parameters
    * ----------
-   * ND  : order of derivative
-   * ic  : index of vertex coincident with coordinate above (-1 if not coincident)
-   * Nv  : number of vertices 
-   * z   : vertex coordinates
-   * w   : barycentric vertex weights
-   * x   : coordinate at which to evaluate interpolant
-   * c0  : input coefficients (function values at vertices)
-   * ci  : work array for intermediate coefficients
-   *
-   * Returns
-   * -------
-   * co : output coefficient (evaluation of interpolant or its derivative)
+   * Nv : number of vertices
+   * i  : index of vertex
+   * ic : index of vertex coincident with X (-1 if not coincident)
+   * Z  : vertex coordinates
+   * w  : barycentric weights
+   * X  : coordinate at which to evaluate
    */
-  void evaluate_1d(
-      const SizeType &ND, 
-      const SizeType &ic, 
-      const SizeType &Nv, 
-      const NumType *z, 
-      const NumType *w, 
-      const NumType &x, 
-      const NumType *c0, 
-      NumType *ci, 
-      NumType *co) {
-    // Copy input coefficients into the intermediate coefficients
-    std::copy(c0, c0+Nv, ci);
+  template <typename NumType>
+  NumType eval(const SizeType Nv, const SizeType i, const SizeType ic, 
+      const NumType *Z, const NumType *w, const NumType X) {
+    if (ic < Nv) return i == ic ? 1.0 : 0.0;
 
-    NumType M = 1.0;  // factorial(n)
-    NumType L = 1.0;  // nodal polynomial
+    // Evaluate nodal polynomial
+    NumType L = 1.0;
+    for (SizeType j = 0; j < Nv; j++) L *= (X - Z[j]);
+
+    return L*w[i]/(X - Z[i]);
+  }
+
+  /* 
+   * Return evaluation of derivative of Lagrange polynomial associated with a
+   * given vertex at a given coordinate
+   *
+   * Currently implemented as a special case of interpolant derivative
+   * evaluation. There is probably a better way to do this, but I haven't
+   * gotten around to finding it and implementing it
+   *
+   * Parameters
+   * ----------
+   * Nv         : number of vertices
+   * n          : order of derivative
+   * i          : index of vertex
+   * ic : index of vertex coincident with X (-1 if not coincident)
+   * Z          : vertex coordinates
+   * w          : barycentric weights
+   * X          : coordinate at which to evaluate
+   * c          : work array for intermediate coefficients
+   */
+  template <typename NumType>
+  NumType eval_der(const SizeType Nv, const SizeType n, const SizeType i, 
+      const SizeType ic, const NumType *Z, const NumType *w, 
+      const NumType X, NumType *c) {
+    // Initialize coefficients of interpolant to Kronecker deltas to create
+    // interpolant equivalent to Lagrange polynomial at vertex
+    for (SizeType j = 0; j < Nv; j++) {
+      if (j != i) { c[j] = 0.0; } else { c[j] = 1.0; }
+    }
+    
+    NumType dnl = eval_der_interp<NumType>(Nv, n, ic, Z, w, X, c);
+
+    return dnl;
+  }
+
+  /* 
+   * Return evaluation of Lagrange interpolant, which is the sum of the
+   * products of Lagrange polynomials and provided coefficients, at specified
+   * coordinates
+   *
+   * This implementation uses the modified Lagrange formula (barycentric
+   * formula of the first kind) from "Barycentric Lagrange Interpolation"
+   * (Berrut and Trefethen, 2004). 
+   *
+   * Parameters
+   * ----------
+   * Nv : number of vertices 
+   * i  : index of vertex coincident with coordinate (-1 if not coincident)
+   * Z  : vertex coordinates
+   * w  : barycentric vertex weights
+   * X  : coordinate at which to evaluate interpolant
+   * c  : input coefficients (function values at vertices)
+   */
+  template <typename NumType>
+  NumType eval_interp(const SizeType Nv, const SizeType i, const NumType *Z, 
+      const NumType *w, const NumType X, const NumType *c) {
+    NumType p;
+    NumType L = 1.0;  // nodal polynomial evaluation
 
     // Evaluate the interpolant
-    if (ic < Nv) {  // coincident
-      *co = ci[ic];
+    if (i < Nv) {  // coincident
+      return c[i];
     } else {  // non-coincident
       // Loop over vertices
-      *co = 0.0;
+      p = 0.0;
       for (SizeType j = 0; j < Nv; j++) {
         // Contribution to interpolant evaluation
-        *co += w[j]*ci[j]/(x - z[j]);
+        p += w[j]*c[j]/(X - Z[j]);
 
         // Contribution to scalar (nodal polynomial evaluation)
-        L *= (x - z[j]);
+        L *= (X - Z[j]);
       }
 
       // Apply scaling
-      *co *= L;
+      p *= L;
+    }
+
+    return p; 
+  }
+
+  /* 
+   * Return evaluation of derivative of Lagrange interpolant, which is the sum
+   * of the products of the derivatives of Lagrange polynomials and provided
+   * coefficients, at specified coordinates
+   *
+   * This implementation is based on the formula for the derivative of a
+   * rational interpolant given in "Some New Aspects of Rational Interpolation"
+   * (Schneider and Werner, 1986).
+   *
+   * Parameters
+   * ----------
+   * Nv : number of vertices 
+   * n  : order of derivative
+   * i  : index of vertex coincident with coordinate (-1 if not coincident)
+   * Z  : vertex coordinates
+   * w  : barycentric vertex weights
+   * X  : coordinate at which to eval interpolant
+   * c  : input coefficients (will be modified)
+   */
+  template <typename NumType>
+  NumType eval_der_interp(const SizeType Nv, const SizeType n, const SizeType i,
+      const NumType *Z, const NumType *w, const NumType X, NumType *c) {
+    // Interpolant and nodal polynomial evaluation
+    NumType p = 0.0;  // interpolant evaluation
+    NumType L = 1.0;  // nodal polynomial
+    if (i < Nv) {  // coincident
+      p = c[i];
+    } else {  // non-coincident
+      // Loop over vertices
+      p = 0.0;
+      for (SizeType j = 0; j < Nv; j++) {
+        // Contribution to interpolant evaluation
+        p += w[j]*c[j]/(X - Z[j]);
+
+        // Contribution to scalar (nodal polynomial evaluation)
+        L *= (X - Z[j]);
+      }
+
+      // Apply scaling
+      p *= L;
     }
 
     // Evaluate derivatives, building up to specified order
-    NumType dnp = *co;  // initialize with n = 0, the evaluation
-    if (ic < Nv) {  // coincident
-      for (SizeType n = 1; n <= ND; n++) {
+    NumType dkp = p, dnp = 0.0;
+    NumType M = 1.0;  // factorial(k)
+    if (i < Nv) {  // coincident
+      for (SizeType k = 1; k <= n; k++) {
         // Zero the output
-        *co = 0.0;
+        dnp = 0.0;
 
         for (SizeType j = 0; j < Nv; j++) {
           // Calculate divided difference and store in intermediate coefficients
-          NumType sx = 1.0/(z[ic] - z[j]);
-          ci[j] = sx*(dnp - ci[j]);
+          NumType sx = 1.0/(Z[i] - Z[j]);
+          c[j] = sx*(dkp - c[j]);
 
           // Update output coefficient with contribution from vertex
           // TODO optimization: make branchless? Trefethen uses log o exp trick
-          if (j != ic) *co += w[j]*ci[j];
+          if (j != i) dnp += w[j]*c[j];
         }
 
         // Scale the output and copy for use in calculating next order
-        M *= n;
-        *co *= -M/w[ic];
-        dnp = *co;
+        M *= k;
+        dnp *= -M/w[i];
+        dkp = dnp;
       }
     } else {  // non-coincident
-      for (SizeType n = 1; n <= ND; n++) {
+      for (SizeType k = 1; k <= n; k++) {
         // Zero the output
-        *co = 0.0;
+        dnp = 0.0;
 
         for (SizeType j = 0; j < Nv; j++) {
           // Calculate divided difference and store in intermediate coefficients
-          NumType sx = 1.0/(x - z[j]);
-          ci[j] = sx*(dnp - ci[j]);
+          NumType sx = 1.0/(X - Z[j]);
+          c[j] = sx*(dkp - c[j]);
 
           // Update output coefficient with contribution from vertex
-          *co += w[j]*ci[j]/(x - z[j]);
+          dnp += w[j]*c[j]/(X - Z[j]);
         }
 
         // Scale the output and copy for use in calculating next order
-        M *= n;
-        *co *= L*M;
-        dnp = *co;
+        M *= k;
+        dnp *= L*M;
+        dkp = dnp;
       }
     }
-  };
 
-  /*
-   * Evaluation of 3D tensor product Lagrange interpolant and its partial
-   * derivatives
-   *
-   * This implementation uses a dimension-by-dimension approach that reuses the
-   * 1D interpolant evaluation kernel. It requires a work array of size 3N to
-   * hold intermediate coefficients.
-   *
-   * Parameters
-   * ----------
-   * pde : partial derivative encoding
-   * N   : number of vertices 
-   * z   : vertex coordinates
-   * w   : barycentric vertex weights
-   * f   : values of function at vertices
-   * x   : coordinates at which to evaluate interpolants
-   *
-   * Returns
-   * -------
-   * g  : work array of intermediate coefficients
-   * p : evaluation of polynomial interpolants
-   */
-  void evaluate_3d(
-      const SizeType &pde,
-      const SizeType &N,
-      const NumType *z, 
-      const NumType *w, 
-      const NumType *x, 
-      const NumType *f, 
-      NumType *g) {  
-    // Check the coincidence of the coordinates with the nodes
-    SizeType ix, iy, iz;
-    find_coincident_vertex(N, z, x[0], ix);
-    find_coincident_vertex(N, z, x[1], iy);
-    find_coincident_vertex(N, z, x[2], iz);
-
-    // Decode partial derivative information
-    SizeType NDx, NDy, NDz;
-    common::decode_partial_derivative(pde, NDx, NDy, NDz);
-
-    const NumType *c0;
-    NumType *ci, *co;
-
-    // Collapse second dimension into coefficients for third dimension
-    for (int k = 0; k < N; k++) {
-      // Collapse first dimension into coefficients for second dimension
-      for (int j = 0; j < N; j++) {
-        c0 = f+j*N+k*N*N;
-        ci = g;
-        co = g+N+j;
-        evaluate_1d(NDx, ix, N, z, w, x[0], c0, ci, co);
-      }
-
-      c0 = g+N;
-      ci = g;
-      co = g+2*N+k;
-      evaluate_1d(NDy, iy, N, z, w, x[1], c0, ci, co); 
-    }
-
-    // Evaluate 3D interpolant as 1D interpolant
-    c0 = g+2*N;
-    ci = g;
-    co = g+3*N;
-    evaluate_1d(NDz, iz, N, z, w, x[2], c0, ci, co);
-  };
-
-  /*
-   * Evaluate determinant of the Jacobian of the mapping from reference
-   * coordinates to spatial coordinates
-   *
-   * Parameters
-   * ----------
-   * N : number of vertices 
-   * z : vertex coordinates
-   * w : barycentric vertex weights
-   * x : x spatial coordinate at vertices
-   * g : work array of intermediate coefficients
-   * X : reference coordinate at which Jacobian is to be evaluated
-   *
-   * Returns
-   * -------
-   * J : determinant of Jacobian of mapping
-   */
-  void compute_jacobian_determinant(
-      SizeType &N, 
-      NumType *z, 
-      NumType *w, 
-      NumType *cx, 
-      NumType *cy, 
-      NumType *cz, 
-      NumType *g, 
-      NumType X[3], 
-      NumType &J) {
-    // Evaluate Jacobian (denoted F)
-    NumType F[9];
-    for (SizeType j = 0; j < 3; j++) {
-      SizeType pde = 1 << j;  // partial derivative code (dx, dy, or dz)
-
-      evaluate_3d(pde, N, z, w, X, cx, g);
-      F[0+3*j] = g[3*N];
-      evaluate_3d(pde, N, z, w, X, cy, g);
-      F[1+3*j] = g[3*N];
-      evaluate_3d(pde, N, z, w, X, cz, g);
-      F[2+3*j] = g[3*N];
-    }
-
-    // Calculate Jacobian determinant
-    J = F[0]*(F[4]*F[8] - F[5]*F[7]) 
-        - F[3]*(F[1]*F[8] - F[2]*F[7]) 
-        + F[6]*(F[1]*F[5] - F[2]*F[4]);
+    return dnp;
   }
+
+  // Explicit instantiations of template functions
+  template SizeType find_coincident_vertex(const SizeType &N, const Real *z, 
+      const Real &x);
+  template SizeType find_coincident_vertex(const SizeType &N, const Complex *z, 
+      const Complex &x);
+
+  template void compute_barycentric_weights(const SizeType &N, const Real *z, 
+      Real *w);
+  template void compute_barycentric_weights(const SizeType &N, const Complex *z, 
+      Complex *w);
+
+  template Real eval(const SizeType Nv, const SizeType i, const SizeType ic, 
+      const Real *Z, const Real *w, const Real X);
+  template Complex eval(const SizeType Nv, const SizeType i, const SizeType ic, 
+      const Complex *Z, const Complex *w, const Complex X);
+
+  template Real eval_der(const SizeType Nv, const SizeType n, const SizeType i, 
+      const SizeType ic, const Real *Z, const Real *w, const Real X, Real *c);
+  template Complex eval_der(const SizeType Nv, const SizeType n, 
+      const SizeType i, const SizeType ic, const Complex *Z, const Complex *w, 
+      const Complex X, Complex *c);
+
+  template Real eval_interp(const SizeType Nv, const SizeType i, const Real *Z, 
+      const Real *w, const Real X, const Real *c);
+  template Complex eval_interp(const SizeType Nv, const SizeType i, 
+      const Complex *Z, const Complex *w, const Complex X, const Complex *c);
+
+  template Real eval_der_interp(const SizeType Nv, const SizeType n, 
+      const SizeType i, const Real *Z, const Real *w, const Real X, 
+      Real *c);
+  template Complex eval_der_interp(const SizeType Nv, const SizeType n, 
+      const SizeType i, const Complex *Z, const Complex *w, const Complex X, 
+      Complex *c);
 }

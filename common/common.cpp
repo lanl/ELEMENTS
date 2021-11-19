@@ -14,7 +14,7 @@
  * -------
  * y  : little-endian array of Nb entries, the mixed-radix form
  */
-void common::base_10_to_mixed_radix(const SizeType &Nb, const SizeType *b, 
+void common::base_10_to_mixed_radix(const SizeType Nb, const SizeType *b, 
     SizeType x, SizeType *y) {
   for (SizeType i = 0; i < Nb; i++) {
     y[i] = x % b[i];
@@ -36,7 +36,7 @@ void common::base_10_to_mixed_radix(const SizeType &Nb, const SizeType *b,
  * -------
  * y  : an non-negative integer in base 10
  */
-SizeType common::mixed_radix_to_base_10(const SizeType &Nb, const SizeType *b, 
+SizeType common::mixed_radix_to_base_10(const SizeType Nb, const SizeType *b, 
     SizeType *x) {
   SizeType y = 0;
   SizeType z = 1;

@@ -65,8 +65,7 @@ VtkGrid swage2vtk::read_grid(const std::string &file_name) {
     reader->SetFileName(file_name.c_str());
     reader->Update();
     grid = reader->GetOutput();
-  }
-  else if (extension == ".vtk") {
+  } else if (extension == ".vtk") {
     vtkNew<vtkUnstructuredGridReader> reader;
     reader->SetFileName(file_name.c_str());
     reader->Update();
@@ -159,7 +158,7 @@ void swage2vtk::init_swage_mesh(const int &elem_order, const VtkGrid &grid,
  *  - all elements in the SWAGE mesh are to be hexahedra of the same order.
  */
 VtkGrid swage2vtk::init_vtk_grid(SwageMesh &mesh, 
-    const std::string &solution_name, const CArray<NumType> &solution) {
+    const std::string &solution_name, const CArray<double> &solution) {
   // Initialize VTK points array
   int num_verts = mesh.num_nodes();
   vtkNew<vtkPoints> points;
@@ -208,7 +207,7 @@ VtkGrid swage2vtk::init_vtk_grid(SwageMesh &mesh,
 
       // Extract the solution at the node from the MATAR array and set its
       // value into the appropriate place in the VTK solution array
-      double sol_at_vert = common::real(solution(elem_id, swage_vert_id));
+      double sol_at_vert = solution(elem_id, swage_vert_id);
       solution_array->SetValue(global_vert_id, sol_at_vert);
     }
 
@@ -248,9 +247,7 @@ void swage2vtk::write_grid(const VtkGrid &grid, const std::string &file_name) {
     writer->SetFileName(file_name.c_str());
     writer->SetInputData(grid);
     writer->Write();
-  }
-  else if (extension == ".vtk")
-  {
+  } else if (extension == ".vtk") {
     vtkNew<vtkUnstructuredGridWriter> writer;
     writer->SetFileName(file_name.c_str());
     writer->SetInputData(grid);

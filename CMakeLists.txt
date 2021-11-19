@@ -53,7 +53,6 @@ include_directories(geometry)
 include_directories(slam)
 include_directories(swage)
 include_directories(io)
-include_directories(BLAS_INCLUDE_DIRS)
 
 # Libraries
 add_subdirectory(common)

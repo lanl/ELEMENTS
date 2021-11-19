@@ -76,15 +76,9 @@ target_link_libraries(
   test_gauss_jacobi_quadrature
   common
   elements
+  ${BLAS_LIBRARIES}
   ${LAPACK_LIBRARIES}
 )
-#target_link_libraries(
-  #test_gauss_jacobi_quadrature
-  #common
-  #elements
-  #${BLAS_LIBRARIES}
-  #${LAPACK_LIBRARIES}
-#)
 
 
 # Test capability to read mesh and write solution using VTK

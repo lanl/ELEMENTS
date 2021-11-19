@@ -68,17 +68,20 @@ target_compile_options(
 
 
 # Test Gauss-Jacobi quadrature
-add_executable(
-  test_gauss_jacobi_quadrature
-  test_gauss_jacobi_quadrature.cpp
-)
-target_link_libraries(
-  test_gauss_jacobi_quadrature
-  common
-  elements
-  ${BLAS_LIBRARIES}
-  ${LAPACK_LIBRARIES}
-)
+# (Only if BLAS/LAPACK interface enabled)
+if (ENABLE_BLAS_LAPACK)
+  add_executable(
+    test_gauss_jacobi_quadrature
+    test_gauss_jacobi_quadrature.cpp
+  )
+  target_link_libraries(
+    test_gauss_jacobi_quadrature
+    common
+    elements
+    ${BLAS_LIBRARIES}
+    ${LAPACK_LIBRARIES}
+  )
+endif()
 
 
 # Test capability to read mesh and write solution using VTK

@@ -642,7 +642,7 @@ void smooth_element(){
 
             // Get the global ID of the cell
             int cell_gid = mesh.cells_in_elem(elem_gid, cell_lid);
-
+                
             real_t temp_avg = 0.0;
 
             // Loop over nodes in the cell

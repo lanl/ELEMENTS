@@ -1,8 +1,19 @@
+# Test SLAM
+add_executable(
+  test_slam_math
+  test_slam_math.cpp
+)
+
+target_link_libraries(
+  slam
+)
+
 # Test Lagrange polynomials
 add_executable(
   test_lagrange_polynomials
   test_lagrange_polynomials.cpp
 )
+
 target_link_libraries(
   test_lagrange_polynomials
   elements

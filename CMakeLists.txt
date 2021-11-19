@@ -20,6 +20,8 @@ endif (CMAKE_VECTOR_VERBOSE)
 
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
+
+option(ENABLE_VTK "Build ELEMENTS with VTK" OFF)
 find_package(VTK NO_MODULE)
 
 INCLUDE(cmake/Modules/TargetDistclean.cmake OPTIONAL)
@@ -48,6 +50,7 @@ include_directories(matar/src)
 include_directories(common)
 include_directories(elements)
 include_directories(geometry)
+include_directories(slam)
 include_directories(swage)
 include_directories(io)
 
@@ -55,6 +58,7 @@ include_directories(io)
 add_subdirectory(common)
 add_subdirectory(elements)
 add_subdirectory(geometry)
+add_subdirectory(slam)
 add_subdirectory(swage)
 add_subdirectory(io)
 
@@ -78,6 +82,7 @@ install(FILES ${ALL_HEADERS} DESTINATION include)
 # Install libraries in lib/ subdirectory of the specified install directory
 install(TARGETS elements DESTINATION lib)
 install(TARGETS geometry DESTINATION lib)
+install(TARGETS slam DESTINATION lib)
 install(TARGETS swage DESTINATION lib)
 if (VTK_FOUND)
   install(TARGETS swage2vtk DESTINATION lib)

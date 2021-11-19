@@ -86,13 +86,16 @@ private:
     const int num_patches_hex_ = 6;
     
     const int num_nodes_patch_ = 4;
-    const int this_node_in_patch_in_cell_[24] = // this assumes i,j,k structures nodes
-        {0,1,3,2,
-         4,5,7,6,
-         0,1,5,4,
-         2,3,7,6,
-         0,2,6,4,
-         1,3,7,5};
+    const int node_rlid_in_patch_in_cell_[24] = // this assumes i,j,k structures nodes
+        {0,2,6,4,
+         1,3,7,5,
+         //
+         0,4,5,1,
+         2,6,7,3,
+         //
+         0,1,3,2,
+         4,5,7,6
+        };
 
     int indx_; //useful for returning from internal function
 
@@ -133,6 +136,8 @@ private:
     CArray <int> cells_in_cell_list_;
     CArray <int> elems_in_cell_list_;
     CArray <int> gauss_in_cell_list_;
+    CArray <int> patch_in_cell_list_;
+    CArray <int> sides_in_cell_list_;
 
 
     // ---- VERTICES ---- //
@@ -150,6 +155,7 @@ private:
     CArray <int> elems_in_node_list_start_;
     CArray <int> elems_in_node_list_;
 
+    
     // ---- GAUSS POINTS ---- //
     int   num_g_pts_;
 
@@ -169,7 +175,8 @@ private:
 
     CArray <int> patch_nodes_list_;
     CArray <int> cells_in_patch_list_;
-
+    CArray <int> sides_in_patch_list_;
+    
 
     // ---- BOUNDARY ---- //
     int num_bdy_patches_;
@@ -180,6 +187,10 @@ private:
     CArray <int> start_index_bdy_set_;
     CArray <int> num_bdy_patches_set_;
 
+    
+    // ---- SIDES ---- //
+    int num_sides_;
+    
 
 // ---- MESH GEOMETRIC STATE ---- //
 
@@ -283,8 +294,14 @@ public:
 
     // return the element this cell belongs to
     int& elems_in_cell (int cell_gid) const;
+    
+    // return the patch ids for the cell
+    int patches_in_cell (int cell_gid, int patch_lid) const;
 
+    // return the side ids for the cell
+    int sides_in_cell(int cell_gid, int side_lid) const;
 
+    
     // ---- VERTICES ---- //
 
 
@@ -356,6 +373,9 @@ public:
     // returns the nodes in the patch
     int node_in_patch(int patch_gid, int patchnode_lid) const;
 
+    // returns the two sides in a patch
+    int sides_in_patch(int patch_gid, int slide_lid) const;
+    
 
     // ---- Boundary ---- //
 
@@ -372,6 +392,8 @@ public:
     int bdy_patches_in_set (int bdy_set, int this_patch);
 
 
+
+    
 
     // ==== MESH STATE FUNCTIONS ==== // 
 

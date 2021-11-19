@@ -123,9 +123,10 @@ patch 6; [1,3,7,5]
 *  quadrature points. The CArray lob_nodes_1D is passed in by reference and modified 
 *  in place. The integer num is the numer of points being defined in 1D.
 *****************************************************************************************/
+
 void lobatto_nodes_1D(
-    CArray <real_t> &lob_nodes_1D,
-    const int &num){
+                      CArray <real_t> &lob_nodes_1D,
+                      const int &num){
     if (num == 1){
         lob_nodes_1D(0) = 0.0;
     }
@@ -396,9 +397,10 @@ void lobatto_nodes_1D(
 *  in my reference and modified in place. The integer num is the numer of points being 
 *  defined in 1D.
 *****************************************************************************************/
+
 void lobatto_weights_1D(
-    CArray <real_t> &lob_weights_1D,  // Lobbatto weights
-    const int &num){                     // Interpolation order
+                        CArray <real_t> &lob_weights_1D,  // Lobbatto weights
+                        const int &num){                     // Interpolation order
     if (num == 1){
         lob_weights_1D(0) = 2.0;
     }
@@ -663,6 +665,497 @@ void lobatto_weights_1D(
     } // end if
 } // end of lobatto_weights_1D function
 
+void legendre_nodes_1D_ref(
+                           CArray <real_t> &leg_nodes_1D,
+                           const int &num){
+    if (num == 1){
+        leg_nodes_1D(0) = 0.0;
+    }
+    else if (num == 2){
+        leg_nodes_1D(0) = -0.577350269189625764509148780501;
+        leg_nodes_1D(1) =  0.577350269189625764509148780501;
+    }
+    else if (num == 3){
+        leg_nodes_1D(0) = -0.774596669241483377035853079956;
+        leg_nodes_1D(1) =  0.0;
+        leg_nodes_1D(2) =  0.774596669241483377035853079956;
+    }
+    else if (num == 4){
+        leg_nodes_1D(0) = -0.861136311594052575223946488892;
+        leg_nodes_1D(1) = -0.339981043584856264802665759103;
+        leg_nodes_1D(2) =  0.339981043584856264802665759103;
+        leg_nodes_1D(3) =  0.861136311594052575223946488892;
+    }
+    else if (num == 5){
+        leg_nodes_1D(0) = -0.906179845938663992797626878299;
+        leg_nodes_1D(1) = -0.538469310105683091036314420700;
+        leg_nodes_1D(2) =  0.0;
+        leg_nodes_1D(3) =  0.538469310105683091036314420700;
+        leg_nodes_1D(4) =  0.906179845938663992797626878299;
+    }
+    else if (num == 6){
+        leg_nodes_1D(0) = -0.932469514203152027812301554493;
+        leg_nodes_1D(1) = -0.661209386466264513661399595019;
+        leg_nodes_1D(2) = -0.238619186083196908630501721680;
+        leg_nodes_1D(3) =  0.238619186083196908630501721680;
+        leg_nodes_1D(4) =  0.661209386466264513661399595019;
+        leg_nodes_1D(5) =  0.932469514203152027812301554493;
+    }
+    else if (num == 7){
+        leg_nodes_1D(0) = -0.949107912342758524526189684047;
+        leg_nodes_1D(1) = -0.741531185599394439863864773280;
+        leg_nodes_1D(2) = -0.405845151377397166906606412076;
+        leg_nodes_1D(3) =  0.0E+00;
+        leg_nodes_1D(4) =  0.405845151377397166906606412076;
+        leg_nodes_1D(5) =  0.741531185599394439863864773280;
+        leg_nodes_1D(6) =  0.949107912342758524526189684047;
+    }
+    else if (num == 8){
+        leg_nodes_1D(0) = -0.960289856497536231683560868569;
+        leg_nodes_1D(1) = -0.796666477413626739591553936475;
+        leg_nodes_1D(2) = -0.525532409916328985817739049189;
+        leg_nodes_1D(3) = -0.183434642495649804939476142360;
+        leg_nodes_1D(4) =  0.183434642495649804939476142360;
+        leg_nodes_1D(5) =  0.525532409916328985817739049189;
+        leg_nodes_1D(6) =  0.796666477413626739591553936475;
+        leg_nodes_1D(7) =  0.960289856497536231683560868569;
+    }
+    else if (num == 9){
+        leg_nodes_1D(0) = -0.968160239507626089835576202903;
+        leg_nodes_1D(1) = -0.836031107326635794299429788069;
+        leg_nodes_1D(2) = -0.613371432700590397308702039341;
+        leg_nodes_1D(3) = -0.324253423403808929038538014643;
+        leg_nodes_1D(4) =  0.0E+00;
+        leg_nodes_1D(5) =  0.324253423403808929038538014643;
+        leg_nodes_1D(6) =  0.613371432700590397308702039341;
+        leg_nodes_1D(7) =  0.836031107326635794299429788069;
+        leg_nodes_1D(8) =  0.968160239507626089835576202903;
+    }
+    else if (num == 10){
+        leg_nodes_1D(0) = -0.9739065285171717200779640120844;
+        leg_nodes_1D(1) = -0.8650633666889845107320966884234;
+        leg_nodes_1D(2) = -0.6794095682990244062343273651148;
+        leg_nodes_1D(3) = -0.4333953941292471907992659431657;
+        leg_nodes_1D(4) = -0.1488743389816312108848260011297;
+        leg_nodes_1D(5) =  0.1488743389816312108848260011297;
+        leg_nodes_1D(6) =  0.4333953941292471907992659431657;
+        leg_nodes_1D(7) =  0.6794095682990244062343273651148;
+        leg_nodes_1D(8) =  0.8650633666889845107320966884234;
+        leg_nodes_1D(9) =  0.9739065285171717200779640120844;
+        
+    }
+    else if (num == 11){
+        leg_nodes_1D(0) = -0.9782286581460569928039380011228;
+        leg_nodes_1D(1) = -0.8870625997680952990751577693039;
+        leg_nodes_1D(2) = -0.7301520055740493240934162520311;
+        leg_nodes_1D(3) = -0.5190961292068118159257256694586;
+        leg_nodes_1D(4) = -0.2695431559523449723315319854008;
+        leg_nodes_1D(5) =  0.0E+00;
+        leg_nodes_1D(6) =  0.2695431559523449723315319854008;
+        leg_nodes_1D(7) =  0.5190961292068118159257256694586;
+        leg_nodes_1D(8) =  0.7301520055740493240934162520311;
+        leg_nodes_1D(9) =  0.8870625997680952990751577693039;
+        leg_nodes_1D(10) = 0.9782286581460569928039380011228;
+    }
+    
+    else if (num == 12){
+        leg_nodes_1D(0) = -0.9815606342467192506905490901492;
+        leg_nodes_1D(1) = -0.9041172563704748566784658661190;
+        leg_nodes_1D(2) = -0.7699026741943046870368938332128;
+        leg_nodes_1D(3) = -0.5873179542866174472967024189405;
+        leg_nodes_1D(4) = -0.3678314989981801937526915366437;
+        leg_nodes_1D(5) = -0.1252334085114689154724413694638;
+        leg_nodes_1D(6) =  0.1252334085114689154724413694638;
+        leg_nodes_1D(7) =  0.3678314989981801937526915366437;
+        leg_nodes_1D(8) =  0.5873179542866174472967024189405;
+        leg_nodes_1D(9) =  0.7699026741943046870368938332128;
+        leg_nodes_1D(10) = 0.9041172563704748566784658661190;
+        leg_nodes_1D(11) = 0.9815606342467192506905490901492;
+    }
+    
+    else if (num == 13){
+        leg_nodes_1D(0) = -0.98418305471858814947282944880710;
+        leg_nodes_1D(1) = -0.91759839922297796520654783650071;
+        leg_nodes_1D(2) = -0.80157809073330991279420648958285;
+        leg_nodes_1D(3) = -0.64234933944034022064398460699551;
+        leg_nodes_1D(4) = -0.44849275103644685287791285212763;
+        leg_nodes_1D(5) = -0.23045831595513479406552812109798;
+        leg_nodes_1D(6) =  0.0E+00;
+        leg_nodes_1D(7) =  0.23045831595513479406552812109798;
+        leg_nodes_1D(8) =  0.44849275103644685287791285212763;
+        leg_nodes_1D(9) =  0.64234933944034022064398460699551;
+        leg_nodes_1D(10) = 0.80157809073330991279420648958285;
+        leg_nodes_1D(11) = 0.91759839922297796520654783650071;
+        leg_nodes_1D(12) = 0.98418305471858814947282944880710;
+    }
+    
+    else if (num == 14){
+        leg_nodes_1D(0) = -0.986283808696812338841597266704052;
+        leg_nodes_1D(1) = -0.928434883663573517336391139377874;
+        leg_nodes_1D(2) = -0.827201315069764993189794742650394;
+        leg_nodes_1D(3) = -0.687292904811685470148019803019334;
+        leg_nodes_1D(4) = -0.515248636358154091965290718551188;
+        leg_nodes_1D(5) = -0.319112368927889760435671824168475;
+        leg_nodes_1D(6) = -0.108054948707343662066244650219834;
+        leg_nodes_1D(7) =  0.108054948707343662066244650219834;
+        leg_nodes_1D(8) =  0.319112368927889760435671824168475;
+        leg_nodes_1D(9) =  0.515248636358154091965290718551188;
+        leg_nodes_1D(10) = 0.687292904811685470148019803019334;
+        leg_nodes_1D(11) = 0.827201315069764993189794742650394;
+        leg_nodes_1D(12) = 0.928434883663573517336391139377874;
+        leg_nodes_1D(13) = 0.986283808696812338841597266704052;
+    }
+    
+    else if (num == 15){
+        leg_nodes_1D(0) = -0.987992518020485428489565718586612;
+        leg_nodes_1D(1) = -0.937273392400705904307758947710209;
+        leg_nodes_1D(2) = -0.848206583410427216200648320774216;
+        leg_nodes_1D(3) = -0.724417731360170047416186054613938;
+        leg_nodes_1D(4) = -0.570972172608538847537226737253910;
+        leg_nodes_1D(5) = -0.394151347077563369897207370981045;
+        leg_nodes_1D(6) = -0.201194093997434522300628303394596;
+        leg_nodes_1D(7) =  0.0E+00;
+        leg_nodes_1D(8) =  0.201194093997434522300628303394596;
+        leg_nodes_1D(9) =  0.394151347077563369897207370981045;
+        leg_nodes_1D(10) = 0.570972172608538847537226737253910;
+        leg_nodes_1D(11) = 0.724417731360170047416186054613938;
+        leg_nodes_1D(12) = 0.848206583410427216200648320774216;
+        leg_nodes_1D(13) = 0.937273392400705904307758947710209;
+        leg_nodes_1D(14) = 0.987992518020485428489565718586612;
+    }
+    
+    else if (num == 16){
+        leg_nodes_1D(0) = -0.989400934991649932596154173450332;
+        leg_nodes_1D(1) = -0.944575023073232576077988415534608;
+        leg_nodes_1D(2) = -0.865631202387831743880467897712393;
+        leg_nodes_1D(3) = -0.755404408355003033895101194847442;
+        leg_nodes_1D(4) = -0.617876244402643748446671764048791;
+        leg_nodes_1D(5) = -0.458016777657227386342419442983577;
+        leg_nodes_1D(6) = -0.281603550779258913230460501460496;
+        leg_nodes_1D(7) = -0.095012509837637440185319335424958;
+        leg_nodes_1D(8) =  0.095012509837637440185319335424958;
+        leg_nodes_1D(9) =  0.281603550779258913230460501460496;
+        leg_nodes_1D(10) = 0.458016777657227386342419442983577;
+        leg_nodes_1D(11) = 0.617876244402643748446671764048791;
+        leg_nodes_1D(12) = 0.755404408355003033895101194847442;
+        leg_nodes_1D(13) = 0.865631202387831743880467897712393;
+        leg_nodes_1D(14) = 0.944575023073232576077988415534608;
+        leg_nodes_1D(15) = 0.989400934991649932596154173450332;
+    }
+    
+    else if (num == 17){
+        leg_nodes_1D(0) = -0.990575475314417335675434019940665;
+        leg_nodes_1D(1) = -0.950675521768767761222716957895803;
+        leg_nodes_1D(2) = -0.880239153726985902122955694488155;
+        leg_nodes_1D(3) = -0.781514003896801406925230055520476;
+        leg_nodes_1D(4) = -0.657671159216690765850302216643002;
+        leg_nodes_1D(5) = -0.512690537086476967886246568629551;
+        leg_nodes_1D(6) = -0.351231763453876315297185517095346;
+        leg_nodes_1D(7) = -0.178484181495847855850677493654065;
+        leg_nodes_1D(8) =  0.0E+00;
+        leg_nodes_1D(9) =  0.178484181495847855850677493654065;
+        leg_nodes_1D(10) = 0.351231763453876315297185517095346;
+        leg_nodes_1D(11) = 0.512690537086476967886246568629551;
+        leg_nodes_1D(12) = 0.657671159216690765850302216643002;
+        leg_nodes_1D(13) = 0.781514003896801406925230055520476;
+        leg_nodes_1D(14) = 0.880239153726985902122955694488155;
+        leg_nodes_1D(15) = 0.950675521768767761222716957895803;
+        leg_nodes_1D(16) = 0.990575475314417335675434019940665;
+    }
+    
+    else if (num == 18){
+        leg_nodes_1D(0) = -0.991565168420930946730016004706150;
+        leg_nodes_1D(1) = -0.955823949571397755181195892929776;
+        leg_nodes_1D(2) = -0.892602466497555739206060591127145;
+        leg_nodes_1D(3) = -0.803704958972523115682417455014590;
+        leg_nodes_1D(4) = -0.691687043060353207874891081288848;
+        leg_nodes_1D(5) = -0.559770831073947534607871548525329;
+        leg_nodes_1D(6) = -0.411751161462842646035931793833051;
+        leg_nodes_1D(7) = -0.251886225691505509588972854877911;
+        leg_nodes_1D(8) = -0.084775013041735301242261852935783;
+        leg_nodes_1D(9) =  0.084775013041735301242261852935783;
+        leg_nodes_1D(10) = 0.251886225691505509588972854877911;
+        leg_nodes_1D(11) = 0.411751161462842646035931793833051;
+        leg_nodes_1D(12) = 0.559770831073947534607871548525329;
+        leg_nodes_1D(13) = 0.691687043060353207874891081288848;
+        leg_nodes_1D(14) = 0.803704958972523115682417455014590;
+        leg_nodes_1D(15) = 0.892602466497555739206060591127145;
+        leg_nodes_1D(16) = 0.955823949571397755181195892929776;
+        leg_nodes_1D(17) = 0.991565168420930946730016004706150;
+    }
+    
+    else if (num == 19) {
+        leg_nodes_1D(0) = -0.992406843843584403189017670253260;
+        leg_nodes_1D(1) = -0.960208152134830030852778840687651;
+        leg_nodes_1D(2) = -0.903155903614817901642660928532312;
+        leg_nodes_1D(3) = -0.822714656537142824978922486712713;
+        leg_nodes_1D(4) = -0.720966177335229378617095860823781;
+        leg_nodes_1D(5) = -0.600545304661681023469638164946239;
+        leg_nodes_1D(6) = -0.464570741375960945717267148104102;
+        leg_nodes_1D(7) = -0.316564099963629831990117328849844;
+        leg_nodes_1D(8) = -0.160358645640225375868096115740743;
+        leg_nodes_1D(9) =  0.0E+00;
+        leg_nodes_1D(10) = 0.160358645640225375868096115740743;
+        leg_nodes_1D(11) = 0.316564099963629831990117328849844;
+        leg_nodes_1D(12) = 0.464570741375960945717267148104102;
+        leg_nodes_1D(13) = 0.600545304661681023469638164946239;
+        leg_nodes_1D(14) = 0.720966177335229378617095860823781;
+        leg_nodes_1D(15) = 0.822714656537142824978922486712713;
+        leg_nodes_1D(16) = 0.903155903614817901642660928532312;
+        leg_nodes_1D(17) = 0.960208152134830030852778840687651;
+        leg_nodes_1D(18) = 0.992406843843584403189017670253260;
+        
+    } // end if
+    
+    
+}; // end of legendre_nodes_1D function
+
+
+void legendre_weights_1D(
+                         CArray <real_t> &leg_weights_1D,  // Legendre weights
+                         const int &num){                  // Interpolation order
+    if (num == 1){
+        leg_weights_1D(0) = 2.0;
+    }
+    else if (num == 2){
+        leg_weights_1D(0) = 1.0;
+        leg_weights_1D(1) = 1.0;
+    }
+    else if (num == 3){
+        leg_weights_1D(0) = 0.555555555555555555555555555555555;
+        leg_weights_1D(1) = 0.888888888888888888888888888888888;
+        leg_weights_1D(2) = 0.555555555555555555555555555555555;
+    }
+    else if (num == 4){
+        leg_weights_1D(0) = 0.347854845137453857373063949221999;
+        leg_weights_1D(1) = 0.652145154862546142626936050778000;
+        leg_weights_1D(2) = 0.652145154862546142626936050778000;
+        leg_weights_1D(3) = 0.347854845137453857373063949221999;
+    }
+    else if (num == 5){
+        leg_weights_1D(0) = 0.236926885056189087514264040719917;
+        leg_weights_1D(1) = 0.478628670499366468041291514835638;
+        leg_weights_1D(2) = 0.568888888888888888888888888888888;
+        leg_weights_1D(3) = 0.478628670499366468041291514835638;
+        leg_weights_1D(4) = 0.236926885056189087514264040719917;
+    }
+    else if (num == 6){
+        leg_weights_1D(0) = 0.171324492379170345040296142172732;
+        leg_weights_1D(1) = 0.360761573048138607569833513837716;
+        leg_weights_1D(2) = 0.467913934572691047389870343989550;
+        leg_weights_1D(3) = 0.467913934572691047389870343989550;
+        leg_weights_1D(4) = 0.360761573048138607569833513837716;
+        leg_weights_1D(5) = 0.171324492379170345040296142172732;
+    }
+    else if (num == 7){
+        leg_weights_1D(0) = 0.129484966168869693270611432679082;
+        leg_weights_1D(1) = 0.279705391489276667901467771423779;
+        leg_weights_1D(2) = 0.381830050505118944950369775488975;
+        leg_weights_1D(3) = 0.417959183673469387755102040816326;
+        leg_weights_1D(4) = 0.381830050505118944950369775488975;
+        leg_weights_1D(5) = 0.279705391489276667901467771423779;
+        leg_weights_1D(6) = 0.129484966168869693270611432679082;
+    }
+    else if (num == 8){
+        leg_weights_1D(0) = 0.101228536290376259152531354309962;
+        leg_weights_1D(1) = 0.222381034453374470544355994426240;
+        leg_weights_1D(2) = 0.313706645877887287337962201986601;
+        leg_weights_1D(3) = 0.362683783378361982965150449277195;
+        leg_weights_1D(4) = 0.362683783378361982965150449277195;
+        leg_weights_1D(5) = 0.313706645877887287337962201986601;
+        leg_weights_1D(6) = 0.222381034453374470544355994426240;
+        leg_weights_1D(7) = 0.101228536290376259152531354309962;
+    }
+    else if (num == 9){
+        leg_weights_1D(0) = 0.081274388361574411971892158110523;
+        leg_weights_1D(1) = 0.180648160694857404058472031242912;
+        leg_weights_1D(2) = 0.260610696402935462318742869418632;
+        leg_weights_1D(3) = 0.312347077040002840068630406584443;
+        leg_weights_1D(4) = 0.330239355001259763164525069286974;
+        leg_weights_1D(5) = 0.312347077040002840068630406584443;
+        leg_weights_1D(6) = 0.260610696402935462318742869418632;
+        leg_weights_1D(7) = 0.180648160694857404058472031242912;
+        leg_weights_1D(8) = 0.081274388361574411971892158110523;
+    }
+    else if (num == 10){
+        leg_weights_1D(0) = 0.066671344308688137593568809893331;
+        leg_weights_1D(1) = 0.149451349150580593145776339657697;
+        leg_weights_1D(2) = 0.219086362515982043995534934228163;
+        leg_weights_1D(3) = 0.269266719309996355091226921569469;
+        leg_weights_1D(4) = 0.295524224714752870173892994651338;
+        leg_weights_1D(5) = 0.295524224714752870173892994651338;
+        leg_weights_1D(6) = 0.269266719309996355091226921569469;
+        leg_weights_1D(7) = 0.219086362515982043995534934228163;
+        leg_weights_1D(8) = 0.149451349150580593145776339657697;
+        leg_weights_1D(9) = 0.066671344308688137593568809893331;
+    }
+    else if (num == 11){
+        leg_weights_1D(0) = 0.055668567116173666482753720442548;
+        leg_weights_1D(1) = 0.125580369464904624634694299223940;
+        leg_weights_1D(2) = 0.186290210927734251426097641431655;
+        leg_weights_1D(3) = 0.233193764591990479918523704843175;
+        leg_weights_1D(4) = 0.262804544510246662180688869890509;
+        leg_weights_1D(5) = 0.272925086777900630714483528336342;
+        leg_weights_1D(6) = 0.262804544510246662180688869890509;
+        leg_weights_1D(7) = 0.233193764591990479918523704843175;
+        leg_weights_1D(8) = 0.186290210927734251426097641431655;
+        leg_weights_1D(9) = 0.125580369464904624634694299223940;
+        leg_weights_1D(10)= 0.055668567116173666482753720442548;
+    }
+    
+    else if (num == 12){
+        leg_weights_1D(0) =  0.04717533638651182719461596148501;
+        leg_weights_1D(1) =  0.10693932599531843096025471819399;
+        leg_weights_1D(2) =  0.16007832854334622633465252954335;
+        leg_weights_1D(3) =  0.20316742672306592174906445580979;
+        leg_weights_1D(4) =  0.23349253653835480876084989892487;
+        leg_weights_1D(5) =  0.24914704581340278500056243604295;
+        leg_weights_1D(6) =  0.24914704581340278500056243604295;
+        leg_weights_1D(7) =  0.23349253653835480876084989892487;
+        leg_weights_1D(8) =  0.20316742672306592174906445580979;
+        leg_weights_1D(9) =  0.16007832854334622633465252954335;
+        leg_weights_1D(10) = 0.10693932599531843096025471819399;
+        leg_weights_1D(11) = 0.04717533638651182719461596148501;
+    }
+    
+    else if (num == 13){
+        leg_weights_1D(0) =  0.04048400476531587952002159220098;
+        leg_weights_1D(1) =  0.09212149983772844791442177595379;
+        leg_weights_1D(2) =  0.13887351021978723846360177686887;
+        leg_weights_1D(3) =  0.17814598076194573828004669199609;
+        leg_weights_1D(4) =  0.20781604753688850231252321930605;
+        leg_weights_1D(5) =  0.22628318026289723841209018603977;
+        leg_weights_1D(6) =  0.23255155323087391019458951526883;
+        leg_weights_1D(7) =  0.22628318026289723841209018603977;
+        leg_weights_1D(8) =  0.20781604753688850231252321930605;
+        leg_weights_1D(9) =  0.17814598076194573828004669199609;
+        leg_weights_1D(10) = 0.13887351021978723846360177686887;
+        leg_weights_1D(11) = 0.09212149983772844791442177595379;
+        leg_weights_1D(12) = 0.04048400476531587952002159220098;
+    }
+    
+    else if (num == 14){
+        leg_weights_1D(0) =  0.03511946033175186303183287613819;
+        leg_weights_1D(1) =  0.08015808715976020980563327706285;
+        leg_weights_1D(2) =  0.12151857068790318468941480907247;
+        leg_weights_1D(3) =  0.15720316715819353456960193862384;
+        leg_weights_1D(4) =  0.18553839747793781374171659012515;
+        leg_weights_1D(5) =  0.20519846372129560396592406566121;
+        leg_weights_1D(6) =  0.21526385346315779019587644331626;
+        leg_weights_1D(7) =  0.21526385346315779019587644331626;
+        leg_weights_1D(8) =  0.20519846372129560396592406566121;
+        leg_weights_1D(9) =  0.18553839747793781374171659012515;
+        leg_weights_1D(10) = 0.15720316715819353456960193862384;
+        leg_weights_1D(11) = 0.12151857068790318468941480907247;
+        leg_weights_1D(12) = 0.08015808715976020980563327706285;
+        leg_weights_1D(13) = 0.03511946033175186303183287613819;
+    }
+    
+    
+    else if (num == 15){
+        leg_weights_1D(0) =  0.03075324199611726835462839357720;
+        leg_weights_1D(1) =  0.07036604748810812470926741645066;
+        leg_weights_1D(2) =  0.10715922046717193501186954668586;
+        leg_weights_1D(3) =  0.13957067792615431444780479451102;
+        leg_weights_1D(4) =  0.16626920581699393355320086048120;
+        leg_weights_1D(5) =  0.18616100001556221102680056186642;
+        leg_weights_1D(6) =  0.19843148532711157645611832644383;
+        leg_weights_1D(7) =  0.20257824192556127288062019996751;
+        leg_weights_1D(8) =  0.19843148532711157645611832644383;
+        leg_weights_1D(9) =  0.18616100001556221102680056186642;
+        leg_weights_1D(10) = 0.16626920581699393355320086048120;
+        leg_weights_1D(11) = 0.13957067792615431444780479451102;
+        leg_weights_1D(12) = 0.10715922046717193501186954668586;
+        leg_weights_1D(13) = 0.07036604748810812470926741645066;
+        leg_weights_1D(14) = 0.03075324199611726835462839357720;
+    }
+    
+    
+    else if (num == 16){
+        leg_weights_1D(0) =  0.02715245941175409485178057245601;
+        leg_weights_1D(1) =  0.06225352393864789286284383699437;
+        leg_weights_1D(2) =  0.09515851168249278480992510760224;
+        leg_weights_1D(3) =  0.12462897125553387205247628219201;
+        leg_weights_1D(4) =  0.14959598881657673208150173054747;
+        leg_weights_1D(5) =  0.16915651939500253818931207903035;
+        leg_weights_1D(6) =  0.18260341504492358886676366796921;
+        leg_weights_1D(7) =  0.18945061045506849628539672320828;
+        leg_weights_1D(8) =  0.18945061045506849628539672320828;
+        leg_weights_1D(9) =  0.18260341504492358886676366796921;
+        leg_weights_1D(10) = 0.16915651939500253818931207903035;
+        leg_weights_1D(11) = 0.14959598881657673208150173054747;
+        leg_weights_1D(12) = 0.12462897125553387205247628219201;
+        leg_weights_1D(13) = 0.09515851168249278480992510760224;
+        leg_weights_1D(14) = 0.06225352393864789286284383699437;
+        leg_weights_1D(15) = 0.02715245941175409485178057245601;
+    }
+    
+    
+    else if (num == 17){
+        leg_weights_1D(0) =  0.02414830286854793196011002628756;
+        leg_weights_1D(1) =  0.05545952937398720112944016535824;
+        leg_weights_1D(2) =  0.08503614831717918088353537019106;
+        leg_weights_1D(3) =  0.11188384719340397109478838562635;
+        leg_weights_1D(4) =  0.13513636846852547328631998170235;
+        leg_weights_1D(5) =  0.15404576107681028808143159480195;
+        leg_weights_1D(6) =  0.16800410215645004450997066378832;
+        leg_weights_1D(7) =  0.17656270536699264632527099011319;
+        leg_weights_1D(8) =  0.17944647035620652545826564426188;
+        leg_weights_1D(9) =  0.17656270536699264632527099011319;
+        leg_weights_1D(10) = 0.16800410215645004450997066378832;
+        leg_weights_1D(11) = 0.15404576107681028808143159480195;
+        leg_weights_1D(12) = 0.13513636846852547328631998170235;
+        leg_weights_1D(13) = 0.11188384719340397109478838562635;
+        leg_weights_1D(14) = 0.08503614831717918088353537019106;
+        leg_weights_1D(15) = 0.05545952937398720112944016535824;
+        leg_weights_1D(16) = 0.02414830286854793196011002628756;
+    }
+    
+    else if (num == 18){
+        leg_weights_1D(0) =  0.02161601352648331031334271026645;
+        leg_weights_1D(1) =  0.04971454889496979645333494620263;
+        leg_weights_1D(2) =  0.07642573025488905652912967761663;
+        leg_weights_1D(3) =  0.10094204410628716556281398492483;
+        leg_weights_1D(4) =  0.12255520671147846018451912680020;
+        leg_weights_1D(5) =  0.14064291467065065120473130375194;
+        leg_weights_1D(6) =  0.15468467512626524492541800383637;
+        leg_weights_1D(7) =  0.16427648374583272298605377646592;
+        leg_weights_1D(8) =  0.16914238296314359184065647013498;
+        leg_weights_1D(9) =  0.16914238296314359184065647013498;
+        leg_weights_1D(10) = 0.16427648374583272298605377646592;
+        leg_weights_1D(11) = 0.15468467512626524492541800383637;
+        leg_weights_1D(12) = 0.14064291467065065120473130375194;
+        leg_weights_1D(13) = 0.12255520671147846018451912680020;
+        leg_weights_1D(14) = 0.10094204410628716556281398492483;
+        leg_weights_1D(15) = 0.07642573025488905652912967761663;
+        leg_weights_1D(16) = 0.04971454889496979645333494620263;
+        leg_weights_1D(17) = 0.02161601352648331031334271026645;
+    }
+    
+    else if (num == 19) {
+        leg_weights_1D(0) =  0.01946178822972647703631204146443;
+        leg_weights_1D(1) =  0.04481422676569960033283815740199;
+        leg_weights_1D(2) =  0.06904454273764122658070825800601;
+        leg_weights_1D(3) =  0.09149002162244999946446209412383;
+        leg_weights_1D(4) =  0.11156664554733399471602390168176;
+        leg_weights_1D(5) =  0.12875396253933622767551578485687;
+        leg_weights_1D(6) =  0.14260670217360661177574610944190;
+        leg_weights_1D(7) =  0.15276604206585966677885540089766;
+        leg_weights_1D(8) =  0.15896884339395434764995643946504;
+        leg_weights_1D(9) =  0.16105444984878369597916362532091;
+        leg_weights_1D(10) = 0.15896884339395434764995643946504;
+        leg_weights_1D(11) = 0.15276604206585966677885540089766;
+        leg_weights_1D(12) = 0.14260670217360661177574610944190;
+        leg_weights_1D(13) = 0.12875396253933622767551578485687;
+        leg_weights_1D(14) = 0.11156664554733399471602390168176;
+        leg_weights_1D(15) = 0.09149002162244999946446209412383;
+        leg_weights_1D(16) = 0.06904454273764122658070825800601;
+        leg_weights_1D(17) = 0.04481422676569960033283815740199;
+        leg_weights_1D(18) = 0.01946178822972647703631204146443;
+    } // end if
+    
+    
+} // end of legendre_weights_1D function
 
 /**************************************************************************************//**
 *  length_weights partitions quadrature weights corresponding the 1D nodal positions defined 
@@ -795,39 +1288,39 @@ void mat_inverse(
 }
 
 
-/**************************************************************************************//**
-*  mat_mult is a light weight function for multiplying two 3X3 matrices
-*****************************************************************************************/
-void mat_mult(
-    CArray <real_t> &result,
-    CArray <real_t> &A,
-    CArray <real_t> &B){
+// /**************************************************************************************//**
+// *  mat_mult is a light weight function for multiplying two 3X3 matrices
+// *****************************************************************************************/
+// void mat_mult(
+//     CArray <real_t> &result,
+//     CArray <real_t> &A,
+//     CArray <real_t> &B){
+//
+//     result(0, 0) = A(0, 0)*B(0, 0) + A(0, 1)*B(1, 0) + A(0, 2)*B(2, 0);
+//     result(0, 1) = A(0, 0)*B(0, 1) + A(0, 1)*B(1, 1) + A(0, 2)*B(2, 1);
+//     result(0, 2) = A(0, 0)*B(0, 2) + A(0, 1)*B(1, 2) + A(0, 2)*B(2, 2);
+//     result(1, 0) = A(1, 0)*B(0, 0) + A(1, 1)*B(1, 0) + A(1, 2)*B(2, 0);
+//     result(1, 1) = A(1, 0)*B(0, 1) + A(1, 1)*B(1, 1) + A(1, 2)*B(2, 1);
+//     result(1, 2) = A(1, 0)*B(0, 2) + A(1, 1)*B(1, 2) + A(1, 2)*B(2, 2);
+//     result(2, 0) = A(2, 0)*B(0, 0) + A(2, 1)*B(1, 0) + A(2, 2)*B(2, 0);
+//     result(2, 1) = A(2, 0)*B(0, 1) + A(2, 1)*B(1, 1) + A(2, 2)*B(2, 1);
+//     result(2, 2) = A(2, 0)*B(0, 2) + A(2, 1)*B(1, 2) + A(2, 2)*B(2, 2);
+// }
 
-    result(0, 0) = A(0, 0)*B(0, 0) + A(0, 1)*B(1, 0) + A(0, 2)*B(2, 0);
-    result(0, 1) = A(0, 0)*B(0, 1) + A(0, 1)*B(1, 1) + A(0, 2)*B(2, 1);
-    result(0, 2) = A(0, 0)*B(0, 2) + A(0, 1)*B(1, 2) + A(0, 2)*B(2, 2);
-    result(1, 0) = A(1, 0)*B(0, 0) + A(1, 1)*B(1, 0) + A(1, 2)*B(2, 0);
-    result(1, 1) = A(1, 0)*B(0, 1) + A(1, 1)*B(1, 1) + A(1, 2)*B(2, 1);
-    result(1, 2) = A(1, 0)*B(0, 2) + A(1, 1)*B(1, 2) + A(1, 2)*B(2, 2);
-    result(2, 0) = A(2, 0)*B(0, 0) + A(2, 1)*B(1, 0) + A(2, 2)*B(2, 0);
-    result(2, 1) = A(2, 0)*B(0, 1) + A(2, 1)*B(1, 1) + A(2, 2)*B(2, 1);
-    result(2, 2) = A(2, 0)*B(0, 2) + A(2, 1)*B(1, 2) + A(2, 2)*B(2, 2);
-}
 
-
-/**************************************************************************************//**
-*  mat_mult is a light weight function for inverting a 3X3 matrix
-*****************************************************************************************/
-void mat_trans(
-    CArray <real_t> &trans,
-    CArray <real_t> &mat){
-
-    for(int i = 0; i < 3; i++){
-        for(int j = 0; j < 3; j++){
-            trans(i, j) = mat(j, i);    
-        }
-    }
-}
+// /**************************************************************************************//**
+// *  mat_mult is a light weight function for transposing a 3X3 matrix
+// *****************************************************************************************/
+// void mat_trans(
+//     CArray <real_t> &trans,
+//     CArray <real_t> &mat){
+//
+//     for(int i = 0; i < 3; i++){
+//         for(int j = 0; j < 3; j++){
+//             trans(i, j) = mat(j, i);
+//         }
+//     }
+// }
 
 
 /**************************************************************************************//**
@@ -1829,7 +2322,7 @@ void ref_element::init(int p_order, int num_dim){
         num_g_pts_1d = 2 * p_order + 1; // num gauss points in 1d
         num_ref_nodes_1D_ = num_g_pts_1d;
         num_ref_verts_1d_ = p_order+1;
-        num_zones_1d_ = num_ref_cells_1D_ / 2;
+        num_zones_1d_ = (num_ref_nodes_1D_ - 1) / 2;
         num_zones_in_elem_ = num_zones_1d_*num_zones_1d_*num_zones_1d_;
 
         cells_in_zone_list_ = CArray <int> (num_zones_in_elem_, 8);
@@ -1851,6 +2344,10 @@ void ref_element::init(int p_order, int num_dim){
     
     num_ref_cells_in_elem_ =
         (num_ref_nodes_1D_-1)*(num_ref_nodes_1D_-1)*(num_ref_nodes_1D_-1);
+
+    std::cout<<"Num cells in element reference  = "<<num_ref_cells_in_elem_<<std::endl;
+    
+    cell_nodes_in_elem_list_ = CArray <int> (num_ref_cells_in_elem_, 8);
     
     num_ref_corners_in_cell_ = 8;
     
@@ -1888,6 +2385,12 @@ void ref_element::init(int p_order, int num_dim){
 
     // --- build reference index spaces for 3D ---
     if(num_dim_ == 3){
+        
+        int N_1d = num_ref_nodes_1D_; // a temporary variable
+        num_ref_inside_nodes_in_elem_  = (N_1d - 2)*(N_1d - 2)*(N_1d - 2);
+        num_ref_surface_nodes_in_elem_ = N_1d*N_1d*N_1d  - num_ref_inside_nodes_in_elem_;
+        ref_surface_nodes_in_elem_ = CArray <int> (num_ref_surface_nodes_in_elem_);
+        ref_inside_nodes_in_elem_  = CArray <int> (num_ref_inside_nodes_in_elem_);
         
         // --- build gauss nodal positions and weights ---
         auto lob_nodes_1D = CArray <real_t> (num_ref_nodes_1D_);
@@ -1997,6 +2500,28 @@ void ref_element::init(int p_order, int num_dim){
             }
 
         }
+        
+        // Save the node in cell lid to node rid in elem map
+        int cell_lid = 0;
+        int num_ref_cells_1d = (num_ref_nodes_1D_-1);
+        for(int k = 0; k < num_ref_cells_1d; k++){
+            for(int j = 0; j < num_ref_cells_1d; j++){
+                for(int i = 0; i < num_ref_cells_1d; i++){
+                    
+                    cell_nodes_in_elem(cell_lid, 0) = node_rid(i  , j,   k);
+                    cell_nodes_in_elem(cell_lid, 1) = node_rid(i+1, j,   k);
+                    cell_nodes_in_elem(cell_lid, 2) = node_rid(i  , j+1, k);
+                    cell_nodes_in_elem(cell_lid, 3) = node_rid(i+1, j+1, k);
+                    cell_nodes_in_elem(cell_lid, 4) = node_rid(i  , j,   k+1);
+                    cell_nodes_in_elem(cell_lid, 5) = node_rid(i+1, j,   k+1);
+                    cell_nodes_in_elem(cell_lid, 6) = node_rid(i  , j+1, k+1);
+                    cell_nodes_in_elem(cell_lid, 7) = node_rid(i+1, j+1, k+1);
+                    
+                    cell_lid++;
+                }
+            }
+        }
+        
         // i,j,k indicies are for corners
         for(int k = 0; k < num_ref_corners_1D_; k++){
             for(int j = 0; j < num_ref_corners_1D_; j++){
@@ -2164,10 +2689,44 @@ void ref_element::init(int p_order, int num_dim){
             }
         }
         
+        // build a local rlid for the interior and surface nodes of the ref element
+        // remember that N_1d = num_ref_nodes_1D_;
+        int count_surf = 0;
+        int count_inside = 0;
+        for (int k=0; k<N_1d; k++){
+            for (int j=0; j<N_1d; j++){
+                for (int i=0; i<N_1d; i++){
+                    
+                    int rid = node_rid(i,j,k); // follows i,j,k convention
+                    
+                    if (i>0 && i<N_1d-1 &&
+                        j>0 && j<N_1d-1 &&
+                        k>0 && k<N_1d-1)
+                    {
+                        ref_inside_nodes_in_elem_(count_inside) = rid;
+                        count_inside ++;
+                    }
+                    else
+                    {
+                        ref_surface_nodes_in_elem_(count_surf) = rid;
+                        count_surf ++;
+                    }
+                    
+                } // end for
+            } // end for
+        } // end for
+        // checking the data structure
+        if (num_ref_inside_nodes_in_elem_ < count_inside) {
+            std::cout << "*** Error in inside nodes in ref elem ***" << std::endl;
+        }
+        if (num_ref_surface_nodes_in_elem_ < count_surf) {
+            std::cout << "*** Error in surface nodes in ref elem ***" << std::endl;
+        }
+        
     } // end of 3D scope
 
 
-};
+}; // end of member function
 
 int ref_element::num_dim() const
 {
@@ -2225,11 +2784,31 @@ int ref_element::ref_nodes_in_cell(int cell_rid, int node_rlid) const
     return ref_nodes_in_cell_(node_rlid + cell_rid*num_ref_corners_in_cell_);
 };
 
-real_t ref_element::ref_node_positions(int node_rid, int dim) const 
+int ref_element::ref_surface_nodes_in_elem(int node_rlid) const
+{
+    return ref_surface_nodes_in_elem_(node_rlid);
+};
+    
+int ref_element::ref_inside_nodes_in_elem(int node_rlid) const
+{
+    return ref_inside_nodes_in_elem_(node_rlid);
+};
+ 
+int ref_element::num_ref_surface_nodes_in_elem() const
+{
+    return num_ref_surface_nodes_in_elem_;
+};
+
+int ref_element::num_ref_inside_nodes_in_elem() const
+{
+    return num_ref_inside_nodes_in_elem_;
+};
+
+real_t ref_element::ref_node_positions(int node_rid, int dim) const
 {
     //DANreturn ref_node_positions_[dim + node_rid*num_dim_];
     return ref_node_positions_(node_rid, dim);
-}
+};
 
 real_t ref_element::ref_corner_surface_normals(int corner_rid, int surf_rlid, int dim) const 
 {
@@ -2253,26 +2832,45 @@ real_t ref_element::ref_corner_g_weights(int corner_rid) const
     return  ref_corner_g_weights_(corner_rid);
 };
 
-real_t& ref_element::ref_nodal_gradient(int node_rid, int basis_id, int dim) const{
-
+real_t& ref_element::ref_nodal_gradient(int node_rid, int basis_id, int dim) const
+{
     //return ref_nodal_gradient_[node_rid*num_dim_*num_basis_ + basis_id*num_dim_ + dim];
     return ref_nodal_gradient_(node_rid, basis_id, dim);
-
 }
 
-real_t& ref_element::ref_nodal_basis(int node_rid, int basis_id) const{
-
+real_t& ref_element::ref_nodal_basis(int node_rid, int basis_id) const
+{
     //return ref_nodal_gradient_[node_rid*num_dim_*num_basis_ + basis_id*num_dim_ + dim];
     return ref_nodal_basis_(node_rid, basis_id);
-
 }
 
-int& ref_element::cell_lid_in_zone(int zone_lid, int cell_lid) const{
-
+int& ref_element::cell_lid_in_zone(int zone_lid, int cell_lid) const
+{
     return cells_in_zone_list_(zone_lid, cell_lid);
-
 }
 
+int& ref_element::cell_nodes_in_elem(int cell_lid, int node_lid) const
+{
+    return cell_nodes_in_elem_list_(cell_lid, node_lid);
+}
+
+int ref_element::node_in_patch_in_cell(int patch_rlid, int node_lid) const
+{
+    int index = node_lid + patch_rlid*4;
+    return node_rlid_in_patch_in_cell_[index];
+}
+
+int ref_element::patch_rlid_in_cell_neighbor(int patch_rlid) const
+{
+    return patch_rlid_cell_neighbor_[patch_rlid];
+}
+
+int ref_element::ref_patches_in_cell(int cell_rid, int patch_rlid) const
+{
+    int index = patch_rlid + cell_rid*6;
+    return ref_patches_in_cell_list_(index);
+}
+    
 int ref_element::vert_node_map(int vert_lid){
     return elem.vert_node_map(vert_lid);
 }
@@ -4151,7 +4749,7 @@ representative linear element for visualization
             HexN_Verts_ = CArray <real_t> (num_verts_, 3);
 
 
-            Vert_Node_map_ = CArray <real_t> (num_verts_, 3);
+            Vert_Node_map_ = CArray <size_t> (num_verts_);
 
             order_ = elem_order+1;
 
@@ -4178,7 +4776,7 @@ representative linear element for visualization
             HexN_Verts_ = CArray <real_t> (num_verts_, 3);
 
 
-            Vert_Node_map_ = CArray <real_t> (num_verts_, 3);
+            Vert_Node_map_ = CArray <size_t> (num_verts_);
 
             order_ = elem_order;
 
@@ -4244,7 +4842,7 @@ representative linear element for visualization
     };
 
 
-    real_t HexN::vert_node_map(int vert_rid) const
+    int HexN::vert_node_map(int vert_rid) const
     {
         return Vert_Node_map_(vert_rid);
     }
@@ -4586,8 +5184,9 @@ representative linear element for visualization
 
         // --- build gauss nodal positions and weights ---
         // std::cout<< "Num Nodes passed to create lobatto nodes "<<std::endl;
-        elements::lobatto_nodes_1D(HexN_Nodes_1d_, num_nodes_1d);
-    
+        //elements::lobatto_nodes_1D(HexN_Nodes_1d_, num_nodes_1d);
+        lobatto_nodes_1D(HexN_Nodes_1d_, num_nodes_1d);
+        
         for(int num_k = 0; num_k < num_nodes_1d; num_k++){
             for(int num_j = 0; num_j < num_nodes_1d; num_j++){
                 for(int num_i = 0; num_i < num_nodes_1d; num_i++){

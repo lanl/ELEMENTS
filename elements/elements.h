@@ -378,7 +378,7 @@ class ref_element{
 
 
     class Element2D {
-        
+
         protected:
             const static int num_dim_ = 2;
 
@@ -387,6 +387,10 @@ class ref_element{
         virtual int num_verts() = 0;
         virtual int num_nodes() = 0;
         virtual int num_basis() = 0;
+        
+        //list of local ids to basis functions needed to interpolate throughout a given element surface
+        RaggedRightArray<int> surface_to_dof_lid;
+        int nsurfaces;
 
         // calculate a physical position in an element for a given xi,eta
         virtual void physical_position(
@@ -413,11 +417,10 @@ class ref_element{
         // Map from vertex to node
         virtual int vert_node_map( const int vert_lid) = 0;
 
-
     }; // end of 2D element class
 
     class Element3D {
-        
+                
         protected:
             const static int num_dim_ = 3;
 
@@ -426,6 +429,10 @@ class ref_element{
         virtual int num_verts() = 0;
         virtual int num_nodes() = 0;
         virtual int num_basis() = 0;
+
+        //list of local ids to basis functions needed to interpolate throughout a given element surface
+        RaggedRightArray<int> surface_to_dof_lid;
+        int nsurfaces;
 
         // calculate a physical position in an element for a given xi,eta,mu
         virtual void physical_position(
@@ -464,6 +471,9 @@ class ref_element{
     class Element4D {
 
         public:
+
+        //list of local ids to basis functions needed to interpolate throughout a given element surface
+        CArray<int> surface_to_dof_lid;
 
         // calculate a physical position in an element for a given xi,eta,mu,tau
         virtual void physical_position(
@@ -553,6 +563,8 @@ class ref_element{
 
         public:
 
+            Quad4();
+            ~Quad4();
 
             int num_verts();
             int num_nodes();
@@ -623,7 +635,9 @@ class ref_element{
             static const int vert_to_node[num_verts_];
 
         public:
-
+        
+            Quad8();
+            ~Quad8();
 
             int num_verts();
             int num_nodes();
@@ -694,7 +708,9 @@ class ref_element{
             static const int vert_to_node[num_verts_];
 
         public:
-
+        
+            Quad12();
+            ~Quad12();
 
             int num_verts();
             int num_nodes();
@@ -815,13 +831,13 @@ class ref_element{
      '------------------------------' 
     */
 
-/*
-==========================
-  Hex 8
-==========================
+    /*
+    ==========================
+      Hex 8
+    ==========================
 
- The finite element local vertex numbering for a 8 node Hexahedral is
- as follows
+    The finite element local vertex numbering for a 8 node Hexahedral is
+    as follows
 
          Mu (k)
          |     Eta (j)    
@@ -837,7 +853,7 @@ class ref_element{
   | /      | /       
   |/       |/
   0----*----1
- 
+
 */
 
 class Hex8: public Element3D {
@@ -852,7 +868,9 @@ class Hex8: public Element3D {
             static const int vert_to_node[num_verts_];
 
         public:
-
+        
+            Hex8();
+            ~Hex8();
 
             int num_verts();
             int num_nodes();
@@ -931,7 +949,9 @@ class Hex8: public Element3D {
             static const int vert_to_node[num_verts_];
 
         public:
-
+        
+            Hex20();
+            ~Hex20();
 
             int num_verts();
             int num_nodes();
@@ -1018,7 +1038,9 @@ class Hex8: public Element3D {
             static const int vert_to_node[num_verts_];
 
         public:
-
+        
+            Hex32();
+            ~Hex32();
 
             int num_verts();
             int num_nodes();
@@ -1089,7 +1111,7 @@ class Hex8: public Element3D {
     */
 
     class HexN{
-            
+        
         protected:
             
             const static int num_dim_ = 3;
@@ -1262,79 +1284,82 @@ class Hex8: public Element3D {
                 const ViewCArray <real_t> &xi_point);                                          
     }; // End of Tess16 Element Class
 
-
-
 /* Add enumerated list of element types to choose from */
 
-// namespace elem_types
-// {
+namespace elem_types
+{
 
-//     enum elem_type
-//     {
-//         // 2D element types
-//         Quad4  = 0,   // 4 node serendipity quadrilateral element 
-//         Quad8  = 1,   // 8 node serendipity quadrilateral element 
-//         Quad12 = 2,   // 12 node serendipity quadrilateral element 
-//         QuadN  = 3,   // N node lagrangian quadrilateral element 
+    enum elem_type
+    {
+        // 2D element types
+        Quad4  = 0,   // 4 node serendipity quadrilateral element 
+        Quad8  = 1,   // 8 node serendipity quadrilateral element 
+        Quad12 = 2,   // 12 node serendipity quadrilateral element 
+        QuadN  = 3,   // N node lagrangian quadrilateral element 
         
-//         // 3D element types
-//         Hex8   = 4,   // 8 node serendipity hexahedral element 
-//         Hex20  = 5,   // 20 node serendipity hexahedral element 
-//         Hex32  = 6,   // 32 node serendipity hexahedral element 
-//         HexN   = 7    // N node lagrangian hexahedral element 
+        // 3D element types
+        Hex8   = 4,   // 8 node lagrangian hexahedral element 
+        Hex20  = 5,   // 20 node serendipity hexahedral element 
+        Hex32  = 6,   // 32 node serendipity hexahedral element 
+        HexN   = 7    // N node lagrangian hexahedral element 
     
-//         // add tesseract element
+        // add tesseract element
 
-//     };
+    };
 
-// } // end of elem_type namespace
+    //Nodes per each element type
+    //CArray<size_t> Nodes_Per_Element_Type(8);
+    //Quad4
+    //Nodes_Per_Element_Type(0) = 4;
+    //Quad8
+    //Nodes_Per_Element_Type(1) = 8;
+    //Quad12
+    //Nodes_Per_Element_Type(2) = 12;
+    //QuadN has to be set on a casewise base
+    //Nodes_Per_Element_Type(3) = 0;
+    //Hex8
+    //Nodes_Per_Element_Type(4) = 8;
+    //Hex20
+    //Nodes_Per_Element_Type(5) = 20;
+    //Hex32
+    //Nodes_Per_Element_Type(6) = 32;
+    //HexN set on a casewise basis
+    //Nodes_Per_Element_Type(7) = 0;
+
+} // end of elem_type namespace
 
 
-// // Choose the type of element to use for the calculation
-// struct elem_type_t {
-//     // element type 
-//     elem_types::elem_type type;   
-// };
+// Choose the type of element to use for the calculation
+struct elem_type_t {
+    // element type 
+    elem_types::elem_type type;   
+};
 
+class element_selector{
+  public:
+    //2D element objects
+    Quad4 Quad4_Object;
+    Quad8 Quad8_Object;
+    Quad12 Quad12_Object;
+    QuadN QuadN_Object;
 
-// void choose_elem_type(elem_type_t elem_type);
+    //3D element objects
+    Hex8 Hex8_Object;
+    Hex20 Hex20_Object;
+    Hex32 Hex32_Object;
+    HexN HexN_Object;
+
+    void choose_3Delem_type(elem_types::elem_type element_type, Element3D *&elem);
+    void choose_2Delem_type(elem_types::elem_type element_type, Element2D *&elem2D);
+};
 
 
 } // end namespace elements
 
-
-// --- Element type choice ---
-
-// 2D Element Types
-
-// extern elements::Element2D* elem2D;
-
-// extern elements::Quad4      Quad4_elem;
-// extern elements::Quad8      Quad8_elem;
-// extern elements::Quad12     Quad12_elem;
-// extern elements::QuadN      QuadN_elem;
-
-// // 3D element types
-// extern elements::Element3D* elem;
-
-// extern elements::Hex8      Hex8_elem;
-// extern elements::Hex20     Hex20_elem;
-// extern elements::Hex32     Hex32_elem;
-// extern elements::HexN      HexN_elem;
-
-
-
-// extern elements::elem_type_t*   elem_choice;
-
 // Everything is HexN
 extern elements::HexN      elem;
 
-
-
 // Reference element
 extern elements::ref_element  ref_elem;
-
-
-
 
 #endif //ELEMENTS_H

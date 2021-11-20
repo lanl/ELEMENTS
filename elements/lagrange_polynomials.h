@@ -3,31 +3,33 @@
 #include "common.h"
 
 namespace lagrange {
-  // Comparing floating point numbers
-  inline bool almost_equal(NumType a, NumType b);
-
-  // Possible optimization
-  inline SizeType branchless_choice(bool c, SizeType a, SizeType b);
-
-  // Point distributions
-  void equispaced_points(SizeType N, NumType &zl, NumType &zr, NumType *z);
-  void chebyshev_points(SizeType N, NumType &zl, NumType &zr, NumType *z);
-
   // Identifying singularities
-  void find_coincident_vertex(const SizeType &N, const NumType *z, 
-      const NumType &x, SizeType &k);
+  template <typename NumType>
+  SizeType find_coincident_vertex(const SizeType &, const NumType *, 
+      const NumType &);
 
-  // Barycentric interpolation
-  void compute_barycentric_weights(const SizeType &N, const NumType *z, 
-      NumType *w);
-  void evaluate_1d(const SizeType &ND, const SizeType &ic, const SizeType &Nv, 
-      const NumType *z, const NumType *w, const NumType &x, const NumType *c0, 
-      NumType *ci, NumType *co);
-  void evaluate_3d(const SizeType &pde, const SizeType &N, const NumType *z, 
-      const NumType *w, const NumType *x, const NumType *f, NumType *g);
+  // Barycentric weights
+  template <typename NumType>
+  void compute_barycentric_weights(const SizeType &, const NumType *, 
+      NumType *);
 
-  // Geometric quantities from interpolants
-  void compute_jacobian_determinant(SizeType &N, NumType *z, NumType *w, 
-      NumType *cx, NumType *cy, NumType *cz, NumType *g, NumType X[3], 
-      NumType &J);
+  // Lagrange polynomials (basis functions)
+  template <typename NumType>
+  NumType eval(const SizeType Nv, const SizeType i, const SizeType ic, 
+      const NumType *Z, const NumType *w, const NumType X);
+
+  template <typename NumType>
+  NumType eval_der(const SizeType Nv, const SizeType n, 
+      const SizeType i, const SizeType ic, const NumType *Z, 
+      const NumType *w, const NumType X, NumType *c);
+
+  // Lagrange interpolants (sums of products of bases and coefficients)
+  template <typename NumType>
+  NumType eval_interp(const SizeType Nv, const SizeType i, 
+      const NumType *Z, const NumType *w, const NumType X, const NumType *c);
+
+  template <typename NumType>
+  NumType eval_der_interp(const SizeType Nv, const SizeType n, 
+      const SizeType i, const NumType *Z, const NumType *w, const NumType X, 
+      NumType *c);
 }

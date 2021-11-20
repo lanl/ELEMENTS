@@ -4,40 +4,40 @@
 
 #include <cmath>
 #include <complex>
-#include <iostream>
 #include <limits>
 
-#define NUM_EPS std::numeric_limits<RealNumber>::epsilon()
-#define NUM_MIN std::numeric_limits<RealNumber>::min()
-#define NUM_MAX std::numeric_limits<RealNumber>::max()
-
-typedef double RealNumber;
-typedef std::complex<double> ComplexNumber;
+typedef double Real;
+typedef std::complex<double> Complex;
 typedef size_t SizeType;
-#ifdef USE_COMPLEX_NUMBERS
-typedef ComplexNumber NumType;
-#else
-typedef RealNumber NumType;
-#endif
+
+#define NUM_EPS std::numeric_limits<Real>::epsilon()
+#define NUM_MIN std::numeric_limits<Real>::min()
+#define NUM_MAX std::numeric_limits<Real>::max()
 
 namespace common {
   // Definitions used to ensure compatibility when switching from real number
   // type to complex number type to test derivative implementations via the
   // complex step method
-  inline RealNumber real(RealNumber number) { return number; }
-  inline RealNumber real(ComplexNumber number) { return number.real(); }
+  inline Real real(Real number) { return number; }
+  inline Real real(Complex number) { return number.real(); }
 
-  inline RealNumber imag(RealNumber number) { return 0.0; }
-  inline RealNumber imag(ComplexNumber number) { return number.imag(); }
+  inline Real imag(Real number) { return 0.0; }
+  inline Real imag(Complex number) { return number.imag(); }
 
-  inline RealNumber abs(RealNumber number) { return std::abs(number); }
-  inline RealNumber abs(ComplexNumber number) { 
+  inline Real abs(Real number) { return std::abs(number); }
+  inline Real abs(Complex number) { 
       return std::abs(number.real()); }
 
+  // Check equality of two double precision floating point numbers
+  template <typename NumType>
+  inline bool almost_equal(NumType a, NumType b) {
+    return common::abs(a - b) < 2.0*NUM_EPS;
+  };
+
   // Converting between representations of array indices
-  void base_10_to_mixed_radix(const SizeType &Nb, const SizeType *b, 
+  void base_10_to_mixed_radix(const SizeType Nb, const SizeType *b, 
       SizeType x, SizeType *y);
-  SizeType mixed_radix_to_base_10(const SizeType &Nb, const SizeType *b, 
+  SizeType mixed_radix_to_base_10(const SizeType Nb, const SizeType *b, 
       SizeType *x);
 
   // Encoding and decoding a requested partial derivative to and from an

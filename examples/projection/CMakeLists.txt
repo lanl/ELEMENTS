@@ -5,7 +5,7 @@
 # (4) initialization of an output VTK grid file from the SWAGE mesh and the
 # projection data; and 
 # (5) writing output VTK grid to file.
-if (VTK_FOUND AND ENABLE_VTK)
+if (ENABLE_VTK AND VTK_FOUND AND ENABLE_BLAS_LAPACK)
   add_executable(
     projection
     projection.cpp

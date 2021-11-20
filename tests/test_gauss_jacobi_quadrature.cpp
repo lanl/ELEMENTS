@@ -1,6 +1,7 @@
 #include "common.h"
 #include "gauss_jacobi_quadrature.h"
 
+#include <iostream>
 #include <iomanip>
 
 using namespace std;
@@ -10,9 +11,9 @@ int main() {
   cout.precision(15);
 
   const size_t n = 5;
-  NumType alpha = -0.5, beta = -0.5;
-  CArray<NumType> points(n); 
-  CArray<NumType> weights(n);
+  Real alpha = -0.5, beta = -0.5;
+  CArray<Real> points(n); 
+  CArray<Real> weights(n);
   compute_gauss_jacobi_quadrature_rule(n, alpha, beta, points, weights);
 
   cout << setw(30) << "points"

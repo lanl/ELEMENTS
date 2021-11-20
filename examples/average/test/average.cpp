@@ -298,7 +298,7 @@ void read_mesh(char *MESH){
         fscanf(in,"%le", &init_mesh.node_coords(node_gid, 2));
     }
 
-    
+    /*
     ch = (char)fgetc(in);
     printf("%c",ch);
 
@@ -311,6 +311,10 @@ void read_mesh(char *MESH){
         }
         printf("\n");
     }
+    */
+    char skip_string[20];
+    fscanf(in,"%s",skip_string);
+    std::cout << skip_string <<std::endl;
     
     int num_elem = 0;
     

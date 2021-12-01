@@ -59,7 +59,11 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define EPSILON 1.0e-12
 
 using namespace utils;
+// Everything is HexN
+elements::HexN      elem;
 
+// Reference element
+elements::ref_element  ref_elem;
 
 namespace elements{
 
@@ -665,7 +669,7 @@ void lobatto_weights_1D(
     } // end if
 } // end of lobatto_weights_1D function
 
-void legendre_nodes_1D_ref(
+void legendre_nodes_1D(
                            CArray <real_t> &leg_nodes_1D,
                            const int &num){
     if (num == 1){

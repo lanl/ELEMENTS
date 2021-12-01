@@ -17,7 +17,7 @@ void project_function_legendre(
 
 // Definition of global element variable to be able to safely link elements
 // library
-elements::HexN elem;
+//elements::HexN elem;
 
 int main() {
   const SizeType num_dim  = 3;

@@ -665,9 +665,9 @@ void lobatto_weights_1D(
     } // end if
 } // end of lobatto_weights_1D function
 
-void legendre_nodes_1D_ref(
-                           CArray <real_t> &leg_nodes_1D,
-                           const int &num){
+void legendre_nodes_1D(
+                       CArray <real_t> &leg_nodes_1D,
+                       const int &num){
     if (num == 1){
         leg_nodes_1D(0) = 0.0;
     }
@@ -2657,9 +2657,9 @@ void ref_element::init(int p_order, int num_dim){
 
         // --- evaluate grad_basis functions at the ref nodes ---
 
-        auto partial_xi = CArray <real_t> (num_ref_nodes_in_elem_);
+        auto partial_xi  = CArray <real_t> (num_ref_nodes_in_elem_);
         auto partial_eta = CArray <real_t> (num_ref_nodes_in_elem_);
-        auto partial_mu = CArray <real_t> (num_ref_nodes_in_elem_);
+        auto partial_mu  = CArray <real_t> (num_ref_nodes_in_elem_);
 
         
 
@@ -2683,9 +2683,9 @@ void ref_element::init(int p_order, int num_dim){
                 ref_nodal_gradient_(node_lid, basis_id, 1) = partial_eta(basis_id);
                 ref_nodal_gradient_(node_lid, basis_id, 2) = partial_mu(basis_id);
 
-                partial_xi(basis_id) = 0.0;
+                partial_xi(basis_id)  = 0.0;
                 partial_eta(basis_id) = 0.0;
-                partial_mu(basis_id) = 0.0;
+                partial_mu(basis_id)  = 0.0;
             }
         }
         
@@ -2722,6 +2722,183 @@ void ref_element::init(int p_order, int num_dim){
         if (num_ref_surface_nodes_in_elem_ < count_surf) {
             std::cout << "*** Error in surface nodes in ref elem ***" << std::endl;
         }
+        
+        
+        // ---- build reference patches and reference sides of a cell and assign guass values ----
+        
+        num_patches_in_elem_ = (num_ref_cells_1D_+1) * (num_ref_cells_1D_*num_ref_cells_1D_)*3;
+        num_sides_in_elem_ = num_ref_cells_in_elem_*6;
+        ref_patches_in_cell_list_ = CArray <int> (num_sides_in_elem_);
+        
+        
+        // allocate memory for the 1D Gauss Legendre points and weights
+        auto leg_points_1D = CArray <real_t> (num_ref_cells_1D_);
+        legendre_nodes_1D(leg_points_1D, num_ref_cells_1D_);
+        
+        auto leg_weights_1D = CArray <real_t> (num_ref_cells_1D_);
+        legendre_weights_1D(leg_weights_1D, num_ref_cells_1D_);
+        
+        
+        // allocate memory for global variables related to Gauss Legendre points and weights
+        ref_cell_positions_ = CArray <real_t> (num_ref_cells_in_elem_, 3);
+        ref_cell_g_weights_ = CArray <real_t> (num_ref_cells_in_elem_); // this one
+        ref_patch_positions_ = CArray <real_t> (num_patches_in_elem_, 3);
+        ref_patch_g_weights_ = CArray <real_t> (num_patches_in_elem_);
+
+        
+        
+        for (int side_rid = 0; side_rid < num_sides_in_elem_; side_rid++){
+            ref_patches_in_cell_list_(side_rid) = -1;
+        }
+        
+        int patch_rid = 0;  // the patch reference index
+        // loop over the cells
+        for (int k=0; k<num_ref_cells_1D_; k++){
+            for (int j=0; j<num_ref_cells_1D_; j++){
+                for (int i=0; i<num_ref_cells_1D_; i++){
+                    
+                    // get the cell_rid
+                    int this_cell_rid = cell_rid(i, j, k);
+                    
+                    // save the gauss point volume values at cell
+                    // i,j,k tensor product for gauss Legendre
+                    ref_cell_positions_(this_cell_rid,0) = leg_points_1D(i);
+                    ref_cell_positions_(this_cell_rid,1) = leg_points_1D(j);
+                    ref_cell_positions_(this_cell_rid,2) = leg_points_1D(k);
+                    
+                    ref_cell_g_weights_(this_cell_rid) = leg_weights_1D(i)*leg_weights_1D(j)*leg_weights_1D(k);
+                    
+                    
+                    // loop over the sides in this cell
+                    for (int side_lid = 0; side_lid < 6; side_lid++){
+                        
+                        // get the local side index in the cell
+                        int side_rid = side_lid + this_cell_rid*6; // side index
+                        
+                        
+                        // check to see if a patch index was already saved
+                        if (ref_patches_in_cell_list_(side_rid) == -1){
+                            
+                            // save the patch_rid for this patch in the cell
+                            ref_patches_in_cell_list_(side_rid) = patch_rid;
+                            
+                            // save the gauss point area vaules on the patch
+                            if (side_lid == 0){
+                                
+                                ref_patch_positions_(patch_rid,0) = lob_nodes_1D(i);  // xi-coord is the labatto point value at i
+                                ref_patch_positions_(patch_rid,1) = leg_points_1D(j); // legendre points
+                                ref_patch_positions_(patch_rid,2) = leg_points_1D(k); // legendre points
+                                
+                                // j,k tensor product for this surface
+                                ref_patch_g_weights_(patch_rid) = leg_weights_1D(j)*leg_weights_1D(k);
+                            }
+                            else if (side_lid == 1){
+                                
+                                ref_patch_positions_(patch_rid,0) = lob_nodes_1D(i+1); // xi-coord is the labatto point value at i+1
+                                ref_patch_positions_(patch_rid,1) = leg_points_1D(j);  // legendre points
+                                ref_patch_positions_(patch_rid,2) = leg_points_1D(k);  // legendre points
+                                
+                                // j,k tensor product for this surface
+                                ref_patch_g_weights_(patch_rid) = leg_weights_1D(j)*leg_weights_1D(k);
+                            }
+                            // end xi direction patches
+                            //
+                            else if (side_lid == 2){
+                                
+                                ref_patch_positions_(patch_rid,0) = leg_points_1D(i); // legendre points
+                                ref_patch_positions_(patch_rid,1) = lob_nodes_1D(j);  // eta-coord is the labatto point value at j
+                                ref_patch_positions_(patch_rid,2) = leg_points_1D(k); // legendre points
+                                
+                                // i,k tensor product for this surface
+                                ref_patch_g_weights_(patch_rid) = leg_weights_1D(i)*leg_weights_1D(k);
+                                
+                            }
+                            else if(side_lid == 3){
+                                
+                                ref_patch_positions_(patch_rid,0) = leg_points_1D(i);  // legendre points
+                                ref_patch_positions_(patch_rid,1) = lob_nodes_1D(j+1); // eta-coord is the labatto point value at j+1
+                                ref_patch_positions_(patch_rid,2) = leg_points_1D(k);  // legendre points
+                                
+                                // i,k tensor product for this surface
+                                ref_patch_g_weights_(patch_rid) = leg_weights_1D(i)*leg_weights_1D(k);
+                            }
+                            // end eta direction patches
+                            //
+                            else if (side_lid == 4){
+                                
+                                ref_patch_positions_(patch_rid,0) = leg_points_1D(i); // legendre points
+                                ref_patch_positions_(patch_rid,1) = leg_points_1D(j); // legendre points
+                                ref_patch_positions_(patch_rid,2) = lob_nodes_1D(k);  // mu-coord is the labatto point value at k
+                                
+                                // i,j tensor product for this surface
+                                ref_patch_g_weights_(patch_rid) = leg_weights_1D(i)*leg_weights_1D(j);
+                            }
+                            else if (side_lid == 5){
+                                
+                                ref_patch_positions_(patch_rid,0) = leg_points_1D(i);  // legendre points
+                                ref_patch_positions_(patch_rid,1) = leg_points_1D(j);  // legendre points
+                                ref_patch_positions_(patch_rid,2) = lob_nodes_1D(k+1); // mu-coord is the labatto point value at k
+                                
+                                // i,j tensor product for this surface
+                                ref_patch_g_weights_(patch_rid) = leg_weights_1D(i)*leg_weights_1D(j);
+                            }
+                            // end mu direction patches
+                                 
+                                     
+                            // also save the patch_rid in the neighboring cell for this patch
+                            // select neighbors for +/- xi, eta, and mu directions
+                            int neighbor_cell_rid;
+                            if (side_lid == 0 && i>0){
+                                neighbor_cell_rid = cell_rid(i-1, j, k);
+                            } // end xi minus direction
+                            else if (side_lid == 1 && i<num_ref_cells_1D_-1){
+                                neighbor_cell_rid = cell_rid(i+1, j, k);
+                            } // end xi plus direction
+                            else if (side_lid == 2 && j>0){
+                                neighbor_cell_rid = cell_rid(i, j-1, k);
+                            } // end eta minus direction
+                            else if (side_lid == 3 && j<num_ref_cells_1D_-1){
+                                neighbor_cell_rid = cell_rid(i, j+1, k);
+                            } // end eta plus direction
+                            else if (side_lid == 4 && k>0){
+                                neighbor_cell_rid = cell_rid(i, j, k-1);
+                            } // end mu minus direction
+                            else if (side_lid == 5 && k<num_ref_cells_1D_-1){
+                                neighbor_cell_rid = cell_rid(i, j, k+1);
+                            } // end mu plus direction
+                            else{
+                                neighbor_cell_rid = -1;
+                            } // end no neighboring cell
+                            
+                            // if the neighbor is valid, then save the patch_rid
+                            if (neighbor_cell_rid >= 0 && neighbor_cell_rid < num_ref_cells_in_elem_){
+                                
+                                // get the patch_lid in the neighboring cell for this patch_lid
+                                int neighbor_side_lid = patch_rlid_in_cell_neighbor(side_lid);
+                                
+                                // get the side index of cell for the same patch
+                                int neighbor_side_rid = neighbor_side_lid + (neighbor_cell_rid)*6; // neighboring side index
+                                
+                                // save the patch_rid for this patch in the neighboring cell
+                                ref_patches_in_cell_list_(neighbor_side_rid) = patch_rid;
+                                
+                            } // end if neighboring_cell_rid is valid
+                            
+                            
+                            // increment the patch_rid index
+                            patch_rid ++;
+                            
+                        }  // end if the patch was saved
+                        
+                    } // end for sides in a cell
+                    
+                } // end for i-dir cells
+            } // end for j-dir cells
+        } // end for k-dir cells
+        
+        std::cout << "  patch_rid = " << patch_rid << "  num_patches = " << num_patches_in_elem_ << "\n";
+        std::cout << "  num cells * 6 = " << num_ref_cells_in_elem_*6 << " and num_cells_1D = "  << num_ref_cells_1D_ << std::endl;
+        
         
     } // end of 3D scope
 
@@ -2770,6 +2947,7 @@ int ref_element::corner_rid(int i, int j, int k) const
 {
     return i + j*num_ref_corners_1D_ + k*num_ref_corners_1D_*num_ref_corners_1D_;
 };
+
 
 
 // DANIELLOOK
@@ -2848,6 +3026,16 @@ int& ref_element::cell_lid_in_zone(int zone_lid, int cell_lid) const
 {
     return cells_in_zone_list_(zone_lid, cell_lid);
 }
+    
+real_t ref_element::ref_cell_positions(int cell_rid, int dim) const
+{
+    return ref_cell_positions_(cell_rid, dim);
+}
+    
+real_t ref_element::ref_cell_g_weights(int cell_rid) const
+{
+    return ref_cell_g_weights_(cell_rid);
+}
 
 int& ref_element::cell_nodes_in_elem(int cell_lid, int node_lid) const
 {
@@ -2871,7 +3059,18 @@ int ref_element::ref_patches_in_cell(int cell_rid, int patch_rlid) const
     return ref_patches_in_cell_list_(index);
 }
     
-int ref_element::vert_node_map(int vert_lid){
+real_t ref_element::ref_patch_positions(int patch_rid, int dim) const
+{
+    return ref_patch_positions_(patch_rid, dim);
+}
+    
+real_t ref_element::ref_patch_g_weights(int patch_rid) const
+{
+    return ref_patch_g_weights_(patch_rid);
+}
+    
+int ref_element::vert_node_map(int vert_lid)
+{
     return elem.vert_node_map(vert_lid);
 }
 

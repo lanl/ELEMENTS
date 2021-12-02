@@ -300,8 +300,14 @@ class ref_element{
         CArray <real_t> ref_corner_g_weights_;
         CArray <real_t> ref_corner_surf_g_weights_;
 
-        // patches
+        // patches and sides
         int num_patches_in_elem_;
+        int num_sides_in_elem_;
+    
+        CArray <real_t> ref_cell_positions_;
+        CArray <real_t> ref_cell_g_weights_; // this one
+        CArray <real_t> ref_patch_positions_;
+        CArray <real_t> ref_patch_g_weights_;
     
         CArray <int> ref_patches_in_cell_list_;
     
@@ -330,7 +336,8 @@ class ref_element{
 
         int num_ref_cells_in_elem() const;
         int num_ref_corners_in_cell() const;
-        
+    
+        // local i,j,k indexing
         int node_rid(int i, int j, int k) const;
         int cell_rid(int i, int j, int k) const;
         int corner_rid(int i, int j, int k) const;
@@ -360,6 +367,9 @@ class ref_element{
         //real_t ref_nodal_jacobian(int node_rid, int basis_id, int dim) const;
         
         int& cell_lid_in_zone(int zone_lid, int cell_lid) const;
+    
+        real_t ref_cell_positions(int cell_rid, int dim) const;
+        real_t ref_cell_g_weights(int cell_rid) const;  // this one
 
         int& cell_nodes_in_elem(int cell_lid, int node_lid) const;
     
@@ -368,6 +378,9 @@ class ref_element{
         int patch_rlid_in_cell_neighbor(int patch_rlid) const;
     
         int ref_patches_in_cell(int cell_lid, int patch_rlid) const;
+    
+        real_t ref_patch_positions(int patch_rid, int dim) const;
+        real_t ref_patch_g_weights(int patch_rid) const;
     
         int vert_node_map(int vert_lid);
 

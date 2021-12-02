@@ -3,21 +3,25 @@
 #include "error.h"
 #include "common.h"
 
+void project_function_lagrange(
+    std::function<Real(Real, Real, Real)> func, 
+    SwageMesh &mesh, CArray<Real> &projection);
+
 void project_function_legendre(
-    std::function<NumType(RealNumber, RealNumber, RealNumber)> func, 
-    SwageMesh &mesh, CArray<NumType> &projection);
+    std::function<Real(Real, Real, Real)> func, 
+    SwageMesh &mesh, CArray<Real> &projection);
 
 //ErrorCode initialize_solution(
-//    std::function<NumType(RealNumber, RealNumber, RealNumber)> init_cond, 
-//    SwageMesh &mesh, CArray<NumType> &solution);
+//    std::function<Real(Real, Real, Real)> init_cond, 
+//    SwageMesh &mesh, CArray<Real> &solution);
 
 // Definition of global element variable to be able to safely link elements
 // library
-elements::HexN elem;
+//elements::HexN elem;
 
 int main() {
   const SizeType num_dim  = 3;
-  SizeType elem_order     = 2; 
+  SizeType elem_order     = 1; 
   std::string input_name("simple_2nd_order_mesh.vtk");
   std::string solution_name("u");
   std::string output_name("output.vtu");
@@ -41,19 +45,18 @@ int main() {
   SizeType num_verts_1d = elem_order + 1;
   SizeType num_verts    = pow(num_verts_1d, num_dim);
   SizeType num_elems    = mesh.num_elems();
-  CArray<NumType> projection(num_elems, num_verts);
-  auto func = [](NumType x, NumType y, NumType z) -> NumType {
-    return cos(M_PI*x);
+  CArray<Real> projection(num_elems, num_verts);
+  auto func = [](Real x, Real y, Real z) -> Real {
+    //return cos(M_PI*x);
+    return 1.0;
   };
 
   try {
-    project_function_legendre(func, mesh, projection);
+    project_function_lagrange(func, mesh, projection);
   } catch (std::exception &e) {
     std::cerr << e.what() << std::endl;
     return 1;
   }
-
-  // TODO Evaluate the projection at the vertices
 
   // Try to initialize a VTK grid from the SWAGE mesh and the projection data
   try {

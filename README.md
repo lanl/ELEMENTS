@@ -75,16 +75,17 @@ mkdir build; cd build
 You might also create a configuration script like, for example,
 ```
 #!/bin/bash
-ELEMENTS_DIR=..  # relative path of ELEMENTS repository
+ELEMENTS_DIR=/path/to/local/elements/repository
 cmake \
   -DCMAKE_INSTALL_PREFIX=`pwd` \
   -DCMAKE_BUILD_TYPE=Debug \
+  -DENABLE_BLAS_LAPACK=ON \
   -DENABLE_VTK=ON \
-  -DVTK_DIR=${YOUR_LOCAL_VTK_INSTALL} \
+  -DVTK_DIR=/path/to/vtk/installation
   ${ELEMENTS_DIR}
 ```
 where the CMake installation directory is configured to be the directory in which the configuration script is run (in this example, the `build/` directory created above).
-(The example configuration above would also enable the use of and identify the install location of VTK for the VTK interface in ELEMENTS.)
+(The example configuration above compiles ELEMENTS with the optional BLAS/LAPACK and VTK dependencies.)
 Then enter
 ```
 ./my_config.sh; make

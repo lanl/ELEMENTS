@@ -1,6 +1,7 @@
 #include "lagrange_polynomials.h"
 
 #include "swage.h"
+#include "lagrange_element.h"
 
 namespace swage {
   void evaluate_jacobian_determinants(mesh_t &mesh) {
@@ -31,27 +32,25 @@ namespace swage {
     }
 
     // Assume Lobatto nodes for quadrature
-    CArray<NumType> lobatto_nodes(num_nodes_1d);
+    CArray<Real> lobatto_nodes(num_nodes_1d);
     lobatto_nodes_1D_tmp(lobatto_nodes, num_nodes_1d);
 
-    // Extract vertex coordinates from quadrature points and evaluate
-    // barycentric weights of vertices
+    // Extract vertex coordinates from quadrature points
     vert_id = 0;
-    CArray<NumType> vert_coords_1d(num_verts_1d);
-    for (int node_id = 0; node_id < num_nodes_1d; node_id += 2) {
-      vert_coords_1d(vert_id) = lobatto_nodes(node_id);
-      vert_id++;
+    CArray<Real> vert_coords_1d(num_verts_1d);
+    for (int vert_id = 0; vert_id < num_verts_1d; vert_id++) {
+      vert_coords_1d(vert_id) = lobatto_nodes(vert_node_map(vert_id));
     }
 
-    CArray<NumType> vert_weights(num_nodes_1d);
-    lagrange::compute_barycentric_weights(num_verts_1d, 
-        vert_coords_1d.get_pointer(), vert_weights.get_pointer());
+    // Create reference element
+    LagrangeElement<Real> elem(SizeType(elem_order), 
+        vert_coords_1d.pointer());
 
     // Loop over elements and...
-    CArray<NumType> vert_x_coords(num_verts);
-    CArray<NumType> vert_y_coords(num_verts);
-    CArray<NumType> vert_z_coords(num_verts);
-    CArray<NumType> workspace(3*num_verts_1d+1);
+    CArray<Real> vert_x_coords(num_verts);
+    CArray<Real> vert_y_coords(num_verts);
+    CArray<Real> vert_z_coords(num_verts);
+    CArray<Real> workspace(3*num_verts_1d+1);
     for (int elem_id = 0; elem_id < num_elems; elem_id++) {
       // ...get spatial coordinates of vertices from mesh
       for (int vert_id = 0; vert_id < num_verts; vert_id++) {
@@ -74,19 +73,16 @@ namespace swage {
         common::base_10_to_mixed_radix(num_rad, radices, node_lid, IJK);
 
         // Get reference coordinates of quadrature point
-        NumType node_coords[3];
-        node_coords[0] = lobatto_nodes(IJK[0]);
-        node_coords[1] = lobatto_nodes(IJK[1]);
-        node_coords[2] = lobatto_nodes(IJK[2]);
+        Real X[3];
+        X[0] = lobatto_nodes(IJK[0]);
+        X[1] = lobatto_nodes(IJK[1]);
+        X[2] = lobatto_nodes(IJK[2]);
 
+        // Evaluate Jacobian determinant
         int node_gid = mesh.nodes_in_elem(elem_id, node_lid);
-
-        SizeType num_verts_1d_unsigned = SizeType(num_verts_1d);
-        lagrange::compute_jacobian_determinant(num_verts_1d_unsigned, 
-            vert_coords_1d.get_pointer(), vert_weights.get_pointer(), 
-            vert_x_coords.get_pointer(), vert_y_coords.get_pointer(), 
-            vert_z_coords.get_pointer(), workspace.get_pointer(), node_coords, 
-            mesh.gauss_pt_det_j(node_gid));
+        mesh.gauss_pt_det_j(node_gid) = elem.eval_det_jac(
+            vert_x_coords.pointer(), vert_y_coords.pointer(), 
+            vert_z_coords.pointer(), X);
       }
     }
   }

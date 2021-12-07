@@ -1,4 +1,3 @@
-[submodule "matar"]
+[submodule "MATAR"]
 	path = matar
 	url = https://github.com/lanl/MATAR.git
-	branch = main

@@ -49,6 +49,18 @@ target_link_libraries(
   elements
 )
 
+
+# Test Legendre integration on patches and cells
+add_executable(
+  test_legendre_ref_integration
+  test_legendre_ref_integration.cpp
+)
+target_link_libraries(
+  test_legendre_ref_integration
+  elements
+)
+
+
 # Test Gauss-Jacobi quadrature
 # (Only if BLAS/LAPACK interface enabled)
 if (ENABLE_BLAS_LAPACK)

@@ -2905,6 +2905,101 @@ void ref_element::init(int p_order, int num_dim){
         std::cout << "  num cells * 6 = " << num_ref_cells_in_elem_*6 << " and num_cells_1D = "  << num_ref_cells_1D_ << std::endl;
         
         
+        // calculate the basis function values at the patches in the elem
+        ref_patch_basis_ =  CArray <real_t> (num_patches_in_elem_, num_ref_verts_in_elem_);
+        
+        // --- evaluate the Lagrange basis at the patch positions
+        for(int patch_rlid = 0; patch_rlid < num_patches_in_elem_; patch_rlid++){
+            
+            auto point = CArray <real_t> (3);
+            
+            // Get the patch coordinates
+            for(int dim = 0; dim < 3; dim++){
+                point(dim) = ref_patch_positions(patch_rlid, dim);
+            }
+            
+            // the basis function values at the patch for each vertex
+            auto patch_basis = CArray <real_t> (num_ref_verts_in_elem_);
+            
+            // calculate the patch basis function values at the point, for each vertex
+            elem.basis(patch_basis, point);
+            
+            // save the basis values at the patch for each vertex
+            for(int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++){
+                ref_patch_basis_(patch_rlid, vert_rlid) = patch_basis(vert_rlid);
+            }
+            
+        } // end for patch_rlid
+        
+        
+        
+        // --- evaluate grad_basis functions at the ref patches ---
+        
+        ref_patch_gradient_ = CArray <real_t> (num_patches_in_elem_, num_basis_, num_dim_);
+        
+        // loop over the patches
+        for(int patch_rlid = 0; patch_rlid < num_patches_in_elem_; patch_rlid++){
+            
+            auto point = CArray <real_t> (3);
+            
+            // Get the patch coordinates
+            for(int dim = 0; dim < 3; dim++){
+                point(dim) = ref_patch_positions(patch_rlid, dim);
+            }
+            
+            // calculate the partials at the patch location for each vertex
+            elem.partial_xi_basis(partial_xi, point);
+            elem.partial_eta_basis(partial_eta, point);
+            elem.partial_mu_basis(partial_mu, point);
+            
+            // loop over the basis polynomials where there is one from each vertex
+            for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
+                
+                ref_patch_gradient_(patch_rlid, basis_id, 0) = partial_xi(basis_id);
+                ref_patch_gradient_(patch_rlid, basis_id, 1) = partial_eta(basis_id);
+                ref_patch_gradient_(patch_rlid, basis_id, 2) = partial_mu(basis_id);
+                
+                partial_xi(basis_id)  = 0.0;
+                partial_eta(basis_id) = 0.0;
+                partial_mu(basis_id)  = 0.0;
+            } // end for basis_id
+            
+        } // end for patch_rlid
+        
+        
+        // --- evaluate grad_basis functions at the reference cell ---
+        
+        ref_cell_gradient_ = CArray <real_t> (num_ref_cells_in_elem_, num_basis_, num_dim_);
+        
+        // loop over the patches
+        for(int cell_rlid = 0; cell_rlid < num_ref_cells_in_elem_; cell_rlid++){
+            
+            auto point = CArray <real_t> (3);
+            
+            // Get the cell coordinates
+            for(int dim = 0; dim < 3; dim++){
+                point(dim) = ref_cell_positions_(cell_rlid, dim);
+            }
+            
+            // calculate the partials at the cell location for each vertex
+            elem.partial_xi_basis(partial_xi, point);
+            elem.partial_eta_basis(partial_eta, point);
+            elem.partial_mu_basis(partial_mu, point);
+            
+            // loop over the basis polynomials where there is one from each vertex
+            for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
+                
+                ref_cell_gradient_(cell_rlid, basis_id, 0) = partial_xi(basis_id);
+                ref_cell_gradient_(cell_rlid, basis_id, 1) = partial_eta(basis_id);
+                ref_cell_gradient_(cell_rlid, basis_id, 2) = partial_mu(basis_id);
+                
+                partial_xi(basis_id)  = 0.0;
+                partial_eta(basis_id) = 0.0;
+                partial_mu(basis_id)  = 0.0;
+            } // end for basis_id
+            
+        } // end for patch_rlid
+        
     } // end of 3D scope
 
 
@@ -3073,6 +3168,23 @@ real_t ref_element::ref_patch_g_weights(int patch_rid) const
 {
     return ref_patch_g_weights_(patch_rid);
 }
+    
+real_t ref_element::ref_patch_basis(int patch_rid, int basis_id) const
+{
+    return ref_patch_basis_(patch_rid, basis_id);
+};
+    
+real_t ref_element::ref_patch_gradient(int patch_rid, int basis_id, int dim) const
+{
+    return ref_patch_gradient_(patch_rid, basis_id, dim);
+};
+    
+real_t ref_element::ref_cell_gradient(int cell_rid, int basis_id, int dim) const
+{
+    return ref_cell_gradient_(cell_rid, basis_id, dim);
+};
+    
+    
     
 int ref_element::vert_node_map(int vert_lid)
 {

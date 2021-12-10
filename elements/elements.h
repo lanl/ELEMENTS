@@ -305,11 +305,15 @@ class ref_element{
         int num_sides_in_elem_;
     
         CArray <real_t> ref_cell_positions_;
-        CArray <real_t> ref_cell_g_weights_; // this one
+        CArray <real_t> ref_cell_g_weights_;
         CArray <real_t> ref_patch_positions_;
         CArray <real_t> ref_patch_g_weights_;
     
         CArray <int> ref_patches_in_cell_list_;
+    
+        CArray <real_t> ref_patch_basis_;
+        CArray <real_t> ref_patch_gradient_;  // grad basis at patch
+        CArray <real_t> ref_cell_gradient_;   // grad basis at cell
     
         // Num basis functions
         int num_basis_;
@@ -381,6 +385,10 @@ class ref_element{
     
         real_t ref_patch_positions(int patch_rid, int dim) const;
         real_t ref_patch_g_weights(int patch_rid) const;
+    
+        real_t ref_patch_basis(int patch_rid, int basis_id) const;
+        real_t ref_patch_gradient(int patch_rid, int basis_id, int dim) const;
+        real_t ref_cell_gradient(int cell_rid, int basis_id, int dim) const;
     
         int vert_node_map(int vert_lid);
 

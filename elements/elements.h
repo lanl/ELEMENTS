@@ -57,7 +57,7 @@ using namespace utils;
 
 
 
-namespace elements{
+namespace elements {
 
     
     //==============================================================================
@@ -1376,11 +1376,5 @@ class element_selector{
 
 
 } // end namespace elements
-
-// Everything is HexN
-extern elements::HexN      elem;
-
-// Reference element
-extern elements::ref_element  ref_elem;
 
 #endif //ELEMENTS_H

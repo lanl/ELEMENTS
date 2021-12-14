@@ -59,13 +59,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define EPSILON 1.0e-12
 
 using namespace utils;
-// Everything is HexN
-elements::HexN      elem;
 
-// Reference element
-elements::ref_element  ref_elem;
-
-namespace elements{
+namespace elements {
 
 //==============================================================================
 //   Function Definitions
@@ -6158,7 +6153,3 @@ void element_selector::choose_2Delem_type(elem_types::elem_type element_type, El
 } // end choose element function
 
 } // end namespace elements
-
-
-
-

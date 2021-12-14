@@ -103,6 +103,9 @@ struct boundary_t {
 
 
 
+// --- Reference element variables ---
+extern elements::HexN      elem;
+extern elements::ref_element  ref_elem;
 
 // --- Mesh variables ---
 extern node_t         node;

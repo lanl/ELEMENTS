@@ -2299,9 +2299,10 @@ void chebyshev_nodes_1D(
 //***********************************************//
 
 
-void ref_element::init(int p_order, int num_dim){ 
+void ref_element::init(int p_order, int num_dim, HexN &elem){ 
     
     num_dim_ = num_dim;
+    elem_ptr = &elem;
 
     int num_g_pts_1d;
 
@@ -2630,7 +2631,7 @@ void ref_element::init(int p_order, int num_dim){
         } // end of loop over the ref cells in element
 
         // Set up tensor product element
-        elem.setup_HexN(p_order);
+        elem_ptr->setup_HexN(p_order);
 
 
         // --- evaluate the basis at the nodal positions
@@ -3183,7 +3184,7 @@ real_t ref_element::ref_cell_gradient(int cell_rid, int basis_id, int dim) const
     
 int ref_element::vert_node_map(int vert_lid)
 {
-    return elem.vert_node_map(vert_lid);
+    return elem_ptr->vert_node_map(vert_lid);
 }
 
 

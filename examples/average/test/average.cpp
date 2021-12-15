@@ -88,10 +88,10 @@ mat_fill_t  * mat_fill;
 boundary_t  * boundary;
 
 // Reference element
-//elements::ref_element  ref_elem;
+elements::ref_element  ref_elem;
 
 // Everything is HexN for now
-//elements::HexN      elem;
+elements::HexN      elem;
 
 // --- Mesh regions and material fills ---
 int NR = 0; // number of Regions
@@ -399,7 +399,7 @@ void read_mesh(char *MESH){
 
 
     // Create reference element
-    ref_elem.init(p_order, num_dim);
+    ref_elem.init(p_order, num_dim, elem);
 
      
     std::cout << "number of patches = " << mesh.num_patches() << std::endl;

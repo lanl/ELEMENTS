@@ -97,6 +97,16 @@ private:
          4,5,7,6
         };
 
+    // return the reference coordinate unit normal of the sides in a cell
+    const real_t cell_side_unit_normals_[18] = {
+       -1, 0, 0, // xi left side of my cell
+        1, 0, 0, // xi right side of my cell
+        0,-1, 0, // eta minus side of my cell
+        0, 1, 0, // eta plus side of my cell
+        0, 0,-1, // mu minus side of my cell
+        0, 0, 1  // mu plus side of my cell
+    };
+    
     int indx_; //useful for returning from internal function
 
 
@@ -112,6 +122,8 @@ private:
     int   num_cells_in_elem_;
     int   num_nodes_in_elem_;
     int   num_mat_pts_in_elem_;
+    int   num_patches_in_elem_;
+    int   num_g_patch_pts_in_elem_;
 
     CArray <int> cells_in_elem_;
 
@@ -119,6 +131,7 @@ private:
     CArray <int> elems_in_elem_list_start_;
     RaggedRightArray <int> elems_in_elem_list_;
     CArray <int> nodes_in_elem_list_;
+    CArray <int> patches_in_elem_;
 
 
 
@@ -158,6 +171,8 @@ private:
     
     // ---- GAUSS POINTS ---- //
     int   num_g_pts_;
+    int   num_g_patch_pts_;
+    int   num_g_cell_pts_;
 
     CArray <int> node_in_gauss_list_;
 
@@ -170,6 +185,7 @@ private:
     CArray <int> corners_in_node_list_start_;
     CArray <int> corners_in_node_list_;
 
+    
     // ---- PATCHES ---- //
     int   num_patches_;
 
@@ -206,10 +222,19 @@ private:
     // ---- NODES ---- //
     CArray <real_t> node_coords_;
 
+    
     // ---- QUADRATURE POINTS ---- //
     CArray <real_t> gauss_pt_jacobian_;
     CArray <real_t> gauss_pt_jacobian_inverse_;
     CArray <real_t> gauss_pt_det_j_;
+    
+    CArray <real_t> gauss_patch_pt_jacobian_;
+    CArray <real_t> gauss_patch_pt_jacobian_inverse_;
+    CArray <real_t> gauss_patch_pt_det_j_;
+    
+    CArray <real_t> gauss_cell_pt_jacobian_;
+    CArray <real_t> gauss_cell_pt_jacobian_inverse_;
+    CArray <real_t> gauss_cell_pt_det_j_;
 
 public:
 
@@ -221,6 +246,8 @@ public:
     void init_cells (int ncells);
     void init_nodes (int num_nodes);
     void init_gauss_pts ();
+    void init_gauss_patch_pts ();
+    void init_gauss_cell_pts ();
     void init_bdy_sets (int num_sets);
 
     // ==== MESH CONSTANTS ==== // 
@@ -266,6 +293,13 @@ public:
 
     int num_cells_in_zone () const;
 
+    // return the number of patches in an element
+    int num_patches_in_elem() const;
+    
+    // return the patches in the element
+    int patches_in_elem(int elem_gid, int patch_lid) const;
+    
+    
     // ---- CELLS ---- //
 
     // returns the number of cells
@@ -332,16 +366,25 @@ public:
     // return the determinant of the Jacobian at a node
     real_t & node_det_j (int node_gid) const;
 
+    
     // ---- GAUSS POINTS ---- //
 
     // return number of gauss points in mesh
     int num_gauss_pts () const;
+    
+    // return the number of gauss patch points in mesh
+    int num_gauss_patch_pts() const;
+    
+    // return the number of gauss cell points in mesh
+    int num_gauss_cell_pts() const;
 
     // return gauss to node map
     int& node_in_gauss (int gauss_gid) const;
 
     // return gauss in element map (internal structured grid)
-    int& gauss_in_elem (int elem_gid, int gauss_lid); 
+    int gauss_in_elem (int elem_gid, int gauss_lid) const;
+    
+    int gauss_patch_pt_in_elem(int elem_gid, int gauss_patch_lid) const;
 
 
     // ---- CORNERS ---- //
@@ -375,6 +418,8 @@ public:
 
     // returns the two sides in a patch
     int sides_in_patch(int patch_gid, int slide_lid) const;
+    
+    
     
 
     // ---- Boundary ---- //
@@ -430,10 +475,26 @@ public:
 
     real_t& gauss_pt_jacobian_inverse(int gauss_gid, int i, int j) const;
 
-
     // return determinant of jacobian at quadrature point
     real_t& gauss_pt_det_j(int gauss_gid) const;
 
+    
+    // return jacobian at quadrature point on the patch
+    real_t& gauss_patch_pt_jacobian(int gauss_patch_gid, int i, int j) const;
+    
+    real_t& gauss_patch_pt_jacobian_inverse(int gauss_patch_gid, int i, int j) const;
+    
+    // return determinant of jacobian at patch point
+    real_t& gauss_patch_pt_det_j(int gauss_patch_gid) const;
+    
+    
+    // return jacobian at quadrature point on the cell
+    real_t& gauss_cell_pt_jacobian(int gauss_patch_gid, int i, int j) const;
+    
+    real_t& gauss_cell_pt_jacobian_inverse(int gauss_patch_gid, int i, int j) const;
+    
+    // return determinant of jacobian at cell point
+    real_t& gauss_cell_pt_det_j(int gauss_patch_gid) const;
 
     // ---- CORNERS ---- //
 

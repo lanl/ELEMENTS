@@ -2905,11 +2905,10 @@ void ref_element::init(int p_order, int num_dim){
         std::cout << "  num cells * 6 = " << num_ref_cells_in_elem_*6 << " and num_cells_1D = "  << num_ref_cells_1D_ << std::endl;
         
         
-        // calculate the basis function values at the patches in the elem
+        // --- evaluate the Lagrange basis at the patch positions
         ref_patch_basis_ =  CArray <real_t> (num_patches_in_elem_, num_ref_verts_in_elem_);
         
-        // --- evaluate the Lagrange basis at the patch positions
-        for(int patch_rlid = 0; patch_rlid < num_patches_in_elem_; patch_rlid++){
+        for (int patch_rlid = 0; patch_rlid < num_patches_in_elem_; patch_rlid++){
             
             auto point = CArray <real_t> (3);
             
@@ -2934,11 +2933,10 @@ void ref_element::init(int p_order, int num_dim){
         
         
         // --- evaluate grad_basis functions at the ref patches ---
-        
         ref_patch_gradient_ = CArray <real_t> (num_patches_in_elem_, num_basis_, num_dim_);
         
         // loop over the patches
-        for(int patch_rlid = 0; patch_rlid < num_patches_in_elem_; patch_rlid++){
+        for (int patch_rlid = 0; patch_rlid < num_patches_in_elem_; patch_rlid++){
             
             auto point = CArray <real_t> (3);
             
@@ -2967,12 +2965,38 @@ void ref_element::init(int p_order, int num_dim){
         } // end for patch_rlid
         
         
-        // --- evaluate grad_basis functions at the reference cell ---
         
+        // --- evaluate the Lagrange basis at the cell positions
+        ref_cell_basis_ = CArray <real_t> (num_ref_cells_in_elem_, num_basis_, num_dim_);
+        
+        for (int cell_rlid = 0; cell_rlid < num_ref_cells_in_elem_; cell_rlid++){
+            
+            auto point = CArray <real_t> (3);
+            
+            // Get the patch coordinates
+            for(int dim = 0; dim < 3; dim++){
+                point(dim) = ref_cell_positions(cell_rlid, dim);
+            }
+            
+            // the basis function values at the patch for each vertex
+            auto cell_basis = CArray <real_t> (num_ref_verts_in_elem_);
+            
+            // calculate the cell basis function values at the point, for each vertex
+            elem.basis(cell_basis, point);
+            
+            // save the basis values at the patch for each vertex
+            for(int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++){
+                ref_cell_basis_(cell_rlid, vert_rlid) = cell_basis(vert_rlid);
+            }
+            
+        } // end for cell_rlid
+        
+        
+        // --- evaluate grad_basis functions at the reference cell ---
         ref_cell_gradient_ = CArray <real_t> (num_ref_cells_in_elem_, num_basis_, num_dim_);
         
         // loop over the patches
-        for(int cell_rlid = 0; cell_rlid < num_ref_cells_in_elem_; cell_rlid++){
+        for (int cell_rlid = 0; cell_rlid < num_ref_cells_in_elem_; cell_rlid++){
             
             auto point = CArray <real_t> (3);
             
@@ -3159,6 +3183,12 @@ int ref_element::ref_patches_in_cell(int cell_rid, int patch_rlid) const
     return ref_patches_in_cell_list_(index);
 }
     
+real_t ref_element::cell_side_unit_normals(int side_rlid, int dim) const
+{
+    int index = side_rlid*3 + dim;
+    return cell_side_unit_normals_[index];
+}
+    
 real_t ref_element::ref_patch_positions(int patch_rid, int dim) const
 {
     return ref_patch_positions_(patch_rid, dim);
@@ -3177,6 +3207,12 @@ real_t ref_element::ref_patch_basis(int patch_rid, int basis_id) const
 real_t ref_element::ref_patch_gradient(int patch_rid, int basis_id, int dim) const
 {
     return ref_patch_gradient_(patch_rid, basis_id, dim);
+};
+
+
+real_t ref_element::ref_cell_basis(int cell_rid, int basis_id) const
+{
+    return ref_cell_basis_(cell_rid, basis_id);
 };
     
 real_t ref_element::ref_cell_gradient(int cell_rid, int basis_id, int dim) const

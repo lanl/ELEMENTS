@@ -247,12 +247,22 @@ class ref_element{
     
         // return the local ref id for the same patch in the cell-patch neighbor
         const int patch_rlid_cell_neighbor_[6] = {
-            1,  // xi left side of my cell
-            0,  // xi right side of my cell
-            3,  // eta bottom side of my cell
-            2,  // eta top side of my cell
-            5,  // mu front side of my cell
-            4  // mu back side of my cell
+            1, // xi left side of my cell
+            0, // xi right side of my cell
+            3, // eta front side of my cell
+            2, // eta bact side of my cell
+            5, // mu bottom side of my cell
+            4  // mu top side of my cell
+        };
+    
+        // return the reference coordinate unit normal of the sides in a cell
+        const real_t cell_side_unit_normals_[18] = {
+           -1, 0, 0, // xi left side of my cell
+            1, 0, 0, // xi right side of my cell
+            0,-1, 0, // eta minus side of my cell
+            0, 1, 0, // eta plus side of my cell
+            0, 0,-1, // mu minus side of my cell
+            0, 0, 1  // mu plus side of my cell
         };
     
         int num_dim_;
@@ -313,6 +323,8 @@ class ref_element{
     
         CArray <real_t> ref_patch_basis_;
         CArray <real_t> ref_patch_gradient_;  // grad basis at patch
+    
+        CArray <real_t> ref_cell_basis_;
         CArray <real_t> ref_cell_gradient_;   // grad basis at cell
     
         // Num basis functions
@@ -322,7 +334,7 @@ class ref_element{
         CArray <real_t> ref_nodal_basis_;
     
     public:
-        // DANIELLOOK
+    
         // Gradient of basis
         CArray <real_t> ref_nodal_gradient_;
         //real_t * ref_nodal_gradient_;
@@ -367,13 +379,15 @@ class ref_element{
         real_t &ref_nodal_gradient(int node_rid, int basis_id, int dim) const;
 
         real_t &ref_nodal_basis(int node_rid, int basis_id) const;
-        // Nodal jacobian and determinant should be in mesh class, I think....
-        //real_t ref_nodal_jacobian(int node_rid, int basis_id, int dim) const;
         
         int& cell_lid_in_zone(int zone_lid, int cell_lid) const;
     
         real_t ref_cell_positions(int cell_rid, int dim) const;
-        real_t ref_cell_g_weights(int cell_rid) const;  // this one
+        real_t ref_cell_g_weights(int cell_rid) const;
+        real_t ref_cell_basis(int cell_rid, int basis_id) const;
+        real_t ref_cell_gradient(int cell_rid, int basis_id, int dim) const;
+    
+        real_t cell_side_unit_normals(int side_rlid, int dim) const;
 
         int& cell_nodes_in_elem(int cell_lid, int node_lid) const;
     
@@ -385,10 +399,8 @@ class ref_element{
     
         real_t ref_patch_positions(int patch_rid, int dim) const;
         real_t ref_patch_g_weights(int patch_rid) const;
-    
         real_t ref_patch_basis(int patch_rid, int basis_id) const;
         real_t ref_patch_gradient(int patch_rid, int basis_id, int dim) const;
-        real_t ref_cell_gradient(int cell_rid, int basis_id, int dim) const;
     
         int vert_node_map(int vert_lid);
 

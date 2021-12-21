@@ -72,7 +72,7 @@ void smooth_cells();
 
 void smooth_element();
 
-void get_gauss_pt_jacobian();
+
 
 //==============================================================================
 //   Mesh Variables
@@ -179,14 +179,116 @@ int main(int argc, char *argv[]){
     std::cout << "Before boundary  " << std::endl;
     apply_boundary();
 
-    get_gauss_pt_jacobian(mesh, ref_elem);
-
+    get_gauss_pt_jacobian(mesh, ref_elem); // gauss points at nodes
+    get_gauss_patch_pt_jacobian(mesh, ref_elem);  // gauss_patch points
+    get_gauss_cell_pt_jacobian(mesh, ref_elem);   // gauss_cell points
+    
     dt = 0.001;
 
     ensight();
 
+    
+    // a test of patch geometry
+    // Zero = oint (s * jJ^-1 dlambda)  this is surface area conservation
+    std::cout << "\n";
+    std::cout << "testing surface_patch area conservation: \n";
+    for (int elem_gid=0; elem_gid<mesh.num_elems(); elem_gid++){
+        
+        real_t surf_tally[3] = {0.0, 0.0, 0.0};
+        
+        CArray <real_t> side_area_normals(mesh.num_cells_in_elem(), 6, mesh.num_dim());
+        
+        for (int cell_lid=0; cell_lid<mesh.num_cells_in_elem(); cell_lid++){
+            for (int side_rlid=0; side_rlid<6; side_rlid++){
+        
+                int patch_rlid = side_rlid; // the ref_local_id is the same
+                
+                // get the gauss_patch refence id for this side
+                int gauss_patch_rid = ref_elem.ref_patches_in_cell(cell_lid, patch_rlid);
+                
+                // get the guass_patch weight
+                real_t w_gauss_patch = ref_elem.ref_patch_g_weights(gauss_patch_rid);
+        
+                // get the gauss_patch global id, it is used for the Jacobian matrix and related
+                int gauss_patch_gid = mesh.gauss_patch_pt_in_elem(elem_gid, gauss_patch_rid);
+            
+                // print J and det(J)
+                //std::cout << " det(J) = " << mesh.gauss_patch_pt_det_j(gauss_patch_gid) << std::endl;
+                //for (int dim_i=0; dim_i<mesh.num_dim(); dim_i++){
+                //    for (int dim_j=0; dim_j<mesh.num_dim(); dim_j++){
+                //        if (fabs(mesh.gauss_patch_pt_jacobian_inverse(gauss_patch_gid, dim_i, dim_j)) <= 1.0E-13 ){
+                //            mesh.gauss_patch_pt_jacobian_inverse(gauss_patch_gid, dim_i, dim_j) = 0.0;
+                //        }
+                //        std::cout << mesh.gauss_patch_pt_jacobian_inverse(gauss_patch_gid, dim_i, dim_j) << " , ";
+                //    }
+                //}
+                //std::cout << "\n";
+                
+                for (int dim_i=0; dim_i<mesh.num_dim(); dim_i++){
+                    
+                    side_area_normals(cell_lid, side_rlid, dim_i) = 0.0;
+                    
+                    for (int dim_j=0; dim_j<mesh.num_dim(); dim_j++){
+                        
+                        side_area_normals(cell_lid, side_rlid, dim_i) +=
+                            ref_elem.cell_side_unit_normals(side_rlid, dim_j)*
+                            mesh.gauss_patch_pt_jacobian_inverse(gauss_patch_gid, dim_j, dim_i)*
+                            mesh.gauss_patch_pt_det_j(gauss_patch_gid)*w_gauss_patch;
+                        
+                    } // end dim_j
+                    
+                    surf_tally[dim_i] += side_area_normals(cell_lid, side_rlid, dim_i); // conservation check
+
+                } // end dim_i
+
+            } // end sides
+            
+        } // end cells
+        
+        // conservation check, must be equal to machine zero to conserverve
+        std::cout   << " surf_tally_x = " << surf_tally[0] << ",  "
+                    << " surf_tally_y = " << surf_tally[1] << ",  "
+                    << " surf_tally_z = " << surf_tally[2] << std::endl;
+        
+    } // end elems
 
 
+    // volume = int( j dOmega)
+    std::cout << "\n";
+    std::cout << "testing volume integration over cells: \n";
+    for (int elem_gid=0; elem_gid<mesh.num_elems(); elem_gid++){
+        
+        real_t vol_elem = 0.0;
+        for (int cell_lid=0; cell_lid<mesh.num_cells_in_elem(); cell_lid++){
+            
+            int cell_rid = cell_lid;  // the reference index is the same as the local index
+            
+            // get the global cell index
+            int cell_gid = mesh.cells_in_elem(elem_gid, cell_lid);
+            
+            // get the guass_cell weight at the corresponding reference cell point
+            real_t w_gauss_cell = ref_elem.ref_cell_g_weights(cell_rid);
+            
+            vol_elem += mesh.gauss_cell_pt_det_j(cell_gid)*w_gauss_cell;
+            
+            // print J and det(J)
+            //std::cout << " det(J) = " << mesh.gauss_patch_pt_det_j(gauss_patch_gid) << std::endl;
+            //for (int dim_i=0; dim_i<mesh.num_dim(); dim_i++){
+            //    for (int dim_j=0; dim_j<mesh.num_dim(); dim_j++){
+            //        if (fabs(mesh.gauss_cell_pt_jacobian_inverse(cell_gid, dim_i, dim_j)) <= 1.0E-13 ){
+            //            mesh.gauss_cell_pt_jacobian_inverse(cell_gid, dim_i, dim_j) = 0.0;
+            //        }
+            //        std::cout << mesh.gauss_cell_pt_jacobian_inverse(cell_gid, dim_i, dim_j) << " , ";
+            //    }
+            //}
+            //std::cout << "\n";
+            
+        } // end for cell
+        std::cout   << " volume of the element = " << vol_elem << std::endl;
+        
+    } // end elems
+    
+    
     for (cycle = 1; cycle <= cycle_stop; cycle++) {
 
         // stop calculation if flag
@@ -370,7 +472,7 @@ void read_mesh(char *MESH){
     std::cout<<"Before initial mesh connectivity"<<std::endl;
 
     if(num_elem < 0) std::cout << "ERROR, NO ELEMENTS IN MESH" << std::endl;
-    if(num_elem > 1) {
+    if(num_elem > 0) {
 
         // -- NODE TO CELL CONNECTIVITY -- //
         init_mesh.build_node_cell_connectivity(); 

@@ -36,13 +36,102 @@ void get_gauss_pt_jacobian(swage::mesh_t& mesh, elements::ref_element& ref_elem)
                 } // end dim_j
             } // end dim_i
 
-            mesh.gauss_pt_det_j(gauss_gid) = mesh.gauss_pt_jacobian(gauss_gid, 0, 0) * (mesh.gauss_pt_jacobian(gauss_gid, 1, 1) * mesh.gauss_pt_jacobian(gauss_gid, 2, 2) - mesh.gauss_pt_jacobian(gauss_gid, 2, 1) * mesh.gauss_pt_jacobian(gauss_gid, 1, 2)) -
-                       mesh.gauss_pt_jacobian(gauss_gid, 0, 1) * (mesh.gauss_pt_jacobian(gauss_gid, 1, 0) * mesh.gauss_pt_jacobian(gauss_gid, 2, 2) - mesh.gauss_pt_jacobian(gauss_gid, 1, 2) * mesh.gauss_pt_jacobian(gauss_gid, 2, 0)) +
-                       mesh.gauss_pt_jacobian(gauss_gid, 0, 2) * (mesh.gauss_pt_jacobian(gauss_gid, 1, 0) * mesh.gauss_pt_jacobian(gauss_gid, 2, 1) - mesh.gauss_pt_jacobian(gauss_gid, 1, 1) * mesh.gauss_pt_jacobian(gauss_gid, 2, 0)); // * ref_elem.ref_node_g_weights(gauss_lid);
+            mesh.gauss_pt_det_j(gauss_gid) =
+                mesh.gauss_pt_jacobian(gauss_gid, 0, 0) * (mesh.gauss_pt_jacobian(gauss_gid, 1, 1) * mesh.gauss_pt_jacobian(gauss_gid, 2, 2) - mesh.gauss_pt_jacobian(gauss_gid, 2, 1) * mesh.gauss_pt_jacobian(gauss_gid, 1, 2)) -
+                mesh.gauss_pt_jacobian(gauss_gid, 0, 1) * (mesh.gauss_pt_jacobian(gauss_gid, 1, 0) * mesh.gauss_pt_jacobian(gauss_gid, 2, 2) - mesh.gauss_pt_jacobian(gauss_gid, 1, 2) * mesh.gauss_pt_jacobian(gauss_gid, 2, 0)) +
+                mesh.gauss_pt_jacobian(gauss_gid, 0, 2) * (mesh.gauss_pt_jacobian(gauss_gid, 1, 0) * mesh.gauss_pt_jacobian(gauss_gid, 2, 1) - mesh.gauss_pt_jacobian(gauss_gid, 1, 1) * mesh.gauss_pt_jacobian(gauss_gid, 2, 0)); // * ref_elem.ref_node_g_weights(gauss_lid);
             
             auto J = ViewCArray <real_t> (&mesh.gauss_pt_jacobian(gauss_gid, 0, 0), mesh.num_dim(), mesh.num_dim());
             auto J_inv = ViewCArray <real_t> (&mesh.gauss_pt_jacobian_inverse(gauss_gid, 0, 0), mesh.num_dim(), mesh.num_dim());
 
+            elements::mat_inverse(J_inv, J);
+            
+        } // end loop over gauss in element
+    } // end loop over elements
+} // end subroutine
+
+
+void get_gauss_patch_pt_jacobian(swage::mesh_t& mesh, elements::ref_element& ref_elem){
+    
+    // loop over the mesh
+    for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
+        
+        for(int patch_gauss_lid = 0; patch_gauss_lid < mesh.num_patches_in_elem(); patch_gauss_lid++){
+            
+            int gauss_patch_gid = mesh.gauss_patch_pt_in_elem(elem_gid, patch_gauss_lid);
+            
+            for(int dim_i = 0; dim_i < mesh.num_dim(); dim_i++){
+                for(int dim_j = 0; dim_j < mesh.num_dim(); dim_j++){
+                    
+                    mesh.gauss_patch_pt_jacobian(gauss_patch_gid, dim_i, dim_j) = 0.0;
+                    
+                    // Sum over the basis functions and vertices where they are defined
+                    for(int vert_id = 0; vert_id < ref_elem.num_basis(); vert_id++){
+                        
+                        int node_lid = ref_elem.vert_node_map(vert_id);
+                        
+                        int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                        
+                        mesh.gauss_patch_pt_jacobian(gauss_patch_gid, dim_i, dim_j) +=
+                            ref_elem.ref_patch_gradient(patch_gauss_lid, vert_id, dim_j) * mesh.node_coords(node_gid , dim_i);
+                        
+                    }// end loop over basis
+                } // end dim_j
+            } // end dim_i
+            
+            mesh.gauss_patch_pt_det_j(gauss_patch_gid) =
+                mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 0, 0) * (mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 1, 1) * mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 2, 2) - mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 2, 1) * mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 1, 2)) -
+                mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 0, 1) * (mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 1, 0) * mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 2, 2) - mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 1, 2) * mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 2, 0)) +
+                mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 0, 2) * (mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 1, 0) * mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 2, 1) - mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 1, 1) * mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 2, 0));
+            
+            auto J = ViewCArray <real_t> (&mesh.gauss_patch_pt_jacobian(gauss_patch_gid, 0, 0), mesh.num_dim(), mesh.num_dim());
+            auto J_inv = ViewCArray <real_t> (&mesh.gauss_patch_pt_jacobian_inverse(gauss_patch_gid, 0, 0), mesh.num_dim(), mesh.num_dim());
+            
+            elements::mat_inverse(J_inv, J);
+            
+        } // end loop over gauss in element
+    } // end loop over elements
+} // end subroutine
+
+
+void get_gauss_cell_pt_jacobian(swage::mesh_t& mesh, elements::ref_element& ref_elem){
+    
+    // loop over the mesh
+    for(int elem_gid = 0; elem_gid < mesh.num_elems(); elem_gid++){
+        
+        for(int cell_lid = 0; cell_lid < mesh.num_cells_in_elem(); cell_lid++){
+            
+            int cell_gid = mesh.cells_in_elem(elem_gid, cell_lid);
+            
+            int gauss_cell_gid = cell_gid;  // the global index of the gauss_cell point is the same as the cell
+            
+            for(int dim_i = 0; dim_i < mesh.num_dim(); dim_i++){
+                for(int dim_j = 0; dim_j < mesh.num_dim(); dim_j++){
+                    
+                    mesh.gauss_cell_pt_jacobian(gauss_cell_gid, dim_i, dim_j) = 0.0;
+                    
+                    // Sum over the basis functions and vertices where they are defined
+                    for(int vert_id = 0; vert_id < ref_elem.num_basis(); vert_id++){
+                        
+                        int node_lid = ref_elem.vert_node_map(vert_id);
+                        
+                        int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                        
+                        mesh.gauss_cell_pt_jacobian(gauss_cell_gid, dim_i, dim_j) +=
+                            ref_elem.ref_cell_gradient(cell_lid, vert_id, dim_j) * mesh.node_coords(node_gid , dim_i);
+                        
+                    }// end loop over basis
+                } // end dim_j
+            } // end dim_i
+            
+            mesh.gauss_cell_pt_det_j(gauss_cell_gid) =
+                mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 0, 0) * (mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 1, 1) * mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 2, 2) - mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 2, 1) * mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 1, 2)) -
+                mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 0, 1) * (mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 1, 0) * mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 2, 2) - mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 1, 2) * mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 2, 0)) +
+                mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 0, 2) * (mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 1, 0) * mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 2, 1) - mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 1, 1) * mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 2, 0));
+            
+            auto J = ViewCArray <real_t> (&mesh.gauss_cell_pt_jacobian(gauss_cell_gid, 0, 0), mesh.num_dim(), mesh.num_dim());
+            auto J_inv = ViewCArray <real_t> (&mesh.gauss_cell_pt_jacobian_inverse(gauss_cell_gid, 0, 0), mesh.num_dim(), mesh.num_dim());
+            
             elements::mat_inverse(J_inv, J);
             
         } // end loop over gauss in element

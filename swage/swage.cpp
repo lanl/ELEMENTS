@@ -422,6 +422,10 @@ void mesh_t::init_element(int e_order, int dim, int num_elem){
     elems_in_elem_list_start_ = CArray <int> (num_elem_ + 1);
 
     // Zones in element is a purely local index space in ref_elem
+    
+    
+    num_patches_in_elem_ = (num_cells_1d +1) * (num_cells_1d *num_cells_1d )*3;
+    num_g_patch_pts_in_elem_ = num_patches_in_elem_;
 
 }
 
@@ -498,6 +502,37 @@ void mesh_t::init_gauss_pts (){
     gauss_pt_jacobian_ = CArray <real_t> (num_g_pts_, num_dim_, num_dim_);
     gauss_pt_jacobian_inverse_ = CArray <real_t> (num_g_pts_, num_dim_, num_dim_);
     gauss_pt_det_j_ = CArray <real_t> (num_g_pts_);
+    
+}
+    
+/**************************************************************************************//**
+*  mesh_t::init_gauss_patch_pts allocates memeory for the patch quadrature points and
+*  the geometric entitities associated with them.  Patch index space must be built first
+*****************************************************************************************/
+void mesh_t::init_gauss_patch_pts (){
+        
+    // Index maps
+    num_g_patch_pts_ = num_elem_*num_g_patch_pts_in_elem_;
+    
+    // geometric state
+    gauss_patch_pt_jacobian_ = CArray <real_t> (num_g_patch_pts_, num_dim_, num_dim_);
+    gauss_patch_pt_jacobian_inverse_ = CArray <real_t> (num_g_patch_pts_, num_dim_, num_dim_);
+    gauss_patch_pt_det_j_ = CArray <real_t> (num_g_patch_pts_);
+    
+}
+
+
+/**************************************************************************************//**
+*  mesh_t::init_gauss_cell_pts allocates memeory for the cell quadrature points and
+*  the geometric entitities associated with them.
+*****************************************************************************************/
+void mesh_t::init_gauss_cell_pts (){
+    
+    // geometric state
+    gauss_cell_pt_jacobian_ = CArray <real_t> (num_cells_, num_dim_, num_dim_);
+    gauss_cell_pt_jacobian_inverse_ = CArray <real_t> (num_cells_, num_dim_, num_dim_);
+    gauss_cell_pt_det_j_ = CArray <real_t> (num_cells_);
+     
 }
 
 
@@ -599,6 +634,15 @@ int mesh_t::num_cells_in_zone () const
     return num_cells_in_zone_;
 }
 
+int mesh_t::patches_in_elem(int elem_gid, int patch_lid) const
+{
+    return patches_in_elem_(elem_gid, patch_lid);
+};
+    
+int mesh_t::num_patches_in_elem() const
+{
+    return num_patches_in_elem_;
+};
 
 // ---- CELLS ---- //
 
@@ -731,6 +775,18 @@ int mesh_t::num_gauss_pts () const
 {
     return num_g_pts_;
 }
+    
+// return number of gauss patch points in mesh
+int mesh_t::num_gauss_patch_pts () const
+{
+    return num_g_patch_pts_;
+}
+    
+// return number of gauss cell points in mesh
+int mesh_t::num_gauss_cell_pts () const
+{
+    return num_g_cell_pts_;
+}
 
 // return gauss to node map
 int& mesh_t::node_in_gauss (int gauss_gid) const
@@ -740,12 +796,17 @@ int& mesh_t::node_in_gauss (int gauss_gid) const
 }
 
 // return gauss in element map (internal structured grid)
-int& mesh_t::gauss_in_elem (int elem_gid, int gauss_lid) 
+int mesh_t::gauss_in_elem (int elem_gid, int gauss_lid) const
 {   
-    indx_ = elem_gid*num_g_pts_in_elem_ + gauss_lid;
+    int index = elem_gid*num_g_pts_in_elem_ + gauss_lid;
     
-    return indx_;
-}
+    return index;
+};
+    
+int mesh_t::gauss_patch_pt_in_elem (int elem_gid, int gauss_patch_lid) const
+{
+    return elem_gid*num_g_patch_pts_in_elem_ + gauss_patch_lid;
+};
 
 
 
@@ -924,7 +985,7 @@ real_t& mesh_t::gauss_pt_jacobian(int gauss_gid, int i, int j) const
     return gauss_pt_jacobian_(gauss_gid, i, j);
 }
 
-
+// return inverse of the Jacobian at quadrature point
 real_t& mesh_t::gauss_pt_jacobian_inverse(int gauss_gid, int i, int j) const
 {
     return gauss_pt_jacobian_inverse_(gauss_gid, i, j);
@@ -936,6 +997,47 @@ real_t& mesh_t::gauss_pt_det_j(int gauss_gid) const
     return gauss_pt_det_j_(gauss_gid);
 }
 
+
+// --- patch index space
+// return jacobian at patch quadrature point
+real_t& mesh_t::gauss_patch_pt_jacobian(int gauss_patch_gid, int i, int j) const
+{
+    return gauss_patch_pt_jacobian_(gauss_patch_gid, i, j);
+}
+
+// return inverse of the Jacobian at patch quadrature point
+real_t& mesh_t::gauss_patch_pt_jacobian_inverse(int gauss_patch_gid, int i, int j) const
+{
+    return gauss_patch_pt_jacobian_inverse_(gauss_patch_gid, i, j);
+}
+
+// return determinant of jacobian at patch quadrature point
+real_t& mesh_t::gauss_patch_pt_det_j(int gauss_patch_gid) const
+{
+    return gauss_patch_pt_det_j_(gauss_patch_gid);
+}
+
+// --- cell index space
+// return jacobian at cell quadrature point
+real_t& mesh_t::gauss_cell_pt_jacobian(int gauss_cell_gid, int i, int j) const
+{
+    return gauss_cell_pt_jacobian_(gauss_cell_gid, i, j);
+}
+
+// return inverse of the Jacobian at cell quadrature point
+real_t& mesh_t::gauss_cell_pt_jacobian_inverse(int gauss_cell_gid, int i, int j) const
+{
+    return gauss_cell_pt_jacobian_inverse_(gauss_cell_gid, i, j);
+}
+
+// return determinant of jacobian at cell quadrature point
+real_t& mesh_t::gauss_cell_pt_det_j(int gauss_cell_gid) const
+{
+    return gauss_cell_pt_det_j_(gauss_cell_gid);
+}
+
+    
+    
 
 // ---- CORNERS ---- //
 
@@ -1056,6 +1158,7 @@ void mesh_t::build_node_cell_connectivity(){
             
         }  // end for this_point
     } // end for cell_gid
+    
 } // end of build_node_cell_connectivity
 
 
@@ -1249,6 +1352,8 @@ void mesh_t::build_cell_cell_connectivity(){
             
         } // end for i
     }// end for cell_gid
+    
+    
 } // end of build_cell_cell_connectivity
 
 
@@ -1533,6 +1638,9 @@ void mesh_t::build_patch_connectivity(){
     } // end for cell_gid
     
     num_sides_ = side_gid; // save the total number of sides in the mesh
+    
+    mesh.init_gauss_patch_pts();  // build the patch quadrature point space
+    mesh.init_gauss_cell_pts();   // build the cell quadrature point space
     
 } // end of build patches
 

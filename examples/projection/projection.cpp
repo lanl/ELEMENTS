@@ -1,7 +1,7 @@
-#include "elements.h"
-#include "vtk_io.h"
-#include "error.h"
-#include "common.h"
+#include "element_types/elements.h"
+#include "io/vtk_io.h"
+#include "common/error.h"
+#include "common/common.h"
 
 void project_function_lagrange(
     std::function<Real(Real, Real, Real)> func, 

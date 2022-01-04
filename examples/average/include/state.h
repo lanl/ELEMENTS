@@ -1,9 +1,11 @@
 #ifndef STATE_H
 #define STATE_H  
 
-#include "utilities.h"
+#include "geometry/geometry.h"
+#include "common/utilities.h"
+
+
 #include "matar.h"
-#include "geometry.h"
 
 using namespace utils;
 

@@ -1,17 +1,19 @@
 /* input.c */                                                             
 
+#include "state.h"
+#include "header.h"
+
+
+#include "element_types/elements.h"
+#include "swage/swage.h"
+#include "common/utilities.h"
+
+
 #include <string.h>
 #include <sys/stat.h>
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
-
-
-#include "utilities.h"
-#include "state.h"
-#include "header.h"
-#include "elements.h"
-#include "swage.h"
 
 using namespace utils;
 

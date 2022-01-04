@@ -1,11 +1,11 @@
-#include "lagrange_element.h"
-#include "legendre_element.h"
-#include "legendre_polynomials.h"
-#include "elements.h"
-#include "matar_blas_lapack_interface.h"
-#include "vtk_io.h"
-#include "error.h"
-#include "common.h"
+#include "element_types/lagrange_element.h"
+#include "element_types/legendre_element.h"
+#include "element_types/legendre_polynomials.h"
+#include "element_types/elements.h"
+#include "io/vtk_io.h"
+#include "common/matar_blas_lapack_interface.h"
+#include "common/error.h"
+#include "common/common.h"
 
 #include <functional>
 

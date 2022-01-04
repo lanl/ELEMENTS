@@ -1,5 +1,5 @@
-#include "lagrange_polynomials.h"
-#include "point_distributions.h"
+#include "element_types/lagrange_polynomials.h"
+#include "element_types/point_distributions.h"
 
 #include <cstdlib>   // rand, RAND_MAX
 #include <ctime>     // time

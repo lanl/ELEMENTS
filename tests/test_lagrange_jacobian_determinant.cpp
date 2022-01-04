@@ -1,4 +1,4 @@
-#include "lagrange_polynomials.h"
+#include "element_types/lagrange_polynomials.h"
 
 #include <iostream>
 #include <iomanip>

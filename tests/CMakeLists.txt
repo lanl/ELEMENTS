@@ -8,6 +8,7 @@ target_link_libraries(
   slam
 )
 
+
 # Test Lagrange polynomials
 add_executable(
   test_lagrange_polynomials
@@ -76,3 +77,15 @@ if (ENABLE_BLAS_LAPACK)
     ${LAPACK_LIBRARIES}
   )
 endif()
+
+
+# GoogleTest example
+add_executable(
+  googletest_example
+  googletest_example.cpp
+)
+target_link_libraries(
+  googletest_example
+  elements
+  gtest
+)

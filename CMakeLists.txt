@@ -52,57 +52,49 @@ if (ENABLE_VTK)
   find_package(VTK REQUIRED NO_MODULE)
 endif()
 
-################################################################################
-# Build organization
-################################################################################
 # MATAR submodule
 # (Note: the way the MATAR submodule is handled may need to change in the
 # future. Currently, it is deployed as a header-only library, which is why it
-# seemed sufficient to simply include the MATAR header. However, the
-# requirements of linking Kokkos and other parts of Trilinos may change this.
-# Please update this as needed.)
-add_subdirectory(matar)
-include_directories(matar/src)
+# is sufficient to simply include the MATAR header. However, the requirements
+# of linking Kokkos and other parts of Trilinos may change this.  Please update
+# this as needed.)
+add_subdirectory(submodules/matar)
+include_directories(submodules/matar/src)
 
+# GoogleTest submodule
+add_subdirectory(submodules/googletest)
+
+################################################################################
+# Build
+################################################################################
 # Includes
-include_directories(common)
-include_directories(elements)
-include_directories(geometry)
-include_directories(slam)
-include_directories(swage)
-include_directories(io)
+include_directories(include)
 
-# Libraries
-add_subdirectory(common)
-add_subdirectory(elements)
-add_subdirectory(geometry)
-add_subdirectory(slam)
-add_subdirectory(swage)
-add_subdirectory(io)
+# Source
+add_subdirectory(src)
 
-# Tests
+# Tests and examples
 add_subdirectory(tests)
-
-# Examples
 add_subdirectory(examples)
 
-# mesh tools
-add_subdirectory(mesh_tools)
-
 # Install headers in include/ subdirectory of the specified install directory
-# (Note: This is an inelegant way of installing the headers. Resursing through
-# subdirectories looking for anything that matches the pattern "*.h" is
-# indiscriminate, and the resulting include/ directory isn't affected by
-# distclean. If there's a better way to do this, please introduce it here.)
-file(GLOB_RECURSE ALL_HEADERS *.h)
-install(FILES ${ALL_HEADERS} DESTINATION include)
+install(
+  DIRECTORY include/ 
+  DESTINATION include
+  FILES_MATCHING PATTERN "*.h"
+)
 
 # Install libraries in lib/ subdirectory of the specified install directory
-install(TARGETS elements DESTINATION lib)
-install(TARGETS geometry DESTINATION lib)
-install(TARGETS slam DESTINATION lib)
-install(TARGETS swage DESTINATION lib)
+install(
+  TARGETS 
+    common
+    elements 
+    geometry 
+    slam 
+    swage
+  DESTINATION 
+    lib
+)
 if (ENABLE_VTK AND VTK_FOUND)
   install(TARGETS swage2vtk DESTINATION lib)
 endif()
-install(TARGETS common DESTINATION lib)

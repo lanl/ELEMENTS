@@ -1,7 +1,7 @@
-#include "lagrange_element.h"
-#include "point_distributions.h"
-#include "vtk_io.h"
-#include "common.h"
+#include "element_types/lagrange_element.h"
+#include "element_types/point_distributions.h"
+#include "io/vtk_io.h"
+#include "common/common.h"
 
 void create_annular_mesh(int elem_order, SwageMesh &mesh) {
   int Nd  = 3;

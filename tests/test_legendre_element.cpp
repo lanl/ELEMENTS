@@ -1,5 +1,5 @@
-#include "legendre_element.h"
-#include "point_distributions.h"
+#include "element_types/legendre_element.h"
+#include "element_types/point_distributions.h"
 
 #include <cstdlib>   // rand, RAND_MAX
 #include <ctime>     // time

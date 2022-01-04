@@ -37,6 +37,15 @@ num_cells in element = (p_order*2)^3
 
 */
 
+#include "header.h"
+#include "state.h"
+
+
+#include "geometry/geometry.h"
+#include "common/utilities.h"
+
+
+#include "matar.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -44,12 +53,6 @@ num_cells in element = (p_order*2)^3
 #include <math.h>  // fmin, fmax, abs note: fminl is long
 #include <sys/stat.h>
 #include <cstdlib>  // for killing the code with std::exit
-
-#include "geometry.h"
-#include "matar.h"
-#include "utilities.h"
-#include "header.h"
-#include "state.h"
 
 
 void read_mesh(char *MESH);

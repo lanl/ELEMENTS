@@ -1,5 +1,5 @@
-#include "common.h"
-#include "gauss_jacobi_quadrature.h"
+#include "element_types/gauss_jacobi_quadrature.h"
+#include "common/common.h"
 
 #include <iostream>
 #include <iomanip>

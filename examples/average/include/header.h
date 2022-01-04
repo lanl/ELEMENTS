@@ -1,9 +1,11 @@
 #ifndef HEADER_H
 #define HEADER_H  
 
-#include "utilities.h"
 #include "state.h"
-#include "geometry.h"
+
+
+#include "geometry/geometry.h"
+#include "common/utilities.h"
 
 using namespace utils;
 

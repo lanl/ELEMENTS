@@ -19,7 +19,7 @@ The complication is that Sphinx cannot parse C++ source directly, so we must use
 How to add a page like this one?
 --------------------------------
 1. Create a new reStructuredText file in the ``docs/`` directory.
-2. Add the file name to the list of files under ``Contents:`` in the ``docs/index.rst`` file.
+2. Add the file name to the list of files under ``Contents:`` in the ``docs/sphinx/index.rst`` file.
 3. Add the file to the list of files tracked in the ``docs/CMakeLists.txt`` file (beneath the ``DEPENDS`` keyword in the ``add_custom_command`` function in the Sphinx section of the file).
 4. Write the page using reStructuredText.
 

@@ -26,17 +26,17 @@ file(GLOB_RECURSE DOC_HEADERS ../include/*.h)
 
 # Set up variables for Doxygen documentation generation
 set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/include)
-set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/doxygen)
+set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
 
 # Replace the placeholders in the Doxygen configuration file template with the
 # values of the variables defined above
-set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile) 
+set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxygen/Doxyfile.in)
+set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/doxygen/Doxyfile) 
 configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
 
 # Make the output directory (Doxygen won't do so automatically)
-file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR})
+file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}/doxygen)
 
 # Add rule for running the Doxygen command. Only regenerate Doxygen when the
 # Doxyfile or documented headers change
@@ -57,8 +57,8 @@ add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
 # Sphinx with Breathe
 ################################################################################
 # Set up variables for Sphinx documentation generation
-set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
-set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
+set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/sphinx)
+set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR})
 set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
 
 # Add rule for running the Sphinx command. Only regenerate Sphinx when:
@@ -75,16 +75,16 @@ add_custom_command(
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   DEPENDS
     # Other docs files you want to track should go here (or in some variable)
-    ${CMAKE_CURRENT_SOURCE_DIR}/index.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/how_to_install.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/how_to_use.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/elements.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/geometry.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/matar.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/slam.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/swage.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/examples.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/how_to_document.rst
+    ${SPHINX_SOURCE}/index.rst
+    ${SPHINX_SOURCE}/how_to_install.rst
+    ${SPHINX_SOURCE}/how_to_use.rst
+    ${SPHINX_SOURCE}/elements.rst
+    ${SPHINX_SOURCE}/geometry.rst
+    ${SPHINX_SOURCE}/matar.rst
+    ${SPHINX_SOURCE}/slam.rst
+    ${SPHINX_SOURCE}/swage.rst
+    ${SPHINX_SOURCE}/examples.rst
+    ${SPHINX_SOURCE}/how_to_document.rst
   ${DOXYGEN_INDEX_FILE}
   MAIN_DEPENDENCY ${SPHINX_SOURCE}/conf.py
   COMMENT "Generating documentation with Sphinx"

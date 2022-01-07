@@ -18,15 +18,15 @@ The **ELEMENTS** library includes the following sub-libraries:
 
 The **ELEMENTS** libary is designed to support Lagrangian (mesh moves) solid dynamics and mechanics codes, Eulerian (mesh is stationary) fluid dynamics codes, and many other code applications.  
 
-.. figure:: images/codeStructureELEMENTS.png
+.. figure:: ../images/codeStructureELEMENTS.png
 
    Code layout
 
-.. figure:: images/TaylorGreenVortex-t0.png
+.. figure:: ../images/TaylorGreenVortex-t0.png
 
    Lagrangian mesh
 
-.. figure:: images/TaylorGreenVortex-tEnd.png
+.. figure:: ../images/TaylorGreenVortex-tEnd.png
 
    Lagrangian mesh deformed with Taylor-Green vortex
 

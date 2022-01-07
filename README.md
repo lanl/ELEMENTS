@@ -10,7 +10,7 @@ The C++ **ELEMENTS** library is a collection of sub-libraries to support impleme
 
 # Getting started
 
-To learn more about ELEMENTS and how to get started using it, please see the [ELEMENTS documentation]().
+To learn more about ELEMENTS and how to get started using it, please see the [ELEMENTS documentation](https://lanl.github.io/ELEMENTS/).
 
 ## How to cite
 If you use the ELEMENTS library in your work, please cite the following in any pursuant research papers.

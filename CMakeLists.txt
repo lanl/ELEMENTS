@@ -18,6 +18,7 @@ set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${VECTOR_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 
+
 ################################################################################
 # Modules, macros, and packages
 ################################################################################
@@ -57,6 +58,8 @@ endif()
 # Optional Doxygen and Sphinx dependencies
 option(WITH_DOCS "Build the documentation locally" OFF)
 if (WITH_DOCS)
+  find_package(Doxygen REQUIRED)
+  find_package(Sphinx REQUIRED)
 endif()
 
 # MATAR submodule
@@ -70,6 +73,7 @@ include_directories(submodules/matar/src)
 
 # GoogleTest submodule
 add_subdirectory(submodules/googletest)
+
 
 ################################################################################
 # Build

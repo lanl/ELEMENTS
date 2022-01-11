@@ -26,6 +26,10 @@ How to add a page like this one?
 How to write a page of reStructuredText?
 -----------------------------------------
 Please see the reStructuredText `primer <https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ on the Sphinx web site.
+Also, when editing the reStructuredText source for this project's documentation, please:
+
+* put each sentence on a new line, to keep the "diffs" sensible; and
+* use a spell checker.
 
 How to include source documentation?
 ------------------------------------

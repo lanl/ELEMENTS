@@ -1,0 +1,5 @@
+This file apparently needs to be here in order to signal to GitHub that this repository is not using Jekyll to generate the site for GitHub pages.
+According to the following StackOverflow pages, it should remain here in the top level of the repository and not in the doc/ directory, even though the site is ostensibly served out of the docs/ directory.
+
+https://stackoverflow.com/questions/62626125/github-pages-with-sphinx-generated-documentation-not-displaying-html-correctly
+https://stackoverflow.com/questions/59486442/python-sphinx-css-not-working-on-github-pages

@@ -24,15 +24,16 @@
 # List the header files to be included in the documentation
 file(GLOB_RECURSE DOC_HEADERS ../include/*.h)
 
-# Set up variables for Doxygen documentation generation
-set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/include)
-set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
-set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
-
-# Replace the placeholders in the Doxygen configuration file template with the
-# values of the variables defined above
+# Set up variables for Doxygen template configuration file, configuration file,
+# and output html file
 set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxygen/Doxyfile.in)
 set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/doxygen/Doxyfile) 
+set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
+
+# Replace the placeholders in the template configuration file template with the
+# values of the variables defined below
+set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/include)
+set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/doxygen)
 configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
 
 # Make the output directory (Doxygen won't do so automatically)
@@ -58,7 +59,7 @@ add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
 ################################################################################
 # Set up variables for Sphinx documentation generation
 set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/sphinx)
-set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR})
+set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
 set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
 
 # Add rule for running the Sphinx command. Only regenerate Sphinx when:
@@ -94,5 +95,4 @@ add_custom_command(
 add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
 
 # Install the Sphinx documentation where specified by configuration
-include(GNUInstallDirs)
-install(DIRECTORY ${SPHINX_BUILD} DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(DIRECTORY ${SPHINX_BUILD}/ DESTINATION ${CMAKE_INSTALL_DOCDIR})

@@ -1,0 +1,291 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>SWAGE &#8212; ELEMENTS  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="examples.html" />
+    <link rel="prev" title="SLAM" href="slam.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="swage">
+<span id="id1"></span><h1>SWAGE<a class="headerlink" href="#swage" title="Permalink to this headline">¶</a></h1>
+<p>The <strong>SWAGE</strong> sub-library contains a large suite of mesh data structures, a rich set of index spaces for different geometric entities, and many connectivity arrays between the various index spaces.
+This library supports both unstructured linear and arbitrary-order meshes.
+<strong>SWAGE</strong> is designed to support a diverse range of methods that arise in computational physics and engineering.</p>
+<figure class="align-default" id="id3">
+<img alt="_images/CurvyP3Mesh.png" src="_images/CurvyP3Mesh.png" />
+<figcaption>
+<p><span class="caption-text">A mesh with cubic serendipity elements</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<section id="id2">
+<h2>SWAGE<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>The <strong>sw</strong>ift L<strong>ag</strong>rangian to <strong>E</strong>ulerian (<strong>SWAGE</strong>) mesh library is very general and allows users to implement a large range of numerical methods on unstructured arbitrary-order 3D meshes.
+This library supports connectivity data structures and index spaces needed to implement either low-order or high-order numerical methods.
+<strong>SWAGE</strong> is designed to work with the <strong>elements</strong> library that contains e.g., quadrature sets, basis functions, Jacobian matrices, etc.
+The <strong>SWAGE</strong> mesh library has unique index spaces to support arbitrary-order Lagrangian material dynamics codes that solve the governing equations for motion on an arbitrary-order mesh that moves with the material.
+The <strong>SWAGE</strong> mesh library also allows code developers to create high-order Eulerian fluid dynamics codes using high-order meshes that are conformal to a curved boundary (e.g., a wing).
+<strong>SWAGE</strong> relies on the <strong>MATAR</strong> library to access multidimensional data and couples with the elements library inside the geometry library.</p>
+<figure class="align-default" id="id4">
+<img alt="_images/codeStructureSWAGE.png" src="_images/codeStructureSWAGE.png" />
+<figcaption>
+<p><span class="caption-text">SWAGE code structure</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="descriptions">
+<h2>Descriptions<a class="headerlink" href="#descriptions" title="Permalink to this headline">¶</a></h2>
+<p>The index spaces in <strong>SWAGE</strong> are:</p>
+<ul class="simple">
+<li><p>elements (the computational mesh is decomposed into non-overlapping elements)</p></li>
+<li><p>vertices (kinematic degrees of freedom for an element)</p></li>
+<li><p>nodes (a continuous space that coincides with the Lobatto point locations)</p></li>
+<li><p>gauss points (a discontinuous space that are the Lobatto point locations)</p></li>
+<li><p>sub-cells (a decomposition of an element using the nodes), abbreviated as cells</p></li>
+<li><p>sub-zones (a decomposition of an element using the vertices), abbreviated as zones</p></li>
+<li><p>surface (a surface of the element)</p></li>
+<li><p>patch (a portion of the element surface that coincides with the surface of a sub-cell)</p></li>
+<li><p>facet (a portion of a patch)</p></li>
+<li><p>corner (a corner of a sub-cell)</p></li>
+</ul>
+<p>Connectivity data structures exist to map from from an index to another index space (e.g., all nodes in an element) and to walk over neighboring mesh entities (e.g., all sub-cells around a sub-cell).
+The <strong>SWAGE</strong> library is stitched together with the elements library in the geometry library to support arbitrary-order meshes (i.e., elements with linear or curved edges) and diverse numerical schemes including continuous and discontinuous finite element methods, and finite volume methods.</p>
+<figure class="align-default" id="id5">
+<img alt="_images/Data-structures-ELEMENTS.png" src="_images/Data-structures-ELEMENTS.png" />
+<figcaption>
+<p><span class="caption-text">ELEMENTS data structures</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<section id="index-naming-conventions">
+<h3>Index naming conventions<a class="headerlink" href="#index-naming-conventions" title="Permalink to this headline">¶</a></h3>
+<p>The global index spaces for the mesh (but local to a rank) are denoted with a <code class="docutils literal notranslate"><span class="pre">gid</span></code>.
+The index spaces for the local mesh entities, relative to a <code class="docutils literal notranslate"><span class="pre">,</span> <span class="pre">are</span> <span class="pre">denoted</span> <span class="pre">with</span> <span class="pre">a</span> <span class="pre">``lid</span></code>.
+The index spaces in a reference element, which comes from the elements library and are not in <strong>SWAGE</strong>, are denoted with a <code class="docutils literal notranslate"><span class="pre">rid</span></code>.
+A local reference index, relative to a <code class="docutils literal notranslate"><span class="pre">rid</span></code>, is denoted with a <code class="docutils literal notranslate"><span class="pre">rlid</span></code>.</p>
+</section>
+<section id="connectivity-functions-naming-conventions">
+<h3>Connectivity functions naming conventions<a class="headerlink" href="#connectivity-functions-naming-conventions" title="Permalink to this headline">¶</a></h3>
+<p>The general form of all connectivity structures, in terms an arbitrary mesh entity, is</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">//</span> <span class="n">entity</span> <span class="ow">is</span> <span class="n">generic</span> <span class="k">for</span> <span class="n">illustrative</span> <span class="n">purposes</span> <span class="ow">and</span> <span class="n">can</span> <span class="n">be</span> <span class="n">cell</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">etc</span><span class="o">.</span><span class="p">,</span>
+<span class="o">//</span> <span class="n">likewise</span><span class="p">,</span> <span class="n">something</span> <span class="ow">is</span> <span class="n">generic</span> <span class="k">for</span> <span class="n">illustrative</span> <span class="n">purposes</span> <span class="ow">and</span> <span class="ow">is</span> <span class="n">some</span> <span class="n">mesh</span> <span class="n">entity</span>
+<span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">something_lid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">something_lid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_something_in_entity</span><span class="p">(</span><span class="n">entity_gid</span><span class="p">);</span> <span class="n">something_lid</span><span class="o">++</span><span class="p">){</span>
+   <span class="nb">int</span> <span class="n">something_gid</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">something_in_entity</span><span class="p">(</span><span class="n">entity_gid</span><span class="p">,</span> <span class="n">something_lid</span><span class="p">);</span>
+   <span class="o">//</span> <span class="o">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>To code to walk over all the elements in the mesh and then over all the sub-cells in the element would be</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">elem_gid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">elem_gid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_elems</span><span class="p">();</span> <span class="n">elem_gid</span><span class="o">++</span><span class="p">){</span>
+   <span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">cell_lid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">cell_lid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_cells_in_elem</span><span class="p">();</span> <span class="n">cell_lid</span><span class="o">++</span><span class="p">){</span>
+      <span class="nb">int</span> <span class="n">cell_gid</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cells_in_elem</span><span class="p">(</span><span class="n">elem_gid</span><span class="p">,</span> <span class="n">cell_lid</span><span class="p">);</span>  <span class="o">//</span> <span class="n">access</span> <span class="n">the</span> <span class="n">cell</span> <span class="n">mesh</span> <span class="n">index</span>
+      <span class="o">//</span> <span class="o">...</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Then, to walk over all the corners in a sub-cell or all the nodes in a sub-cell would be</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">elem_gid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">elem_gid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_elems</span><span class="p">();</span> <span class="n">elem_gid</span><span class="o">++</span><span class="p">){</span>
+   <span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">cell_lid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">cell_lid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_cells_in_elem</span><span class="p">();</span> <span class="n">cell_lid</span><span class="o">++</span><span class="p">){</span>
+      <span class="nb">int</span> <span class="n">cell_gid</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cells_in_elem</span><span class="p">(</span><span class="n">elem_gid</span><span class="p">,</span> <span class="n">cell_lid</span><span class="p">);</span>
+
+      <span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">node_lid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">node_lid</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">;</span> <span class="n">node_lid</span><span class="o">++</span><span class="p">){</span>
+         <span class="nb">int</span> <span class="n">node_gid</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes_in_cell</span><span class="p">(</span><span class="n">cell_gid</span><span class="p">,</span> <span class="n">node_lid</span><span class="p">);</span>  <span class="o">//</span> <span class="n">access</span> <span class="n">the</span> <span class="n">node</span> <span class="n">mesh</span> <span class="n">index</span>
+         <span class="nb">int</span> <span class="n">corner_gid</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">corners_in_cell</span><span class="p">(</span><span class="n">cell_gid</span><span class="p">,</span> <span class="n">node_lid</span><span class="p">);</span>  <span class="o">//</span> <span class="n">access</span> <span class="n">the</span> <span class="n">corner</span> <span class="n">mesh</span> <span class="n">index</span>
+         <span class="o">//</span> <span class="o">...</span>
+      <span class="p">}</span>
+
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Then, the code to walk over all the surface facets in a corner would be</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">elem_gid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">elem_gid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_elems</span><span class="p">();</span> <span class="n">elem_gid</span><span class="o">++</span><span class="p">){</span>
+   <span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">cell_lid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">cell_lid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_cells_in_elem</span><span class="p">();</span> <span class="n">cell_lid</span><span class="o">++</span><span class="p">){</span>
+      <span class="nb">int</span> <span class="n">cell_gid</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cells_in_elem</span><span class="p">(</span><span class="n">elem_gid</span><span class="p">,</span> <span class="n">cell_lid</span><span class="p">);</span>
+
+      <span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">node_lid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">node_lid</span> <span class="o">&lt;</span> <span class="mi">8</span><span class="p">;</span> <span class="n">node_lid</span><span class="o">++</span><span class="p">){</span>
+         <span class="nb">int</span> <span class="n">node_gid</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">nodes_in_cell</span><span class="p">(</span><span class="n">cell_gid</span><span class="p">,</span> <span class="n">node_lid</span><span class="p">);</span>  <span class="o">//</span> <span class="n">access</span> <span class="n">the</span> <span class="n">node</span> <span class="n">mesh</span> <span class="n">index</span>
+         <span class="nb">int</span> <span class="n">corner_gid</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">corners_in_cell</span><span class="p">(</span><span class="n">cell_gid</span><span class="p">,</span> <span class="n">node_lid</span><span class="p">);</span>  <span class="o">//</span> <span class="n">access</span> <span class="n">the</span> <span class="n">corner</span> <span class="n">mesh</span> <span class="n">index</span>
+
+         <span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">facet_lid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">facet_lid</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="n">facet_lid</span><span class="o">++</span><span class="p">){</span>
+            <span class="o">//</span> <span class="o">...</span>
+         <span class="p">}</span>
+
+      <span class="p">}</span>
+
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>There are many ways to walk over or access an index space.
+To just walk over all the nodes in the mesh, the code is</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">node_gid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">node_gid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">();</span> <span class="n">node_gid</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+   <span class="o">//</span> <span class="o">...</span>
+<span class="p">}</span> <span class="o">//</span> <span class="n">end</span> <span class="k">for</span> <span class="n">loop</span> <span class="n">over</span> <span class="n">nodes</span>
+</pre></div>
+</div>
+<p>Then, to walk over all the corners in a node would be</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">node_gid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">node_gid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_nodes</span><span class="p">();</span> <span class="n">node_gid</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+   <span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">corn_lid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">corn_lid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_corners_in_node</span><span class="p">(</span><span class="n">node_gid</span><span class="p">);</span> <span class="n">corn_lid</span><span class="o">++</span><span class="p">){</span>
+      <span class="nb">int</span> <span class="n">corner_gid</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">corners_in_node</span><span class="p">(</span><span class="n">node_gid</span><span class="p">,</span> <span class="n">corn_lid</span><span class="p">);</span>  <span class="o">//</span> <span class="n">access</span> <span class="n">the</span> <span class="n">corner</span> <span class="n">mesh</span> <span class="n">index</span>
+      <span class="o">//</span> <span class="o">...</span>
+   <span class="p">}</span>
+<span class="p">}</span> <span class="o">//</span> <span class="n">end</span> <span class="k">for</span> <span class="n">loop</span> <span class="n">over</span> <span class="n">nodes</span>
+</pre></div>
+</div>
+<p><strong>SWAGE</strong> supports unstructured meshes so the number of corners around a node can vary across the mesh.
+<strong>SWAGE</strong> offers many ways to access index neighbors.
+One example is accessing all neighboring cells to a cell</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">cell_gid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">cell_gid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_cells</span><span class="p">();</span> <span class="n">cell_gid</span><span class="o">++</span><span class="p">){</span>
+   <span class="k">for</span> <span class="p">(</span><span class="nb">int</span> <span class="n">neighbor_lid</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">neighbor_lid</span> <span class="o">&lt;</span> <span class="n">mesh</span><span class="o">.</span><span class="n">num_cells_in_cell</span><span class="p">(</span><span class="n">cell_gid</span><span class="p">);</span> <span class="n">neighbor_lid</span><span class="o">++</span><span class="p">){</span>
+      <span class="nb">int</span> <span class="n">neighbor_cell_gid</span> <span class="o">=</span> <span class="n">mesh</span><span class="o">.</span><span class="n">cells_in_cell</span><span class="p">(</span><span class="n">cell_gid</span><span class="p">,</span> <span class="n">neighbor_lid</span><span class="p">);</span>  <span class="o">//</span> <span class="n">Get</span> <span class="n">mesh</span> <span class="n">index</span> <span class="k">for</span> <span class="n">the</span> <span class="n">neighboring</span> <span class="n">cell</span>
+      <span class="o">//</span> <span class="o">...</span>
+   <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The data structures in <strong>SWAGE</strong> like <code class="docutils literal notranslate"><span class="pre">mesh.cells_in_cell(cell_gid,</span> <span class="pre">neighbor_lid)</span></code> and <code class="docutils literal notranslate"><span class="pre">mesh.corners_in_node(node_gid,</span> <span class="pre">corn_lid)</span></code> access the data in a contiguous manner to deliver optimal runtime performance.</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv45swage">
+<span id="_CPPv35swage"></span><span id="_CPPv25swage"></span><span class="target" id="namespaceswage"></span><span class="k"><span class="pre">namespace</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">swage</span></span></span><a class="headerlink" href="#_CPPv45swage" title="Permalink to this definition">¶</a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-functions">Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5swage20lobatto_nodes_1D_tmpER6CArrayI6real_tERKi">
+<span id="_CPPv3N5swage20lobatto_nodes_1D_tmpER6CArrayI6real_tERKi"></span><span id="_CPPv2N5swage20lobatto_nodes_1D_tmpER6CArrayI6real_tERKi"></span><span id="swage::lobatto_nodes_1D_tmp__CArray:real_t:R.iCR"></span><span class="target" id="swage_8h_1a94dd987540cfe0ceee72355a14ed1743"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">lobatto_nodes_1D_tmp</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">CArray</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">real_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">lob_nodes_1D</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">num</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5swage20lobatto_nodes_1D_tmpER6CArrayI6real_tERKi" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5swage11refine_meshER6mesh_tR6mesh_tKiKi">
+<span id="_CPPv3N5swage11refine_meshER6mesh_tR6mesh_tKiKi"></span><span id="_CPPv2N5swage11refine_meshER6mesh_tR6mesh_tKiKi"></span><span id="swage::refine_mesh__mesh_tR.mesh_tR.iC.iC"></span><span class="target" id="swage_8h_1ad4dbddc99c1ce9110de9f45c8b4eb78f"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">refine_mesh</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5swage6mesh_tE" title="swage::mesh_t"><span class="n"><span class="pre">mesh_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">init_mesh</span></span>, <a class="reference internal" href="#_CPPv4N5swage6mesh_tE" title="swage::mesh_t"><span class="n"><span class="pre">mesh_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">mesh</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">p_order</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">dim</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5swage11refine_meshER6mesh_tR6mesh_tKiKi" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5swage22refine_high_order_meshER6mesh_tR6mesh_t">
+<span id="_CPPv3N5swage22refine_high_order_meshER6mesh_tR6mesh_t"></span><span id="_CPPv2N5swage22refine_high_order_meshER6mesh_tR6mesh_t"></span><span id="swage::refine_high_order_mesh__mesh_tR.mesh_tR"></span><span class="target" id="swage_8h_1a0421da8678742cf373a1b04858d4a972"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">refine_high_order_mesh</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5swage6mesh_tE" title="swage::mesh_t"><span class="n"><span class="pre">mesh_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">input_mesh</span></span>, <a class="reference internal" href="#_CPPv4N5swage6mesh_tE" title="swage::mesh_t"><span class="n"><span class="pre">mesh_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">mesh</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5swage22refine_high_order_meshER6mesh_tR6mesh_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5swage30evaluate_jacobian_determinantsER6mesh_t">
+<span id="_CPPv3N5swage30evaluate_jacobian_determinantsER6mesh_t"></span><span id="_CPPv2N5swage30evaluate_jacobian_determinantsER6mesh_t"></span><span id="swage::evaluate_jacobian_determinants__mesh_tR"></span><span class="target" id="swage_8h_1a0563da7cc7f64d15db3df2a188d9dc77"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">evaluate_jacobian_determinants</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5swage6mesh_tE" title="swage::mesh_t"><span class="n"><span class="pre">mesh_t</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">mesh</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5swage30evaluate_jacobian_determinantsER6mesh_t" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4N5swage6mesh_tE">
+<span id="_CPPv3N5swage6mesh_tE"></span><span id="_CPPv2N5swage6mesh_tE"></span><span id="swage::mesh_t"></span><span class="target" id="classswage_1_1mesh__t"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">mesh_t</span></span></span><a class="headerlink" href="#_CPPv4N5swage6mesh_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ELEMENTS</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="how_to_install.html">How to install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_use.html">How to use ELEMENTS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="elements.html">elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="geometry.html">geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matar.html">MATAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slam.html">SLAM</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">SWAGE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_document.html">How to add to docs</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="slam.html" title="previous chapter">SLAM</a></li>
+      <li>Next: <a href="examples.html" title="next chapter">Examples</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, ELEMENTS developers.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/swage.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

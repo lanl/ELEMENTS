@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>How to use ELEMENTS &#8212; ELEMENTS  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="elements" href="elements.html" />
+    <link rel="prev" title="How to install" href="how_to_install.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="how-to-use-elements">
+<h1>How to use ELEMENTS<a class="headerlink" href="#how-to-use-elements" title="Permalink to this headline">¶</a></h1>
+<section id="using-elements-as-a-library-in-a-standalone-application">
+<h2>Using ELEMENTS as a library in a standalone application<a class="headerlink" href="#using-elements-as-a-library-in-a-standalone-application" title="Permalink to this headline">¶</a></h2>
+<p>If ELEMENTS is installed as a library via <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code>, using it is straightforward.
+In a cmake build system, something like the following will be necessary.
+In an appropriate <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> add the following.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Add the ELEMENTS include directory and find the appropriate libraries
+include_directories(${ELEMENTS_DIR}/include)
+find_library(COMMON_LIBRARY NAMES common HINTS ${ELEMENTS_DIR}/lib)
+find_library(ELEMENTS_LIBRARY NAMES elements HINTS ${ELEMENTS_DIR}/lib)
+find_library(GEOMETRY_LIBRARY NAMES geometry HINTS ${ELEMENTS_DIR}/lib)
+find_library(SWAGE_LIBRARY NAMES swage HINTS ${ELEMENTS_DIR}/lib)
+
+# Make includes and linking work
+# For an executable named &quot;Average&quot;
+add_executable(Average ${Average_SRC_CXX})
+target_link_libraries (Average ${COMMON_LIBRARY})
+target_link_libraries (Average ${ELEMENTS_LIBRARY})
+target_link_libraries (Average ${GEOMETRY_LIBRARY})
+target_link_libraries (Average ${SWAGE_LIBRARY})
+</pre></div>
+</div>
+<p>Then, when configuring CMake, add the option <code class="docutils literal notranslate"><span class="pre">-DELEMENTS_DIR=/path/to/ELEMENTS/</span></code>, where <code class="docutils literal notranslate"><span class="pre">/path/to/ELEMENTS</span></code> is placeholder for the path to the directory containing the <code class="docutils literal notranslate"><span class="pre">include/</span></code> and <code class="docutils literal notranslate"><span class="pre">lib/</span></code> directories installed for ELEMENTS.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ELEMENTS</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="how_to_install.html">How to install</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How to use ELEMENTS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="elements.html">elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="geometry.html">geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matar.html">MATAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slam.html">SLAM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="swage.html">SWAGE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_document.html">How to add to docs</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="how_to_install.html" title="previous chapter">How to install</a></li>
+      <li>Next: <a href="elements.html" title="next chapter">elements</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, ELEMENTS developers.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/how_to_use.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

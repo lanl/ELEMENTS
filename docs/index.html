@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>ELEMENTS documentation &#8212; ELEMENTS  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How to install" href="how_to_install.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="elements-documentation">
+<h1>ELEMENTS documentation<a class="headerlink" href="#elements-documentation" title="Permalink to this headline">¶</a></h1>
+<p>The <strong>ELEMENTS</strong> library, written in C++, is a collection of sub-libraries that support the implementation of a diverse range of numerical methods on low and high-order meshes.
+The <strong>ELEMENTS</strong> library can be used for research and development of both continuous and discontinuous finite element methods, as well as finite volume methods to solve a diverse range of partial differential equations.</p>
+<p>The <strong>ELEMENTS</strong> library includes the following sub-libraries:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="matar.html#matar"><span class="std std-ref">MATAR</span></a> contains the routines to support dense and sparse <strong>mat</strong>rices and <strong>ar</strong>rays;</p></li>
+<li><p><a class="reference internal" href="slam.html#slam"><span class="std std-ref">SLAM</span></a> contains the interfaces to <strong>s</strong>olvers, <strong>l</strong>inear <strong>a</strong>lgebra, and <strong>m</strong>athematical routines or external packages (e.g., Trilinos);</p></li>
+<li><p><a class="reference internal" href="elements.html#elements"><span class="std std-ref">elements</span></a> contains the mathematical functions to support a large range of elements types including serendipity elements;</p></li>
+<li><p><a class="reference internal" href="swage.html#swage"><span class="std std-ref">SWAGE</span></a> contains the routines and data-structures to support unstructured arbitrary-order 3D meshes that move or remain stationary; and</p></li>
+<li><p><a class="reference internal" href="geometry.html#geometry"><span class="std std-ref">geometry</span></a> combines together <strong>SWAGE</strong> and <strong>elements</strong>.</p></li>
+</ul>
+</div></blockquote>
+<p>The <strong>ELEMENTS</strong> libary is designed to support Lagrangian (mesh moves) solid dynamics and mechanics codes, Eulerian (mesh is stationary) fluid dynamics codes, and many other code applications.</p>
+<figure class="align-default" id="id1">
+<img alt="_images/codeStructureELEMENTS.png" src="_images/codeStructureELEMENTS.png" />
+<figcaption>
+<p><span class="caption-text">Code layout</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-default" id="id2">
+<img alt="_images/TaylorGreenVortex-t0.png" src="_images/TaylorGreenVortex-t0.png" />
+<figcaption>
+<p><span class="caption-text">Lagrangian mesh</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-default" id="id3">
+<img alt="_images/TaylorGreenVortex-tEnd.png" src="_images/TaylorGreenVortex-tEnd.png" />
+<figcaption>
+<p><span class="caption-text">Lagrangian mesh deformed with Taylor-Green vortex</span><a class="headerlink" href="#id3" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="how_to_install.html">How to install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_use.html">How to use ELEMENTS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="elements.html">elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="geometry.html">geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matar.html">MATAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slam.html">SLAM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="swage.html">SWAGE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_document.html">How to add to docs</a></li>
+</ul>
+</div>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">ELEMENTS</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="how_to_install.html">How to install</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_use.html">How to use ELEMENTS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="elements.html">elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="geometry.html">geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matar.html">MATAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slam.html">SLAM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="swage.html">SWAGE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_document.html">How to add to docs</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="how_to_install.html" title="next chapter">How to install</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2022, ELEMENTS developers.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

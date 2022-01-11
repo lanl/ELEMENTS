@@ -6,7 +6,7 @@ The **SWAGE** sub-library contains a large suite of mesh data structures, a rich
 This library supports both unstructured linear and arbitrary-order meshes.  
 **SWAGE** is designed to support a diverse range of methods that arise in computational physics and engineering.
 
-.. figure:: ../images/CurvyP3Mesh.png
+.. figure:: ../../images/CurvyP3Mesh.png
 
    A mesh with cubic serendipity elements
 

@@ -58,8 +58,8 @@ add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
 # Sphinx with Breathe
 ################################################################################
 # Set up variables for Sphinx documentation generation
-set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/sphinx)
-set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
+set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/sphinx/source)
+set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx/build)
 set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
 
 # Add rule for running the Sphinx command. Only regenerate Sphinx when:

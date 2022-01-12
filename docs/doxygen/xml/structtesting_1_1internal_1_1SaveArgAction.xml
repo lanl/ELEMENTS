@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1SaveArgAction" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::SaveArgAction</compoundname>
+    <templateparamlist>
+      <param>
+        <type>size_t</type>
+        <declname>k</declname>
+        <defname>k</defname>
+      </param>
+      <param>
+        <type>typename Ptr</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structtesting_1_1internal_1_1SaveArgAction_1a04bd275b772ee2aa4b71ccbff3c7d766" prot="public" static="no" mutable="no">
+        <type>Ptr</type>
+        <definition>Ptr testing::internal::SaveArgAction&lt; k, Ptr &gt;::pointer</definition>
+        <argsstring></argsstring>
+        <name>pointer</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1090" column="7" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1090" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1SaveArgAction_1a324f040f0ad4a9cef6e081fda7d5e7bd" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename...</type>
+            <declname>Args</declname>
+            <defname>Args</defname>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void testing::internal::SaveArgAction&lt; k, Ptr &gt;::operator()</definition>
+        <argsstring>(const Args &amp;... args) const</argsstring>
+        <name>operator()</name>
+        <param>
+          <type>const Args &amp;...</type>
+          <declname>args</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1093" column="8" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1093" bodyend="1095"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1089" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1089" bodyend="1096"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1SaveArgAction_1a324f040f0ad4a9cef6e081fda7d5e7bd" prot="public" virt="non-virtual"><scope>testing::internal::SaveArgAction</scope><name>operator()</name></member>
+      <member refid="structtesting_1_1internal_1_1SaveArgAction_1a04bd275b772ee2aa4b71ccbff3c7d766" prot="public" virt="non-virtual"><scope>testing::internal::SaveArgAction</scope><name>pointer</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

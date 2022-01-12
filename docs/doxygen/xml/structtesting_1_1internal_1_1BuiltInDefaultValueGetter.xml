@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1BuiltInDefaultValueGetter" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::BuiltInDefaultValueGetter</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename T</type>
+      </param>
+      <param>
+        <type>bool</type>
+        <declname>kDefaultConstructible</declname>
+        <defname>kDefaultConstructible</defname>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1BuiltInDefaultValueGetter_1a61c47c50cdb6ab488dabe2cec3b97fc8" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>T</type>
+        <definition>static T testing::internal::BuiltInDefaultValueGetter&lt; T, kDefaultConstructible &gt;::Get</definition>
+        <argsstring>()</argsstring>
+        <name>Get</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="174" column="12" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="174" bodyend="174"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="173" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="173" bodyend="175"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1BuiltInDefaultValueGetter_1a61c47c50cdb6ab488dabe2cec3b97fc8" prot="public" virt="non-virtual"><scope>testing::internal::BuiltInDefaultValueGetter</scope><name>Get</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

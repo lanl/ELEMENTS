@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1BuiltInDefaultValue_3_01T_01_5_01_4" kind="class" language="C++" prot="public">
+    <compoundname>testing::internal::BuiltInDefaultValue&lt; T * &gt;</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1BuiltInDefaultValue_3_01T_01_5_01_4_1aafa7172f63d068305fb37d5db40bb543" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::internal::BuiltInDefaultValue&lt; T * &gt;::Exists</definition>
+        <argsstring>()</argsstring>
+        <name>Exists</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="223" column="15" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="223" bodyend="223"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1BuiltInDefaultValue_3_01T_01_5_01_4_1adc2fa2bdae767589d171ae3a117e3a9f" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>T *</type>
+        <definition>static T* testing::internal::BuiltInDefaultValue&lt; T * &gt;::Get</definition>
+        <argsstring>()</argsstring>
+        <name>Get</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="224" column="12" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="224" bodyend="224"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="221" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="221" bodyend="225"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1BuiltInDefaultValue_3_01T_01_5_01_4_1aafa7172f63d068305fb37d5db40bb543" prot="public" virt="non-virtual"><scope>testing::internal::BuiltInDefaultValue&lt; T * &gt;</scope><name>Exists</name></member>
+      <member refid="classtesting_1_1internal_1_1BuiltInDefaultValue_3_01T_01_5_01_4_1adc2fa2bdae767589d171ae3a117e3a9f" prot="public" virt="non-virtual"><scope>testing::internal::BuiltInDefaultValue&lt; T * &gt;</scope><name>Get</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

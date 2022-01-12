@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>testing::internal::ParameterizedTestSuiteInfoBase</compoundname>
+    <derivedcompoundref refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfo" prot="public" virt="non-virtual">testing::internal::ParameterizedTestSuiteInfo&lt; TestSuite &gt;</derivedcompoundref>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1ac2aa0664f56e84cacab823d345c7d67b" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type></type>
+        <definition>virtual testing::internal::ParameterizedTestSuiteInfoBase::~ParameterizedTestSuiteInfoBase</definition>
+        <argsstring>()</argsstring>
+        <name>~ParameterizedTestSuiteInfoBase</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="458" column="11" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="458" bodyend="458"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1aa6e36241431dc72c251ecee9b637b4d3" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>const std::string &amp;</type>
+        <definition>virtual const std::string&amp; testing::internal::ParameterizedTestSuiteInfoBase::GetTestSuiteName</definition>
+        <argsstring>() const =0</argsstring>
+        <name>GetTestSuiteName</name>
+        <reimplementedby refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1a4a5ddc2cd0404438c2b4d405cd0e706c">GetTestSuiteName</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="461" column="29"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1ac5bcbf8c50a44472d697e0c80b54387d" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>TypeId</type>
+        <definition>virtual TypeId testing::internal::ParameterizedTestSuiteInfoBase::GetTestSuiteTypeId</definition>
+        <argsstring>() const =0</argsstring>
+        <name>GetTestSuiteTypeId</name>
+        <reimplementedby refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1af488d1d7c1889a250acff2ea6eba4c84">GetTestSuiteTypeId</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="463" column="18"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1a41d7d663014af0c1e614c5a61293cb5a" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void testing::internal::ParameterizedTestSuiteInfoBase::RegisterTests</definition>
+        <argsstring>()=0</argsstring>
+        <name>RegisterTests</name>
+        <reimplementedby refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1a8c0af866d3c291a63d3f4581ccd452d1">RegisterTests</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="468" column="16"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1a3b50ae419b0de858f3ad9b8dd49989de" prot="protected" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::ParameterizedTestSuiteInfoBase::ParameterizedTestSuiteInfoBase</definition>
+        <argsstring>()</argsstring>
+        <name>ParameterizedTestSuiteInfoBase</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="471" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="471" bodyend="471"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1a49431b7df609223c2a7fea67367e1d00" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::ParameterizedTestSuiteInfoBase::GTEST_DISALLOW_COPY_AND_ASSIGN_</definition>
+        <argsstring>(ParameterizedTestSuiteInfoBase)</argsstring>
+        <name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name>
+        <param>
+          <type><ref refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase" kindref="compound">ParameterizedTestSuiteInfoBase</ref></type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="474" column="3"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>testing::internal::ParameterizedTestSuiteInfo&lt; TestSuite &gt;</label>
+        <link refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfo"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>testing::internal::ParameterizedTestSuiteInfoBase</label>
+        <link refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase"/>
+      </node>
+    </inheritancegraph>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="456" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="456" bodyend="475"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1aa6e36241431dc72c251ecee9b637b4d3" prot="public" virt="pure-virtual"><scope>testing::internal::ParameterizedTestSuiteInfoBase</scope><name>GetTestSuiteName</name></member>
+      <member refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1ac5bcbf8c50a44472d697e0c80b54387d" prot="public" virt="pure-virtual"><scope>testing::internal::ParameterizedTestSuiteInfoBase</scope><name>GetTestSuiteTypeId</name></member>
+      <member refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1a49431b7df609223c2a7fea67367e1d00" prot="private" virt="non-virtual"><scope>testing::internal::ParameterizedTestSuiteInfoBase</scope><name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name></member>
+      <member refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1a3b50ae419b0de858f3ad9b8dd49989de" prot="protected" virt="non-virtual"><scope>testing::internal::ParameterizedTestSuiteInfoBase</scope><name>ParameterizedTestSuiteInfoBase</name></member>
+      <member refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1a41d7d663014af0c1e614c5a61293cb5a" prot="public" virt="pure-virtual"><scope>testing::internal::ParameterizedTestSuiteInfoBase</scope><name>RegisterTests</name></member>
+      <member refid="classtesting_1_1internal_1_1ParameterizedTestSuiteInfoBase_1ac2aa0664f56e84cacab823d345c7d67b" prot="public" virt="virtual"><scope>testing::internal::ParameterizedTestSuiteInfoBase</scope><name>~ParameterizedTestSuiteInfoBase</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1BuiltInDefaultValueGetter_3_01T_00_01false_01_4" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::BuiltInDefaultValueGetter&lt; T, false &gt;</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1BuiltInDefaultValueGetter_3_01T_00_01false_01_4_1a8c8e929666f61272961eea21a60de4ad" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>T</type>
+        <definition>static T testing::internal::BuiltInDefaultValueGetter&lt; T, false &gt;::Get</definition>
+        <argsstring>()</argsstring>
+        <name>Get</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="178" column="12" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="178" bodyend="184"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="177" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="177" bodyend="185"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1BuiltInDefaultValueGetter_3_01T_00_01false_01_4_1a8c8e929666f61272961eea21a60de4ad" prot="public" virt="non-virtual"><scope>testing::internal::BuiltInDefaultValueGetter&lt; T, false &gt;</scope><name>Get</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

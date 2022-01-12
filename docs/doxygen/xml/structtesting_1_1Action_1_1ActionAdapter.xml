@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1Action_1_1ActionAdapter" kind="struct" language="C++" prot="private">
+    <compoundname>testing::Action::ActionAdapter</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structtesting_1_1Action_1_1ActionAdapter_1afc87ecba784341710e73db0c979150e3" prot="public" static="no" mutable="no">
+        <type>::std::shared_ptr&lt; <ref refid="classtesting_1_1ActionInterface" kindref="compound">ActionInterface</ref>&lt; F &gt; &gt;</type>
+        <definition>::std::shared_ptr&lt;ActionInterface&lt;F&gt; &gt; testing::Action&lt; F &gt;::ActionAdapter::impl_</definition>
+        <argsstring></argsstring>
+        <name>impl_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="443" column="23" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="443" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structtesting_1_1Action_1_1ActionAdapter_1ab42ccaf9b44b9806303a78db1043c4cb" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename...</type>
+            <declname>Args</declname>
+            <defname>Args</defname>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1Function" kindref="compound">internal::Function</ref>&lt; F &gt;::Result</type>
+        <definition>internal::Function&lt;F&gt;::Result testing::Action&lt; F &gt;::ActionAdapter::operator()</definition>
+        <argsstring>(Args &amp;&amp;... args)</argsstring>
+        <name>operator()</name>
+        <param>
+          <type>Args &amp;&amp;...</type>
+          <declname>args</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="446" column="42" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="446" bodyend="449"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="441" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="441" bodyend="450"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1Action_1_1ActionAdapter_1afc87ecba784341710e73db0c979150e3" prot="public" virt="non-virtual"><scope>testing::Action::ActionAdapter</scope><name>impl_</name></member>
+      <member refid="structtesting_1_1Action_1_1ActionAdapter_1ab42ccaf9b44b9806303a78db1043c4cb" prot="public" virt="non-virtual"><scope>testing::Action::ActionAdapter</scope><name>operator()</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

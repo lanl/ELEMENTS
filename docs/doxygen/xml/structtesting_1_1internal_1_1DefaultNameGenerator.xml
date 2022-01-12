@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1DefaultNameGenerator" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::DefaultNameGenerator</compoundname>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1DefaultNameGenerator_1a28fd7ec53dfb647c9aed28d43f778910" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type>std::string</type>
+        <definition>static std::string testing::internal::DefaultNameGenerator::GetName</definition>
+        <argsstring>(int i)</argsstring>
+        <name>GetName</name>
+        <param>
+          <type>int</type>
+          <declname>i</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="677" column="22" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="677" bodyend="679"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="675" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="675" bodyend="680"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1DefaultNameGenerator_1a28fd7ec53dfb647c9aed28d43f778910" prot="public" virt="non-virtual"><scope>testing::internal::DefaultNameGenerator</scope><name>GetName</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

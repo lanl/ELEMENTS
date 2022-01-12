@@ -1,0 +1,270 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="common_8h" kind="file" language="C++">
+    <compoundname>common.h</compoundname>
+    <includes local="yes">matar.h</includes>
+    <includes local="no">cmath</includes>
+    <includes local="no">complex</includes>
+    <includes local="no">limits</includes>
+    <includedby refid="c__blas__lapack__interface_8h" local="yes">/home/jan/packages/elements/include/common/c_blas_lapack_interface.h</includedby>
+    <includedby refid="error_8h" local="yes">/home/jan/packages/elements/include/common/error.h</includedby>
+    <includedby refid="matar__blas__lapack__interface_8h" local="yes">/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h</includedby>
+    <includedby refid="gauss__jacobi__quadrature_8h" local="yes">/home/jan/packages/elements/include/element_types/gauss_jacobi_quadrature.h</includedby>
+    <includedby refid="jacobi__polynomials_8h" local="yes">/home/jan/packages/elements/include/element_types/jacobi_polynomials.h</includedby>
+    <includedby refid="lagrange__element_8h" local="yes">/home/jan/packages/elements/include/element_types/lagrange_element.h</includedby>
+    <includedby refid="lagrange__polynomials_8h" local="yes">/home/jan/packages/elements/include/element_types/lagrange_polynomials.h</includedby>
+    <includedby refid="legendre__element_8h" local="yes">/home/jan/packages/elements/include/element_types/legendre_element.h</includedby>
+    <includedby refid="legendre__polynomials_8h" local="yes">/home/jan/packages/elements/include/element_types/legendre_polynomials.h</includedby>
+    <includedby refid="point__distributions_8h" local="yes">/home/jan/packages/elements/include/element_types/point_distributions.h</includedby>
+    <includedby refid="swage_8h" local="yes">/home/jan/packages/elements/include/swage/swage.h</includedby>
+    <incdepgraph>
+      <node id="1">
+        <label>/home/jan/packages/elements/include/common/common.h</label>
+        <link refid="common_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>cmath</label>
+      </node>
+      <node id="4">
+        <label>complex</label>
+      </node>
+      <node id="5">
+        <label>limits</label>
+      </node>
+      <node id="2">
+        <label>matar.h</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="2">
+        <label>/home/jan/packages/elements/include/common/c_blas_lapack_interface.h</label>
+        <link refid="c__blas__lapack__interface_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>/home/jan/packages/elements/include/common/common.h</label>
+        <link refid="common_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>/home/jan/packages/elements/include/common/error.h</label>
+        <link refid="error_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h</label>
+        <link refid="matar__blas__lapack__interface_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>/home/jan/packages/elements/include/element_types/gauss_jacobi_quadrature.h</label>
+        <link refid="gauss__jacobi__quadrature_8h_source"/>
+      </node>
+      <node id="6">
+        <label>/home/jan/packages/elements/include/element_types/jacobi_polynomials.h</label>
+        <link refid="jacobi__polynomials_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>/home/jan/packages/elements/include/element_types/lagrange_element.h</label>
+        <link refid="lagrange__element_8h_source"/>
+      </node>
+      <node id="8">
+        <label>/home/jan/packages/elements/include/element_types/lagrange_polynomials.h</label>
+        <link refid="lagrange__polynomials_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+      </node>
+      <node id="11">
+        <label>/home/jan/packages/elements/include/element_types/legendre_element.h</label>
+        <link refid="legendre__element_8h_source"/>
+      </node>
+      <node id="12">
+        <label>/home/jan/packages/elements/include/element_types/legendre_polynomials.h</label>
+        <link refid="legendre__polynomials_8h_source"/>
+      </node>
+      <node id="13">
+        <label>/home/jan/packages/elements/include/element_types/point_distributions.h</label>
+        <link refid="point__distributions_8h_source"/>
+      </node>
+      <node id="10">
+        <label>/home/jan/packages/elements/include/geometry/geometry.h</label>
+        <link refid="geometry_8h_source"/>
+      </node>
+      <node id="9">
+        <label>/home/jan/packages/elements/include/swage/swage.h</label>
+        <link refid="swage_8h_source"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+    <innernamespace refid="namespacecommon">common</innernamespace>
+      <sectiondef kind="define">
+      <memberdef kind="define" id="common_8h_1afc19f5a2cbaecacb28d7b5297e877622" prot="public" static="no">
+        <name>NUM_EPS</name>
+        <initializer>std::numeric_limits&lt;Real&gt;::epsilon()</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="13" column="9" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="13" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="common_8h_1ae654cf653e6cd033304a2377747f6877" prot="public" static="no">
+        <name>NUM_MIN</name>
+        <initializer>std::numeric_limits&lt;Real&gt;::min()</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="14" column="9" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="14" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="common_8h_1a3254f9a888d289df53941af0e9ca2d96" prot="public" static="no">
+        <name>NUM_MAX</name>
+        <initializer>std::numeric_limits&lt;Real&gt;::max()</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="15" column="9" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="15" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="typedef">
+      <memberdef kind="typedef" id="common_8h_1a445a5f0e2a34c9d97d69a3c2d1957907" prot="public" static="no">
+        <type>double</type>
+        <definition>typedef double Real</definition>
+        <argsstring></argsstring>
+        <name>Real</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="9" column="16" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="9" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="common_8h_1a400479783e355a94cc961fb30b81b31f" prot="public" static="no">
+        <type>std::complex&lt; double &gt;</type>
+        <definition>typedef std::complex&lt;double&gt; Complex</definition>
+        <argsstring></argsstring>
+        <name>Complex</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="10" column="22" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="10" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="common_8h_1aca771da87364975afc01517c0b20a407" prot="public" static="no">
+        <type>size_t</type>
+        <definition>typedef size_t SizeType</definition>
+        <argsstring></argsstring>
+        <name>SizeType</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="11" column="16" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="11" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;matar.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;cmath&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;complex&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;limits&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="keyword">typedef</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>Real;</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="keyword">typedef</highlight><highlight class="normal"><sp/>std::complex&lt;double&gt;<sp/>Complex;</highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="keyword">typedef</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>SizeType;</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>NUM_EPS<sp/>std::numeric_limits&lt;Real&gt;::epsilon()</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>NUM_MIN<sp/>std::numeric_limits&lt;Real&gt;::min()</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>NUM_MAX<sp/>std::numeric_limits&lt;Real&gt;::max()</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">common<sp/>{</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Definitions<sp/>used<sp/>to<sp/>ensure<sp/>compatibility<sp/>when<sp/>switching<sp/>from<sp/>real<sp/>number</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>type<sp/>to<sp/>complex<sp/>number<sp/>type<sp/>to<sp/>test<sp/>derivative<sp/>implementations<sp/>via<sp/>the</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>complex<sp/>step<sp/>method</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>Real<sp/>real(Real<sp/>number)<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>number;<sp/>}</highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>Real<sp/>real(Complex<sp/>number)<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>number.real();<sp/>}</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"></highlight></codeline>
+<codeline lineno="24"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>Real<sp/>imag(Real<sp/>number)<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>0.0;<sp/>}</highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>Real<sp/>imag(Complex<sp/>number)<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>number.imag();<sp/>}</highlight></codeline>
+<codeline lineno="26"><highlight class="normal"></highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>Real<sp/>abs(Real<sp/>number)<sp/>{<sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::abs(number);<sp/>}</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/>Real<sp/>abs(Complex<sp/>number)<sp/>{<sp/></highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>std::abs(number.real());<sp/>}</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"></highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Check<sp/>equality<sp/>of<sp/>two<sp/>double<sp/>precision<sp/>floating<sp/>point<sp/>numbers</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="32"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">typename</highlight><highlight class="normal"><sp/>NumType&gt;</highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">inline</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">bool</highlight><highlight class="normal"><sp/>almost_equal(NumType<sp/>a,<sp/>NumType<sp/>b)<sp/>{</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">return</highlight><highlight class="normal"><sp/>common::abs(a<sp/>-<sp/>b)<sp/>&lt;<sp/>2.0*NUM_EPS;</highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/>};</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"></highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Converting<sp/>between<sp/>representations<sp/>of<sp/>array<sp/>indices</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>base_10_to_mixed_radix(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType<sp/>Nb,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType<sp/>*b,<sp/></highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>SizeType<sp/>x,<sp/>SizeType<sp/>*y);</highlight></codeline>
+<codeline lineno="40"><highlight class="normal"><sp/><sp/>SizeType<sp/>mixed_radix_to_base_10(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType<sp/>Nb,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType<sp/>*b,<sp/></highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>SizeType<sp/>*x);</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"></highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Encoding<sp/>and<sp/>decoding<sp/>a<sp/>requested<sp/>partial<sp/>derivative<sp/>to<sp/>and<sp/>from<sp/>an</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>unsigned<sp/>integer</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/>SizeType<sp/>encode_partial_derivative(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType<sp/>&amp;nx,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType<sp/>&amp;ny,<sp/></highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType<sp/>&amp;nz);</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>decode_partial_derivative(SizeType<sp/>e,<sp/>SizeType<sp/>&amp;nx,<sp/>SizeType<sp/>&amp;ny,<sp/></highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>SizeType<sp/>&amp;nz);</highlight></codeline>
+<codeline lineno="49"><highlight class="normal">}</highlight></codeline>
+    </programlisting>
+    <location file="/home/jan/packages/elements/include/common/common.h"/>
+  </compounddef>
+</doxygen>

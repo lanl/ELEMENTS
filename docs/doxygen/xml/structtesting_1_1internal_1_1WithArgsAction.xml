@@ -1,0 +1,68 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1WithArgsAction" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::WithArgsAction</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename InnerAction</type>
+      </param>
+      <param>
+        <type>size_t...</type>
+        <declname>I</declname>
+        <defname>I</defname>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structtesting_1_1internal_1_1WithArgsAction_1af1676990dc34762bb0eab2ff6047cf52" prot="public" static="no" mutable="no">
+        <type>InnerAction</type>
+        <definition>InnerAction testing::internal::WithArgsAction&lt; InnerAction, I &gt;::action</definition>
+        <argsstring></argsstring>
+        <name>action</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1016" column="15" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1016" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1WithArgsAction_1a2c4bbb449ac39c58035fa85c2716ee64" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename R</type>
+          </param>
+          <param>
+            <type>typename...</type>
+            <declname>Args</declname>
+            <defname>Args</defname>
+          </param>
+        </templateparamlist>
+        <type></type>
+        <definition>testing::internal::WithArgsAction&lt; InnerAction, I &gt;::operator Action&lt; R</definition>
+        <argsstring>(Args...)&gt;() const</argsstring>
+        <name>operator Action&lt; R</name>
+        <param>
+          <type>Args...</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1021" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1021" bodyend="1030"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1015" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1015" bodyend="1031"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1WithArgsAction_1af1676990dc34762bb0eab2ff6047cf52" prot="public" virt="non-virtual"><scope>testing::internal::WithArgsAction</scope><name>action</name></member>
+      <member refid="structtesting_1_1internal_1_1WithArgsAction_1a2c4bbb449ac39c58035fa85c2716ee64" prot="public" virt="non-virtual"><scope>testing::internal::WithArgsAction</scope><name>operator Action&lt; R</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

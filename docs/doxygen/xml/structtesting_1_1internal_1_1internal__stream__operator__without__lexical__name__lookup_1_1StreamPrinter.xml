@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1internal__stream__operator__without__lexical__name__lookup_1_1StreamPrinter" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::internal_stream_operator_without_lexical_name_lookup::StreamPrinter</compoundname>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1internal__stream__operator__without__lexical__name__lookup_1_1StreamPrinter_1aca4bf42998648f056632024e5ec6740f" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+          <param>
+            <type>typename</type>
+            <defval>typename std::enable_if&lt;                !std::is_member_pointer&lt;T&gt;::value&gt;::type</defval>
+          </param>
+          <param>
+            <type>typename</type>
+            <defval>decltype(std::declval&lt;std::ostream&amp;&gt;()                                &lt;&lt; std::declval&lt;const T&amp;&gt;())</defval>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>static void testing::internal::internal_stream_operator_without_lexical_name_lookup::StreamPrinter::PrintValue</definition>
+        <argsstring>(const T &amp;value, ::std::ostream *os)</argsstring>
+        <name>PrintValue</name>
+        <param>
+          <type>const T &amp;</type>
+          <declname>value</declname>
+        </param>
+        <param>
+          <type>::std::ostream *</type>
+          <declname>os</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-printers.h" line="212" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest-printers.h" bodystart="212" bodyend="216"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/gtest-printers.h" line="202" column="1" bodyfile="/home/jan/packages/elements/include/gtest/gtest-printers.h" bodystart="202" bodyend="217"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1internal__stream__operator__without__lexical__name__lookup_1_1StreamPrinter_1aca4bf42998648f056632024e5ec6740f" prot="public" virt="non-virtual"><scope>testing::internal::internal_stream_operator_without_lexical_name_lookup::StreamPrinter</scope><name>PrintValue</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

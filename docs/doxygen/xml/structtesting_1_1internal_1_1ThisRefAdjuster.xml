@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1ThisRefAdjuster" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::ThisRefAdjuster</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename Pattern</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-type">
+      <memberdef kind="typedef" id="structtesting_1_1internal_1_1ThisRefAdjuster_1a7c7ab5d3ec35491fcedf4b9e71a6eb54" prot="public" static="no">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type>typename std::conditional&lt; std::is_const&lt; typename std::remove_reference&lt; Pattern &gt;::type &gt;::value, typename std::conditional&lt; std::is_lvalue_reference&lt; Pattern &gt;::value, const T &amp;, const T &amp;&amp; &gt;::type, typename std::conditional&lt; std::is_lvalue_reference&lt; Pattern &gt;::value, T &amp;, T &amp;&amp; &gt;::type &gt;::type</type>
+        <definition>using testing::internal::ThisRefAdjuster&lt; Pattern &gt;::AdjustT =  typename std::conditional&lt; std::is_const&lt;typename std::remove_reference&lt;Pattern&gt;::type&gt;::value, typename std::conditional&lt;std::is_lvalue_reference&lt;Pattern&gt;::value, const T&amp;, const T&amp;&amp;&gt;::type, typename std::conditional&lt;std::is_lvalue_reference&lt;Pattern&gt;::value, T&amp;, T&amp;&amp;&gt;::type&gt;::type</definition>
+        <argsstring></argsstring>
+        <name>AdjustT</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-function-mocker.h" line="54" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-function-mocker.h" bodystart="59" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1ThisRefAdjuster_1ae44907f7961574589a1ec6b87597430a" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename MockType</type>
+          </param>
+        </templateparamlist>
+        <type>AdjustT&lt; MockType &gt;</type>
+        <definition>static AdjustT&lt;MockType&gt; testing::internal::ThisRefAdjuster&lt; Pattern &gt;::Adjust</definition>
+        <argsstring>(const MockType &amp;mock)</argsstring>
+        <name>Adjust</name>
+        <param>
+          <type>const MockType &amp;</type>
+          <declname>mock</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-function-mocker.h" line="62" column="18" bodyfile="/home/jan/packages/elements/include/gmock/gmock-function-mocker.h" bodystart="62" bodyend="64"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-function-mocker.h" line="52" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-function-mocker.h" bodystart="52" bodyend="65"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1ThisRefAdjuster_1ae44907f7961574589a1ec6b87597430a" prot="public" virt="non-virtual"><scope>testing::internal::ThisRefAdjuster</scope><name>Adjust</name></member>
+      <member refid="structtesting_1_1internal_1_1ThisRefAdjuster_1a7c7ab5d3ec35491fcedf4b9e71a6eb54" prot="public" virt="non-virtual"><scope>testing::internal::ThisRefAdjuster</scope><name>AdjustT</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

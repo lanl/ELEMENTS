@@ -1,0 +1,108 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1ParamIteratorInterface" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>testing::internal::ParamIteratorInterface</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParamIteratorInterface_1adf6ba49e6b54a6e3b15dbd5733988bef" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type></type>
+        <definition>virtual testing::internal::ParamIteratorInterface&lt; T &gt;::~ParamIteratorInterface</definition>
+        <argsstring>()</argsstring>
+        <name>~ParamIteratorInterface</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="95" column="11" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="95" bodyend="95"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParamIteratorInterface_1a17500953df75ecda1ace46c08ff731e9" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>const <ref refid="classtesting_1_1internal_1_1ParamGeneratorInterface" kindref="compound">ParamGeneratorInterface</ref>&lt; T &gt; *</type>
+        <definition>virtual const ParamGeneratorInterface&lt;T&gt;* testing::internal::ParamIteratorInterface&lt; T &gt;::BaseGenerator</definition>
+        <argsstring>() const =0</argsstring>
+        <name>BaseGenerator</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="99" column="41"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParamIteratorInterface_1a600dbd35fcb551463e379516a1abea48" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void testing::internal::ParamIteratorInterface&lt; T &gt;::Advance</definition>
+        <argsstring>()=0</argsstring>
+        <name>Advance</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="104" column="16"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParamIteratorInterface_1a4998c23e27e2943d97546011aa35db80" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type><ref refid="classtesting_1_1internal_1_1ParamIteratorInterface" kindref="compound">ParamIteratorInterface</ref> *</type>
+        <definition>virtual ParamIteratorInterface* testing::internal::ParamIteratorInterface&lt; T &gt;::Clone</definition>
+        <argsstring>() const =0</argsstring>
+        <name>Clone</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="107" column="34"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParamIteratorInterface_1adfff808576d929085679c315b255af7e" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>const T *</type>
+        <definition>virtual const T* testing::internal::ParamIteratorInterface&lt; T &gt;::Current</definition>
+        <argsstring>() const =0</argsstring>
+        <name>Current</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="112" column="19"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParamIteratorInterface_1a9d811697a752d46f7bd6a0082f9040a3" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>bool</type>
+        <definition>virtual bool testing::internal::ParamIteratorInterface&lt; T &gt;::Equals</definition>
+        <argsstring>(const ParamIteratorInterface &amp;other) const =0</argsstring>
+        <name>Equals</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1internal_1_1ParamIteratorInterface" kindref="compound">ParamIteratorInterface</ref> &amp;</type>
+          <declname>other</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="116" column="16"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="93" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="93" bodyend="117"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1ParamIteratorInterface_1a600dbd35fcb551463e379516a1abea48" prot="public" virt="pure-virtual"><scope>testing::internal::ParamIteratorInterface</scope><name>Advance</name></member>
+      <member refid="classtesting_1_1internal_1_1ParamIteratorInterface_1a17500953df75ecda1ace46c08ff731e9" prot="public" virt="pure-virtual"><scope>testing::internal::ParamIteratorInterface</scope><name>BaseGenerator</name></member>
+      <member refid="classtesting_1_1internal_1_1ParamIteratorInterface_1a4998c23e27e2943d97546011aa35db80" prot="public" virt="pure-virtual"><scope>testing::internal::ParamIteratorInterface</scope><name>Clone</name></member>
+      <member refid="classtesting_1_1internal_1_1ParamIteratorInterface_1adfff808576d929085679c315b255af7e" prot="public" virt="pure-virtual"><scope>testing::internal::ParamIteratorInterface</scope><name>Current</name></member>
+      <member refid="classtesting_1_1internal_1_1ParamIteratorInterface_1a9d811697a752d46f7bd6a0082f9040a3" prot="public" virt="pure-virtual"><scope>testing::internal::ParamIteratorInterface</scope><name>Equals</name></member>
+      <member refid="classtesting_1_1internal_1_1ParamIteratorInterface_1adf6ba49e6b54a6e3b15dbd5733988bef" prot="public" virt="virtual"><scope>testing::internal::ParamIteratorInterface</scope><name>~ParamIteratorInterface</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

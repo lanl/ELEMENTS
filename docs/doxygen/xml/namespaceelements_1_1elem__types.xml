@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="namespaceelements_1_1elem__types" kind="namespace" language="C++">
+    <compoundname>elements::elem_types</compoundname>
+      <sectiondef kind="enum">
+      <memberdef kind="enum" id="elements_8h_1add8d54829534715e0dfa87de9a5859f9" prot="public" static="no" strong="no">
+        <type></type>
+        <name>elem_type</name>
+        <enumvalue id="elements_8h_1add8d54829534715e0dfa87de9a5859f9a90a912a68c2dc3afa3bdafcd14932d86" prot="public">
+          <name>Quad4</name>
+          <initializer>= 0</initializer>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="elements_8h_1add8d54829534715e0dfa87de9a5859f9ad3e0a5d50be4d6422e65d10824cb8333" prot="public">
+          <name>Quad8</name>
+          <initializer>= 1</initializer>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="elements_8h_1add8d54829534715e0dfa87de9a5859f9a212c58b929f19f4e90c7570fe8bc9258" prot="public">
+          <name>Quad12</name>
+          <initializer>= 2</initializer>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="elements_8h_1add8d54829534715e0dfa87de9a5859f9a80b4975819143f4725e09224a57a2f58" prot="public">
+          <name>QuadN</name>
+          <initializer>= 3</initializer>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="elements_8h_1add8d54829534715e0dfa87de9a5859f9a07ee12e06c8f9cfcff91b5ca573b4b31" prot="public">
+          <name>Hex8</name>
+          <initializer>= 4</initializer>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="elements_8h_1add8d54829534715e0dfa87de9a5859f9a572665a7ad23462dfd7f6b79d751df72" prot="public">
+          <name>Hex20</name>
+          <initializer>= 5</initializer>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="elements_8h_1add8d54829534715e0dfa87de9a5859f9a270746299a117cb3b6cc5e16a5a2aa38" prot="public">
+          <name>Hex32</name>
+          <initializer>= 6</initializer>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="elements_8h_1add8d54829534715e0dfa87de9a5859f9aa67d202620f28cfab7fffe5c3fa0d931" prot="public">
+          <name>HexN</name>
+          <initializer>= 7</initializer>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="1144" column="5" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="1145" bodyend="1160"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/element_types/elements.h" line="1141" column="1"/>
+  </compounddef>
+</doxygen>

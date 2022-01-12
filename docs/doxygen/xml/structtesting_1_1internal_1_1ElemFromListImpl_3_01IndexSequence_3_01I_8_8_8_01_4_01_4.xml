@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1ElemFromListImpl_3_01IndexSequence_3_01I_8_8_8_01_4_01_4" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::ElemFromListImpl&lt; IndexSequence&lt; I... &gt; &gt;</compoundname>
+    <templateparamlist>
+      <param>
+        <type>size_t...</type>
+        <declname>I</declname>
+        <defname>I</defname>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1ElemFromListImpl_3_01IndexSequence_3_01I_8_8_8_01_4_01_4_1a3eadad0251d2b3ea30322c3048cd61f1" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename R</type>
+          </param>
+        </templateparamlist>
+        <type>R</type>
+        <definition>static R testing::internal::ElemFromListImpl&lt; IndexSequence&lt; I... &gt; &gt;::Apply</definition>
+        <argsstring>(Ignore&lt; 0 *I &gt;..., R(*)(),...)</argsstring>
+        <name>Apply</name>
+        <param>
+          <type><ref refid="structtesting_1_1internal_1_1Ignore" kindref="compound">Ignore</ref>&lt; 0 *I &gt;</type>
+          <declname>...</declname>
+        </param>
+        <param>
+          <type>R(*)()</type>
+        </param>
+        <param>
+          <type>...</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="1204" column="12"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="1198" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="1198" bodyend="1205"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1ElemFromListImpl_3_01IndexSequence_3_01I_8_8_8_01_4_01_4_1a3eadad0251d2b3ea30322c3048cd61f1" prot="public" virt="non-virtual"><scope>testing::internal::ElemFromListImpl&lt; IndexSequence&lt; I... &gt; &gt;</scope><name>Apply</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

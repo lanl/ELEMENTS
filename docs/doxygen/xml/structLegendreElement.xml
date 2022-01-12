@@ -1,0 +1,242 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structLegendreElement" kind="struct" language="C++" prot="public">
+    <compoundname>LegendreElement</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename NumType</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-static-attrib">
+      <memberdef kind="variable" id="structLegendreElement_1a9bcd515383606ff3cac47a58fa138520" prot="public" static="yes" mutable="no">
+        <type>const SizeType</type>
+        <definition>const SizeType LegendreElement&lt; NumType &gt;::Nd</definition>
+        <argsstring></argsstring>
+        <name>Nd</name>
+        <initializer>= 3</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="8" column="25" bodyfile="/home/jan/packages/elements/include/element_types/legendre_element.h" bodystart="8" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structLegendreElement_1abf71d868946d660ff77db8b5232768f8" prot="public" static="no" mutable="no">
+        <type>SizeType</type>
+        <definition>SizeType LegendreElement&lt; NumType &gt;::Np</definition>
+        <argsstring></argsstring>
+        <name>Np</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="9" column="12" bodyfile="/home/jan/packages/elements/include/element_types/legendre_element.h" bodystart="9" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLegendreElement_1a910066d93c8abe5ac2aef0bad1618a75" prot="public" static="no" mutable="no">
+        <type>SizeType</type>
+        <definition>SizeType LegendreElement&lt; NumType &gt;::N</definition>
+        <argsstring></argsstring>
+        <name>N</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="10" column="12" bodyfile="/home/jan/packages/elements/include/element_types/legendre_element.h" bodystart="10" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLegendreElement_1a77ab0658e7972860b58cb0340593ece0" prot="public" static="no" mutable="no">
+        <type>SizeType</type>
+        <definition>SizeType LegendreElement&lt; NumType &gt;::Ne</definition>
+        <argsstring></argsstring>
+        <name>Ne</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="11" column="12" bodyfile="/home/jan/packages/elements/include/element_types/legendre_element.h" bodystart="11" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLegendreElement_1aa494202b8e0024f3f60556a436b6f081" prot="public" static="no" mutable="no">
+        <type>SizeType</type>
+        <definition>SizeType LegendreElement&lt; NumType &gt;::ijk[Nd]</definition>
+        <argsstring>[Nd]</argsstring>
+        <name>ijk</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="14" column="12" bodyfile="/home/jan/packages/elements/include/element_types/legendre_element.h" bodystart="14" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLegendreElement_1a4420342296da85c20b68db93682be5ad" prot="public" static="no" mutable="no">
+        <type>SizeType</type>
+        <definition>SizeType LegendreElement&lt; NumType &gt;::rad[Nd]</definition>
+        <argsstring>[Nd]</argsstring>
+        <name>rad</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="15" column="12" bodyfile="/home/jan/packages/elements/include/element_types/legendre_element.h" bodystart="15" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLegendreElement_1a41cf2f15d05ebadf49c064b4b30df8d1" prot="public" static="no" mutable="no">
+        <type>NumType *</type>
+        <definition>NumType* LegendreElement&lt; NumType &gt;::C</definition>
+        <argsstring></argsstring>
+        <name>C</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="18" column="11" bodyfile="/home/jan/packages/elements/include/element_types/legendre_element.h" bodystart="18" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structLegendreElement_1acebb67a1b581a8359d148c8f7e2b3f64" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>LegendreElement&lt; NumType &gt;::LegendreElement</definition>
+        <argsstring>(SizeType)</argsstring>
+        <name>LegendreElement</name>
+        <param>
+          <type>SizeType</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="20" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="structLegendreElement_1af32aa7a408007df6769675643f324a9e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>LegendreElement&lt; NumType &gt;::~LegendreElement</definition>
+        <argsstring>()</argsstring>
+        <name>~LegendreElement</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="21" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="structLegendreElement_1a494db728e446e4300cb0615cb8378f2c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>NumType</type>
+        <definition>NumType LegendreElement&lt; NumType &gt;::eval_basis</definition>
+        <argsstring>(const SizeType, const NumType *)</argsstring>
+        <name>eval_basis</name>
+        <param>
+          <type>const</type>
+          <declname>SizeType</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="24" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="structLegendreElement_1a1203279abd50ff9c55b6e2f0dcf28eb9" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void LegendreElement&lt; NumType &gt;::eval_grad_basis</definition>
+        <argsstring>(const SizeType, const NumType *, NumType *)</argsstring>
+        <name>eval_grad_basis</name>
+        <param>
+          <type>const</type>
+          <declname>SizeType</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="25" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="structLegendreElement_1af53d1c2019fa603fc7c79904e7e120e7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>NumType</type>
+        <definition>NumType LegendreElement&lt; NumType &gt;::eval_approx</definition>
+        <argsstring>(const NumType *, const NumType *)</argsstring>
+        <name>eval_approx</name>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="28" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="structLegendreElement_1acfc07f5a75ec210b965bca805b757fb3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void LegendreElement&lt; NumType &gt;::eval_grad_approx</definition>
+        <argsstring>(const NumType *, const NumType *, NumType *)</argsstring>
+        <name>eval_grad_approx</name>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="29" column="8"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/element_types/legendre_element.h" line="6" column="1" bodyfile="/home/jan/packages/elements/include/element_types/legendre_element.h" bodystart="6" bodyend="30"/>
+    <listofallmembers>
+      <member refid="structLegendreElement_1a41cf2f15d05ebadf49c064b4b30df8d1" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>C</name></member>
+      <member refid="structLegendreElement_1af53d1c2019fa603fc7c79904e7e120e7" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>eval_approx</name></member>
+      <member refid="structLegendreElement_1a494db728e446e4300cb0615cb8378f2c" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>eval_basis</name></member>
+      <member refid="structLegendreElement_1acfc07f5a75ec210b965bca805b757fb3" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>eval_grad_approx</name></member>
+      <member refid="structLegendreElement_1a1203279abd50ff9c55b6e2f0dcf28eb9" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>eval_grad_basis</name></member>
+      <member refid="structLegendreElement_1aa494202b8e0024f3f60556a436b6f081" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>ijk</name></member>
+      <member refid="structLegendreElement_1acebb67a1b581a8359d148c8f7e2b3f64" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>LegendreElement</name></member>
+      <member refid="structLegendreElement_1a910066d93c8abe5ac2aef0bad1618a75" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>N</name></member>
+      <member refid="structLegendreElement_1a9bcd515383606ff3cac47a58fa138520" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>Nd</name></member>
+      <member refid="structLegendreElement_1a77ab0658e7972860b58cb0340593ece0" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>Ne</name></member>
+      <member refid="structLegendreElement_1abf71d868946d660ff77db8b5232768f8" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>Np</name></member>
+      <member refid="structLegendreElement_1a4420342296da85c20b68db93682be5ad" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>rad</name></member>
+      <member refid="structLegendreElement_1af32aa7a408007df6769675643f324a9e" prot="public" virt="non-virtual"><scope>LegendreElement</scope><name>~LegendreElement</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

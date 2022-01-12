@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl" kind="class" language="C++" prot="private">
+    <compoundname>testing::PolymorphicAction::MonomorphicImpl</compoundname>
+    <basecompoundref refid="classtesting_1_1ActionInterface" prot="public" virt="non-virtual">testing::ActionInterface&lt; F &gt;</basecompoundref>
+    <templateparamlist>
+      <param>
+        <type>typename F</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-type">
+      <memberdef kind="typedef" id="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl_1a7989da669c4c7a2da978ed78743815cb" prot="public" static="no">
+        <type><ref refid="structtesting_1_1internal_1_1Function" kindref="compound">internal::Function</ref>&lt; F &gt;::Result</type>
+        <definition>typedef internal::Function&lt;F&gt;::Result testing::PolymorphicAction&lt; Impl &gt;::MonomorphicImpl&lt; F &gt;::Result</definition>
+        <argsstring></argsstring>
+        <name>Result</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="564" column="50" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="564" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl_1a2d6ef64336f1d5cdac893fb040048c8c" prot="public" static="no">
+        <type><ref refid="structtesting_1_1internal_1_1Function" kindref="compound">internal::Function</ref>&lt; F &gt;::ArgumentTuple</type>
+        <definition>typedef internal::Function&lt;F&gt;::ArgumentTuple testing::PolymorphicAction&lt; Impl &gt;::MonomorphicImpl&lt; F &gt;::ArgumentTuple</definition>
+        <argsstring></argsstring>
+        <name>ArgumentTuple</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="565" column="57" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="565" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl_1a77375e13255f50b45498e0d9c2395d72" prot="private" static="no" mutable="no">
+        <type>Impl</type>
+        <definition>Impl testing::PolymorphicAction&lt; Impl &gt;::MonomorphicImpl&lt; F &gt;::impl_</definition>
+        <argsstring></argsstring>
+        <name>impl_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="574" column="10" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="574" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl_1a0f87e4646298d9fd8e7eda04a09fc6d0" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::PolymorphicAction&lt; Impl &gt;::MonomorphicImpl&lt; F &gt;::MonomorphicImpl</definition>
+        <argsstring>(const Impl &amp;impl)</argsstring>
+        <name>MonomorphicImpl</name>
+        <param>
+          <type>const Impl &amp;</type>
+          <declname>impl</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="567" column="14" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="567" bodyend="567"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl_1ae532b81e7689e0677d64c81f500f3c15" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>Result</type>
+        <definition>Result testing::PolymorphicAction&lt; Impl &gt;::MonomorphicImpl&lt; F &gt;::Perform</definition>
+        <argsstring>(const ArgumentTuple &amp;args) override</argsstring>
+        <name>Perform</name>
+        <param>
+          <type>const ArgumentTuple &amp;</type>
+          <declname>args</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="569" column="12" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="569" bodyend="571"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>testing::ActionInterface&lt; F &gt;</label>
+        <link refid="classtesting_1_1ActionInterface"/>
+      </node>
+      <node id="1">
+        <label>testing::PolymorphicAction&lt; Impl &gt;::MonomorphicImpl&lt; F &gt;</label>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>testing::ActionInterface&lt; F &gt;</label>
+        <link refid="classtesting_1_1ActionInterface"/>
+      </node>
+      <node id="1">
+        <label>testing::PolymorphicAction&lt; Impl &gt;::MonomorphicImpl&lt; F &gt;</label>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="562" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="562" bodyend="575"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1ActionInterface_1a0f1d44e4c669a9cae5ee5b28419a6f52" prot="public" virt="non-virtual"><scope>testing::PolymorphicAction::MonomorphicImpl</scope><name>ActionInterface</name></member>
+      <member refid="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl_1a2d6ef64336f1d5cdac893fb040048c8c" prot="public" virt="non-virtual"><scope>testing::PolymorphicAction::MonomorphicImpl</scope><name>ArgumentTuple</name></member>
+      <member refid="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl_1a77375e13255f50b45498e0d9c2395d72" prot="private" virt="non-virtual"><scope>testing::PolymorphicAction::MonomorphicImpl</scope><name>impl_</name></member>
+      <member refid="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl_1a0f87e4646298d9fd8e7eda04a09fc6d0" prot="public" virt="non-virtual"><scope>testing::PolymorphicAction::MonomorphicImpl</scope><name>MonomorphicImpl</name></member>
+      <member refid="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl_1ae532b81e7689e0677d64c81f500f3c15" prot="public" virt="non-virtual"><scope>testing::PolymorphicAction::MonomorphicImpl</scope><name>Perform</name></member>
+      <member refid="classtesting_1_1PolymorphicAction_1_1MonomorphicImpl_1a7989da669c4c7a2da978ed78743815cb" prot="public" virt="non-virtual"><scope>testing::PolymorphicAction::MonomorphicImpl</scope><name>Result</name></member>
+      <member refid="classtesting_1_1ActionInterface_1a7dd0a5fc93d86ae3c9d04963b9f3a93f" prot="public" virt="virtual"><scope>testing::PolymorphicAction::MonomorphicImpl</scope><name>~ActionInterface</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

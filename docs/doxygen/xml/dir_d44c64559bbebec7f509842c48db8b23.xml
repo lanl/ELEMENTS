@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="dir_d44c64559bbebec7f509842c48db8b23" kind="dir">
+    <compoundname>/home/jan/packages/elements/include</compoundname>
+    <innerdir refid="dir_0966d06610f72609fd9aa4979c2b5a92">/home/jan/packages/elements/include/common</innerdir>
+    <innerdir refid="dir_2659fbc88fc705c4abc8b207acf0b3df">/home/jan/packages/elements/include/element_types</innerdir>
+    <innerdir refid="dir_cac21311fa223bf4e936802c78bf215f">/home/jan/packages/elements/include/geometry</innerdir>
+    <innerdir refid="dir_5bb193b7db6ac977cda4b06af9ebdb7e">/home/jan/packages/elements/include/gmock</innerdir>
+    <innerdir refid="dir_25218bfab7c9482b1de88b375c909642">/home/jan/packages/elements/include/gtest</innerdir>
+    <innerdir refid="dir_a9ef6597dfe3a0bb7b93478eec69365d">/home/jan/packages/elements/include/slam</innerdir>
+    <innerdir refid="dir_c50cc92c46affb2f7b50678ba7ea6b01">/home/jan/packages/elements/include/swage</innerdir>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/"/>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,156 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString" kind="class" language="C++" prot="public">
+    <compoundname>testing::internal::HasDebugStringAndShortDebugString</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="private-type">
+      <memberdef kind="typedef" id="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1ac7733e0b4342fc094c965b4a6983c5b4" prot="private" static="no">
+        <type>decltype(CheckDebugString&lt; T &gt;(nullptr))</type>
+        <definition>using testing::internal::HasDebugStringAndShortDebugString&lt; T &gt;::HasDebugStringType =  decltype(CheckDebugString&lt;T&gt;(nullptr))</definition>
+        <argsstring></argsstring>
+        <name>HasDebugStringType</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="909" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="909" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1ac527ccdd86abdf767f3f5b61cb25163a" prot="private" static="no">
+        <type>decltype(CheckShortDebugString&lt; T &gt;(nullptr))</type>
+        <definition>using testing::internal::HasDebugStringAndShortDebugString&lt; T &gt;::HasShortDebugStringType =  decltype(CheckShortDebugString&lt;T&gt;(nullptr))</definition>
+        <argsstring></argsstring>
+        <name>HasShortDebugStringType</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="910" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="910" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-attrib">
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1abb97a0cc14c348c235173472b4d111ad" prot="public" static="yes" constexpr="yes" mutable="no">
+        <type>constexpr bool</type>
+        <definition>constexpr bool testing::internal::HasDebugStringAndShortDebugString&lt; T &gt;::value</definition>
+        <argsstring></argsstring>
+        <name>value</name>
+        <initializer>=
+      HasDebugStringType::value &amp;&amp; HasShortDebugStringType::value</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="913" column="25" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="913" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1ab9c2a7a94b05be3a68eb98eb25690778" prot="private" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename C</type>
+          </param>
+        </templateparamlist>
+        <type>auto</type>
+        <definition>static auto testing::internal::HasDebugStringAndShortDebugString&lt; T &gt;::CheckDebugString</definition>
+        <argsstring>(C *) -&gt; typename std::is_same&lt; std::string, decltype(std::declval&lt; const C &gt;().DebugString())&gt;::type</argsstring>
+        <name>CheckDebugString</name>
+        <param>
+          <type>C *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="898" column="15"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1a42737cf0a60991ef106fd869a3a98ca1" prot="private" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename</type>
+          </param>
+        </templateparamlist>
+        <type>std::false_type</type>
+        <definition>static std::false_type testing::internal::HasDebugStringAndShortDebugString&lt; T &gt;::CheckDebugString</definition>
+        <argsstring>(...)</argsstring>
+        <name>CheckDebugString</name>
+        <param>
+          <type>...</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="901" column="26"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1a1767b5a677e77c36cb7316f4166851d2" prot="private" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename C</type>
+          </param>
+        </templateparamlist>
+        <type>auto</type>
+        <definition>static auto testing::internal::HasDebugStringAndShortDebugString&lt; T &gt;::CheckShortDebugString</definition>
+        <argsstring>(C *) -&gt; typename std::is_same&lt; std::string, decltype(std::declval&lt; const C &gt;().ShortDebugString())&gt;::type</argsstring>
+        <name>CheckShortDebugString</name>
+        <param>
+          <type>C *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="904" column="15"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1a1f027d2c292e1af1f51c915d7b1c51f2" prot="private" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename</type>
+          </param>
+        </templateparamlist>
+        <type>std::false_type</type>
+        <definition>static std::false_type testing::internal::HasDebugStringAndShortDebugString&lt; T &gt;::CheckShortDebugString</definition>
+        <argsstring>(...)</argsstring>
+        <name>CheckShortDebugString</name>
+        <param>
+          <type>...</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="907" column="26"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="895" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="895" bodyend="915"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1ab9c2a7a94b05be3a68eb98eb25690778" prot="private" virt="non-virtual"><scope>testing::internal::HasDebugStringAndShortDebugString</scope><name>CheckDebugString</name></member>
+      <member refid="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1a42737cf0a60991ef106fd869a3a98ca1" prot="private" virt="non-virtual"><scope>testing::internal::HasDebugStringAndShortDebugString</scope><name>CheckDebugString</name></member>
+      <member refid="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1a1767b5a677e77c36cb7316f4166851d2" prot="private" virt="non-virtual"><scope>testing::internal::HasDebugStringAndShortDebugString</scope><name>CheckShortDebugString</name></member>
+      <member refid="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1a1f027d2c292e1af1f51c915d7b1c51f2" prot="private" virt="non-virtual"><scope>testing::internal::HasDebugStringAndShortDebugString</scope><name>CheckShortDebugString</name></member>
+      <member refid="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1ac7733e0b4342fc094c965b4a6983c5b4" prot="private" virt="non-virtual"><scope>testing::internal::HasDebugStringAndShortDebugString</scope><name>HasDebugStringType</name></member>
+      <member refid="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1ac527ccdd86abdf767f3f5b61cb25163a" prot="private" virt="non-virtual"><scope>testing::internal::HasDebugStringAndShortDebugString</scope><name>HasShortDebugStringType</name></member>
+      <member refid="classtesting_1_1internal_1_1HasDebugStringAndShortDebugString_1abb97a0cc14c348c235173472b4d111ad" prot="public" virt="non-virtual"><scope>testing::internal::HasDebugStringAndShortDebugString</scope><name>value</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

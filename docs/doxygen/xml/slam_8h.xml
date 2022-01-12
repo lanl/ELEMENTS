@@ -1,0 +1,328 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="slam_8h" kind="file" language="C++">
+    <compoundname>slam.h</compoundname>
+    <includes refid="utilities_8h" local="yes">common/utilities.h</includes>
+    <includes local="yes">matar.h</includes>
+    <includes local="no">iostream</includes>
+    <includes local="no">math.h</includes>
+    <incdepgraph>
+      <node id="2">
+        <label>common/utilities.h</label>
+        <link refid="utilities_8h_source"/>
+      </node>
+      <node id="1">
+        <label>/home/jan/packages/elements/include/slam/slam.h</label>
+        <link refid="slam_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>iostream</label>
+      </node>
+      <node id="3">
+        <label>matar.h</label>
+      </node>
+      <node id="5">
+        <label>math.h</label>
+      </node>
+    </incdepgraph>
+      <sectiondef kind="define">
+      <memberdef kind="define" id="slam_8h_1acf1c38f71f39386356edb151a131ad11" prot="public" static="no">
+        <name>TINY</name>
+        <initializer>1.e-30</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/slam/slam.h" line="19" column="9" bodyfile="/home/jan/packages/elements/include/slam/slam.h" bodystart="19" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="slam_8h_1aa906db374325aac09974186a01c7cf95" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int LU_decompos</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;source_mat, ViewCArray&lt; int &gt; &amp;indx, int &amp;parity, const int n)</argsstring>
+        <name>LU_decompos</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>source_mat</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; int &gt; &amp;</type>
+          <declname>indx</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>parity</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>n</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/slam/slam.h" line="45" column="5" declfile="/home/jan/packages/elements/include/slam/slam.h" declline="45" declcolumn="5"/>
+      </memberdef>
+      <memberdef kind="function" id="slam_8h_1a3189c2a5c6286ff832471ba66a4efd52" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void LU_backsub</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;source_mat, const ViewCArray&lt; int &gt; &amp;indx, ViewCArray&lt; real_t &gt; &amp;b, const int n)</argsstring>
+        <name>LU_backsub</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>source_mat</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; int &gt; &amp;</type>
+          <declname>indx</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>b</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>n</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/slam/slam.h" line="76" column="6" declfile="/home/jan/packages/elements/include/slam/slam.h" declline="76" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="slam_8h_1a4c510defd6ac62c163c0ec428dff6548" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void LU_invert</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;source_mat, ViewCArray&lt; int &gt; &amp;indx, ViewCArray&lt; real_t &gt; &amp;inv_mat, ViewCArray&lt; real_t &gt; &amp;col, int n)</argsstring>
+        <name>LU_invert</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>source_mat</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; int &gt; &amp;</type>
+          <declname>indx</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>inv_mat</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>col</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>n</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/slam/slam.h" line="108" column="6" declfile="/home/jan/packages/elements/include/slam/slam.h" declline="108" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="slam_8h_1a71dfa5d73a31cfac14b128a4177106c0" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>double</type>
+        <definition>double LU_determ</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;source_mat, ViewCArray&lt; int &gt; &amp;indx, const int parity, const int n)</argsstring>
+        <name>LU_determ</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>source_mat</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; int &gt; &amp;</type>
+          <declname>indx</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>parity</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>n</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/slam/slam.h" line="139" column="8" declfile="/home/jan/packages/elements/include/slam/slam.h" declline="139" declcolumn="8"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#ifndef<sp/>SLAM_H</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>SLAM_H<sp/></highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;common/utilities.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;matar.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;iostream&gt;</highlight><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>std::cout<sp/>etc.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;math.h&gt;</highlight><highlight class="normal"><sp/></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="keyword">using<sp/>namespace<sp/></highlight><highlight class="normal">utils;</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="comment">//<sp/>Function<sp/>Declarations<sp/><sp/>//</highlight></codeline>
+<codeline lineno="17"><highlight class="comment"></highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>&quot;small<sp/>number&quot;<sp/>to<sp/>avoid<sp/>overflow<sp/>in<sp/>some<sp/>cases<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>TINY<sp/>1.e-30</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>-------------------------<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>LU<sp/>decomposition<sp/>function<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="23"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>-------------------------<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight></codeline>
+<codeline lineno="25"><highlight class="normal"></highlight><highlight class="comment">/*<sp/></highlight></codeline>
+<codeline lineno="26"><highlight class="comment">LU-decomposition<sp/>according<sp/>to<sp/>Crout&apos;s<sp/>algorithm<sp/>with<sp/>pivoting.<sp/></highlight></codeline>
+<codeline lineno="27"><highlight class="comment">Description:</highlight></codeline>
+<codeline lineno="28"><highlight class="comment">int<sp/>LU_decompos(</highlight></codeline>
+<codeline lineno="29"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;source_mat,<sp/><sp/>//<sp/>matrix<sp/>to<sp/>invert</highlight></codeline>
+<codeline lineno="30"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;int&gt;<sp/>&amp;indx,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>permutations</highlight></codeline>
+<codeline lineno="31"><highlight class="comment"><sp/><sp/><sp/><sp/>int<sp/>&amp;parity,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>parity<sp/>(+1<sp/>0r<sp/>-1)</highlight></codeline>
+<codeline lineno="32"><highlight class="comment"><sp/><sp/><sp/><sp/>const<sp/>int<sp/>n);<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>matrix<sp/>size<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="33"><highlight class="comment"></highlight></codeline>
+<codeline lineno="34"><highlight class="comment"></highlight></codeline>
+<codeline lineno="35"><highlight class="comment">Parameters:</highlight></codeline>
+<codeline lineno="36"><highlight class="comment">source_mat<sp/>-<sp/>source<sp/>matrix<sp/>(n<sp/>x<sp/>n)<sp/>on<sp/>input,<sp/>destination<sp/>on<sp/>output;</highlight></codeline>
+<codeline lineno="37"><highlight class="comment">n<sp/>-<sp/>the<sp/>matrix<sp/>size;</highlight></codeline>
+<codeline lineno="38"><highlight class="comment">indx<sp/>-<sp/>integer<sp/>array<sp/>(size<sp/>n)<sp/>to<sp/>remember<sp/>permutations;</highlight></codeline>
+<codeline lineno="39"><highlight class="comment">d<sp/>-<sp/>on<sp/>output,<sp/>contains<sp/>+1<sp/>or<sp/>-1<sp/>for<sp/>even<sp/>or<sp/>odd<sp/>permutations<sp/>number.</highlight></codeline>
+<codeline lineno="40"><highlight class="comment">vv<sp/>-<sp/>temporary<sp/>array<sp/>(size<sp/>n).</highlight></codeline>
+<codeline lineno="41"><highlight class="comment">Returns:<sp/></highlight></codeline>
+<codeline lineno="42"><highlight class="comment">0<sp/>-<sp/>the<sp/>source<sp/>matrix<sp/>is<sp/>singular<sp/>(invalid<sp/>for<sp/>decomposition),</highlight></codeline>
+<codeline lineno="43"><highlight class="comment">1<sp/>-<sp/>if<sp/>OK.</highlight></codeline>
+<codeline lineno="44"><highlight class="comment">*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>LU_decompos(</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;source_mat,<sp/><sp/></highlight><highlight class="comment">//<sp/>matrix<sp/>to<sp/>invert</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;int&gt;<sp/>&amp;indx,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>permutations</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>&amp;parity,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>parity<sp/>(+1<sp/>0r<sp/>-1)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>n);<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>matrix<sp/>size<sp/><sp/></highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="50"><highlight class="normal"></highlight></codeline>
+<codeline lineno="51"><highlight class="normal"></highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"></highlight></codeline>
+<codeline lineno="54"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>-----------------------------<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>LU<sp/>back<sp/>substitution<sp/>function<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>-----------------------------<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal"></highlight><highlight class="comment">/*<sp/></highlight></codeline>
+<codeline lineno="58"><highlight class="comment"></highlight></codeline>
+<codeline lineno="59"><highlight class="comment">Back<sp/>substitution,<sp/>using<sp/>LU<sp/>decomposed<sp/>matrix.</highlight></codeline>
+<codeline lineno="60"><highlight class="comment">Description:</highlight></codeline>
+<codeline lineno="61"><highlight class="comment">void<sp/>LU_backsub(</highlight></codeline>
+<codeline lineno="62"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;source_mat,<sp/><sp/>//<sp/>input<sp/>matrix</highlight></codeline>
+<codeline lineno="63"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;int&gt;<sp/>&amp;indx,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>permutations</highlight></codeline>
+<codeline lineno="64"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;coeffs,<sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>Least<sp/>squares<sp/>coefficents</highlight></codeline>
+<codeline lineno="65"><highlight class="comment"><sp/><sp/><sp/><sp/>const<sp/>int<sp/>n);</highlight></codeline>
+<codeline lineno="66"><highlight class="comment"></highlight></codeline>
+<codeline lineno="67"><highlight class="comment">Parameters:</highlight></codeline>
+<codeline lineno="68"><highlight class="comment">source_mat<sp/>-<sp/>the<sp/>matrix<sp/>decomposed<sp/>by<sp/>Crout;</highlight></codeline>
+<codeline lineno="69"><highlight class="comment">n<sp/>-<sp/>the<sp/>matrix<sp/>size;</highlight></codeline>
+<codeline lineno="70"><highlight class="comment">indx<sp/>-<sp/>permutation<sp/>order<sp/>obtained<sp/>by<sp/>decomposition<sp/>algorithm;</highlight></codeline>
+<codeline lineno="71"><highlight class="comment">coeffs<sp/>-<sp/>the<sp/>vector<sp/>(size<sp/>n)<sp/>to<sp/>be<sp/>substituted<sp/>on<sp/>input,<sp/>the<sp/>result</highlight></codeline>
+<codeline lineno="72"><highlight class="comment">of<sp/>the<sp/>substitution<sp/>on<sp/>output.</highlight></codeline>
+<codeline lineno="73"><highlight class="comment">Note:<sp/>a<sp/>and<sp/>indx<sp/>are<sp/>not<sp/>modified<sp/>by<sp/>this<sp/>routine<sp/>and<sp/>could<sp/>be<sp/></highlight></codeline>
+<codeline lineno="74"><highlight class="comment">used<sp/>in<sp/>multiple<sp/>calls.</highlight></codeline>
+<codeline lineno="75"><highlight class="comment">*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>LU_backsub(</highlight></codeline>
+<codeline lineno="77"><highlight class="normal"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;source_mat,<sp/><sp/></highlight><highlight class="comment">//<sp/>input<sp/>matrix</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>ViewCArray<sp/>&lt;int&gt;<sp/>&amp;indx,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>permutations</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="79"><highlight class="normal"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;b,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>Least<sp/>squares<sp/>coefficents</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="80"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>n);</highlight></codeline>
+<codeline lineno="81"><highlight class="normal"></highlight></codeline>
+<codeline lineno="82"><highlight class="normal"></highlight></codeline>
+<codeline lineno="83"><highlight class="normal"></highlight></codeline>
+<codeline lineno="84"><highlight class="normal"></highlight></codeline>
+<codeline lineno="85"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>-------------------<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="86"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>LU<sp/><sp/>invert<sp/>function<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="87"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>-------------------<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="88"><highlight class="normal"></highlight><highlight class="comment">/*<sp/></highlight></codeline>
+<codeline lineno="89"><highlight class="comment">Invertation<sp/>of<sp/>matrix,<sp/>using<sp/>LU<sp/>decomposed<sp/>matrix.</highlight></codeline>
+<codeline lineno="90"><highlight class="comment">Description:</highlight></codeline>
+<codeline lineno="91"><highlight class="comment">void<sp/>LU_invert(</highlight></codeline>
+<codeline lineno="92"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;source_mat,<sp/><sp/>//<sp/>input<sp/>matrix</highlight></codeline>
+<codeline lineno="93"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;int&gt;<sp/>&amp;indx,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>permutations</highlight></codeline>
+<codeline lineno="94"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;inv_mat,<sp/><sp/><sp/><sp/><sp/>//<sp/>inverse<sp/>matrix</highlight></codeline>
+<codeline lineno="95"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;col,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>tmp<sp/>array</highlight></codeline>
+<codeline lineno="96"><highlight class="comment"><sp/><sp/><sp/><sp/>int<sp/>n)</highlight></codeline>
+<codeline lineno="97"><highlight class="comment"></highlight></codeline>
+<codeline lineno="98"><highlight class="comment">Parameters:</highlight></codeline>
+<codeline lineno="99"><highlight class="comment">source_mat<sp/>-<sp/>the<sp/>matrix<sp/>decomposed<sp/>by<sp/>Crout;</highlight></codeline>
+<codeline lineno="100"><highlight class="comment">n<sp/>-<sp/>the<sp/>matrix<sp/>size;</highlight></codeline>
+<codeline lineno="101"><highlight class="comment">indx<sp/>-<sp/>permutation<sp/>order<sp/>obtained<sp/>by<sp/>decomposition<sp/>algorithm;</highlight></codeline>
+<codeline lineno="102"><highlight class="comment">inv_mat<sp/>-<sp/>the<sp/>destination<sp/>matrix;</highlight></codeline>
+<codeline lineno="103"><highlight class="comment">col<sp/>-<sp/>temporary<sp/>array<sp/>(size<sp/>n).</highlight></codeline>
+<codeline lineno="104"><highlight class="comment">Note:<sp/>test<sp/>for<sp/>singularity<sp/>has<sp/>been<sp/>already<sp/>obtained<sp/>on<sp/>the<sp/></highlight></codeline>
+<codeline lineno="105"><highlight class="comment">matrix<sp/>decomposition,<sp/>a<sp/>and<sp/>indx<sp/>are<sp/>not<sp/>modified<sp/>by<sp/>this<sp/>routine,<sp/></highlight></codeline>
+<codeline lineno="106"><highlight class="comment">the<sp/>routine<sp/>uses<sp/>multiple<sp/>backsubstitutions<sp/>(previous<sp/>algorithm).</highlight></codeline>
+<codeline lineno="107"><highlight class="comment">*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="108"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>LU_invert(</highlight></codeline>
+<codeline lineno="109"><highlight class="normal"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;source_mat,<sp/><sp/></highlight><highlight class="comment">//<sp/>input<sp/>matrix</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="110"><highlight class="normal"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;int&gt;<sp/>&amp;indx,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>permutations</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="111"><highlight class="normal"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;inv_mat,<sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>inverse<sp/>matrix</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="112"><highlight class="normal"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;col,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>tmp<sp/>array</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="113"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>n);</highlight></codeline>
+<codeline lineno="114"><highlight class="normal"></highlight></codeline>
+<codeline lineno="115"><highlight class="normal"></highlight></codeline>
+<codeline lineno="116"><highlight class="normal"></highlight></codeline>
+<codeline lineno="117"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>------------------------<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="118"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>LU<sp/><sp/>determinant<sp/>function<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="119"><highlight class="normal"></highlight><highlight class="comment">/*<sp/>------------------------<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="120"><highlight class="normal"></highlight><highlight class="comment">/*<sp/></highlight></codeline>
+<codeline lineno="121"><highlight class="comment">Obtaining<sp/>the<sp/>matrix<sp/>determinant,<sp/>using<sp/>LU-decomposed<sp/>matrix</highlight></codeline>
+<codeline lineno="122"><highlight class="comment">Description:</highlight></codeline>
+<codeline lineno="123"><highlight class="comment">double<sp/>LU_determ(</highlight></codeline>
+<codeline lineno="124"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;source_mat,<sp/><sp/>//<sp/>input<sp/>matrix</highlight></codeline>
+<codeline lineno="125"><highlight class="comment"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;int&gt;<sp/>&amp;indx,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>permutations</highlight></codeline>
+<codeline lineno="126"><highlight class="comment"><sp/><sp/><sp/><sp/>const<sp/>int<sp/>parity,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>parity<sp/>(+1<sp/>0r<sp/>-1)</highlight></codeline>
+<codeline lineno="127"><highlight class="comment"><sp/><sp/><sp/><sp/>const<sp/>int<sp/>n)<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>//<sp/>size<sp/>of<sp/>source<sp/>matrix</highlight></codeline>
+<codeline lineno="128"><highlight class="comment"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight></codeline>
+<codeline lineno="129"><highlight class="comment">Parameters:</highlight></codeline>
+<codeline lineno="130"><highlight class="comment">source_mat<sp/>-<sp/>the<sp/>matrix<sp/>decomposed<sp/>by<sp/>Crout;</highlight></codeline>
+<codeline lineno="131"><highlight class="comment">n<sp/>-<sp/>the<sp/>matrix<sp/>size;</highlight></codeline>
+<codeline lineno="132"><highlight class="comment">indx<sp/>-<sp/>permutation<sp/>order<sp/>obtained<sp/>by<sp/>decomposition<sp/>algorithm;</highlight></codeline>
+<codeline lineno="133"><highlight class="comment">parity<sp/>-<sp/>the<sp/>parity<sp/>sign<sp/>(+1<sp/>or<sp/>-1)<sp/>obtained<sp/>at<sp/>decomposition.</highlight></codeline>
+<codeline lineno="134"><highlight class="comment">Returns:</highlight></codeline>
+<codeline lineno="135"><highlight class="comment">the<sp/>determinant<sp/>value.<sp/>Note:<sp/>non-zero<sp/>(the<sp/>matrix<sp/>cannot<sp/>be<sp/></highlight></codeline>
+<codeline lineno="136"><highlight class="comment">singular,<sp/>if<sp/>decomposed<sp/>properly);<sp/>a,<sp/>indx<sp/>and<sp/>parity<sp/>are<sp/>not<sp/>modified<sp/></highlight></codeline>
+<codeline lineno="137"><highlight class="comment">by<sp/>this<sp/>routine.</highlight></codeline>
+<codeline lineno="138"><highlight class="comment">*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="139"><highlight class="normal"></highlight><highlight class="keywordtype">double</highlight><highlight class="normal"><sp/>LU_determ(</highlight></codeline>
+<codeline lineno="140"><highlight class="normal"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;real_t&gt;<sp/>&amp;source_mat,<sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>input<sp/>matrix</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="141"><highlight class="normal"><sp/><sp/><sp/><sp/>ViewCArray<sp/>&lt;int&gt;<sp/>&amp;indx,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>permutations</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="142"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>parity,<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>parity<sp/>(+1<sp/>0r<sp/>-1)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="143"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/></highlight><highlight class="keywordtype">int</highlight><highlight class="normal"><sp/>n);</highlight></codeline>
+<codeline lineno="144"><highlight class="normal"></highlight></codeline>
+<codeline lineno="145"><highlight class="normal"></highlight></codeline>
+<codeline lineno="146"><highlight class="normal"></highlight></codeline>
+<codeline lineno="147"><highlight class="normal"></highlight><highlight class="comment">//<sp/>place<sp/>math<sp/>functors<sp/>here</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="148"><highlight class="normal"></highlight></codeline>
+<codeline lineno="149"><highlight class="normal"></highlight></codeline>
+<codeline lineno="150"><highlight class="normal"></highlight></codeline>
+<codeline lineno="151"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>SLAM_H<sp/></highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="/home/jan/packages/elements/include/slam/slam.h"/>
+  </compounddef>
+</doxygen>

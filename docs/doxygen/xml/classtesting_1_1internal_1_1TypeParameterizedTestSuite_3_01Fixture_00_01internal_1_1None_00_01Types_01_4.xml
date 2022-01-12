@@ -1,0 +1,58 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1TypeParameterizedTestSuite_3_01Fixture_00_01internal_1_1None_00_01Types_01_4" kind="class" language="C++" prot="public">
+    <compoundname>testing::internal::TypeParameterizedTestSuite&lt; Fixture, internal::None, Types &gt;</compoundname>
+    <templateparamlist>
+      <param>
+        <type>GTEST_TEMPLATE_</type>
+        <declname>Fixture</declname>
+        <defname>Fixture</defname>
+      </param>
+      <param>
+        <type>typename <ref refid="structtesting_1_1internal_1_1Types" kindref="compound">Types</ref></type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1TypeParameterizedTestSuite_3_01Fixture_00_01internal_1_1None_00_01Types_01_4_1a571b8fbf0784caec7a04cfc9f79a3665" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::internal::TypeParameterizedTestSuite&lt; Fixture, internal::None, Types &gt;::Register</definition>
+        <argsstring>(const char *, const CodeLocation &amp;, const TypedTestSuitePState *, const char *, const char *, const std::vector&lt; std::string &gt; &amp;=std::vector&lt; std::string &gt;())</argsstring>
+        <name>Register</name>
+        <param>
+          <type>const char *</type>
+        </param>
+        <param>
+          <type>const <ref refid="structtesting_1_1internal_1_1CodeLocation" kindref="compound">CodeLocation</ref> &amp;</type>
+        </param>
+        <param>
+          <type>const TypedTestSuitePState *</type>
+        </param>
+        <param>
+          <type>const char *</type>
+        </param>
+        <param>
+          <type>const char *</type>
+        </param>
+        <param>
+          <type>const std::vector&lt; std::string &gt; &amp;</type>
+          <defval>std::vector&lt; std::string &gt;()</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="815" column="15" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="815" bodyend="821"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="813" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="813" bodyend="822"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1TypeParameterizedTestSuite_3_01Fixture_00_01internal_1_1None_00_01Types_01_4_1a571b8fbf0784caec7a04cfc9f79a3665" prot="public" virt="non-virtual"><scope>testing::internal::TypeParameterizedTestSuite&lt; Fixture, internal::None, Types &gt;</scope><name>Register</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

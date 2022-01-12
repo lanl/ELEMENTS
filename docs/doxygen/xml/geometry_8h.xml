@@ -1,0 +1,246 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="geometry_8h" kind="file" language="C++">
+    <compoundname>geometry.h</compoundname>
+    <includes refid="utilities_8h" local="yes">common/utilities.h</includes>
+    <includes refid="elements_8h" local="yes">element_types/elements.h</includes>
+    <includes refid="swage_8h" local="yes">swage/swage.h</includes>
+    <includes local="no">iostream</includes>
+    <incdepgraph>
+      <node id="11">
+        <label>common/common.h</label>
+        <link refid="common_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="12" relation="include">
+        </childnode>
+        <childnode refid="13" relation="include">
+        </childnode>
+        <childnode refid="14" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>common/utilities.h</label>
+        <link refid="utilities_8h_source"/>
+      </node>
+      <node id="3">
+        <label>element_types/elements.h</label>
+        <link refid="elements_8h_source"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="10">
+        <label>element_types/lagrange_polynomials.h</label>
+        <link refid="lagrange__polynomials_8h_source"/>
+        <childnode refid="11" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>/home/jan/packages/elements/include/geometry/geometry.h</label>
+        <link refid="geometry_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>swage/swage.h</label>
+        <link refid="swage_8h_source"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="11" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+      <node id="12">
+        <label>cmath</label>
+      </node>
+      <node id="13">
+        <label>complex</label>
+      </node>
+      <node id="5">
+        <label>iostream</label>
+      </node>
+      <node id="14">
+        <label>limits</label>
+      </node>
+      <node id="4">
+        <label>matar.h</label>
+      </node>
+      <node id="8">
+        <label>math.h</label>
+      </node>
+      <node id="6">
+        <label>stdio.h</label>
+      </node>
+      <node id="7">
+        <label>stdlib.h</label>
+      </node>
+    </incdepgraph>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="geometry_8h_1a39ee02036536e7f74cfb0daebc28ad99" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void get_gauss_pt_jacobian</definition>
+        <argsstring>(swage::mesh_t &amp;mesh, elements::ref_element &amp;ref_elem)</argsstring>
+        <name>get_gauss_pt_jacobian</name>
+        <param>
+          <type><ref refid="classswage_1_1mesh__t" kindref="compound">swage::mesh_t</ref> &amp;</type>
+          <declname>mesh</declname>
+        </param>
+        <param>
+          <type><ref refid="classelements_1_1ref__element" kindref="compound">elements::ref_element</ref> &amp;</type>
+          <declname>ref_elem</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/geometry/geometry.h" line="14" column="6" declfile="/home/jan/packages/elements/include/geometry/geometry.h" declline="14" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="geometry_8h_1ade270a8fb7a620471c149c14d628df76" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void get_gauss_patch_pt_jacobian</definition>
+        <argsstring>(swage::mesh_t &amp;mesh, elements::ref_element &amp;ref_elem)</argsstring>
+        <name>get_gauss_patch_pt_jacobian</name>
+        <param>
+          <type><ref refid="classswage_1_1mesh__t" kindref="compound">swage::mesh_t</ref> &amp;</type>
+          <declname>mesh</declname>
+        </param>
+        <param>
+          <type><ref refid="classelements_1_1ref__element" kindref="compound">elements::ref_element</ref> &amp;</type>
+          <declname>ref_elem</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/geometry/geometry.h" line="16" column="6" declfile="/home/jan/packages/elements/include/geometry/geometry.h" declline="16" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="geometry_8h_1a9d64327062ab010e194fcc587b6677a6" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void get_gauss_cell_pt_jacobian</definition>
+        <argsstring>(swage::mesh_t &amp;mesh, elements::ref_element &amp;ref_elem)</argsstring>
+        <name>get_gauss_cell_pt_jacobian</name>
+        <param>
+          <type><ref refid="classswage_1_1mesh__t" kindref="compound">swage::mesh_t</ref> &amp;</type>
+          <declname>mesh</declname>
+        </param>
+        <param>
+          <type><ref refid="classelements_1_1ref__element" kindref="compound">elements::ref_element</ref> &amp;</type>
+          <declname>ref_elem</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/geometry/geometry.h" line="18" column="6" declfile="/home/jan/packages/elements/include/geometry/geometry.h" declline="18" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="geometry_8h_1a4e40f318c6acbe4c467f033f7de8429b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void get_vol_jacobi</definition>
+        <argsstring>(swage::mesh_t &amp;mesh, elements::ref_element &amp;ref_elem)</argsstring>
+        <name>get_vol_jacobi</name>
+        <param>
+          <type><ref refid="classswage_1_1mesh__t" kindref="compound">swage::mesh_t</ref> &amp;</type>
+          <declname>mesh</declname>
+        </param>
+        <param>
+          <type><ref refid="classelements_1_1ref__element" kindref="compound">elements::ref_element</ref> &amp;</type>
+          <declname>ref_elem</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/geometry/geometry.h" line="20" column="6" declfile="/home/jan/packages/elements/include/geometry/geometry.h" declline="20" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="geometry_8h_1af07d3502f1dc5f57f7edae07298d06c0" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void get_vol_hex</definition>
+        <argsstring>(swage::mesh_t &amp;mesh, elements::ref_element &amp;ref_elem)</argsstring>
+        <name>get_vol_hex</name>
+        <param>
+          <type><ref refid="classswage_1_1mesh__t" kindref="compound">swage::mesh_t</ref> &amp;</type>
+          <declname>mesh</declname>
+        </param>
+        <param>
+          <type><ref refid="classelements_1_1ref__element" kindref="compound">elements::ref_element</ref> &amp;</type>
+          <declname>ref_elem</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/geometry/geometry.h" line="22" column="6" declfile="/home/jan/packages/elements/include/geometry/geometry.h" declline="22" declcolumn="6"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#ifndef<sp/>GEOMETRY_H</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GEOMETRY_H<sp/></highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;common/utilities.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;element_types/elements.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;swage/swage.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;iostream&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="keyword">using<sp/>namespace<sp/></highlight><highlight class="normal">utils;</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>get_gauss_pt_jacobian(<ref refid="classswage_1_1mesh__t" kindref="compound">swage::mesh_t</ref>&amp;<sp/>mesh,<sp/><ref refid="classelements_1_1ref__element" kindref="compound">elements::ref_element</ref>&amp;<sp/>ref_elem);</highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>get_gauss_patch_pt_jacobian(<ref refid="classswage_1_1mesh__t" kindref="compound">swage::mesh_t</ref>&amp;<sp/>mesh,<sp/><ref refid="classelements_1_1ref__element" kindref="compound">elements::ref_element</ref>&amp;<sp/>ref_elem);</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>get_gauss_cell_pt_jacobian(<ref refid="classswage_1_1mesh__t" kindref="compound">swage::mesh_t</ref>&amp;<sp/>mesh,<sp/><ref refid="classelements_1_1ref__element" kindref="compound">elements::ref_element</ref>&amp;<sp/>ref_elem);</highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>get_vol_jacobi(<ref refid="classswage_1_1mesh__t" kindref="compound">swage::mesh_t</ref>&amp;<sp/>mesh,<sp/><ref refid="classelements_1_1ref__element" kindref="compound">elements::ref_element</ref>&amp;<sp/>ref_elem);</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>get_vol_hex(<ref refid="classswage_1_1mesh__t" kindref="compound">swage::mesh_t</ref>&amp;<sp/>mesh,<sp/><ref refid="classelements_1_1ref__element" kindref="compound">elements::ref_element</ref>&amp;<sp/>ref_elem);</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"></highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight></codeline>
+<codeline lineno="25"><highlight class="normal"></highlight></codeline>
+<codeline lineno="26"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/></highlight><highlight class="comment">//<sp/>GEOMETRY_H</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="/home/jan/packages/elements/include/geometry/geometry.h"/>
+  </compounddef>
+</doxygen>

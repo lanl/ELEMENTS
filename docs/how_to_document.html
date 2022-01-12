@@ -52,8 +52,8 @@ The complication is that Sphinx cannot parse C++ source directly, so we must use
 <section id="how-to-add-a-page-like-this-one">
 <h2>How to add a page like this one?<a class="headerlink" href="#how-to-add-a-page-like-this-one" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic simple">
-<li><p>Create a new reStructuredText file in the <code class="docutils literal notranslate"><span class="pre">docs/</span></code> directory.</p></li>
-<li><p>Add the file name to the list of files under <code class="docutils literal notranslate"><span class="pre">Contents:</span></code> in the <code class="docutils literal notranslate"><span class="pre">docs/sphinx/index.rst</span></code> file.</p></li>
+<li><p>Create a new reStructuredText file in the <code class="docutils literal notranslate"><span class="pre">docs/sphinx/source</span></code> directory.</p></li>
+<li><p>Add the file name to the list of files under <code class="docutils literal notranslate"><span class="pre">Contents:</span></code> in the <code class="docutils literal notranslate"><span class="pre">docs/sphinx/source/index.rst</span></code> file.</p></li>
 <li><p>Add the file to the list of files tracked in the <code class="docutils literal notranslate"><span class="pre">docs/CMakeLists.txt</span></code> file (beneath the <code class="docutils literal notranslate"><span class="pre">DEPENDS</span></code> keyword in the <code class="docutils literal notranslate"><span class="pre">add_custom_command</span></code> function in the Sphinx section of the file).</p></li>
 <li><p>Write the page using reStructuredText.</p></li>
 </ol>

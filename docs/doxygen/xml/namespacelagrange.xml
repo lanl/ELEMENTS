@@ -1,0 +1,247 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="namespacelagrange" kind="namespace" language="C++">
+    <compoundname>lagrange</compoundname>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="lagrange__polynomials_8h_1ad8dbe81a4b5ccf84ae9ba0780755bde3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>SizeType</type>
+        <definition>SizeType lagrange::find_coincident_vertex</definition>
+        <argsstring>(const SizeType &amp;, const NumType *, const NumType &amp;)</argsstring>
+        <name>find_coincident_vertex</name>
+        <param>
+          <type>const SizeType &amp;</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" line="8" column="12" declfile="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" declline="8" declcolumn="12"/>
+      </memberdef>
+      <memberdef kind="function" id="lagrange__polynomials_8h_1a4be373b9f98d5025be077f8b5bd9bacb" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void lagrange::compute_barycentric_weights</definition>
+        <argsstring>(const SizeType &amp;, const NumType *, NumType *)</argsstring>
+        <name>compute_barycentric_weights</name>
+        <param>
+          <type>const SizeType &amp;</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" line="13" column="8" declfile="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" declline="13" declcolumn="8"/>
+      </memberdef>
+      <memberdef kind="function" id="lagrange__polynomials_8h_1acb912ebd61ca3906dd1ec50fe6cd4fe9" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>NumType</type>
+        <definition>NumType lagrange::eval</definition>
+        <argsstring>(const SizeType Nv, const SizeType i, const SizeType ic, const NumType *Z, const NumType *w, const NumType X)</argsstring>
+        <name>eval</name>
+        <param>
+          <type>const SizeType</type>
+          <declname>Nv</declname>
+        </param>
+        <param>
+          <type>const SizeType</type>
+          <declname>i</declname>
+        </param>
+        <param>
+          <type>const SizeType</type>
+          <declname>ic</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>Z</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>w</declname>
+        </param>
+        <param>
+          <type>const NumType</type>
+          <declname>X</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" line="18" column="11" declfile="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" declline="18" declcolumn="11"/>
+      </memberdef>
+      <memberdef kind="function" id="lagrange__polynomials_8h_1afc999461870849e743c6d7922b05b4bb" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>NumType</type>
+        <definition>NumType lagrange::eval_der</definition>
+        <argsstring>(const SizeType Nv, const SizeType n, const SizeType i, const SizeType ic, const NumType *Z, const NumType *w, const NumType X, NumType *c)</argsstring>
+        <name>eval_der</name>
+        <param>
+          <type>const SizeType</type>
+          <declname>Nv</declname>
+        </param>
+        <param>
+          <type>const SizeType</type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>const SizeType</type>
+          <declname>i</declname>
+        </param>
+        <param>
+          <type>const SizeType</type>
+          <declname>ic</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>Z</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>w</declname>
+        </param>
+        <param>
+          <type>const NumType</type>
+          <declname>X</declname>
+        </param>
+        <param>
+          <type>NumType *</type>
+          <declname>c</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" line="22" column="11" declfile="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" declline="22" declcolumn="11"/>
+      </memberdef>
+      <memberdef kind="function" id="lagrange__polynomials_8h_1a5b3c183f0ed8b0092cb43b5b995162b4" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>NumType</type>
+        <definition>NumType lagrange::eval_interp</definition>
+        <argsstring>(const SizeType Nv, const SizeType i, const NumType *Z, const NumType *w, const NumType X, const NumType *c)</argsstring>
+        <name>eval_interp</name>
+        <param>
+          <type>const SizeType</type>
+          <declname>Nv</declname>
+        </param>
+        <param>
+          <type>const SizeType</type>
+          <declname>i</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>Z</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>w</declname>
+        </param>
+        <param>
+          <type>const NumType</type>
+          <declname>X</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>c</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" line="28" column="11" declfile="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" declline="28" declcolumn="11"/>
+      </memberdef>
+      <memberdef kind="function" id="lagrange__polynomials_8h_1afcef45229bccac1f7ca8e70db37381d1" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>NumType</type>
+        <definition>NumType lagrange::eval_der_interp</definition>
+        <argsstring>(const SizeType Nv, const SizeType n, const SizeType i, const NumType *Z, const NumType *w, const NumType X, NumType *c)</argsstring>
+        <name>eval_der_interp</name>
+        <param>
+          <type>const SizeType</type>
+          <declname>Nv</declname>
+        </param>
+        <param>
+          <type>const SizeType</type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>const SizeType</type>
+          <declname>i</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>Z</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>w</declname>
+        </param>
+        <param>
+          <type>const NumType</type>
+          <declname>X</declname>
+        </param>
+        <param>
+          <type>NumType *</type>
+          <declname>c</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" line="32" column="11" declfile="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" declline="32" declcolumn="11"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/element_types/lagrange_polynomials.h" line="5" column="1"/>
+  </compounddef>
+</doxygen>

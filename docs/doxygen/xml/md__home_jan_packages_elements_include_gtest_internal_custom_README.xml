@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="md__home_jan_packages_elements_include_gtest_internal_custom_README" kind="page">
+    <compoundname>md__home_jan_packages_elements_include_gtest_internal_custom_README</compoundname>
+    <title>Customization Points</title>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para>The custom directory is an injection point for custom user configurations.</para>
+<sect1 id="md__home_jan_packages_elements_include_gtest_internal_custom_README_1autotoc_md4">
+<title>Header &lt;tt&gt;gtest.h&lt;/tt&gt;</title>
+<sect2 id="md__home_jan_packages_elements_include_gtest_internal_custom_README_1autotoc_md5">
+<title>The following macros can be defined:</title>
+<para><itemizedlist>
+<listitem><para><computeroutput>GTEST_OS_STACK_TRACE_GETTER_</computeroutput> - The name of an implementation of <computeroutput>OsStackTraceGetterInterface</computeroutput>.</para>
+</listitem><listitem><para><computeroutput>GTEST_CUSTOM_TEMPDIR_FUNCTION_</computeroutput> - An override for <computeroutput>testing::TempDir()</computeroutput>. See <computeroutput>testing::TempDir</computeroutput> for semantics and signature.</para>
+</listitem></itemizedlist>
+</para>
+</sect2>
+</sect1>
+<sect1 id="md__home_jan_packages_elements_include_gtest_internal_custom_README_1autotoc_md6">
+<title>Header &lt;tt&gt;gtest-port.h&lt;/tt&gt;</title>
+<para>The following macros can be defined:</para>
+<sect2 id="md__home_jan_packages_elements_include_gtest_internal_custom_README_1autotoc_md7">
+<title>Flag related macros:</title>
+<para><itemizedlist>
+<listitem><para><computeroutput>GTEST_FLAG(flag_name)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GTEST_USE_OWN_FLAGFILE_FLAG_</computeroutput> - Define to 0 when the system provides its own flagfile flag parsing.</para>
+</listitem><listitem><para><computeroutput>GTEST_DECLARE_bool_(name)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GTEST_DECLARE_int32_(name)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GTEST_DECLARE_string_(name)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GTEST_DEFINE_bool_(name, default_val, doc)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GTEST_DEFINE_int32_(name, default_val, doc)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GTEST_DEFINE_string_(name, default_val, doc)</computeroutput></para>
+</listitem></itemizedlist>
+</para>
+</sect2>
+<sect2 id="md__home_jan_packages_elements_include_gtest_internal_custom_README_1autotoc_md8">
+<title>Logging:</title>
+<para><itemizedlist>
+<listitem><para><computeroutput>GTEST_LOG_(severity)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GTEST_CHECK_(condition)</computeroutput></para>
+</listitem><listitem><para>Functions <computeroutput>LogToStderr()</computeroutput> and <computeroutput>FlushInfoLog()</computeroutput> have to be provided too.</para>
+</listitem></itemizedlist>
+</para>
+</sect2>
+<sect2 id="md__home_jan_packages_elements_include_gtest_internal_custom_README_1autotoc_md9">
+<title>Threading:</title>
+<para><itemizedlist>
+<listitem><para><computeroutput>GTEST_HAS_NOTIFICATION_</computeroutput> - Enabled if Notification is already provided.</para>
+</listitem><listitem><para><computeroutput>GTEST_HAS_MUTEX_AND_THREAD_LOCAL_</computeroutput> - Enabled if <computeroutput>Mutex</computeroutput> and <computeroutput>ThreadLocal</computeroutput> are already provided. Must also provide <computeroutput>GTEST_DECLARE_STATIC_MUTEX_(mutex)</computeroutput> and <computeroutput>GTEST_DEFINE_STATIC_MUTEX_(mutex)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GTEST_EXCLUSIVE_LOCK_REQUIRED_(locks)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GTEST_LOCK_EXCLUDED_(locks)</computeroutput></para>
+</listitem></itemizedlist>
+</para>
+</sect2>
+<sect2 id="md__home_jan_packages_elements_include_gtest_internal_custom_README_1autotoc_md10">
+<title>Underlying library support features</title>
+<para><itemizedlist>
+<listitem><para><computeroutput>GTEST_HAS_CXXABI_H_</computeroutput></para>
+</listitem></itemizedlist>
+</para>
+</sect2>
+<sect2 id="md__home_jan_packages_elements_include_gtest_internal_custom_README_1autotoc_md11">
+<title>Exporting API symbols:</title>
+<para><itemizedlist>
+<listitem><para><computeroutput>GTEST_API_</computeroutput> - Specifier for exported symbols.</para>
+</listitem></itemizedlist>
+</para>
+</sect2>
+</sect1>
+<sect1 id="md__home_jan_packages_elements_include_gtest_internal_custom_README_1autotoc_md12">
+<title>Header &lt;tt&gt;gtest-printers.h&lt;/tt&gt;</title>
+<para><itemizedlist>
+<listitem><para>See documentation at <computeroutput><ref refid="gtest-printers_8h_source" kindref="compound">gtest/gtest-printers.h</ref></computeroutput> for details on how to define a custom printer. </para>
+</listitem></itemizedlist>
+</para>
+</sect1>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/custom/README.md"/>
+  </compounddef>
+</doxygen>

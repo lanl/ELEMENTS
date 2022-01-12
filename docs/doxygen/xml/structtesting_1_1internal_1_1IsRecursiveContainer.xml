@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1IsRecursiveContainer" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::IsRecursiveContainer</compoundname>
+    <basecompoundref prot="public" virt="non-virtual">IsRecursiveContainerImpl::type</basecompoundref>
+    <templateparamlist>
+      <param>
+        <type>typename C</type>
+      </param>
+    </templateparamlist>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>IsRecursiveContainerImpl&lt; C &gt;::type</label>
+      </node>
+      <node id="1">
+        <label>testing::internal::IsRecursiveContainer&lt; C &gt;</label>
+        <link refid="structtesting_1_1internal_1_1IsRecursiveContainer"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>IsRecursiveContainerImpl&lt; C &gt;::type</label>
+      </node>
+      <node id="1">
+        <label>testing::internal::IsRecursiveContainer&lt; C &gt;</label>
+        <link refid="structtesting_1_1internal_1_1IsRecursiveContainer"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="1007" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="1007" bodyend="1007"/>
+    <listofallmembers>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

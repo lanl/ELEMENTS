@@ -1,0 +1,114 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="matar__blas__lapack__interface_8h" kind="file" language="C++">
+    <compoundname>matar_blas_lapack_interface.h</compoundname>
+    <includes refid="c__blas__lapack__interface_8h" local="yes">common/c_blas_lapack_interface.h</includes>
+    <includes refid="error_8h" local="yes">common/error.h</includes>
+    <includes refid="common_8h" local="yes">common/common.h</includes>
+    <includedby refid="gauss__jacobi__quadrature_8h" local="yes">/home/jan/packages/elements/include/element_types/gauss_jacobi_quadrature.h</includedby>
+    <incdepgraph>
+      <node id="2">
+        <label>common/c_blas_lapack_interface.h</label>
+        <link refid="c__blas__lapack__interface_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>common/common.h</label>
+        <link refid="common_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>common/error.h</label>
+        <link refid="error_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h</label>
+        <link refid="matar__blas__lapack__interface_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+        <childnode refid="3" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>cassert</label>
+      </node>
+      <node id="5">
+        <label>cmath</label>
+      </node>
+      <node id="6">
+        <label>complex</label>
+      </node>
+      <node id="10">
+        <label>exception</label>
+      </node>
+      <node id="7">
+        <label>limits</label>
+      </node>
+      <node id="4">
+        <label>matar.h</label>
+      </node>
+    </incdepgraph>
+    <invincdepgraph>
+      <node id="1">
+        <label>/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h</label>
+        <link refid="matar__blas__lapack__interface_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>/home/jan/packages/elements/include/element_types/gauss_jacobi_quadrature.h</label>
+        <link refid="gauss__jacobi__quadrature_8h_source"/>
+      </node>
+    </invincdepgraph>
+    <innernamespace refid="namespacematar2blas">matar2blas</innernamespace>
+    <innernamespace refid="namespacematar2lapack">matar2lapack</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;common/c_blas_lapack_interface.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;common/error.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;common/common.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Interface<sp/>to<sp/>selected<sp/>BLAS<sp/>routines<sp/>for<sp/>MATAR<sp/>CArrays</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">matar2blas<sp/>{</highlight></codeline>
+<codeline lineno="9"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>transpose(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>CArray&lt;Real&gt;<sp/>&amp;,<sp/>CArray&lt;Real&gt;<sp/>&amp;);</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>matvec(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>CArray&lt;Real&gt;<sp/>&amp;,<sp/></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>CArray&lt;Real&gt;<sp/>&amp;,<sp/>CArray&lt;Real&gt;<sp/>&amp;);</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>matmul(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>CArray&lt;Real&gt;<sp/>&amp;,<sp/></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>CArray&lt;Real&gt;<sp/>&amp;,<sp/>CArray&lt;Real&gt;<sp/>&amp;);</highlight></codeline>
+<codeline lineno="16"><highlight class="normal">}</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Interface<sp/>to<sp/>selected<sp/>LAPACK<sp/>routines<sp/>for<sp/>MATAR<sp/>CArrays</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal">matar2lapack<sp/>{</highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>invert(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>CArray&lt;Real&gt;<sp/>&amp;,<sp/>CArray&lt;Real&gt;<sp/>&amp;);</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>eig_sym_tri(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>CArray&lt;Real&gt;<sp/>&amp;diag,<sp/></highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>CArray&lt;Real&gt;<sp/>&amp;subdiag,<sp/>CArray&lt;Real&gt;<sp/>&amp;eigvals,<sp/></highlight></codeline>
+<codeline lineno="24"><highlight class="normal"><sp/><sp/><sp/><sp/>CArray&lt;Real&gt;<sp/>&amp;eigvecs);</highlight></codeline>
+<codeline lineno="25"><highlight class="normal">}</highlight></codeline>
+    </programlisting>
+    <location file="/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h"/>
+  </compounddef>
+</doxygen>

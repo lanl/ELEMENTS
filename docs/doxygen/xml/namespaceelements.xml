@@ -1,0 +1,657 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="namespaceelements" kind="namespace" language="C++">
+    <compoundname>elements</compoundname>
+    <innerclass refid="classelements_1_1Element2D" prot="public">elements::Element2D</innerclass>
+    <innerclass refid="classelements_1_1Element3D" prot="public">elements::Element3D</innerclass>
+    <innerclass refid="classelements_1_1Element4D" prot="public">elements::Element4D</innerclass>
+    <innerclass refid="classelements_1_1Quad4" prot="public">elements::Quad4</innerclass>
+    <innerclass refid="classelements_1_1Quad8" prot="public">elements::Quad8</innerclass>
+    <innerclass refid="classelements_1_1Quad12" prot="public">elements::Quad12</innerclass>
+    <innerclass refid="classelements_1_1QuadN" prot="public">elements::QuadN</innerclass>
+    <innerclass refid="classelements_1_1Hex8" prot="public">elements::Hex8</innerclass>
+    <innerclass refid="classelements_1_1Hex20" prot="public">elements::Hex20</innerclass>
+    <innerclass refid="classelements_1_1Hex32" prot="public">elements::Hex32</innerclass>
+    <innerclass refid="classelements_1_1HexN" prot="public">elements::HexN</innerclass>
+    <innerclass refid="classelements_1_1Tess16" prot="public">elements::Tess16</innerclass>
+    <innerclass refid="structelements_1_1elem__type__t" prot="public">elements::elem_type_t</innerclass>
+    <innerclass refid="classelements_1_1element__selector" prot="public">elements::element_selector</innerclass>
+    <innerclass refid="classelements_1_1ref__element" prot="public">elements::ref_element</innerclass>
+    <innernamespace refid="namespaceelements_1_1elem__types">elements::elem_types</innernamespace>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="elements_8h_1a5a8b7a2f28c2760b408e23ab30c48d0e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::lobatto_nodes_1D</definition>
+        <argsstring>(CArray&lt; real_t &gt; &amp;lob_nodes_1D, const int &amp;num)</argsstring>
+        <name>lobatto_nodes_1D</name>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>lob_nodes_1D</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>num</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="70" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="70" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a354cb0b2bf53cace314c089fc0a82fb2" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::lobatto_weights_1D</definition>
+        <argsstring>(CArray&lt; real_t &gt; &amp;lob_weights_1D, const int &amp;num)</argsstring>
+        <name>lobatto_weights_1D</name>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>lob_weights_1D</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>num</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="74" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="74" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a15235e196dbc3beccb1d11ee82b2fca9" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::legendre_nodes_1D</definition>
+        <argsstring>(CArray&lt; real_t &gt; &amp;leg_nodes_1D, const int &amp;num)</argsstring>
+        <name>legendre_nodes_1D</name>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>leg_nodes_1D</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>num</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="79" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="79" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a62a007cdb25503708a32bfa419a6bb15" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::legendre_weights_1D</definition>
+        <argsstring>(CArray&lt; real_t &gt; &amp;leg_weights_1D, const int &amp;num)</argsstring>
+        <name>legendre_weights_1D</name>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>leg_weights_1D</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>num</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="83" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="83" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1ac6c0a6dbadef910f8e77c73b64dbf998" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::length_weights</definition>
+        <argsstring>(CArray&lt; real_t &gt; &amp;len_weights_1D, CArray&lt; real_t &gt; &amp;lab_weights_1D, CArray&lt; real_t &gt; &amp;lab_nodes_1D, const int &amp;order)</argsstring>
+        <name>length_weights</name>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>len_weights_1D</declname>
+        </param>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>lab_weights_1D</declname>
+        </param>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>lab_nodes_1D</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>order</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="88" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="88" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1af832c8ccd83cb085cc7610189445eea7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::sub_weights</definition>
+        <argsstring>(CArray&lt; real_t &gt; &amp;sub_weights_1D, CArray&lt; real_t &gt; &amp;lab_weights_1D, CArray&lt; real_t &gt; &amp;lab_nodes_1D, const int &amp;order)</argsstring>
+        <name>sub_weights</name>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>sub_weights_1D</declname>
+        </param>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>lab_weights_1D</declname>
+        </param>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>lab_nodes_1D</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>order</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="94" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="94" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a107eb1d8b82005f28f541d147badceee" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::mat_inverse</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;mat_inv, ViewCArray&lt; real_t &gt; &amp;matrix)</argsstring>
+        <name>mat_inverse</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>mat_inv</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>matrix</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="100" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="100" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a45b11cd377d0015a7a04b5f819fe68d5" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::set_nodes_wgts</definition>
+        <argsstring>(CArray&lt; real_t &gt; &amp;lab_nodes_1D, CArray&lt; real_t &gt; &amp;lab_weights_1D, CArray&lt; real_t &gt; &amp;len_weights_1D, CArray&lt; real_t &gt; &amp;sub_weights_1D, int p_order)</argsstring>
+        <name>set_nodes_wgts</name>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>lab_nodes_1D</declname>
+        </param>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>lab_weights_1D</declname>
+        </param>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>len_weights_1D</declname>
+        </param>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>sub_weights_1D</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>p_order</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="113" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="113" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a60e39c286fa62d74091313fb069e881c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::set_unit_normals</definition>
+        <argsstring>(CArray&lt; real_t &gt; &amp;unit_normals)</argsstring>
+        <name>set_unit_normals</name>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>unit_normals</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="126" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="126" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a818bac370c1f44b7bc92edd4adb4226f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::line_gauss_info</definition>
+        <argsstring>(real_t &amp;x, real_t &amp;w, int &amp;m, int &amp;p)</argsstring>
+        <name>line_gauss_info</name>
+        <param>
+          <type>real_t &amp;</type>
+          <declname>x</declname>
+        </param>
+        <param>
+          <type>real_t &amp;</type>
+          <declname>w</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>m</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>p</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="130" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="130" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1ac58adeb948df7edf79e0fcaa6df099b9" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::line_lobatto_info</definition>
+        <argsstring>(real_t &amp;x, real_t &amp;w, int &amp;m, int &amp;p)</argsstring>
+        <name>line_lobatto_info</name>
+        <param>
+          <type>real_t &amp;</type>
+          <declname>x</declname>
+        </param>
+        <param>
+          <type>real_t &amp;</type>
+          <declname>w</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>m</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>p</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="137" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="137" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a87b459f532e90b452bee4c6a79c7ecbe" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::gauss_2d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;these_g_pts, ViewCArray&lt; real_t &gt; &amp;these_weights, ViewCArray&lt; real_t &gt; &amp;tot_g_weight, int &amp;quad_order)</argsstring>
+        <name>gauss_2d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_g_pts</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_weights</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>tot_g_weight</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>quad_order</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="144" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="144" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a305ac1b24407759611864110e8d38d07" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::gauss_3d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;these_g_pts, ViewCArray&lt; real_t &gt; &amp;these_weights, ViewCArray&lt; real_t &gt; &amp;tot_g_weight, int &amp;quad_order)</argsstring>
+        <name>gauss_3d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_g_pts</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_weights</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>tot_g_weight</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>quad_order</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="151" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="151" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a013be77dc334c02b94872a609318f696" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::gauss_4d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;these_g_pts, ViewCArray&lt; real_t &gt; &amp;these_weights, int &amp;quad_order, const int &amp;dim)</argsstring>
+        <name>gauss_4d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_g_pts</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_weights</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>quad_order</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="158" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="158" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1ae7822a1735cd84cdfc0329eebcba0e09" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::lobatto_2d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;these_L_pts, ViewCArray&lt; real_t &gt; &amp;these_weights, int &amp;quad_order)</argsstring>
+        <name>lobatto_2d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_L_pts</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_weights</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>quad_order</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="165" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="165" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1ad0300368953de60a0ca24321c2d25ae2" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::lobatto_3d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;these_L_pts, ViewCArray&lt; real_t &gt; &amp;these_weights, int &amp;quad_order)</argsstring>
+        <name>lobatto_3d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_L_pts</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_weights</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>quad_order</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="171" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="171" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a475e6d9da078af939c2ed5a69506e684" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::lobatto_4d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;these_L_pts, ViewCArray&lt; real_t &gt; &amp;these_weights, int &amp;quad_order, const int &amp;dim)</argsstring>
+        <name>lobatto_4d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_L_pts</declname>
+        </param>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>these_weights</declname>
+        </param>
+        <param>
+          <type>int &amp;</type>
+          <declname>quad_order</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="177" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="177" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a02e0836d0fec1e1919423044c5c16f67" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::jacobian_2d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;J_matrix, real_t &amp;det_J, const ViewCArray&lt; real_t &gt; &amp;vertices, const ViewCArray&lt; real_t &gt; &amp;this_partial, const int &amp;num_nodes)</argsstring>
+        <name>jacobian_2d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>J_matrix</declname>
+        </param>
+        <param>
+          <type>real_t &amp;</type>
+          <declname>det_J</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>vertices</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>this_partial</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>num_nodes</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="184" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="184" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1ad9d76581834d1a19893e794bf2631f6b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::jacobian_3d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;J_matrix, real_t &amp;det_J, const ViewCArray&lt; real_t &gt; &amp;vertices, const ViewCArray&lt; real_t &gt; &amp;this_partial, const int &amp;num_nodes)</argsstring>
+        <name>jacobian_3d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>J_matrix</declname>
+        </param>
+        <param>
+          <type>real_t &amp;</type>
+          <declname>det_J</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>vertices</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>this_partial</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>num_nodes</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="192" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="192" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a197ebc16676ea99aa1425ba80db713ac" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::jacobian_4d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;J_matrix, real_t &amp;det_J, const ViewCArray&lt; real_t &gt; &amp;vertices, const ViewCArray&lt; real_t &gt; &amp;this_partial, const int &amp;num_nodes, const int &amp;dim)</argsstring>
+        <name>jacobian_4d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>J_matrix</declname>
+        </param>
+        <param>
+          <type>real_t &amp;</type>
+          <declname>det_J</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>vertices</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>this_partial</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>num_nodes</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="200" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="200" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a741d6ced7a95a3d6eedcf68254b781ae" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::jacobian_inverse_2d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;J_inverse, const ViewCArray&lt; real_t &gt; &amp;jacobian)</argsstring>
+        <name>jacobian_inverse_2d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>J_inverse</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>jacobian</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="209" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="209" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a735301bb9757a760216d0210c647c052" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::jacobian_inverse_3d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;J_inverse_matrix, const ViewCArray&lt; real_t &gt; &amp;jacobian)</argsstring>
+        <name>jacobian_inverse_3d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>J_inverse_matrix</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>jacobian</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="214" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="214" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a81af3490b4117495a983896c566cd231" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::jacobian_inverse_4d</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;J_inverse_matrix, const ViewCArray&lt; real_t &gt; &amp;jacobian, const real_t &amp;det_J)</argsstring>
+        <name>jacobian_inverse_4d</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>J_inverse_matrix</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>jacobian</declname>
+        </param>
+        <param>
+          <type>const real_t &amp;</type>
+          <declname>det_J</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="219" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="219" declcolumn="10"/>
+      </memberdef>
+      <memberdef kind="function" id="elements_8h_1a5b57ce764f7f25ecba18e95d880456ac" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void elements::chebyshev_nodes_1D</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;cheb_nodes_1D, const int &amp;order)</argsstring>
+        <name>chebyshev_nodes_1D</name>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>cheb_nodes_1D</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>order</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="225" column="10" declfile="/home/jan/packages/elements/include/element_types/elements.h" declline="225" declcolumn="10"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/element_types/elements.h" line="61" column="1"/>
+  </compounddef>
+</doxygen>

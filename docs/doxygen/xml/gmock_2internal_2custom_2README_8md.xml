@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="gmock_2internal_2custom_2README_8md" kind="file" language="Markdown">
+    <compoundname>README.md</compoundname>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline><highlight class="normal">#<sp/>Customization<sp/>Points</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">The<sp/>custom<sp/>directory<sp/>is<sp/>an<sp/>injection<sp/>point<sp/>for<sp/>custom<sp/>user<sp/>configurations.</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">##<sp/>Header<sp/>`gmock-port.h`</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">The<sp/>following<sp/>macros<sp/>can<sp/>be<sp/>defined:</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">###<sp/>Flag<sp/>related<sp/>macros:</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GMOCK_DECLARE_bool_(name)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GMOCK_DECLARE_int32_(name)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GMOCK_DECLARE_string_(name)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GMOCK_DEFINE_bool_(name,<sp/>default_val,<sp/>doc)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GMOCK_DEFINE_int32_(name,<sp/>default_val,<sp/>doc)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GMOCK_DEFINE_string_(name,<sp/>default_val,<sp/>doc)`</highlight></codeline>
+    </programlisting>
+    <location file="/home/jan/packages/elements/include/gmock/internal/custom/README.md"/>
+  </compounddef>
+</doxygen>

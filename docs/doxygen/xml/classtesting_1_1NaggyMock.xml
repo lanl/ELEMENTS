@@ -1,0 +1,151 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1NaggyMock" kind="class" language="C++" prot="public">
+    <compoundname>testing::NaggyMock</compoundname>
+    <basecompoundref refid="classtesting_1_1internal_1_1NaggyMockImpl" prot="private" virt="non-virtual">testing::internal::NaggyMockImpl&lt; MockClass &gt;</basecompoundref>
+    <basecompoundref prot="public" virt="non-virtual">MockClass</basecompoundref>
+    <templateparamlist>
+      <param>
+        <type>class MockClass</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1NaggyMock_1acb769f78b93eb60b04db21250f416f70" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::NaggyMock&lt; MockClass &gt;::NaggyMock</definition>
+        <argsstring>()</argsstring>
+        <name>NaggyMock</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-nice-strict.h" line="186" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-nice-strict.h" bodystart="186" bodyend="189"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1NaggyMock_1aab67cd9f71451f89e5fc8938815119ea" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename A</type>
+          </param>
+        </templateparamlist>
+        <type></type>
+        <definition>testing::NaggyMock&lt; MockClass &gt;::NaggyMock</definition>
+        <argsstring>(A &amp;&amp;arg)</argsstring>
+        <name>NaggyMock</name>
+        <param>
+          <type>A &amp;&amp;</type>
+          <declname>arg</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-nice-strict.h" line="199" column="12" bodyfile="/home/jan/packages/elements/include/gmock/gmock-nice-strict.h" bodystart="199" bodyend="202"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1NaggyMock_1a54087f95264aeb62e32adf5400e91fdf" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename TArg1</type>
+          </param>
+          <param>
+            <type>typename TArg2</type>
+          </param>
+          <param>
+            <type>typename...</type>
+            <declname>An</declname>
+            <defname>An</defname>
+          </param>
+        </templateparamlist>
+        <type></type>
+        <definition>testing::NaggyMock&lt; MockClass &gt;::NaggyMock</definition>
+        <argsstring>(TArg1 &amp;&amp;arg1, TArg2 &amp;&amp;arg2, An &amp;&amp;... args)</argsstring>
+        <name>NaggyMock</name>
+        <param>
+          <type>TArg1 &amp;&amp;</type>
+          <declname>arg1</declname>
+        </param>
+        <param>
+          <type>TArg2 &amp;&amp;</type>
+          <declname>arg2</declname>
+        </param>
+        <param>
+          <type>An &amp;&amp;...</type>
+          <declname>args</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-nice-strict.h" line="205" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-nice-strict.h" bodystart="205" bodyend="210"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classtesting_1_1NaggyMock_1af3b39b4a100fa43787c647fd9dbf30a8" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::NaggyMock&lt; MockClass &gt;::GTEST_DISALLOW_COPY_AND_ASSIGN_</definition>
+        <argsstring>(NaggyMock)</argsstring>
+        <name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name>
+        <param>
+          <type><ref refid="classtesting_1_1NaggyMock" kindref="compound">NaggyMock</ref></type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-nice-strict.h" line="213" column="3"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="3">
+        <label>MockClass</label>
+      </node>
+      <node id="2">
+        <label>testing::internal::NaggyMockImpl&lt; MockClass &gt;</label>
+        <link refid="classtesting_1_1internal_1_1NaggyMockImpl"/>
+      </node>
+      <node id="1">
+        <label>testing::NaggyMock&lt; MockClass &gt;</label>
+        <link refid="classtesting_1_1NaggyMock"/>
+        <childnode refid="2" relation="private-inheritance">
+        </childnode>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="3">
+        <label>MockClass</label>
+      </node>
+      <node id="2">
+        <label>testing::internal::NaggyMockImpl&lt; MockClass &gt;</label>
+        <link refid="classtesting_1_1internal_1_1NaggyMockImpl"/>
+      </node>
+      <node id="1">
+        <label>testing::NaggyMock&lt; MockClass &gt;</label>
+        <link refid="classtesting_1_1NaggyMock"/>
+        <childnode refid="2" relation="private-inheritance">
+        </childnode>
+        <childnode refid="3" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-nice-strict.h" line="176" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-nice-strict.h" bodystart="178" bodyend="214"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1NaggyMock_1af3b39b4a100fa43787c647fd9dbf30a8" prot="private" virt="non-virtual"><scope>testing::NaggyMock</scope><name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name></member>
+      <member refid="classtesting_1_1NaggyMock_1acb769f78b93eb60b04db21250f416f70" prot="public" virt="non-virtual"><scope>testing::NaggyMock</scope><name>NaggyMock</name></member>
+      <member refid="classtesting_1_1NaggyMock_1aab67cd9f71451f89e5fc8938815119ea" prot="public" virt="non-virtual"><scope>testing::NaggyMock</scope><name>NaggyMock</name></member>
+      <member refid="classtesting_1_1NaggyMock_1a54087f95264aeb62e32adf5400e91fdf" prot="public" virt="non-virtual"><scope>testing::NaggyMock</scope><name>NaggyMock</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1FailureReporterInterface" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>testing::internal::FailureReporterInterface</compoundname>
+      <sectiondef kind="public-type">
+      <memberdef kind="enum" id="classtesting_1_1internal_1_1FailureReporterInterface_1aba34db997df0aefbfdc9d199d7d2ab5e" prot="public" static="no" strong="no">
+        <type></type>
+        <name>FailureType</name>
+        <enumvalue id="classtesting_1_1internal_1_1FailureReporterInterface_1aba34db997df0aefbfdc9d199d7d2ab5ea3b78f131b8ed15245f44e48ba297838d" prot="public">
+          <name>kNonfatal</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <enumvalue id="classtesting_1_1internal_1_1FailureReporterInterface_1aba34db997df0aefbfdc9d199d7d2ab5ea39560d6222d07508d8ef9f0ea6b030dd" prot="public">
+          <name>kFatal</name>
+          <briefdescription>
+          </briefdescription>
+          <detaileddescription>
+          </detaileddescription>
+        </enumvalue>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-internal-utils.h" line="196" column="3" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-internal-utils.h" bodystart="196" bodyend="198"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1FailureReporterInterface_1a860ca547b5b8c801b9b41b2f7ecb9a8f" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type></type>
+        <definition>virtual testing::internal::FailureReporterInterface::~FailureReporterInterface</definition>
+        <argsstring>()</argsstring>
+        <name>~FailureReporterInterface</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-internal-utils.h" line="200" column="11" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-internal-utils.h" bodystart="200" bodyend="200"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1FailureReporterInterface_1a0c43ec1946cb4ab51279c96ce1ad941d" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void testing::internal::FailureReporterInterface::ReportFailure</definition>
+        <argsstring>(FailureType type, const char *file, int line, const std::string &amp;message)=0</argsstring>
+        <name>ReportFailure</name>
+        <param>
+          <type>FailureType</type>
+          <declname>type</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>file</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>line</declname>
+        </param>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>message</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-internal-utils.h" line="203" column="16"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/internal/gmock-internal-utils.h" line="193" column="1" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-internal-utils.h" bodystart="193" bodyend="205"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1FailureReporterInterface_1aba34db997df0aefbfdc9d199d7d2ab5e" prot="public" virt="non-virtual"><scope>testing::internal::FailureReporterInterface</scope><name>FailureType</name></member>
+      <member refid="classtesting_1_1internal_1_1FailureReporterInterface_1aba34db997df0aefbfdc9d199d7d2ab5ea39560d6222d07508d8ef9f0ea6b030dd" prot="public" virt="non-virtual"><scope>testing::internal::FailureReporterInterface</scope><name>kFatal</name></member>
+      <member refid="classtesting_1_1internal_1_1FailureReporterInterface_1aba34db997df0aefbfdc9d199d7d2ab5ea3b78f131b8ed15245f44e48ba297838d" prot="public" virt="non-virtual"><scope>testing::internal::FailureReporterInterface</scope><name>kNonfatal</name></member>
+      <member refid="classtesting_1_1internal_1_1FailureReporterInterface_1a0c43ec1946cb4ab51279c96ce1ad941d" prot="public" virt="pure-virtual"><scope>testing::internal::FailureReporterInterface</scope><name>ReportFailure</name></member>
+      <member refid="classtesting_1_1internal_1_1FailureReporterInterface_1a860ca547b5b8c801b9b41b2f7ecb9a8f" prot="public" virt="virtual"><scope>testing::internal::FailureReporterInterface</scope><name>~FailureReporterInterface</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

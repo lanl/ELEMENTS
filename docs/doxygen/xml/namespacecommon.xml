@@ -1,0 +1,249 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="namespacecommon" kind="namespace" language="C++">
+    <compoundname>common</compoundname>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="common_8h_1a00b3b9bd83507a8a862cd27b8f741afe" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>Real</type>
+        <definition>Real common::real</definition>
+        <argsstring>(Real number)</argsstring>
+        <name>real</name>
+        <param>
+          <type>Real</type>
+          <declname>number</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="21" column="15" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="21" bodyend="21"/>
+      </memberdef>
+      <memberdef kind="function" id="common_8h_1a2627dc0dcf0082f874633876eb2c9b02" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>Real</type>
+        <definition>Real common::real</definition>
+        <argsstring>(Complex number)</argsstring>
+        <name>real</name>
+        <param>
+          <type>Complex</type>
+          <declname>number</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="22" column="15" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="22" bodyend="22"/>
+      </memberdef>
+      <memberdef kind="function" id="common_8h_1aec4edd7e11ab67c2216a9d7e7d84bb9d" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>Real</type>
+        <definition>Real common::imag</definition>
+        <argsstring>(Real number)</argsstring>
+        <name>imag</name>
+        <param>
+          <type>Real</type>
+          <declname>number</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="24" column="15" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="24" bodyend="24"/>
+      </memberdef>
+      <memberdef kind="function" id="common_8h_1a67ab3f1e333462934b1e9920f898b5d3" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>Real</type>
+        <definition>Real common::imag</definition>
+        <argsstring>(Complex number)</argsstring>
+        <name>imag</name>
+        <param>
+          <type>Complex</type>
+          <declname>number</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="25" column="15" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="25" bodyend="25"/>
+      </memberdef>
+      <memberdef kind="function" id="common_8h_1a6d413860669afd5eac6dbd9ea9694000" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>Real</type>
+        <definition>Real common::abs</definition>
+        <argsstring>(Real number)</argsstring>
+        <name>abs</name>
+        <param>
+          <type>Real</type>
+          <declname>number</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="27" column="15" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="27" bodyend="27"/>
+      </memberdef>
+      <memberdef kind="function" id="common_8h_1a50339f73b81107c5f270820443567389" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>Real</type>
+        <definition>Real common::abs</definition>
+        <argsstring>(Complex number)</argsstring>
+        <name>abs</name>
+        <param>
+          <type>Complex</type>
+          <declname>number</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="28" column="15" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="28" bodyend="29"/>
+      </memberdef>
+      <memberdef kind="function" id="common_8h_1aa57b812ff8128ddab790d6c837b25e0f" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>bool</type>
+        <definition>bool common::almost_equal</definition>
+        <argsstring>(NumType a, NumType b)</argsstring>
+        <name>almost_equal</name>
+        <param>
+          <type>NumType</type>
+          <declname>a</declname>
+        </param>
+        <param>
+          <type>NumType</type>
+          <declname>b</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="33" column="15" bodyfile="/home/jan/packages/elements/include/common/common.h" bodystart="33" bodyend="35"/>
+      </memberdef>
+      <memberdef kind="function" id="common_8h_1a6df04a8b19f2174e127ee4da4c5a65ca" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void common::base_10_to_mixed_radix</definition>
+        <argsstring>(const SizeType Nb, const SizeType *b, SizeType x, SizeType *y)</argsstring>
+        <name>base_10_to_mixed_radix</name>
+        <param>
+          <type>const SizeType</type>
+          <declname>Nb</declname>
+        </param>
+        <param>
+          <type>const SizeType *</type>
+          <declname>b</declname>
+        </param>
+        <param>
+          <type>SizeType</type>
+          <declname>x</declname>
+        </param>
+        <param>
+          <type>SizeType *</type>
+          <declname>y</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="38" column="8" declfile="/home/jan/packages/elements/include/common/common.h" declline="38" declcolumn="8"/>
+      </memberdef>
+      <memberdef kind="function" id="common_8h_1a3328939e04d6df33c6a83da576a22ed9" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>SizeType</type>
+        <definition>SizeType common::mixed_radix_to_base_10</definition>
+        <argsstring>(const SizeType Nb, const SizeType *b, SizeType *x)</argsstring>
+        <name>mixed_radix_to_base_10</name>
+        <param>
+          <type>const SizeType</type>
+          <declname>Nb</declname>
+        </param>
+        <param>
+          <type>const SizeType *</type>
+          <declname>b</declname>
+        </param>
+        <param>
+          <type>SizeType *</type>
+          <declname>x</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="40" column="12" declfile="/home/jan/packages/elements/include/common/common.h" declline="40" declcolumn="12"/>
+      </memberdef>
+      <memberdef kind="function" id="common_8h_1a1626d0855e278e0d48c8120568452607" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>SizeType</type>
+        <definition>SizeType common::encode_partial_derivative</definition>
+        <argsstring>(const SizeType &amp;nx, const SizeType &amp;ny, const SizeType &amp;nz)</argsstring>
+        <name>encode_partial_derivative</name>
+        <param>
+          <type>const SizeType &amp;</type>
+          <declname>nx</declname>
+        </param>
+        <param>
+          <type>const SizeType &amp;</type>
+          <declname>ny</declname>
+        </param>
+        <param>
+          <type>const SizeType &amp;</type>
+          <declname>nz</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="45" column="12" declfile="/home/jan/packages/elements/include/common/common.h" declline="45" declcolumn="12"/>
+      </memberdef>
+      <memberdef kind="function" id="common_8h_1a4c9657e14b5cd3c683e551c96c02cc42" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void common::decode_partial_derivative</definition>
+        <argsstring>(SizeType e, SizeType &amp;nx, SizeType &amp;ny, SizeType &amp;nz)</argsstring>
+        <name>decode_partial_derivative</name>
+        <param>
+          <type>SizeType</type>
+          <declname>e</declname>
+        </param>
+        <param>
+          <type>SizeType &amp;</type>
+          <declname>nx</declname>
+        </param>
+        <param>
+          <type>SizeType &amp;</type>
+          <declname>ny</declname>
+        </param>
+        <param>
+          <type>SizeType &amp;</type>
+          <declname>nz</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/common.h" line="47" column="8" declfile="/home/jan/packages/elements/include/common/common.h" declline="47" declcolumn="8"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/common/common.h" line="17" column="1"/>
+  </compounddef>
+</doxygen>

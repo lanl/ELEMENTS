@@ -1,0 +1,121 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo" kind="struct" language="C++" prot="private">
+    <compoundname>testing::internal::ParameterizedTestSuiteInfo::InstantiationInfo</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1a7e66a4d302537389c8c8efcc9acbe826" prot="public" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string testing::internal::ParameterizedTestSuiteInfo&lt; TestSuite &gt;::InstantiationInfo::name</definition>
+        <argsstring></argsstring>
+        <name>name</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="642" column="19" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="642" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1a98306e8a0d25571d84821206d79629cf" prot="public" static="no" mutable="no">
+        <type>GeneratorCreationFunc *</type>
+        <definition>GeneratorCreationFunc* testing::internal::ParameterizedTestSuiteInfo&lt; TestSuite &gt;::InstantiationInfo::generator</definition>
+        <argsstring></argsstring>
+        <name>generator</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="643" column="29" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="643" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1a754244a7055f2d8c83b1b5e1656afe5f" prot="public" static="no" mutable="no">
+        <type>ParamNameGeneratorFunc *</type>
+        <definition>ParamNameGeneratorFunc* testing::internal::ParameterizedTestSuiteInfo&lt; TestSuite &gt;::InstantiationInfo::name_func</definition>
+        <argsstring></argsstring>
+        <name>name_func</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="644" column="30" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="644" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1ab9cb66c639c2af3dbb30afe4cf56256c" prot="public" static="no" mutable="no">
+        <type>const char *</type>
+        <definition>const char* testing::internal::ParameterizedTestSuiteInfo&lt; TestSuite &gt;::InstantiationInfo::file</definition>
+        <argsstring></argsstring>
+        <name>file</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="645" column="18" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="645" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1a95d4b9adfe5d42f66cc12214f434fa0d" prot="public" static="no" mutable="no">
+        <type>int</type>
+        <definition>int testing::internal::ParameterizedTestSuiteInfo&lt; TestSuite &gt;::InstantiationInfo::line</definition>
+        <argsstring></argsstring>
+        <name>line</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="646" column="11" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="646" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1a1cde67cef70758ca16047040747e19c0" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::ParameterizedTestSuiteInfo&lt; TestSuite &gt;::InstantiationInfo::InstantiationInfo</definition>
+        <argsstring>(const std::string &amp;name_in, GeneratorCreationFunc *generator_in, ParamNameGeneratorFunc *name_func_in, const char *file_in, int line_in)</argsstring>
+        <name>InstantiationInfo</name>
+        <param>
+          <type>const std::string &amp;</type>
+          <declname>name_in</declname>
+        </param>
+        <param>
+          <type>GeneratorCreationFunc *</type>
+          <declname>generator_in</declname>
+        </param>
+        <param>
+          <type>ParamNameGeneratorFunc *</type>
+          <declname>name_func_in</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>file_in</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>line_in</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="631" column="7" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="631" bodyend="640"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="630" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="630" bodyend="647"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1ab9cb66c639c2af3dbb30afe4cf56256c" prot="public" virt="non-virtual"><scope>testing::internal::ParameterizedTestSuiteInfo::InstantiationInfo</scope><name>file</name></member>
+      <member refid="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1a98306e8a0d25571d84821206d79629cf" prot="public" virt="non-virtual"><scope>testing::internal::ParameterizedTestSuiteInfo::InstantiationInfo</scope><name>generator</name></member>
+      <member refid="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1a1cde67cef70758ca16047040747e19c0" prot="public" virt="non-virtual"><scope>testing::internal::ParameterizedTestSuiteInfo::InstantiationInfo</scope><name>InstantiationInfo</name></member>
+      <member refid="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1a95d4b9adfe5d42f66cc12214f434fa0d" prot="public" virt="non-virtual"><scope>testing::internal::ParameterizedTestSuiteInfo::InstantiationInfo</scope><name>line</name></member>
+      <member refid="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1a7e66a4d302537389c8c8efcc9acbe826" prot="public" virt="non-virtual"><scope>testing::internal::ParameterizedTestSuiteInfo::InstantiationInfo</scope><name>name</name></member>
+      <member refid="structtesting_1_1internal_1_1ParameterizedTestSuiteInfo_1_1InstantiationInfo_1a754244a7055f2d8c83b1b5e1656afe5f" prot="public" virt="non-virtual"><scope>testing::internal::ParameterizedTestSuiteInfo::InstantiationInfo</scope><name>name_func</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

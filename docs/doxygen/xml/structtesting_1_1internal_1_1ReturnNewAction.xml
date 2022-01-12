@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1ReturnNewAction" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::ReturnNewAction</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename T</type>
+      </param>
+      <param>
+        <type>typename...</type>
+        <declname>Params</declname>
+        <defname>Params</defname>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structtesting_1_1internal_1_1ReturnNewAction_1a5a56f8a1df9ca8e8ae631aa7c859b469" prot="public" static="no" mutable="no">
+        <type>std::tuple&lt; Params... &gt;</type>
+        <definition>std::tuple&lt;Params...&gt; testing::internal::ReturnNewAction&lt; T, Params &gt;::params</definition>
+        <argsstring></argsstring>
+        <name>params</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1076" column="14" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1076" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1ReturnNewAction_1afc4123e37fa918c5d0c4697503949dc1" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>T *</type>
+        <definition>T* testing::internal::ReturnNewAction&lt; T, Params &gt;::operator()</definition>
+        <argsstring>() const</argsstring>
+        <name>operator()</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1069" column="5" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1069" bodyend="1075"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1068" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1068" bodyend="1077"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1ReturnNewAction_1afc4123e37fa918c5d0c4697503949dc1" prot="public" virt="non-virtual"><scope>testing::internal::ReturnNewAction</scope><name>operator()</name></member>
+      <member refid="structtesting_1_1internal_1_1ReturnNewAction_1a5a56f8a1df9ca8e8ae631aa7c859b469" prot="public" virt="non-virtual"><scope>testing::internal::ReturnNewAction</scope><name>params</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

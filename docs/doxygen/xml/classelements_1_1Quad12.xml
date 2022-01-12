@@ -1,0 +1,306 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classelements_1_1Quad12" kind="class" language="C++" prot="public">
+    <compoundname>elements::Quad12</compoundname>
+    <basecompoundref refid="classelements_1_1Element2D" prot="public" virt="non-virtual">elements::Element2D</basecompoundref>
+      <sectiondef kind="protected-static-attrib">
+      <memberdef kind="variable" id="classelements_1_1Quad12_1a2eb775d1d1accb029e202bd07373e69c" prot="protected" static="yes" mutable="no">
+        <type>const int</type>
+        <definition>const int elements::Quad12::num_verts_</definition>
+        <argsstring></argsstring>
+        <name>num_verts_</name>
+        <initializer>= 12</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="555" column="30" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="555" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classelements_1_1Quad12_1a9747dc395ab981e7ebdf26ccd4d74059" prot="protected" static="yes" mutable="no">
+        <type>const int</type>
+        <definition>const int elements::Quad12::num_nodes_</definition>
+        <argsstring></argsstring>
+        <name>num_nodes_</name>
+        <initializer>= 12</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="556" column="30" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="556" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classelements_1_1Quad12_1a65d3f20dc85733ad9986432be11b8395" prot="protected" static="yes" mutable="no">
+        <type>const int</type>
+        <definition>const int elements::Quad12::num_basis_</definition>
+        <argsstring></argsstring>
+        <name>num_basis_</name>
+        <initializer>= 12</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="557" column="30" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="557" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classelements_1_1Quad12_1aeac81e6cb6e016441f459b3e7fab83a5" prot="protected" static="yes" mutable="no">
+        <type>real_t</type>
+        <definition>real_t elements::Quad12::ref_vert[num_verts_ *num_dim_]</definition>
+        <argsstring>[num_verts_ *num_dim_]</argsstring>
+        <name>ref_vert</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="559" column="27" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="559" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classelements_1_1Quad12_1a5d9848ff5251226ff4cd96c2d1e5e9e3" prot="protected" static="yes" mutable="no">
+        <type>const int</type>
+        <definition>const int elements::Quad12::vert_to_node[num_verts_]</definition>
+        <argsstring>[num_verts_]</argsstring>
+        <name>vert_to_node</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="560" column="30" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="560" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classelements_1_1Quad12_1a8fa92c2d389c006cd2ef0c96b3bddc71" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>elements::Quad12::Quad12</definition>
+        <argsstring>()</argsstring>
+        <name>Quad12</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="564" column="13"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Quad12_1af0a5fa2e413042a11ebcc6d481829a93" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>elements::Quad12::~Quad12</definition>
+        <argsstring>()</argsstring>
+        <name>~Quad12</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="565" column="13"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Quad12_1afbf2d1fc0d47db8fb766b74e0b01ce81" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>int</type>
+        <definition>int elements::Quad12::num_verts</definition>
+        <argsstring>()</argsstring>
+        <name>num_verts</name>
+        <reimplements refid="classelements_1_1Element2D_1a8d9856e4894313fe7402d057f52ef730">num_verts</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="567" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Quad12_1a898038d4c732fe0d2e7b8139c44c2da3" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>int</type>
+        <definition>int elements::Quad12::num_nodes</definition>
+        <argsstring>()</argsstring>
+        <name>num_nodes</name>
+        <reimplements refid="classelements_1_1Element2D_1a7fc299da7ec06dac1eecad9fce005c1c">num_nodes</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="568" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Quad12_1a6dd8667e357a1b36ddeae562a52b8e45" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>int</type>
+        <definition>int elements::Quad12::num_basis</definition>
+        <argsstring>()</argsstring>
+        <name>num_basis</name>
+        <reimplements refid="classelements_1_1Element2D_1aab1f8d332a9e5786d8d08871fc3e9ec5">num_basis</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="569" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Quad12_1a144f9bce3638bbc1293b5a4f9ff2b1d9" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void elements::Quad12::physical_position</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;x_point, const ViewCArray&lt; real_t &gt; &amp;xi_point, const ViewCArray&lt; real_t &gt; &amp;vertices)</argsstring>
+        <name>physical_position</name>
+        <reimplements refid="classelements_1_1Element2D_1a4bac6207ff99a011c483f2ad1a233562">physical_position</reimplements>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>x_point</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>vertices</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="572" column="18"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Quad12_1adbd6cf83abf762393198af08e2c724a9" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void elements::Quad12::basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;basis, const ViewCArray&lt; real_t &gt; &amp;xi_point)</argsstring>
+        <name>basis</name>
+        <reimplements refid="classelements_1_1Element2D_1ac1dfbe7fb2a86306707b01f81922bf90">basis</reimplements>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>basis</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="579" column="18"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Quad12_1a49b7d1c6f5f55e6d595432eea9ea4741" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void elements::Quad12::partial_xi_basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;partial_xi, const ViewCArray&lt; real_t &gt; &amp;xi_point)</argsstring>
+        <name>partial_xi_basis</name>
+        <reimplements refid="classelements_1_1Element2D_1a8e4f2563cd80078eecdd4af5bcf0f9a7">partial_xi_basis</reimplements>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>partial_xi</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="584" column="19"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Quad12_1a5b092acd61aadafa2351b450820e0d30" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void elements::Quad12::partial_eta_basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;partial_eta, const ViewCArray&lt; real_t &gt; &amp;xi_point)</argsstring>
+        <name>partial_eta_basis</name>
+        <reimplements refid="classelements_1_1Element2D_1a7e1a44544a9336e389ad1f6067059e19">partial_eta_basis</reimplements>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>partial_eta</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="590" column="19"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Quad12_1a695a41ff3c0f2601390e1d564e5232a2" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>int</type>
+        <definition>int elements::Quad12::vert_node_map</definition>
+        <argsstring>(const int vert_lid)</argsstring>
+        <name>vert_node_map</name>
+        <reimplements refid="classelements_1_1Element2D_1a44f75f3bb1391fcabe78469b19689c28">vert_node_map</reimplements>
+        <param>
+          <type>const int</type>
+          <declname>vert_lid</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="595" column="17"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>elements::Element2D</label>
+        <link refid="classelements_1_1Element2D"/>
+      </node>
+      <node id="1">
+        <label>elements::Quad12</label>
+        <link refid="classelements_1_1Quad12"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>elements::Element2D</label>
+        <link refid="classelements_1_1Element2D"/>
+      </node>
+      <node id="1">
+        <label>elements::Quad12</label>
+        <link refid="classelements_1_1Quad12"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/jan/packages/elements/include/element_types/elements.h" line="551" column="5" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="551" bodyend="597"/>
+    <listofallmembers>
+      <member refid="classelements_1_1Quad12_1adbd6cf83abf762393198af08e2c724a9" prot="public" virt="virtual"><scope>elements::Quad12</scope><name>basis</name></member>
+      <member refid="classelements_1_1Element2D_1a73b1a6ae56ca13afc63b18ffe17caecd" prot="public" virt="non-virtual"><scope>elements::Quad12</scope><name>nsurfaces</name></member>
+      <member refid="classelements_1_1Quad12_1a6dd8667e357a1b36ddeae562a52b8e45" prot="public" virt="virtual"><scope>elements::Quad12</scope><name>num_basis</name></member>
+      <member refid="classelements_1_1Quad12_1a65d3f20dc85733ad9986432be11b8395" prot="protected" virt="non-virtual"><scope>elements::Quad12</scope><name>num_basis_</name></member>
+      <member refid="classelements_1_1Element2D_1a9d87c37fc53db757245125a8a107d209" prot="protected" virt="non-virtual"><scope>elements::Quad12</scope><name>num_dim_</name></member>
+      <member refid="classelements_1_1Quad12_1a898038d4c732fe0d2e7b8139c44c2da3" prot="public" virt="virtual"><scope>elements::Quad12</scope><name>num_nodes</name></member>
+      <member refid="classelements_1_1Quad12_1a9747dc395ab981e7ebdf26ccd4d74059" prot="protected" virt="non-virtual"><scope>elements::Quad12</scope><name>num_nodes_</name></member>
+      <member refid="classelements_1_1Quad12_1afbf2d1fc0d47db8fb766b74e0b01ce81" prot="public" virt="virtual"><scope>elements::Quad12</scope><name>num_verts</name></member>
+      <member refid="classelements_1_1Quad12_1a2eb775d1d1accb029e202bd07373e69c" prot="protected" virt="non-virtual"><scope>elements::Quad12</scope><name>num_verts_</name></member>
+      <member refid="classelements_1_1Quad12_1a5b092acd61aadafa2351b450820e0d30" prot="public" virt="virtual"><scope>elements::Quad12</scope><name>partial_eta_basis</name></member>
+      <member refid="classelements_1_1Quad12_1a49b7d1c6f5f55e6d595432eea9ea4741" prot="public" virt="virtual"><scope>elements::Quad12</scope><name>partial_xi_basis</name></member>
+      <member refid="classelements_1_1Quad12_1a144f9bce3638bbc1293b5a4f9ff2b1d9" prot="public" virt="virtual"><scope>elements::Quad12</scope><name>physical_position</name></member>
+      <member refid="classelements_1_1Quad12_1a8fa92c2d389c006cd2ef0c96b3bddc71" prot="public" virt="non-virtual"><scope>elements::Quad12</scope><name>Quad12</name></member>
+      <member refid="classelements_1_1Quad12_1aeac81e6cb6e016441f459b3e7fab83a5" prot="protected" virt="non-virtual"><scope>elements::Quad12</scope><name>ref_vert</name></member>
+      <member refid="classelements_1_1Element2D_1aa807f008c2b675260f2ad9eab3d5ee6f" prot="public" virt="non-virtual"><scope>elements::Quad12</scope><name>surface_to_dof_lid</name></member>
+      <member refid="classelements_1_1Quad12_1a695a41ff3c0f2601390e1d564e5232a2" prot="public" virt="virtual"><scope>elements::Quad12</scope><name>vert_node_map</name></member>
+      <member refid="classelements_1_1Quad12_1a5d9848ff5251226ff4cd96c2d1e5e9e3" prot="protected" virt="non-virtual"><scope>elements::Quad12</scope><name>vert_to_node</name></member>
+      <member refid="classelements_1_1Quad12_1af0a5fa2e413042a11ebcc6d481829a93" prot="public" virt="non-virtual"><scope>elements::Quad12</scope><name>~Quad12</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

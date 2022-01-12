@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="namespaceswage" kind="namespace" language="C++">
+    <compoundname>swage</compoundname>
+    <innerclass refid="classswage_1_1mesh__t" prot="public">swage::mesh_t</innerclass>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="swage_8h_1a94dd987540cfe0ceee72355a14ed1743" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void swage::lobatto_nodes_1D_tmp</definition>
+        <argsstring>(CArray&lt; real_t &gt; &amp;lob_nodes_1D, const int &amp;num)</argsstring>
+        <name>lobatto_nodes_1D_tmp</name>
+        <param>
+          <type>CArray&lt; real_t &gt; &amp;</type>
+          <declname>lob_nodes_1D</declname>
+        </param>
+        <param>
+          <type>const int &amp;</type>
+          <declname>num</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/swage/swage.h" line="25" column="6" declfile="/home/jan/packages/elements/include/swage/swage.h" declline="25" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="swage_8h_1ad4dbddc99c1ce9110de9f45c8b4eb78f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void swage::refine_mesh</definition>
+        <argsstring>(mesh_t &amp;init_mesh, mesh_t &amp;mesh, const int p_order, const int dim)</argsstring>
+        <name>refine_mesh</name>
+        <param>
+          <type><ref refid="classswage_1_1mesh__t" kindref="compound">mesh_t</ref> &amp;</type>
+          <declname>init_mesh</declname>
+        </param>
+        <param>
+          <type><ref refid="classswage_1_1mesh__t" kindref="compound">mesh_t</ref> &amp;</type>
+          <declname>mesh</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>p_order</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/swage/swage.h" line="549" column="6" declfile="/home/jan/packages/elements/include/swage/swage.h" declline="549" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="swage_8h_1a0421da8678742cf373a1b04858d4a972" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void swage::refine_high_order_mesh</definition>
+        <argsstring>(mesh_t &amp;input_mesh, mesh_t &amp;mesh)</argsstring>
+        <name>refine_high_order_mesh</name>
+        <param>
+          <type><ref refid="classswage_1_1mesh__t" kindref="compound">mesh_t</ref> &amp;</type>
+          <declname>input_mesh</declname>
+        </param>
+        <param>
+          <type><ref refid="classswage_1_1mesh__t" kindref="compound">mesh_t</ref> &amp;</type>
+          <declname>mesh</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/swage/swage.h" line="555" column="6" declfile="/home/jan/packages/elements/include/swage/swage.h" declline="555" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="swage_8h_1a0563da7cc7f64d15db3df2a188d9dc77" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void swage::evaluate_jacobian_determinants</definition>
+        <argsstring>(mesh_t &amp;mesh)</argsstring>
+        <name>evaluate_jacobian_determinants</name>
+        <param>
+          <type><ref refid="classswage_1_1mesh__t" kindref="compound">mesh_t</ref> &amp;</type>
+          <declname>mesh</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/swage/swage.h" line="556" column="6" declfile="/home/jan/packages/elements/include/swage/swage.h" declline="556" declcolumn="6"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/swage/swage.h" line="20" column="1"/>
+  </compounddef>
+</doxygen>

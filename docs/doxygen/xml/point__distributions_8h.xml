@@ -1,0 +1,125 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="point__distributions_8h" kind="file" language="C++">
+    <compoundname>point_distributions.h</compoundname>
+    <includes refid="common_8h" local="yes">common/common.h</includes>
+    <incdepgraph>
+      <node id="2">
+        <label>common/common.h</label>
+        <link refid="common_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>/home/jan/packages/elements/include/element_types/point_distributions.h</label>
+        <link refid="point__distributions_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>cmath</label>
+      </node>
+      <node id="5">
+        <label>complex</label>
+      </node>
+      <node id="6">
+        <label>limits</label>
+      </node>
+      <node id="3">
+        <label>matar.h</label>
+      </node>
+    </incdepgraph>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="point__distributions_8h_1a61aadcc44cbedf201a5c616140f7211f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void equispaced_points</definition>
+        <argsstring>(SizeType N, NumType &amp;zl, NumType &amp;zr, NumType *z)</argsstring>
+        <name>equispaced_points</name>
+        <param>
+          <type>SizeType</type>
+          <declname>N</declname>
+        </param>
+        <param>
+          <type>NumType &amp;</type>
+          <declname>zl</declname>
+        </param>
+        <param>
+          <type>NumType &amp;</type>
+          <declname>zr</declname>
+        </param>
+        <param>
+          <type>NumType *</type>
+          <declname>z</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/point_distributions.h" line="6" column="6" declfile="/home/jan/packages/elements/include/element_types/point_distributions.h" declline="6" declcolumn="6"/>
+      </memberdef>
+      <memberdef kind="function" id="point__distributions_8h_1a513c2d89354205215142ec32e368adad" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void chebyshev_points</definition>
+        <argsstring>(SizeType N, NumType &amp;zl, NumType &amp;zr, NumType *z)</argsstring>
+        <name>chebyshev_points</name>
+        <param>
+          <type>SizeType</type>
+          <declname>N</declname>
+        </param>
+        <param>
+          <type>NumType &amp;</type>
+          <declname>zl</declname>
+        </param>
+        <param>
+          <type>NumType &amp;</type>
+          <declname>zr</declname>
+        </param>
+        <param>
+          <type>NumType *</type>
+          <declname>z</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/point_distributions.h" line="9" column="6" declfile="/home/jan/packages/elements/include/element_types/point_distributions.h" declline="9" declcolumn="6"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;common/common.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">typename</highlight><highlight class="normal"><sp/>NumType&gt;</highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>equispaced_points(SizeType<sp/>N,<sp/>NumType<sp/>&amp;zl,<sp/>NumType<sp/>&amp;zr,<sp/>NumType<sp/>*z);</highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">typename</highlight><highlight class="normal"><sp/>NumType&gt;</highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>chebyshev_points(SizeType<sp/>N,<sp/>NumType<sp/>&amp;zl,<sp/>NumType<sp/>&amp;zr,<sp/>NumType<sp/>*z);</highlight></codeline>
+    </programlisting>
+    <location file="/home/jan/packages/elements/include/element_types/point_distributions.h"/>
+  </compounddef>
+</doxygen>

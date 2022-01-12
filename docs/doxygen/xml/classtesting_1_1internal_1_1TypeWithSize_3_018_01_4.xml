@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1TypeWithSize_3_018_01_4" kind="class" language="C++" prot="public">
+    <compoundname>testing::internal::TypeWithSize&lt; 8 &gt;</compoundname>
+    <templateparamlist>
+    </templateparamlist>
+      <sectiondef kind="public-type">
+      <memberdef kind="typedef" id="classtesting_1_1internal_1_1TypeWithSize_3_018_01_4_1a2af112faa047824cb97139f36a807ed1" prot="public" static="no">
+        <type>std::int64_t</type>
+        <definition>using testing::internal::TypeWithSize&lt; 8 &gt;::Int =  std::int64_t</definition>
+        <argsstring></argsstring>
+        <name>Int</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2194" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2194" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="classtesting_1_1internal_1_1TypeWithSize_3_018_01_4_1a6ca15a23e9bf6634c9ba0535317cb989" prot="public" static="no">
+        <type>std::uint64_t</type>
+        <definition>using testing::internal::TypeWithSize&lt; 8 &gt;::UInt =  std::uint64_t</definition>
+        <argsstring></argsstring>
+        <name>UInt</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2195" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2195" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2192" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2192" bodyend="2196"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1TypeWithSize_3_018_01_4_1a2af112faa047824cb97139f36a807ed1" prot="public" virt="non-virtual"><scope>testing::internal::TypeWithSize&lt; 8 &gt;</scope><name>Int</name></member>
+      <member refid="classtesting_1_1internal_1_1TypeWithSize_3_018_01_4_1a6ca15a23e9bf6634c9ba0535317cb989" prot="public" virt="non-virtual"><scope>testing::internal::TypeWithSize&lt; 8 &gt;</scope><name>UInt</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

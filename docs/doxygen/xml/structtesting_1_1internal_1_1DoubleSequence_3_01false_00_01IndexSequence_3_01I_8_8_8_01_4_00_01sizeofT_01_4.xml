@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1DoubleSequence_3_01false_00_01IndexSequence_3_01I_8_8_8_01_4_00_01sizeofT_01_4" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::DoubleSequence&lt; false, IndexSequence&lt; I... &gt;, sizeofT &gt;</compoundname>
+    <templateparamlist>
+      <param>
+        <type>size_t...</type>
+        <declname>I</declname>
+        <defname>I</defname>
+      </param>
+      <param>
+        <type>size_t</type>
+        <declname>sizeofT</declname>
+        <defname>sizeofT</defname>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-type">
+      <memberdef kind="typedef" id="structtesting_1_1internal_1_1DoubleSequence_3_01false_00_01IndexSequence_3_01I_8_8_8_01_4_00_01sizeofT_01_4_1af11568320fe19e984e2eb5ab9ad026aa" prot="public" static="no">
+        <type><ref refid="structtesting_1_1internal_1_1IndexSequence" kindref="compound">IndexSequence</ref>&lt; I...,(sizeofT+I)... &gt;</type>
+        <definition>using testing::internal::DoubleSequence&lt; false, IndexSequence&lt; I... &gt;, sizeofT &gt;::type =  IndexSequence&lt;I..., (sizeofT + I)...&gt;</definition>
+        <argsstring></argsstring>
+        <name>type</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="1171" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="1171" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="1170" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="1170" bodyend="1172"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1DoubleSequence_3_01false_00_01IndexSequence_3_01I_8_8_8_01_4_00_01sizeofT_01_4_1af11568320fe19e984e2eb5ab9ad026aa" prot="public" virt="non-virtual"><scope>testing::internal::DoubleSequence&lt; false, IndexSequence&lt; I... &gt;, sizeofT &gt;</scope><name>type</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

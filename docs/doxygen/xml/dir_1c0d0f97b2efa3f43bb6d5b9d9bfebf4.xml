@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="dir_1c0d0f97b2efa3f43bb6d5b9d9bfebf4" kind="dir">
+    <compoundname>/home/jan/packages/elements/include/gmock/internal</compoundname>
+    <innerdir refid="dir_f70672560d6d2af9dc3686e2d601cdba">/home/jan/packages/elements/include/gmock/internal/custom</innerdir>
+    <innerfile refid="gmock-internal-utils_8h">gmock-internal-utils.h</innerfile>
+    <innerfile refid="gmock-port_8h">gmock-port.h</innerfile>
+    <innerfile refid="gmock-pp_8h">gmock-pp.h</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/internal/"/>
+  </compounddef>
+</doxygen>

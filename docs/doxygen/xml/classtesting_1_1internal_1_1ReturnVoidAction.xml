@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1ReturnVoidAction" kind="class" language="C++" prot="public">
+    <compoundname>testing::internal::ReturnVoidAction</compoundname>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ReturnVoidAction_1ab9ea50ff501225b7510a623d0f0a405e" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename Result</type>
+          </param>
+          <param>
+            <type>typename ArgumentTuple</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>static void testing::internal::ReturnVoidAction::Perform</definition>
+        <argsstring>(const ArgumentTuple &amp;)</argsstring>
+        <name>Perform</name>
+        <param>
+          <type>const ArgumentTuple &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="740" column="15" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="740" bodyend="742"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="736" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="736" bodyend="743"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1ReturnVoidAction_1ab9ea50ff501225b7510a623d0f0a405e" prot="public" virt="non-virtual"><scope>testing::internal::ReturnVoidAction</scope><name>Perform</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

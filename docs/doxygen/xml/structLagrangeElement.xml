@@ -1,0 +1,358 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structLagrangeElement" kind="struct" language="C++" prot="public">
+    <compoundname>LagrangeElement</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename NumType</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-static-attrib">
+      <memberdef kind="variable" id="structLagrangeElement_1afbdd4e5cc7330d69a47afd6a446b57e7" prot="public" static="yes" mutable="no">
+        <type>const SizeType</type>
+        <definition>const SizeType LagrangeElement&lt; NumType &gt;::Nd</definition>
+        <argsstring></argsstring>
+        <name>Nd</name>
+        <initializer>= 3</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="8" column="25" bodyfile="/home/jan/packages/elements/include/element_types/lagrange_element.h" bodystart="8" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structLagrangeElement_1ae1dd93afc97a471dd28bb30cd4622d87" prot="public" static="no" mutable="no">
+        <type>SizeType</type>
+        <definition>SizeType LagrangeElement&lt; NumType &gt;::Np</definition>
+        <argsstring></argsstring>
+        <name>Np</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="9" column="12" bodyfile="/home/jan/packages/elements/include/element_types/lagrange_element.h" bodystart="9" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLagrangeElement_1a8b5687e412d9bd22fc0a6f435601a320" prot="public" static="no" mutable="no">
+        <type>SizeType</type>
+        <definition>SizeType LagrangeElement&lt; NumType &gt;::N</definition>
+        <argsstring></argsstring>
+        <name>N</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="10" column="12" bodyfile="/home/jan/packages/elements/include/element_types/lagrange_element.h" bodystart="10" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLagrangeElement_1a9e97c8a77059079272b04d82be9c27d4" prot="public" static="no" mutable="no">
+        <type>SizeType</type>
+        <definition>SizeType LagrangeElement&lt; NumType &gt;::Ne</definition>
+        <argsstring></argsstring>
+        <name>Ne</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="11" column="12" bodyfile="/home/jan/packages/elements/include/element_types/lagrange_element.h" bodystart="11" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLagrangeElement_1adc12e49f789e8485da58f5d5195ddcb6" prot="public" static="no" mutable="no">
+        <type>const NumType *</type>
+        <definition>const NumType* LagrangeElement&lt; NumType &gt;::Z</definition>
+        <argsstring></argsstring>
+        <name>Z</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="12" column="17" bodyfile="/home/jan/packages/elements/include/element_types/lagrange_element.h" bodystart="12" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLagrangeElement_1a608d7b1330cea472a569c2cde37bdb01" prot="public" static="no" mutable="no">
+        <type>NumType *</type>
+        <definition>NumType* LagrangeElement&lt; NumType &gt;::w</definition>
+        <argsstring></argsstring>
+        <name>w</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="13" column="11" bodyfile="/home/jan/packages/elements/include/element_types/lagrange_element.h" bodystart="13" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLagrangeElement_1a0e978b44c59e2e203e518880c62b3fb8" prot="public" static="no" mutable="no">
+        <type>SizeType</type>
+        <definition>SizeType LagrangeElement&lt; NumType &gt;::ijk[Nd]</definition>
+        <argsstring>[Nd]</argsstring>
+        <name>ijk</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="16" column="12" bodyfile="/home/jan/packages/elements/include/element_types/lagrange_element.h" bodystart="16" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLagrangeElement_1acdc299060747d96585bceafeb349513d" prot="public" static="no" mutable="no">
+        <type>SizeType</type>
+        <definition>SizeType LagrangeElement&lt; NumType &gt;::rad[Nd]</definition>
+        <argsstring>[Nd]</argsstring>
+        <name>rad</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="17" column="12" bodyfile="/home/jan/packages/elements/include/element_types/lagrange_element.h" bodystart="17" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structLagrangeElement_1aca594bb65217aa3a729e4ecbb971eb64" prot="public" static="no" mutable="no">
+        <type>NumType *</type>
+        <definition>NumType* LagrangeElement&lt; NumType &gt;::C</definition>
+        <argsstring></argsstring>
+        <name>C</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="20" column="11" bodyfile="/home/jan/packages/elements/include/element_types/lagrange_element.h" bodystart="20" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structLagrangeElement_1a7acb44db82815f9fd01f34c48bdb210a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>LagrangeElement&lt; NumType &gt;::LagrangeElement</definition>
+        <argsstring>(const SizeType, const NumType *)</argsstring>
+        <name>LagrangeElement</name>
+        <param>
+          <type>const</type>
+          <declname>SizeType</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="22" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="structLagrangeElement_1abfad73739d6c1373c6cd1eeb8a085c7b" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>LagrangeElement&lt; NumType &gt;::~LagrangeElement</definition>
+        <argsstring>()</argsstring>
+        <name>~LagrangeElement</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="23" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="structLagrangeElement_1aee2b935be7f5c2aa068c99cbceedc745" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>NumType</type>
+        <definition>NumType LagrangeElement&lt; NumType &gt;::eval_basis</definition>
+        <argsstring>(const SizeType, const NumType *)</argsstring>
+        <name>eval_basis</name>
+        <param>
+          <type>const</type>
+          <declname>SizeType</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="26" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="structLagrangeElement_1a8e92f09276565ed0b5df127ea6e2e423" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void LagrangeElement&lt; NumType &gt;::eval_grad_basis</definition>
+        <argsstring>(const SizeType, const NumType *, NumType *)</argsstring>
+        <name>eval_grad_basis</name>
+        <param>
+          <type>const</type>
+          <declname>SizeType</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="27" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="structLagrangeElement_1ace7cf22b17fb404d2bb18a3e6a2f85a7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>NumType</type>
+        <definition>NumType LagrangeElement&lt; NumType &gt;::eval_approx</definition>
+        <argsstring>(const NumType *, const NumType *)</argsstring>
+        <name>eval_approx</name>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="30" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="structLagrangeElement_1a6320468330c667a5cb4f418914c449bd" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void LagrangeElement&lt; NumType &gt;::eval_grad_approx</definition>
+        <argsstring>(const NumType *, const NumType *, NumType *)</argsstring>
+        <name>eval_grad_approx</name>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="31" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="structLagrangeElement_1a04a2d31d71360d4f4252ee65abd2ec71" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void LagrangeElement&lt; NumType &gt;::eval_jac</definition>
+        <argsstring>(const NumType *, const NumType *, const NumType *, const NumType *, NumType *)</argsstring>
+        <name>eval_jac</name>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="34" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="structLagrangeElement_1aeb3ac02b3830d6cfc428e82259f6070a" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>NumType</type>
+        <definition>NumType LagrangeElement&lt; NumType &gt;::eval_det_jac</definition>
+        <argsstring>(const NumType *, const NumType *, const NumType *, const NumType *)</argsstring>
+        <name>eval_det_jac</name>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="36" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="structLagrangeElement_1a54b413909857326c286d9dc3591cecb3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void LagrangeElement&lt; NumType &gt;::eval_inv_jac</definition>
+        <argsstring>(const NumType *, const NumType *, const NumType *, const NumType *, NumType *)</argsstring>
+        <name>eval_inv_jac</name>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>const NumType *</type>
+        </param>
+        <param>
+          <type>NumType *</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="38" column="8"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h" line="6" column="1" bodyfile="/home/jan/packages/elements/include/element_types/lagrange_element.h" bodystart="6" bodyend="40"/>
+    <listofallmembers>
+      <member refid="structLagrangeElement_1aca594bb65217aa3a729e4ecbb971eb64" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>C</name></member>
+      <member refid="structLagrangeElement_1ace7cf22b17fb404d2bb18a3e6a2f85a7" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>eval_approx</name></member>
+      <member refid="structLagrangeElement_1aee2b935be7f5c2aa068c99cbceedc745" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>eval_basis</name></member>
+      <member refid="structLagrangeElement_1aeb3ac02b3830d6cfc428e82259f6070a" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>eval_det_jac</name></member>
+      <member refid="structLagrangeElement_1a6320468330c667a5cb4f418914c449bd" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>eval_grad_approx</name></member>
+      <member refid="structLagrangeElement_1a8e92f09276565ed0b5df127ea6e2e423" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>eval_grad_basis</name></member>
+      <member refid="structLagrangeElement_1a54b413909857326c286d9dc3591cecb3" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>eval_inv_jac</name></member>
+      <member refid="structLagrangeElement_1a04a2d31d71360d4f4252ee65abd2ec71" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>eval_jac</name></member>
+      <member refid="structLagrangeElement_1a0e978b44c59e2e203e518880c62b3fb8" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>ijk</name></member>
+      <member refid="structLagrangeElement_1a7acb44db82815f9fd01f34c48bdb210a" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>LagrangeElement</name></member>
+      <member refid="structLagrangeElement_1a8b5687e412d9bd22fc0a6f435601a320" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>N</name></member>
+      <member refid="structLagrangeElement_1afbdd4e5cc7330d69a47afd6a446b57e7" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>Nd</name></member>
+      <member refid="structLagrangeElement_1a9e97c8a77059079272b04d82be9c27d4" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>Ne</name></member>
+      <member refid="structLagrangeElement_1ae1dd93afc97a471dd28bb30cd4622d87" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>Np</name></member>
+      <member refid="structLagrangeElement_1acdc299060747d96585bceafeb349513d" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>rad</name></member>
+      <member refid="structLagrangeElement_1a608d7b1330cea472a569c2cde37bdb01" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>w</name></member>
+      <member refid="structLagrangeElement_1adc12e49f789e8485da58f5d5195ddcb6" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>Z</name></member>
+      <member refid="structLagrangeElement_1abfad73739d6c1373c6cd1eeb8a085c7b" prot="public" virt="non-virtual"><scope>LagrangeElement</scope><name>~LagrangeElement</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1ReturnRefAction" kind="class" language="C++" prot="public">
+    <compoundname>testing::internal::ReturnRefAction</compoundname>
+    <innerclass refid="classtesting_1_1internal_1_1ReturnRefAction_1_1Impl" prot="private">testing::internal::ReturnRefAction::Impl</innerclass>
+    <templateparamlist>
+      <param>
+        <type>typename T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1ReturnRefAction_1ad63d08b72518c2059e0cc99c006cd620" prot="private" static="no" mutable="no">
+        <type>T &amp;</type>
+        <definition>T&amp; testing::internal::ReturnRefAction&lt; T &gt;::ref_</definition>
+        <argsstring></argsstring>
+        <name>ref_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="783" column="5" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="783" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ReturnRefAction_1a1384b1cd78f3069f0493e2302f143701" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::ReturnRefAction&lt; T &gt;::ReturnRefAction</definition>
+        <argsstring>(T &amp;ref)</argsstring>
+        <name>ReturnRefAction</name>
+        <param>
+          <type>T &amp;</type>
+          <declname>ref</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="752" column="12" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="752" bodyend="752"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ReturnRefAction_1a48e5d411097707e558af62eb68edc162" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename F</type>
+          </param>
+        </templateparamlist>
+        <type></type>
+        <definition>testing::internal::ReturnRefAction&lt; T &gt;::operator Action&lt; F &gt;</definition>
+        <argsstring>() const</argsstring>
+        <name>operator Action&lt; F &gt;</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="757" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="757" bodyend="765"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="749" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="749" bodyend="784"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1ReturnRefAction_1a48e5d411097707e558af62eb68edc162" prot="public" virt="non-virtual"><scope>testing::internal::ReturnRefAction</scope><name>operator Action&lt; F &gt;</name></member>
+      <member refid="classtesting_1_1internal_1_1ReturnRefAction_1ad63d08b72518c2059e0cc99c006cd620" prot="private" virt="non-virtual"><scope>testing::internal::ReturnRefAction</scope><name>ref_</name></member>
+      <member refid="classtesting_1_1internal_1_1ReturnRefAction_1a1384b1cd78f3069f0493e2302f143701" prot="public" virt="non-virtual"><scope>testing::internal::ReturnRefAction</scope><name>ReturnRefAction</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

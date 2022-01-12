@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="md__home_jan_packages_elements_include_gmock_internal_custom_README" kind="page">
+    <compoundname>md__home_jan_packages_elements_include_gmock_internal_custom_README</compoundname>
+    <title>Customization Points</title>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para>The custom directory is an injection point for custom user configurations.</para>
+<sect1 id="md__home_jan_packages_elements_include_gmock_internal_custom_README_1autotoc_md1">
+<title>Header &lt;tt&gt;gmock-port.h&lt;/tt&gt;</title>
+<para>The following macros can be defined:</para>
+<sect2 id="md__home_jan_packages_elements_include_gmock_internal_custom_README_1autotoc_md2">
+<title>Flag related macros:</title>
+<para><itemizedlist>
+<listitem><para><computeroutput>GMOCK_DECLARE_bool_(name)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GMOCK_DECLARE_int32_(name)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GMOCK_DECLARE_string_(name)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GMOCK_DEFINE_bool_(name, default_val, doc)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GMOCK_DEFINE_int32_(name, default_val, doc)</computeroutput></para>
+</listitem><listitem><para><computeroutput>GMOCK_DEFINE_string_(name, default_val, doc)</computeroutput> </para>
+</listitem></itemizedlist>
+</para>
+</sect2>
+</sect1>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/internal/custom/README.md"/>
+  </compounddef>
+</doxygen>

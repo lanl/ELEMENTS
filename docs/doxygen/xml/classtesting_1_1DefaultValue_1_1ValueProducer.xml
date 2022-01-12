@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1DefaultValue_1_1ValueProducer" kind="class" language="C++" prot="private" abstract="yes">
+    <compoundname>testing::DefaultValue::ValueProducer</compoundname>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1DefaultValue_1_1ValueProducer_1aa78c53c5676f4df0efc5c319f8715963" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type></type>
+        <definition>virtual testing::DefaultValue&lt; T &gt;::ValueProducer::~ValueProducer</definition>
+        <argsstring>()</argsstring>
+        <name>~ValueProducer</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="331" column="13" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="331" bodyend="331"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1DefaultValue_1_1ValueProducer_1adb9e38abe068ac2e792b53fd32bd7e96" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>T</type>
+        <definition>virtual T testing::DefaultValue&lt; T &gt;::ValueProducer::Produce</definition>
+        <argsstring>()=0</argsstring>
+        <name>Produce</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="332" column="15"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="329" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="329" bodyend="333"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1DefaultValue_1_1ValueProducer_1adb9e38abe068ac2e792b53fd32bd7e96" prot="public" virt="pure-virtual"><scope>testing::DefaultValue::ValueProducer</scope><name>Produce</name></member>
+      <member refid="classtesting_1_1DefaultValue_1_1ValueProducer_1aa78c53c5676f4df0efc5c319f8715963" prot="public" virt="virtual"><scope>testing::DefaultValue::ValueProducer</scope><name>~ValueProducer</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,100 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1AssignAction" kind="class" language="C++" prot="public">
+    <compoundname>testing::internal::AssignAction</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename T1</type>
+      </param>
+      <param>
+        <type>typename T2</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1AssignAction_1a49cdab549c200ecac64b348ba27b9d06" prot="private" static="no" mutable="no">
+        <type>T1 *const</type>
+        <definition>T1* const testing::internal::AssignAction&lt; T1, T2 &gt;::ptr_</definition>
+        <argsstring></argsstring>
+        <name>ptr_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="881" column="12" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="881" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1AssignAction_1a6b76b6b0b0483f2918dab3f2df960dce" prot="private" static="no" mutable="no">
+        <type>const T2</type>
+        <definition>const T2 testing::internal::AssignAction&lt; T1, T2 &gt;::value_</definition>
+        <argsstring></argsstring>
+        <name>value_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="882" column="12" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="882" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1AssignAction_1ae5a8fe8954ff3f8b26a08b57c3afdf9a" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::AssignAction&lt; T1, T2 &gt;::AssignAction</definition>
+        <argsstring>(T1 *ptr, T2 value)</argsstring>
+        <name>AssignAction</name>
+        <param>
+          <type>T1 *</type>
+          <declname>ptr</declname>
+        </param>
+        <param>
+          <type>T2</type>
+          <declname>value</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="873" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="873" bodyend="873"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1AssignAction_1a540912bec1f4de6fc4c7de26312e4586" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename Result</type>
+          </param>
+          <param>
+            <type>typename ArgumentTuple</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void testing::internal::AssignAction&lt; T1, T2 &gt;::Perform</definition>
+        <argsstring>(const ArgumentTuple &amp;) const</argsstring>
+        <name>Perform</name>
+        <param>
+          <type>const ArgumentTuple &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="876" column="8" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="876" bodyend="878"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="871" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="871" bodyend="883"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1AssignAction_1ae5a8fe8954ff3f8b26a08b57c3afdf9a" prot="public" virt="non-virtual"><scope>testing::internal::AssignAction</scope><name>AssignAction</name></member>
+      <member refid="classtesting_1_1internal_1_1AssignAction_1a540912bec1f4de6fc4c7de26312e4586" prot="public" virt="non-virtual"><scope>testing::internal::AssignAction</scope><name>Perform</name></member>
+      <member refid="classtesting_1_1internal_1_1AssignAction_1a49cdab549c200ecac64b348ba27b9d06" prot="private" virt="non-virtual"><scope>testing::internal::AssignAction</scope><name>ptr_</name></member>
+      <member refid="classtesting_1_1internal_1_1AssignAction_1a6b76b6b0b0483f2918dab3f2df960dce" prot="private" virt="non-virtual"><scope>testing::internal::AssignAction</scope><name>value_</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

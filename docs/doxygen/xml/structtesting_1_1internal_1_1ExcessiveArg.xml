@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1ExcessiveArg" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::ExcessiveArg</compoundname>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1481" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1481" bodyend="1481"/>
+    <listofallmembers>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1TestMetaFactoryBase" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>testing::internal::TestMetaFactoryBase</compoundname>
+    <templateparamlist>
+      <param>
+        <type>class ParamType</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1TestMetaFactoryBase_1aad80adf04686f7dfcf952e44afc02767" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type></type>
+        <definition>virtual testing::internal::TestMetaFactoryBase&lt; ParamType &gt;::~TestMetaFactoryBase</definition>
+        <argsstring>()</argsstring>
+        <name>~TestMetaFactoryBase</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="417" column="11" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="417" bodyend="417"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1TestMetaFactoryBase_1a853daab362740bcac55e180128d564ef" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type><ref refid="classtesting_1_1internal_1_1TestFactoryBase" kindref="compound">TestFactoryBase</ref> *</type>
+        <definition>virtual TestFactoryBase* testing::internal::TestMetaFactoryBase&lt; ParamType &gt;::CreateTestFactory</definition>
+        <argsstring>(ParamType parameter)=0</argsstring>
+        <name>CreateTestFactory</name>
+        <reimplementedby refid="classtesting_1_1internal_1_1TestMetaFactory_1abd5d30fab71229deb5e63f5bb5ea3fd8">CreateTestFactory</reimplementedby>
+        <param>
+          <type>ParamType</type>
+          <declname>parameter</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="419" column="27"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="415" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="415" bodyend="420"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1TestMetaFactoryBase_1a853daab362740bcac55e180128d564ef" prot="public" virt="pure-virtual"><scope>testing::internal::TestMetaFactoryBase</scope><name>CreateTestFactory</name></member>
+      <member refid="classtesting_1_1internal_1_1TestMetaFactoryBase_1aad80adf04686f7dfcf952e44afc02767" prot="public" virt="virtual"><scope>testing::internal::TestMetaFactoryBase</scope><name>~TestMetaFactoryBase</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

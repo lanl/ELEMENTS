@@ -1,0 +1,352 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classelements_1_1Hex20" kind="class" language="C++" prot="public">
+    <compoundname>elements::Hex20</compoundname>
+    <basecompoundref refid="classelements_1_1Element3D" prot="public" virt="non-virtual">elements::Element3D</basecompoundref>
+      <sectiondef kind="protected-static-attrib">
+      <memberdef kind="variable" id="classelements_1_1Hex20_1aaf29423de402cfbec4967189b2eda898" prot="protected" static="yes" mutable="no">
+        <type>const int</type>
+        <definition>const int elements::Hex20::num_verts_</definition>
+        <argsstring></argsstring>
+        <name>num_verts_</name>
+        <initializer>= 20</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="796" column="30" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="796" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classelements_1_1Hex20_1a52fb14395ea30043da48d219ab978a57" prot="protected" static="yes" mutable="no">
+        <type>const int</type>
+        <definition>const int elements::Hex20::num_nodes_</definition>
+        <argsstring></argsstring>
+        <name>num_nodes_</name>
+        <initializer>= 20</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="797" column="30" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="797" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classelements_1_1Hex20_1a7f61b10bb8ef0637be8d6945365f8c9b" prot="protected" static="yes" mutable="no">
+        <type>const int</type>
+        <definition>const int elements::Hex20::num_basis_</definition>
+        <argsstring></argsstring>
+        <name>num_basis_</name>
+        <initializer>= 20</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="798" column="30" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="798" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classelements_1_1Hex20_1a7cdefed6be90f0a9cb7fa2200f860d96" prot="protected" static="yes" mutable="no">
+        <type>real_t</type>
+        <definition>real_t elements::Hex20::ref_vert[num_verts_ *num_dim_]</definition>
+        <argsstring>[num_verts_ *num_dim_]</argsstring>
+        <name>ref_vert</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="800" column="27" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="800" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classelements_1_1Hex20_1abde3e3dfd72262e81b1805a284297284" prot="protected" static="yes" mutable="no">
+        <type>const int</type>
+        <definition>const int elements::Hex20::vert_to_node[num_verts_]</definition>
+        <argsstring>[num_verts_]</argsstring>
+        <name>vert_to_node</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="801" column="30" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="801" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classelements_1_1Hex20_1acb102d65230ec564e55087ce68f659ff" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>elements::Hex20::Hex20</definition>
+        <argsstring>()</argsstring>
+        <name>Hex20</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="805" column="13"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1ab5c2ade2bd72596861b6fad6fae6196e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>elements::Hex20::~Hex20</definition>
+        <argsstring>()</argsstring>
+        <name>~Hex20</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="806" column="13"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1a6573df386de11b1157ddc1a951d744cd" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>int</type>
+        <definition>int elements::Hex20::num_verts</definition>
+        <argsstring>()</argsstring>
+        <name>num_verts</name>
+        <reimplements refid="classelements_1_1Element3D_1a83cfdc89ab32ae880f7229bee4dc312b">num_verts</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="808" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1a0327171849f789e831b8b8fe0e4fc41e" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>int</type>
+        <definition>int elements::Hex20::num_nodes</definition>
+        <argsstring>()</argsstring>
+        <name>num_nodes</name>
+        <reimplements refid="classelements_1_1Element3D_1aa0efd94bcaee0e07f88a682960577d5e">num_nodes</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="809" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1a7467ec8348953fc74252ff40e81718a9" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>int</type>
+        <definition>int elements::Hex20::num_basis</definition>
+        <argsstring>()</argsstring>
+        <name>num_basis</name>
+        <reimplements refid="classelements_1_1Element3D_1a436e1b971fc4720a5260b50b5c8e4bd4">num_basis</reimplements>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="810" column="17"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1a3eab04a795658925c95ee04dec756c3b" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void elements::Hex20::physical_position</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;x_point, const ViewCArray&lt; real_t &gt; &amp;xi_point, const ViewCArray&lt; real_t &gt; &amp;vertices)</argsstring>
+        <name>physical_position</name>
+        <reimplements refid="classelements_1_1Element3D_1a659ef69d35d3a94767b4f645563e3e62">physical_position</reimplements>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>x_point</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>vertices</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="813" column="18"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1a7e71cb2463dcce4f31286421eaf99dab" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void elements::Hex20::basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;basis, const ViewCArray&lt; real_t &gt; &amp;xi_point)</argsstring>
+        <name>basis</name>
+        <reimplements refid="classelements_1_1Element3D_1ae20da69c947fa6b2904c90325681f7bf">basis</reimplements>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>basis</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="820" column="18"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1a67d2be778491c8fe28369e4f882cf54c" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void elements::Hex20::partial_xi_basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;partial_xi, const ViewCArray&lt; real_t &gt; &amp;xi_point)</argsstring>
+        <name>partial_xi_basis</name>
+        <reimplements refid="classelements_1_1Element3D_1ac762ff9ca242cdd50ac04405dcfe3b58">partial_xi_basis</reimplements>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>partial_xi</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="825" column="19"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1a55296b6a7f8f8194ce09dbd77e33a82a" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void elements::Hex20::partial_eta_basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;partial_eta, const ViewCArray&lt; real_t &gt; &amp;xi_point)</argsstring>
+        <name>partial_eta_basis</name>
+        <reimplements refid="classelements_1_1Element3D_1ae60230d87b2b963bd4176c9277932330">partial_eta_basis</reimplements>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>partial_eta</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="831" column="19"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1afb897c86303bd1f73c5941189aa1e14f" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>void</type>
+        <definition>void elements::Hex20::partial_mu_basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;partial_mu, const ViewCArray&lt; real_t &gt; &amp;xi_point)</argsstring>
+        <name>partial_mu_basis</name>
+        <reimplements refid="classelements_1_1Element3D_1a6d3946174a99b1db1a75ae9270bd9a5d">partial_mu_basis</reimplements>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>partial_mu</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="836" column="18"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1ab08711d678fddf053c7296d2756a4f41" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>int</type>
+        <definition>int elements::Hex20::vert_node_map</definition>
+        <argsstring>(const int vert_lid)</argsstring>
+        <name>vert_node_map</name>
+        <reimplements refid="classelements_1_1Element3D_1ad1dd254840881d800d7a5336ea339919">vert_node_map</reimplements>
+        <param>
+          <type>const int</type>
+          <declname>vert_lid</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="841" column="24"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Hex20_1ae5fcd6aebd6799a5530ad7ef64a289b4" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type>real_t &amp;</type>
+        <definition>real_t&amp; elements::Hex20::ref_locs</definition>
+        <argsstring>(const int vert_lid, const int dim)</argsstring>
+        <name>ref_locs</name>
+        <reimplements refid="classelements_1_1Element3D_1aebcbc1989e0258f41efa1201933d2cb7">ref_locs</reimplements>
+        <param>
+          <type>const int</type>
+          <declname>vert_lid</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>dim</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="843" column="20"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>elements::Element3D</label>
+        <link refid="classelements_1_1Element3D"/>
+      </node>
+      <node id="1">
+        <label>elements::Hex20</label>
+        <link refid="classelements_1_1Hex20"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>elements::Element3D</label>
+        <link refid="classelements_1_1Element3D"/>
+      </node>
+      <node id="1">
+        <label>elements::Hex20</label>
+        <link refid="classelements_1_1Hex20"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/jan/packages/elements/include/element_types/elements.h" line="793" column="5" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="793" bodyend="845"/>
+    <listofallmembers>
+      <member refid="classelements_1_1Hex20_1a7e71cb2463dcce4f31286421eaf99dab" prot="public" virt="virtual"><scope>elements::Hex20</scope><name>basis</name></member>
+      <member refid="classelements_1_1Hex20_1acb102d65230ec564e55087ce68f659ff" prot="public" virt="non-virtual"><scope>elements::Hex20</scope><name>Hex20</name></member>
+      <member refid="classelements_1_1Element3D_1a5af0210c1e890c0238765d44466302f3" prot="public" virt="non-virtual"><scope>elements::Hex20</scope><name>nsurfaces</name></member>
+      <member refid="classelements_1_1Hex20_1a7467ec8348953fc74252ff40e81718a9" prot="public" virt="virtual"><scope>elements::Hex20</scope><name>num_basis</name></member>
+      <member refid="classelements_1_1Hex20_1a7f61b10bb8ef0637be8d6945365f8c9b" prot="protected" virt="non-virtual"><scope>elements::Hex20</scope><name>num_basis_</name></member>
+      <member refid="classelements_1_1Element3D_1aad453a83afc9b2375b315c375d6a3051" prot="protected" virt="non-virtual"><scope>elements::Hex20</scope><name>num_dim_</name></member>
+      <member refid="classelements_1_1Hex20_1a0327171849f789e831b8b8fe0e4fc41e" prot="public" virt="virtual"><scope>elements::Hex20</scope><name>num_nodes</name></member>
+      <member refid="classelements_1_1Hex20_1a52fb14395ea30043da48d219ab978a57" prot="protected" virt="non-virtual"><scope>elements::Hex20</scope><name>num_nodes_</name></member>
+      <member refid="classelements_1_1Hex20_1a6573df386de11b1157ddc1a951d744cd" prot="public" virt="virtual"><scope>elements::Hex20</scope><name>num_verts</name></member>
+      <member refid="classelements_1_1Hex20_1aaf29423de402cfbec4967189b2eda898" prot="protected" virt="non-virtual"><scope>elements::Hex20</scope><name>num_verts_</name></member>
+      <member refid="classelements_1_1Hex20_1a55296b6a7f8f8194ce09dbd77e33a82a" prot="public" virt="virtual"><scope>elements::Hex20</scope><name>partial_eta_basis</name></member>
+      <member refid="classelements_1_1Hex20_1afb897c86303bd1f73c5941189aa1e14f" prot="public" virt="virtual"><scope>elements::Hex20</scope><name>partial_mu_basis</name></member>
+      <member refid="classelements_1_1Hex20_1a67d2be778491c8fe28369e4f882cf54c" prot="public" virt="virtual"><scope>elements::Hex20</scope><name>partial_xi_basis</name></member>
+      <member refid="classelements_1_1Hex20_1a3eab04a795658925c95ee04dec756c3b" prot="public" virt="virtual"><scope>elements::Hex20</scope><name>physical_position</name></member>
+      <member refid="classelements_1_1Hex20_1ae5fcd6aebd6799a5530ad7ef64a289b4" prot="public" virt="virtual"><scope>elements::Hex20</scope><name>ref_locs</name></member>
+      <member refid="classelements_1_1Hex20_1a7cdefed6be90f0a9cb7fa2200f860d96" prot="protected" virt="non-virtual"><scope>elements::Hex20</scope><name>ref_vert</name></member>
+      <member refid="classelements_1_1Element3D_1a92eab646af234a27ee0d0424bf4d34ea" prot="public" virt="non-virtual"><scope>elements::Hex20</scope><name>surface_to_dof_lid</name></member>
+      <member refid="classelements_1_1Hex20_1ab08711d678fddf053c7296d2756a4f41" prot="public" virt="virtual"><scope>elements::Hex20</scope><name>vert_node_map</name></member>
+      <member refid="classelements_1_1Hex20_1abde3e3dfd72262e81b1805a284297284" prot="protected" virt="non-virtual"><scope>elements::Hex20</scope><name>vert_to_node</name></member>
+      <member refid="classelements_1_1Hex20_1ab5c2ade2bd72596861b6fad6fae6196e" prot="public" virt="non-virtual"><scope>elements::Hex20</scope><name>~Hex20</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

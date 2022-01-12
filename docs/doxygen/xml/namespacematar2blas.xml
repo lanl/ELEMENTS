@@ -1,0 +1,76 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="namespacematar2blas" kind="namespace" language="C++">
+    <compoundname>matar2blas</compoundname>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="matar__blas__lapack__interface_8h_1ab1e77e3c1b5993320445a7f980f017e5" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void matar2blas::transpose</definition>
+        <argsstring>(const CArray&lt; Real &gt; &amp;, CArray&lt; Real &gt; &amp;)</argsstring>
+        <name>transpose</name>
+        <param>
+          <type>const CArray&lt; Real &gt; &amp;</type>
+        </param>
+        <param>
+          <type>CArray&lt; Real &gt; &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h" line="9" column="8" declfile="/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h" declline="9" declcolumn="8"/>
+      </memberdef>
+      <memberdef kind="function" id="matar__blas__lapack__interface_8h_1a710a669d2d68576eed7c00c4b9fdc0f8" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void matar2blas::matvec</definition>
+        <argsstring>(const CArray&lt; Real &gt; &amp;, const CArray&lt; Real &gt; &amp;, CArray&lt; Real &gt; &amp;)</argsstring>
+        <name>matvec</name>
+        <param>
+          <type>const CArray&lt; Real &gt; &amp;</type>
+        </param>
+        <param>
+          <type>const CArray&lt; Real &gt; &amp;</type>
+        </param>
+        <param>
+          <type>CArray&lt; Real &gt; &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h" line="11" column="8" declfile="/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h" declline="11" declcolumn="8"/>
+      </memberdef>
+      <memberdef kind="function" id="matar__blas__lapack__interface_8h_1a856fd4cbe6154e82cc1e382c5004b185" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void matar2blas::matmul</definition>
+        <argsstring>(const CArray&lt; Real &gt; &amp;, const CArray&lt; Real &gt; &amp;, CArray&lt; Real &gt; &amp;)</argsstring>
+        <name>matmul</name>
+        <param>
+          <type>const CArray&lt; Real &gt; &amp;</type>
+        </param>
+        <param>
+          <type>const CArray&lt; Real &gt; &amp;</type>
+        </param>
+        <param>
+          <type>CArray&lt; Real &gt; &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h" line="14" column="8" declfile="/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h" declline="14" declcolumn="8"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/common/matar_blas_lapack_interface.h" line="8" column="1"/>
+  </compounddef>
+</doxygen>

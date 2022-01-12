@@ -1,0 +1,387 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="namespacetesting_1_1internal_1_1posix" kind="namespace" language="C++">
+    <compoundname>testing::internal::posix</compoundname>
+      <sectiondef kind="typedef">
+      <memberdef kind="typedef" id="gtest-port_8h_1a8eb9f08d3af29941c2d2a964cfff3ecb" prot="public" static="no">
+        <type>struct stat</type>
+        <definition>typedef struct stat testing::internal::posix::StatStruct</definition>
+        <argsstring></argsstring>
+        <name>StatStruct</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="1898" column="5" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2038" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="gtest-port_8h_1a3117b067e1f942a2031e666953120ccc" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::FileNo</definition>
+        <argsstring>(FILE *file)</argsstring>
+        <name>FileNo</name>
+        <param>
+          <type>FILE *</type>
+          <declname>file</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2040" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2040" bodyend="2040"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a10ec8d66be38419e0f99253e63def3d8" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::DoIsATTY</definition>
+        <argsstring>(int fd)</argsstring>
+        <name>DoIsATTY</name>
+        <param>
+          <type>int</type>
+          <declname>fd</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2041" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2041" bodyend="2041"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a2b87b7ff647a128614daf50667eb9304" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::Stat</definition>
+        <argsstring>(const char *path, StatStruct *buf)</argsstring>
+        <name>Stat</name>
+        <param>
+          <type>const char *</type>
+          <declname>path</declname>
+        </param>
+        <param>
+          <type>StatStruct *</type>
+          <declname>buf</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2042" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2042" bodyend="2042"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a1ef2385a7f8e4c706054da35967e76bd" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::StrCaseCmp</definition>
+        <argsstring>(const char *s1, const char *s2)</argsstring>
+        <name>StrCaseCmp</name>
+        <param>
+          <type>const char *</type>
+          <declname>s1</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>s2</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2043" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2043" bodyend="2045"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a8e352884793a65ae8be144676f1a9136" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>char *</type>
+        <definition>char* testing::internal::posix::StrDup</definition>
+        <argsstring>(const char *src)</argsstring>
+        <name>StrDup</name>
+        <param>
+          <type>const char *</type>
+          <declname>src</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2046" column="13" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2046" bodyend="2046"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1acbad5d4ea5b73fd1765f5f760642932a" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::RmDir</definition>
+        <argsstring>(const char *dir)</argsstring>
+        <name>RmDir</name>
+        <param>
+          <type>const char *</type>
+          <declname>dir</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2047" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2047" bodyend="2047"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1af0d04ed5baeed28353fa38742748a421" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool testing::internal::posix::IsDir</definition>
+        <argsstring>(const StatStruct &amp;st)</argsstring>
+        <name>IsDir</name>
+        <param>
+          <type>const StatStruct &amp;</type>
+          <declname>st</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2048" column="13" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2048" bodyend="2048"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a16ebe936b3a8ea462a94191635aedc27" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::IsATTY</definition>
+        <argsstring>(int fd)</argsstring>
+        <name>IsATTY</name>
+        <param>
+          <type>int</type>
+          <declname>fd</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2052" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2052" bodyend="2061"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a1ddc8a4fc6bb21da372307485591a212" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::ChDir</definition>
+        <argsstring>(const char *dir)</argsstring>
+        <name>ChDir</name>
+        <param>
+          <type>const char *</type>
+          <declname>dir</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2073" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2073" bodyend="2073"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a4042201dcc4932641d484e7ddf94de7d" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>FILE *</type>
+        <definition>FILE* testing::internal::posix::FOpen</definition>
+        <argsstring>(const char *path, const char *mode)</argsstring>
+        <name>FOpen</name>
+        <param>
+          <type>const char *</type>
+          <declname>path</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>mode</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2075" column="13" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2075" bodyend="2085"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a9ef6d089cdae03f9d9e0e6d379c40703" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>FILE *</type>
+        <definition>FILE* testing::internal::posix::FReopen</definition>
+        <argsstring>(const char *path, const char *mode, FILE *stream)</argsstring>
+        <name>FReopen</name>
+        <param>
+          <type>const char *</type>
+          <declname>path</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>mode</declname>
+        </param>
+        <param>
+          <type>FILE *</type>
+          <declname>stream</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2087" column="13" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2087" bodyend="2089"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1af7c268eba32d5a718b36b6b3801302e0" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>FILE *</type>
+        <definition>FILE* testing::internal::posix::FDOpen</definition>
+        <argsstring>(int fd, const char *mode)</argsstring>
+        <name>FDOpen</name>
+        <param>
+          <type>int</type>
+          <declname>fd</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>mode</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2090" column="13" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2090" bodyend="2090"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1af4beeaaa8d62916d5e3b644a1ddfbd6b" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::FClose</definition>
+        <argsstring>(FILE *fp)</argsstring>
+        <name>FClose</name>
+        <param>
+          <type>FILE *</type>
+          <declname>fp</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2092" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2092" bodyend="2092"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a3c6ab13e581a56f1b02f3eb7536c97fd" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::Read</definition>
+        <argsstring>(int fd, void *buf, unsigned int count)</argsstring>
+        <name>Read</name>
+        <param>
+          <type>int</type>
+          <declname>fd</declname>
+        </param>
+        <param>
+          <type>void *</type>
+          <declname>buf</declname>
+        </param>
+        <param>
+          <type>unsigned int</type>
+          <declname>count</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2094" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2094" bodyend="2096"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1af4acf9f78d55f815a18b43786511abef" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::Write</definition>
+        <argsstring>(int fd, const void *buf, unsigned int count)</argsstring>
+        <name>Write</name>
+        <param>
+          <type>int</type>
+          <declname>fd</declname>
+        </param>
+        <param>
+          <type>const void *</type>
+          <declname>buf</declname>
+        </param>
+        <param>
+          <type>unsigned int</type>
+          <declname>count</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2097" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2097" bodyend="2099"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a15e5b8f2a535ef1b2529b85b861e4846" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::internal::posix::Close</definition>
+        <argsstring>(int fd)</argsstring>
+        <name>Close</name>
+        <param>
+          <type>int</type>
+          <declname>fd</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2100" column="12" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2100" bodyend="2100"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a4b77b14af6f4d18f83d303b98e9349c4" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>const char *</type>
+        <definition>const char* testing::internal::posix::StrError</definition>
+        <argsstring>(int errnum)</argsstring>
+        <name>StrError</name>
+        <param>
+          <type>int</type>
+          <declname>errnum</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2101" column="19" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2101" bodyend="2101"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a1d5e3da5a27eed25986859fa83cafe95" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>const char *</type>
+        <definition>const char* testing::internal::posix::GetEnv</definition>
+        <argsstring>(const char *name)</argsstring>
+        <name>GetEnv</name>
+        <param>
+          <type>const char *</type>
+          <declname>name</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2103" column="19" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2103" bodyend="2117"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-port_8h_1a69b8278c59359dd6a6f941b4643db9fb" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::internal::posix::Abort</definition>
+        <argsstring>()</argsstring>
+        <name>Abort</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="2127" column="14" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="2127" bodyend="2127"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="1981" column="1"/>
+  </compounddef>
+</doxygen>

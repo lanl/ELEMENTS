@@ -1,0 +1,317 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1EmptyTestEventListener" kind="class" language="C++" prot="public">
+    <compoundname>testing::EmptyTestEventListener</compoundname>
+    <basecompoundref refid="classtesting_1_1TestEventListener" prot="public" virt="non-virtual">testing::TestEventListener</basecompoundref>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1ac3f5033fcd82080edb45f546ce9854fe" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestProgramStart</definition>
+        <argsstring>(const UnitTest &amp;) override</argsstring>
+        <name>OnTestProgramStart</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1a5f6c84f39851e8a603a2d2e10063816b">OnTestProgramStart</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1UnitTest" kindref="compound">UnitTest</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1160" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1160" bodyend="1160"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1a31edf103561e8b4d747656bc2d927661" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestIterationStart</definition>
+        <argsstring>(const UnitTest &amp;, int) override</argsstring>
+        <name>OnTestIterationStart</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1a60cc09b7907cb329d152eb5e7133bdeb">OnTestIterationStart</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1UnitTest" kindref="compound">UnitTest</ref> &amp;</type>
+        </param>
+        <param>
+          <type>int</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1161" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1161" bodyend="1162"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1a6e498ae763ac8c1a46bd861e0b7ff3f5" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnEnvironmentsSetUpStart</definition>
+        <argsstring>(const UnitTest &amp;) override</argsstring>
+        <name>OnEnvironmentsSetUpStart</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1aa6502e534919605be45f26a6daf9a40c">OnEnvironmentsSetUpStart</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1UnitTest" kindref="compound">UnitTest</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1163" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1163" bodyend="1163"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1a9b4e781c0b38065a55c2fd163724ba69" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnEnvironmentsSetUpEnd</definition>
+        <argsstring>(const UnitTest &amp;) override</argsstring>
+        <name>OnEnvironmentsSetUpEnd</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1aaa1021d75f5dbf3f05c829c1cc520341">OnEnvironmentsSetUpEnd</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1UnitTest" kindref="compound">UnitTest</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1164" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1164" bodyend="1164"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1a1e32e4bd4857822b6b50e6900aa5c651" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestSuiteStart</definition>
+        <argsstring>(const TestSuite &amp;) override</argsstring>
+        <name>OnTestSuiteStart</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1a2726cc70dfda861f109355f1d9f09dfe">OnTestSuiteStart</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestSuite" kindref="compound">TestSuite</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1165" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1165" bodyend="1165"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1a7f9a84967fde01000b7a56e9e84b6052" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestCaseStart</definition>
+        <argsstring>(const TestCase &amp;) override</argsstring>
+        <name>OnTestCaseStart</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1ac48628c9f78d3e10bff77c7366e9e780">OnTestCaseStart</reimplements>
+        <param>
+          <type>const TestCase &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1168" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1168" bodyend="1168"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1a1d8c7f3f1f92826f668edae1bc5aadf4" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestStart</definition>
+        <argsstring>(const TestInfo &amp;) override</argsstring>
+        <name>OnTestStart</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1ab4f6a0ca16ae75daf385b3b5914e1048">OnTestStart</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1171" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1171" bodyend="1171"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1ab95992f0a0b3741d59a24c3a7115fa60" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestPartResult</definition>
+        <argsstring>(const TestPartResult &amp;) override</argsstring>
+        <name>OnTestPartResult</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1a054f8705c883fa120b91473aff38f2ee">OnTestPartResult</reimplements>
+        <param>
+          <type>const TestPartResult &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1172" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1172" bodyend="1172"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1a709d7077c086c877d214231bc520ef90" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestEnd</definition>
+        <argsstring>(const TestInfo &amp;) override</argsstring>
+        <name>OnTestEnd</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1abb1c44525ef038500608b5dc2f17099b">OnTestEnd</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1173" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1173" bodyend="1173"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1aefdb73682d290791461e186d864db718" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestSuiteEnd</definition>
+        <argsstring>(const TestSuite &amp;) override</argsstring>
+        <name>OnTestSuiteEnd</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1a8962caad5d2522c9160c794074a662ee">OnTestSuiteEnd</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestSuite" kindref="compound">TestSuite</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1174" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1174" bodyend="1174"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1abe05cc74c1081ed51e2c84b73013299e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestCaseEnd</definition>
+        <argsstring>(const TestCase &amp;) override</argsstring>
+        <name>OnTestCaseEnd</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1a6cada1572dde8010b94f6dd237ce52f4">OnTestCaseEnd</reimplements>
+        <param>
+          <type>const TestCase &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1176" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1176" bodyend="1176"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1a320780451eac9178434b7c77d948ecbd" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnEnvironmentsTearDownStart</definition>
+        <argsstring>(const UnitTest &amp;) override</argsstring>
+        <name>OnEnvironmentsTearDownStart</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1a468b5e6701bcb86cb2c956caadbba5e4">OnEnvironmentsTearDownStart</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1UnitTest" kindref="compound">UnitTest</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1179" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1179" bodyend="1179"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1ad9984052e82c3ae26395a2d9480326d2" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnEnvironmentsTearDownEnd</definition>
+        <argsstring>(const UnitTest &amp;) override</argsstring>
+        <name>OnEnvironmentsTearDownEnd</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1a9ea04fa7f447865ba76df35e12ba2092">OnEnvironmentsTearDownEnd</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1UnitTest" kindref="compound">UnitTest</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1180" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1180" bodyend="1180"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1aae9c5c61e476f0c421402fb1dde434d2" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestIterationEnd</definition>
+        <argsstring>(const UnitTest &amp;, int) override</argsstring>
+        <name>OnTestIterationEnd</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1a550fdb3e55726e4cefa09f5697941425">OnTestIterationEnd</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1UnitTest" kindref="compound">UnitTest</ref> &amp;</type>
+        </param>
+        <param>
+          <type>int</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1181" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1181" bodyend="1182"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1EmptyTestEventListener_1aaa9d683e8e0c850af67a0b92d785ddb9" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type>void</type>
+        <definition>void testing::EmptyTestEventListener::OnTestProgramEnd</definition>
+        <argsstring>(const UnitTest &amp;) override</argsstring>
+        <name>OnTestProgramEnd</name>
+        <reimplements refid="classtesting_1_1TestEventListener_1ad15b6246d94c268e233487a86463ef3d">OnTestProgramEnd</reimplements>
+        <param>
+          <type>const <ref refid="classtesting_1_1UnitTest" kindref="compound">UnitTest</ref> &amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1183" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1183" bodyend="1183"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>testing::EmptyTestEventListener</label>
+        <link refid="classtesting_1_1EmptyTestEventListener"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>testing::TestEventListener</label>
+        <link refid="classtesting_1_1TestEventListener"/>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="1">
+        <label>testing::EmptyTestEventListener</label>
+        <link refid="classtesting_1_1EmptyTestEventListener"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="2">
+        <label>testing::TestEventListener</label>
+        <link refid="classtesting_1_1TestEventListener"/>
+      </node>
+    </collaborationgraph>
+    <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1158" column="1" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1158" bodyend="1184"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1EmptyTestEventListener_1a9b4e781c0b38065a55c2fd163724ba69" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnEnvironmentsSetUpEnd</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1a6e498ae763ac8c1a46bd861e0b7ff3f5" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnEnvironmentsSetUpStart</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1ad9984052e82c3ae26395a2d9480326d2" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnEnvironmentsTearDownEnd</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1a320780451eac9178434b7c77d948ecbd" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnEnvironmentsTearDownStart</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1abe05cc74c1081ed51e2c84b73013299e" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestCaseEnd</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1a7f9a84967fde01000b7a56e9e84b6052" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestCaseStart</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1a709d7077c086c877d214231bc520ef90" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestEnd</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1aae9c5c61e476f0c421402fb1dde434d2" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestIterationEnd</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1a31edf103561e8b4d747656bc2d927661" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestIterationStart</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1ab95992f0a0b3741d59a24c3a7115fa60" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestPartResult</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1aaa9d683e8e0c850af67a0b92d785ddb9" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestProgramEnd</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1ac3f5033fcd82080edb45f546ce9854fe" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestProgramStart</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1a1d8c7f3f1f92826f668edae1bc5aadf4" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestStart</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1aefdb73682d290791461e186d864db718" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestSuiteEnd</name></member>
+      <member refid="classtesting_1_1EmptyTestEventListener_1a1e32e4bd4857822b6b50e6900aa5c651" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>OnTestSuiteStart</name></member>
+      <member refid="classtesting_1_1TestEventListener_1a4512d19e7a108ec4926239ec1ea85d63" prot="public" virt="virtual"><scope>testing::EmptyTestEventListener</scope><name>~TestEventListener</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

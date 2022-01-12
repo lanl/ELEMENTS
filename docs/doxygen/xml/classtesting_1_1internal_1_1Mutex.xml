@@ -1,0 +1,71 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1Mutex" kind="class" language="C++" prot="public">
+    <compoundname>testing::internal::Mutex</compoundname>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1Mutex_1a38e1833a78e3eec81ad23ce1b056b40e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::Mutex::Mutex</definition>
+        <argsstring>()</argsstring>
+        <name>Mutex</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="1865" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="1865" bodyend="1865"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1Mutex_1ae7e2191886c00182176b23c4f4d049f8" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::internal::Mutex::Lock</definition>
+        <argsstring>()</argsstring>
+        <name>Lock</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="1866" column="8" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="1866" bodyend="1866"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1Mutex_1a315188055de1be98884519ad84eff2e6" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::internal::Mutex::Unlock</definition>
+        <argsstring>()</argsstring>
+        <name>Unlock</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="1867" column="8" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="1867" bodyend="1867"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1Mutex_1af45bf1660ac4110338a02a8680b2f486" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::internal::Mutex::AssertHeld</definition>
+        <argsstring>() const</argsstring>
+        <name>AssertHeld</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="1868" column="8" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="1868" bodyend="1868"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="1863" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="1863" bodyend="1869"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1Mutex_1af45bf1660ac4110338a02a8680b2f486" prot="public" virt="non-virtual"><scope>testing::internal::Mutex</scope><name>AssertHeld</name></member>
+      <member refid="classtesting_1_1internal_1_1Mutex_1ae7e2191886c00182176b23c4f4d049f8" prot="public" virt="non-virtual"><scope>testing::internal::Mutex</scope><name>Lock</name></member>
+      <member refid="classtesting_1_1internal_1_1Mutex_1a38e1833a78e3eec81ad23ce1b056b40e" prot="public" virt="non-virtual"><scope>testing::internal::Mutex</scope><name>Mutex</name></member>
+      <member refid="classtesting_1_1internal_1_1Mutex_1a315188055de1be98884519ad84eff2e6" prot="public" virt="non-virtual"><scope>testing::internal::Mutex</scope><name>Unlock</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

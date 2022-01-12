@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1ActionInterface" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>testing::ActionInterface</compoundname>
+    <templateparamlist>
+      <param>
+        <type>typename F</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-type">
+      <memberdef kind="typedef" id="classtesting_1_1ActionInterface_1a7477de2fe3e4e01c59db698203acaee7" prot="public" static="no">
+        <type><ref refid="structtesting_1_1internal_1_1Function" kindref="compound">internal::Function</ref>&lt; F &gt;::Result</type>
+        <definition>typedef internal::Function&lt;F&gt;::Result testing::ActionInterface&lt; F &gt;::Result</definition>
+        <argsstring></argsstring>
+        <name>Result</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="414" column="48" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="414" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="classtesting_1_1ActionInterface_1af72720d864da4d606629e83edc003511" prot="public" static="no">
+        <type><ref refid="structtesting_1_1internal_1_1Function" kindref="compound">internal::Function</ref>&lt; F &gt;::ArgumentTuple</type>
+        <definition>typedef internal::Function&lt;F&gt;::ArgumentTuple testing::ActionInterface&lt; F &gt;::ArgumentTuple</definition>
+        <argsstring></argsstring>
+        <name>ArgumentTuple</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="415" column="55" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="415" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1ActionInterface_1a0f1d44e4c669a9cae5ee5b28419a6f52" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::ActionInterface&lt; F &gt;::ActionInterface</definition>
+        <argsstring>()</argsstring>
+        <name>ActionInterface</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="417" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="417" bodyend="417"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1ActionInterface_1a7dd0a5fc93d86ae3c9d04963b9f3a93f" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type></type>
+        <definition>virtual testing::ActionInterface&lt; F &gt;::~ActionInterface</definition>
+        <argsstring>()</argsstring>
+        <name>~ActionInterface</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="418" column="11" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="418" bodyend="418"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1ActionInterface_1a20f8624fcea1786f2992b358760422a0" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>Result</type>
+        <definition>virtual Result testing::ActionInterface&lt; F &gt;::Perform</definition>
+        <argsstring>(const ArgumentTuple &amp;args)=0</argsstring>
+        <name>Perform</name>
+        <param>
+          <type>const ArgumentTuple &amp;</type>
+          <declname>args</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="424" column="18"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classtesting_1_1ActionInterface_1aea0e7557e7f56ee0f29bd7680846c6aa" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::ActionInterface&lt; F &gt;::GTEST_DISALLOW_COPY_AND_ASSIGN_</definition>
+        <argsstring>(ActionInterface)</argsstring>
+        <name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name>
+        <param>
+          <type><ref refid="classtesting_1_1ActionInterface" kindref="compound">ActionInterface</ref></type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="427" column="3"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="412" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="412" bodyend="428"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1ActionInterface_1a0f1d44e4c669a9cae5ee5b28419a6f52" prot="public" virt="non-virtual"><scope>testing::ActionInterface</scope><name>ActionInterface</name></member>
+      <member refid="classtesting_1_1ActionInterface_1af72720d864da4d606629e83edc003511" prot="public" virt="non-virtual"><scope>testing::ActionInterface</scope><name>ArgumentTuple</name></member>
+      <member refid="classtesting_1_1ActionInterface_1aea0e7557e7f56ee0f29bd7680846c6aa" prot="private" virt="non-virtual"><scope>testing::ActionInterface</scope><name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name></member>
+      <member refid="classtesting_1_1ActionInterface_1a20f8624fcea1786f2992b358760422a0" prot="public" virt="pure-virtual"><scope>testing::ActionInterface</scope><name>Perform</name></member>
+      <member refid="classtesting_1_1ActionInterface_1a7477de2fe3e4e01c59db698203acaee7" prot="public" virt="non-virtual"><scope>testing::ActionInterface</scope><name>Result</name></member>
+      <member refid="classtesting_1_1ActionInterface_1a7dd0a5fc93d86ae3c9d04963b9f3a93f" prot="public" virt="virtual"><scope>testing::ActionInterface</scope><name>~ActionInterface</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

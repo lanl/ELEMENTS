@@ -1,0 +1,213 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator" kind="class" language="C++" prot="private">
+    <compoundname>testing::internal::ValuesInIteratorRangeGenerator::Iterator</compoundname>
+    <basecompoundref refid="classtesting_1_1internal_1_1ParamIteratorInterface" prot="public" virt="non-virtual">testing::internal::ParamIteratorInterface&lt; T &gt;</basecompoundref>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a904df7e46beda1ce5ac2c0ecd6680e0d" prot="private" static="no" mutable="no">
+        <type>const <ref refid="classtesting_1_1internal_1_1ParamGeneratorInterface" kindref="compound">ParamGeneratorInterface</ref>&lt; T &gt; *const</type>
+        <definition>const ParamGeneratorInterface&lt;T&gt;* const testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::base_</definition>
+        <argsstring></argsstring>
+        <name>base_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="355" column="41" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="355" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1aaff15b9f8addac71b91c32053bf9ea1e" prot="private" static="no" mutable="no">
+        <type>ContainerType::const_iterator</type>
+        <definition>ContainerType::const_iterator testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::iterator_</definition>
+        <argsstring></argsstring>
+        <name>iterator_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="356" column="44" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="356" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1af51f1a21ffb0cd531de7574f4ad1f9b6" prot="private" static="no" mutable="yes">
+        <type>std::unique_ptr&lt; const T &gt;</type>
+        <definition>std::unique_ptr&lt;const T&gt; testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::value_</definition>
+        <argsstring></argsstring>
+        <name>value_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="362" column="29" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="362" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1aebd635efe7082e6fc45bb8ae0dbefd2e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::Iterator</definition>
+        <argsstring>(const ParamGeneratorInterface&lt; T &gt; *base, typename ContainerType::const_iterator iterator)</argsstring>
+        <name>Iterator</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1internal_1_1ParamGeneratorInterface" kindref="compound">ParamGeneratorInterface</ref>&lt; T &gt; *</type>
+          <declname>base</declname>
+        </param>
+        <param>
+          <type>typename ContainerType::const_iterator</type>
+          <declname>iterator</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="311" column="5" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="311" bodyend="313"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a265c1facb4cbd4669686d5f331df4a95" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::~Iterator</definition>
+        <argsstring>() override</argsstring>
+        <name>~Iterator</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="314" column="5" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="314" bodyend="314"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a27445e4d010ffde9d3f2f9ada5d54d0f" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const <ref refid="classtesting_1_1internal_1_1ParamGeneratorInterface" kindref="compound">ParamGeneratorInterface</ref>&lt; T &gt; *</type>
+        <definition>const ParamGeneratorInterface&lt;T&gt;* testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::BaseGenerator</definition>
+        <argsstring>() const override</argsstring>
+        <name>BaseGenerator</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="316" column="35" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="316" bodyend="318"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a5ff56489536cf5d90ed0ac07ffeb476b" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::Advance</definition>
+        <argsstring>() override</argsstring>
+        <name>Advance</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="319" column="10" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="319" bodyend="322"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a2c5ccf4da12cfb089829438d679ae35e" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classtesting_1_1internal_1_1ParamIteratorInterface" kindref="compound">ParamIteratorInterface</ref>&lt; T &gt; *</type>
+        <definition>ParamIteratorInterface&lt;T&gt;* testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::Clone</definition>
+        <argsstring>() const override</argsstring>
+        <name>Clone</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="323" column="28" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="323" bodyend="325"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a55bd2a0d5a630478e32ec2efe08e37e4" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const T *</type>
+        <definition>const T* testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::Current</definition>
+        <argsstring>() const override</argsstring>
+        <name>Current</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="333" column="13" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="333" bodyend="336"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a75604bc318aca22ff8607b68bfb44e96" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::Equals</definition>
+        <argsstring>(const ParamIteratorInterface&lt; T &gt; &amp;other) const override</argsstring>
+        <name>Equals</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1internal_1_1ParamIteratorInterface" kindref="compound">ParamIteratorInterface</ref>&lt; T &gt; &amp;</type>
+          <declname>other</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="337" column="10" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="337" bodyend="345"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a87cadeed020bb8bfbdce636fca31b9ef" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator::Iterator</definition>
+        <argsstring>(const Iterator &amp;other)</argsstring>
+        <name>Iterator</name>
+        <param>
+          <type>const Iterator &amp;</type>
+          <declname>other</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="348" column="5" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="348" bodyend="353"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>testing::internal::ParamIteratorInterface&lt; T &gt;</label>
+        <link refid="classtesting_1_1internal_1_1ParamIteratorInterface"/>
+      </node>
+      <node id="1">
+        <label>testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator</label>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>testing::internal::ParamIteratorInterface&lt; T &gt;</label>
+        <link refid="classtesting_1_1internal_1_1ParamIteratorInterface"/>
+      </node>
+      <node id="1">
+        <label>testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;::Iterator</label>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="309" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="309" bodyend="363"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a5ff56489536cf5d90ed0ac07ffeb476b" prot="public" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>Advance</name></member>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a904df7e46beda1ce5ac2c0ecd6680e0d" prot="private" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>base_</name></member>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a27445e4d010ffde9d3f2f9ada5d54d0f" prot="public" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>BaseGenerator</name></member>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a2c5ccf4da12cfb089829438d679ae35e" prot="public" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>Clone</name></member>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a55bd2a0d5a630478e32ec2efe08e37e4" prot="public" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>Current</name></member>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a75604bc318aca22ff8607b68bfb44e96" prot="public" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>Equals</name></member>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1aebd635efe7082e6fc45bb8ae0dbefd2e" prot="public" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>Iterator</name></member>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a87cadeed020bb8bfbdce636fca31b9ef" prot="private" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>Iterator</name></member>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1aaff15b9f8addac71b91c32053bf9ea1e" prot="private" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>iterator_</name></member>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1af51f1a21ffb0cd531de7574f4ad1f9b6" prot="private" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>value_</name></member>
+      <member refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1_1Iterator_1a265c1facb4cbd4669686d5f331df4a95" prot="public" virt="non-virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>~Iterator</name></member>
+      <member refid="classtesting_1_1internal_1_1ParamIteratorInterface_1adf6ba49e6b54a6e3b15dbd5733988bef" prot="public" virt="virtual"><scope>testing::internal::ValuesInIteratorRangeGenerator::Iterator</scope><name>~ParamIteratorInterface</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

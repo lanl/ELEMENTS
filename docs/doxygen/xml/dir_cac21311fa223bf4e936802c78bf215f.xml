@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="dir_cac21311fa223bf4e936802c78bf215f" kind="dir">
+    <compoundname>/home/jan/packages/elements/include/geometry</compoundname>
+    <innerfile refid="geometry_8h">geometry.h</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/geometry/"/>
+  </compounddef>
+</doxygen>

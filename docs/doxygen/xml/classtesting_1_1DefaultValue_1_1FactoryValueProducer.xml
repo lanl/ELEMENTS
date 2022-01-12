@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1DefaultValue_1_1FactoryValueProducer" kind="class" language="C++" prot="private">
+    <compoundname>testing::DefaultValue::FactoryValueProducer</compoundname>
+    <basecompoundref prot="public" virt="non-virtual">testing::DefaultValue&lt; T &gt;::ValueProducer</basecompoundref>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classtesting_1_1DefaultValue_1_1FactoryValueProducer_1ab3a016297d3a8fd3c2849c5a4d202d9b" prot="private" static="no" mutable="no">
+        <type>const FactoryFunction</type>
+        <definition>const FactoryFunction testing::DefaultValue&lt; T &gt;::FactoryValueProducer::factory_</definition>
+        <argsstring></argsstring>
+        <name>factory_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="352" column="27" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="352" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1DefaultValue_1_1FactoryValueProducer_1adc9253b20288be937687b3cefa7ef476" prot="public" static="no" const="no" explicit="yes" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::DefaultValue&lt; T &gt;::FactoryValueProducer::FactoryValueProducer</definition>
+        <argsstring>(FactoryFunction factory)</argsstring>
+        <name>FactoryValueProducer</name>
+        <param>
+          <type>FactoryFunction</type>
+          <declname>factory</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="347" column="14" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="347" bodyend="348"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1DefaultValue_1_1FactoryValueProducer_1ad669217ac582007bc2e1b08dc13deba5" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>T</type>
+        <definition>T testing::DefaultValue&lt; T &gt;::FactoryValueProducer::Produce</definition>
+        <argsstring>() override</argsstring>
+        <name>Produce</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="349" column="7" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="349" bodyend="349"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classtesting_1_1DefaultValue_1_1FactoryValueProducer_1a19e5afa4fea1707fe4fa8a50325a4cf9" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::DefaultValue&lt; T &gt;::FactoryValueProducer::GTEST_DISALLOW_COPY_AND_ASSIGN_</definition>
+        <argsstring>(FactoryValueProducer)</argsstring>
+        <name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name>
+        <param>
+          <type>FactoryValueProducer</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="353" column="5"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>testing::DefaultValue&lt; T &gt;::ValueProducer</label>
+      </node>
+      <node id="1">
+        <label>testing::DefaultValue&lt; T &gt;::FactoryValueProducer</label>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>testing::DefaultValue&lt; T &gt;::ValueProducer</label>
+      </node>
+      <node id="1">
+        <label>testing::DefaultValue&lt; T &gt;::FactoryValueProducer</label>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="345" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="345" bodyend="354"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1DefaultValue_1_1FactoryValueProducer_1ab3a016297d3a8fd3c2849c5a4d202d9b" prot="private" virt="non-virtual"><scope>testing::DefaultValue::FactoryValueProducer</scope><name>factory_</name></member>
+      <member refid="classtesting_1_1DefaultValue_1_1FactoryValueProducer_1adc9253b20288be937687b3cefa7ef476" prot="public" virt="non-virtual"><scope>testing::DefaultValue::FactoryValueProducer</scope><name>FactoryValueProducer</name></member>
+      <member refid="classtesting_1_1DefaultValue_1_1FactoryValueProducer_1a19e5afa4fea1707fe4fa8a50325a4cf9" prot="private" virt="non-virtual"><scope>testing::DefaultValue::FactoryValueProducer</scope><name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name></member>
+      <member refid="classtesting_1_1DefaultValue_1_1FactoryValueProducer_1ad669217ac582007bc2e1b08dc13deba5" prot="public" virt="non-virtual"><scope>testing::DefaultValue::FactoryValueProducer</scope><name>Produce</name></member>
+      <member refid="classtesting_1_1DefaultValue_1_1ValueProducer_1aa78c53c5676f4df0efc5c319f8715963" prot="public" virt="virtual"><scope>testing::DefaultValue::FactoryValueProducer</scope><name>~ValueProducer</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

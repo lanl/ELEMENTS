@@ -1,0 +1,2035 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="namespacetesting" kind="namespace" language="C++">
+    <compoundname>testing</compoundname>
+    <innerclass refid="classtesting_1_1DefaultValue" prot="public">testing::DefaultValue</innerclass>
+    <innerclass refid="classtesting_1_1DefaultValue_3_01T_01_6_01_4" prot="public">testing::DefaultValue&lt; T &amp; &gt;</innerclass>
+    <innerclass refid="classtesting_1_1DefaultValue_3_01void_01_4" prot="public">testing::DefaultValue&lt; void &gt;</innerclass>
+    <innerclass refid="classtesting_1_1ActionInterface" prot="public">testing::ActionInterface</innerclass>
+    <innerclass refid="classtesting_1_1Action" prot="public">testing::Action</innerclass>
+    <innerclass refid="classtesting_1_1PolymorphicAction" prot="public">testing::PolymorphicAction</innerclass>
+    <innerclass refid="classtesting_1_1NiceMock" prot="public">testing::NiceMock</innerclass>
+    <innerclass refid="classtesting_1_1NaggyMock" prot="public">testing::NaggyMock</innerclass>
+    <innerclass refid="classtesting_1_1StrictMock" prot="public">testing::StrictMock</innerclass>
+    <innerclass refid="classtesting_1_1Matcher" prot="public">testing::Matcher</innerclass>
+    <innerclass refid="classtesting_1_1Message" prot="public">testing::Message</innerclass>
+    <innerclass refid="classtesting_1_1Test" prot="public">testing::Test</innerclass>
+    <innerclass refid="classtesting_1_1TestProperty" prot="public">testing::TestProperty</innerclass>
+    <innerclass refid="classtesting_1_1TestResult" prot="public">testing::TestResult</innerclass>
+    <innerclass refid="classtesting_1_1TestInfo" prot="public">testing::TestInfo</innerclass>
+    <innerclass refid="classtesting_1_1TestSuite" prot="public">testing::TestSuite</innerclass>
+    <innerclass refid="classtesting_1_1Environment" prot="public">testing::Environment</innerclass>
+    <innerclass refid="classtesting_1_1TestEventListener" prot="public">testing::TestEventListener</innerclass>
+    <innerclass refid="classtesting_1_1EmptyTestEventListener" prot="public">testing::EmptyTestEventListener</innerclass>
+    <innerclass refid="classtesting_1_1TestEventListeners" prot="public">testing::TestEventListeners</innerclass>
+    <innerclass refid="classtesting_1_1UnitTest" prot="public">testing::UnitTest</innerclass>
+    <innerclass refid="classtesting_1_1WithParamInterface" prot="public">testing::WithParamInterface</innerclass>
+    <innerclass refid="classtesting_1_1TestWithParam" prot="public">testing::TestWithParam</innerclass>
+    <innerclass refid="classtesting_1_1ScopedTrace" prot="public">testing::ScopedTrace</innerclass>
+    <innerclass refid="structtesting_1_1TestParamInfo" prot="public">testing::TestParamInfo</innerclass>
+    <innerclass refid="structtesting_1_1PrintToStringParamName" prot="public">testing::PrintToStringParamName</innerclass>
+    <innernamespace refid="namespacetesting_1_1internal">testing::internal</innernamespace>
+      <sectiondef kind="typedef">
+      <memberdef kind="typedef" id="gmock-actions_8h_1a603e329ec0263ebfcf16f712810bd511" prot="public" static="no">
+        <type><ref refid="classtesting_1_1internal_1_1IgnoredValue" kindref="compound">internal::IgnoredValue</ref></type>
+        <definition>typedef internal::IgnoredValue testing::Unused</definition>
+        <argsstring></argsstring>
+        <name>Unused</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1198" column="32" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1198" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="gtest_8h_1a992de1d091ce660f451d1e8b3ce30fd6" prot="public" static="no">
+        <type>internal::TimeInMillis</type>
+        <definition>typedef internal::TimeInMillis testing::TimeInMillis</definition>
+        <argsstring></argsstring>
+        <name>TimeInMillis</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="528" column="32" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="528" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="gtest-type-util_8h_1a29eec4c1aba59e52881d8eb38cece83c" prot="public" static="no">
+        <templateparamlist>
+          <param>
+            <type>typename...</type>
+            <declname>Ts</declname>
+            <defname>Ts</defname>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1ProxyTypeList" kindref="compound">internal::ProxyTypeList</ref>&lt; Ts... &gt;</type>
+        <definition>using testing::Types = typedef internal::ProxyTypeList&lt;Ts...&gt;</definition>
+        <argsstring></argsstring>
+        <name>Types</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-type-util.h" line="179" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-type-util.h" bodystart="179" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="var">
+      <memberdef kind="variable" id="gtest_8h_1ada49f71f486d52155b86702a570f7fcb" prot="public" static="no" mutable="no">
+        <type>class GTEST_API_ <ref refid="classtesting_1_1ScopedTrace" kindref="compound">testing::ScopedTrace</ref></type>
+        <definition>class GTEST_API_ testing::ScopedTrace testing::GTEST_ATTRIBUTE_UNUSED_</definition>
+        <argsstring></argsstring>
+        <name>GTEST_ATTRIBUTE_UNUSED_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="2262" column="25"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="gmock-actions_8h_1ae6b9960db2b2685e043ce5215291f5b8" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename F</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1Action" kindref="compound">Action</ref>&lt; F &gt;</type>
+        <definition>Action&lt;F&gt; testing::MakeAction</definition>
+        <argsstring>(ActionInterface&lt; F &gt; *impl)</argsstring>
+        <name>MakeAction</name>
+        <param>
+          <type><ref refid="classtesting_1_1ActionInterface" kindref="compound">ActionInterface</ref>&lt; F &gt; *</type>
+          <declname>impl</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="583" column="8" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="583" bodyend="585"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a36bd06c5ea972c6df0bd9f40a7a94c65" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename Impl</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1PolymorphicAction" kindref="compound">PolymorphicAction</ref>&lt; Impl &gt;</type>
+        <definition>PolymorphicAction&lt;Impl&gt; testing::MakePolymorphicAction</definition>
+        <argsstring>(const Impl &amp;impl)</argsstring>
+        <name>MakePolymorphicAction</name>
+        <param>
+          <type>const Impl &amp;</type>
+          <declname>impl</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="595" column="26" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="595" bodyend="597"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1acfe4e82c9da6e35503e885cfa57b301c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename...</type>
+            <declname>Action</declname>
+            <defname>Action</defname>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1DoAllAction" kindref="compound">internal::DoAllAction</ref>&lt; typename std::decay&lt; <ref refid="classtesting_1_1Action" kindref="compound">Action</ref> &gt;::type... &gt;</type>
+        <definition>internal::DoAllAction&lt;typename std::decay&lt;Action&gt;::type...&gt; testing::DoAll</definition>
+        <argsstring>(Action &amp;&amp;... action)</argsstring>
+        <name>DoAll</name>
+        <param>
+          <type><ref refid="classtesting_1_1Action" kindref="compound">Action</ref> &amp;&amp;...</type>
+          <declname>action</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1204" column="24" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1204" bodyend="1207"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a656443dc47855de33c53f0caba4e9e27" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>size_t</type>
+            <declname>k</declname>
+            <defname>k</defname>
+          </param>
+          <param>
+            <type>typename InnerAction</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1WithArgsAction" kindref="compound">internal::WithArgsAction</ref>&lt; typename std::decay&lt; InnerAction &gt;::type, k &gt;</type>
+        <definition>internal::WithArgsAction&lt;typename std::decay&lt;InnerAction&gt;::type, k&gt; testing::WithArg</definition>
+        <argsstring>(InnerAction &amp;&amp;action)</argsstring>
+        <name>WithArg</name>
+        <param>
+          <type>InnerAction &amp;&amp;</type>
+          <declname>action</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1216" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1216" bodyend="1218"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a1e9887a68807b7fc2ccc63216849f374" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>size_t</type>
+            <declname>k</declname>
+            <defname>k</defname>
+          </param>
+          <param>
+            <type>size_t...</type>
+            <declname>ks</declname>
+            <defname>ks</defname>
+          </param>
+          <param>
+            <type>typename InnerAction</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1WithArgsAction" kindref="compound">internal::WithArgsAction</ref>&lt; typename std::decay&lt; InnerAction &gt;::type, k, ks... &gt;</type>
+        <definition>internal::WithArgsAction&lt;typename std::decay&lt;InnerAction&gt;::type, k, ks...&gt; testing::WithArgs</definition>
+        <argsstring>(InnerAction &amp;&amp;action)</argsstring>
+        <name>WithArgs</name>
+        <param>
+          <type>InnerAction &amp;&amp;</type>
+          <declname>action</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1226" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1226" bodyend="1228"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a7508ca9a9df00fc662405ed120326d87" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename InnerAction</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1WithArgsAction" kindref="compound">internal::WithArgsAction</ref>&lt; typename std::decay&lt; InnerAction &gt;::type &gt;</type>
+        <definition>internal::WithArgsAction&lt;typename std::decay&lt;InnerAction&gt;::type&gt; testing::WithoutArgs</definition>
+        <argsstring>(InnerAction &amp;&amp;action)</argsstring>
+        <name>WithoutArgs</name>
+        <param>
+          <type>InnerAction &amp;&amp;</type>
+          <declname>action</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1236" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1236" bodyend="1238"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1af6d1c13e9376c77671e37545cd84359c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename R</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ReturnAction" kindref="compound">internal::ReturnAction</ref>&lt; R &gt;</type>
+        <definition>internal::ReturnAction&lt;R&gt; testing::Return</definition>
+        <argsstring>(R value)</argsstring>
+        <name>Return</name>
+        <param>
+          <type>R</type>
+          <declname>value</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1244" column="24" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1244" bodyend="1246"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1aa0331596e269114da101f810d3a1b88b" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classtesting_1_1PolymorphicAction" kindref="compound">PolymorphicAction</ref>&lt; <ref refid="classtesting_1_1internal_1_1ReturnNullAction" kindref="compound">internal::ReturnNullAction</ref> &gt;</type>
+        <definition>PolymorphicAction&lt;internal::ReturnNullAction&gt; testing::ReturnNull</definition>
+        <argsstring>()</argsstring>
+        <name>ReturnNull</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1249" column="26" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1249" bodyend="1251"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a8da8e53d2e7bc4e3c531f7435ad04823" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classtesting_1_1PolymorphicAction" kindref="compound">PolymorphicAction</ref>&lt; <ref refid="classtesting_1_1internal_1_1ReturnVoidAction" kindref="compound">internal::ReturnVoidAction</ref> &gt;</type>
+        <definition>PolymorphicAction&lt;internal::ReturnVoidAction&gt; testing::Return</definition>
+        <argsstring>()</argsstring>
+        <name>Return</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1254" column="26" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1254" bodyend="1256"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a18eda8fe9c89ee856c199a2e04ca1641" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename R</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ReturnRefAction" kindref="compound">internal::ReturnRefAction</ref>&lt; R &gt;</type>
+        <definition>internal::ReturnRefAction&lt;R&gt; testing::ReturnRef</definition>
+        <argsstring>(R &amp;x)</argsstring>
+        <name>ReturnRef</name>
+        <param>
+          <type>R &amp;</type>
+          <declname>x</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1260" column="34" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1260" bodyend="1262"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a564ff8b888cddc78f66f4cc6d134ddc7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename R</type>
+          </param>
+          <param>
+            <type>R *</type>
+            <defval>nullptr</defval>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ReturnRefAction" kindref="compound">internal::ReturnRefAction</ref>&lt; R &gt;</type>
+        <definition>internal::ReturnRefAction&lt;R&gt; testing::ReturnRef</definition>
+        <argsstring>(R &amp;&amp;)=delete</argsstring>
+        <name>ReturnRef</name>
+        <param>
+          <type>R &amp;&amp;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1266" column="27" declfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" declline="1266" declcolumn="27"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1ac1b75444c89371dc25ebcfcc48336201" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename R</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ReturnRefOfCopyAction" kindref="compound">internal::ReturnRefOfCopyAction</ref>&lt; R &gt;</type>
+        <definition>internal::ReturnRefOfCopyAction&lt;R&gt; testing::ReturnRefOfCopy</definition>
+        <argsstring>(const R &amp;x)</argsstring>
+        <name>ReturnRefOfCopy</name>
+        <param>
+          <type>const R &amp;</type>
+          <declname>x</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1272" column="40" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1272" bodyend="1274"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1acaa432211a3aec62e3d0f24b47bd2dae" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename R</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1ByMoveWrapper" kindref="compound">internal::ByMoveWrapper</ref>&lt; R &gt;</type>
+        <definition>internal::ByMoveWrapper&lt;R&gt; testing::ByMove</definition>
+        <argsstring>(R x)</argsstring>
+        <name>ByMove</name>
+        <param>
+          <type>R</type>
+          <declname>x</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1281" column="25" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1281" bodyend="1283"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1aec1454fc6581eee01a89cceceda4da31" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ReturnRoundRobinAction" kindref="compound">internal::ReturnRoundRobinAction</ref>&lt; T &gt;</type>
+        <definition>internal::ReturnRoundRobinAction&lt;T&gt; testing::ReturnRoundRobin</definition>
+        <argsstring>(std::vector&lt; T &gt; vals)</argsstring>
+        <name>ReturnRoundRobin</name>
+        <param>
+          <type>std::vector&lt; T &gt;</type>
+          <declname>vals</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1289" column="34" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1289" bodyend="1291"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1ac65fab9aed3a50d79a0bcb6bf954cc7c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ReturnRoundRobinAction" kindref="compound">internal::ReturnRoundRobinAction</ref>&lt; T &gt;</type>
+        <definition>internal::ReturnRoundRobinAction&lt;T&gt; testing::ReturnRoundRobin</definition>
+        <argsstring>(std::initializer_list&lt; T &gt; vals)</argsstring>
+        <name>ReturnRoundRobin</name>
+        <param>
+          <type>std::initializer_list&lt; T &gt;</type>
+          <declname>vals</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1297" column="34" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1297" bodyend="1300"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1ae041df61ff61ccb9753ba15b4309e1a6" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classtesting_1_1internal_1_1DoDefaultAction" kindref="compound">internal::DoDefaultAction</ref></type>
+        <definition>internal::DoDefaultAction testing::DoDefault</definition>
+        <argsstring>()</argsstring>
+        <name>DoDefault</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1303" column="34" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1303" bodyend="1305"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a35ef7e93b89ad77632b90d1126327e38" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>size_t</type>
+            <declname>N</declname>
+            <defname>N</defname>
+          </param>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1SetArgumentPointeeAction" kindref="compound">internal::SetArgumentPointeeAction</ref>&lt; N, T &gt;</type>
+        <definition>internal::SetArgumentPointeeAction&lt;N, T&gt; testing::SetArgPointee</definition>
+        <argsstring>(T value)</argsstring>
+        <name>SetArgPointee</name>
+        <param>
+          <type>T</type>
+          <declname>value</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1310" column="36" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1310" bodyend="1312"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a32edcace29c43034c938dae30a94fe32" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>size_t</type>
+            <declname>N</declname>
+            <defname>N</defname>
+          </param>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1SetArgumentPointeeAction" kindref="compound">internal::SetArgumentPointeeAction</ref>&lt; N, T &gt;</type>
+        <definition>internal::SetArgumentPointeeAction&lt;N, T&gt; testing::SetArgumentPointee</definition>
+        <argsstring>(T value)</argsstring>
+        <name>SetArgumentPointee</name>
+        <param>
+          <type>T</type>
+          <declname>value</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1316" column="36" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1316" bodyend="1318"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1abfc4121b8708e8b22a096ff8be88a9d0" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T1</type>
+          </param>
+          <param>
+            <type>typename T2</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1PolymorphicAction" kindref="compound">PolymorphicAction</ref>&lt; <ref refid="classtesting_1_1internal_1_1AssignAction" kindref="compound">internal::AssignAction</ref>&lt; T1, T2 &gt; &gt;</type>
+        <definition>PolymorphicAction&lt;internal::AssignAction&lt;T1, T2&gt; &gt; testing::Assign</definition>
+        <argsstring>(T1 *ptr, T2 val)</argsstring>
+        <name>Assign</name>
+        <param>
+          <type>T1 *</type>
+          <declname>ptr</declname>
+        </param>
+        <param>
+          <type>T2</type>
+          <declname>val</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1322" column="19" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1322" bodyend="1324"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a31095e421f167fade2e6d4d60df1f4da" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1PolymorphicAction" kindref="compound">PolymorphicAction</ref>&lt; <ref refid="classtesting_1_1internal_1_1SetErrnoAndReturnAction" kindref="compound">internal::SetErrnoAndReturnAction</ref>&lt; T &gt; &gt;</type>
+        <definition>PolymorphicAction&lt;internal::SetErrnoAndReturnAction&lt;T&gt; &gt; testing::SetErrnoAndReturn</definition>
+        <argsstring>(int errval, T result)</argsstring>
+        <name>SetErrnoAndReturn</name>
+        <param>
+          <type>int</type>
+          <declname>errval</declname>
+        </param>
+        <param>
+          <type>T</type>
+          <declname>result</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1331" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1331" bodyend="1334"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a620bba98fc80a3cda99b06b1f9221dc8" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename FunctionImpl</type>
+          </param>
+        </templateparamlist>
+        <type>std::decay&lt; FunctionImpl &gt;::type</type>
+        <definition>std::decay&lt;FunctionImpl&gt;::type testing::Invoke</definition>
+        <argsstring>(FunctionImpl &amp;&amp;function_impl)</argsstring>
+        <name>Invoke</name>
+        <param>
+          <type>FunctionImpl &amp;&amp;</type>
+          <declname>function_impl</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1345" column="28" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1345" bodyend="1347"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1ad8e6a230597a891226b1f9cc0a1eda36" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Class</type>
+          </param>
+          <param>
+            <type>typename MethodPtr</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1InvokeMethodAction" kindref="compound">internal::InvokeMethodAction</ref>&lt; Class, MethodPtr &gt;</type>
+        <definition>internal::InvokeMethodAction&lt;Class, MethodPtr&gt; testing::Invoke</definition>
+        <argsstring>(Class *obj_ptr, MethodPtr method_ptr)</argsstring>
+        <name>Invoke</name>
+        <param>
+          <type>Class *</type>
+          <declname>obj_ptr</declname>
+        </param>
+        <param>
+          <type>MethodPtr</type>
+          <declname>method_ptr</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1352" column="30" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1352" bodyend="1355"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1ac4012b489848d54bb89a9998d19a1d21" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename FunctionImpl</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1InvokeWithoutArgsAction" kindref="compound">internal::InvokeWithoutArgsAction</ref>&lt; typename std::decay&lt; FunctionImpl &gt;::type &gt;</type>
+        <definition>internal::InvokeWithoutArgsAction&lt;typename std::decay&lt;FunctionImpl&gt;::type&gt; testing::InvokeWithoutArgs</definition>
+        <argsstring>(FunctionImpl function_impl)</argsstring>
+        <name>InvokeWithoutArgs</name>
+        <param>
+          <type>FunctionImpl</type>
+          <declname>function_impl</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1360" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1360" bodyend="1362"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1adc0c2f9ce020f829a2b75b1213667040" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Class</type>
+          </param>
+          <param>
+            <type>typename MethodPtr</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1InvokeMethodWithoutArgsAction" kindref="compound">internal::InvokeMethodWithoutArgsAction</ref>&lt; Class, MethodPtr &gt;</type>
+        <definition>internal::InvokeMethodWithoutArgsAction&lt;Class, MethodPtr&gt; testing::InvokeWithoutArgs</definition>
+        <argsstring>(Class *obj_ptr, MethodPtr method_ptr)</argsstring>
+        <name>InvokeWithoutArgs</name>
+        <param>
+          <type>Class *</type>
+          <declname>obj_ptr</declname>
+        </param>
+        <param>
+          <type>MethodPtr</type>
+          <declname>method_ptr</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1367" column="41" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1367" bodyend="1370"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a50ae42540a31047c7fddd32df8d835f5" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename A</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1IgnoreResultAction" kindref="compound">internal::IgnoreResultAction</ref>&lt; A &gt;</type>
+        <definition>internal::IgnoreResultAction&lt;A&gt; testing::IgnoreResult</definition>
+        <argsstring>(const A &amp;an_action)</argsstring>
+        <name>IgnoreResult</name>
+        <param>
+          <type>const A &amp;</type>
+          <declname>an_action</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1376" column="37" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1376" bodyend="1378"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a1f94a81e042d7c40c8359c1471fbb61e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type>inline ::std::reference_wrapper&lt; T &gt;</type>
+        <definition>inline ::std::reference_wrapper&lt;T&gt; testing::ByRef</definition>
+        <argsstring>(T &amp;l_value)</argsstring>
+        <name>ByRef</name>
+        <param>
+          <type>T &amp;</type>
+          <declname>l_value</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1391" column="33" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1391" bodyend="1393"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a84bc5aeb13dd2bb5d75e95373f7b31fb" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+          <param>
+            <type>typename...</type>
+            <declname>Params</declname>
+            <defname>Params</defname>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1ReturnNewAction" kindref="compound">internal::ReturnNewAction</ref>&lt; T, typename std::decay&lt; Params &gt;::type... &gt;</type>
+        <definition>internal::ReturnNewAction&lt;T, typename std::decay&lt;Params&gt;::type...&gt; testing::ReturnNew</definition>
+        <argsstring>(Params &amp;&amp;... params)</argsstring>
+        <name>ReturnNew</name>
+        <param>
+          <type>Params &amp;&amp;...</type>
+          <declname>params</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1399" column="28" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1399" bodyend="1402"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a5ca93fb9982f1f5e37bfad6a2f535c7c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>size_t</type>
+            <declname>k</declname>
+            <defname>k</defname>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1ReturnArgAction" kindref="compound">internal::ReturnArgAction</ref>&lt; k &gt;</type>
+        <definition>internal::ReturnArgAction&lt;k&gt; testing::ReturnArg</definition>
+        <argsstring>()</argsstring>
+        <name>ReturnArg</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1406" column="27" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1406" bodyend="1408"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1acfb3187148173dea40181ee576a27124" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>size_t</type>
+            <declname>k</declname>
+            <defname>k</defname>
+          </param>
+          <param>
+            <type>typename Ptr</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1SaveArgAction" kindref="compound">internal::SaveArgAction</ref>&lt; k, Ptr &gt;</type>
+        <definition>internal::SaveArgAction&lt;k, Ptr&gt; testing::SaveArg</definition>
+        <argsstring>(Ptr pointer)</argsstring>
+        <name>SaveArg</name>
+        <param>
+          <type>Ptr</type>
+          <declname>pointer</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1413" column="25" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1413" bodyend="1415"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1aa5f7ae7835df1d0d8e8d25222f119f03" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>size_t</type>
+            <declname>k</declname>
+            <defname>k</defname>
+          </param>
+          <param>
+            <type>typename Ptr</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1SaveArgPointeeAction" kindref="compound">internal::SaveArgPointeeAction</ref>&lt; k, Ptr &gt;</type>
+        <definition>internal::SaveArgPointeeAction&lt;k, Ptr&gt; testing::SaveArgPointee</definition>
+        <argsstring>(Ptr pointer)</argsstring>
+        <name>SaveArgPointee</name>
+        <param>
+          <type>Ptr</type>
+          <declname>pointer</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1420" column="32" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1420" bodyend="1422"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1af5537ad697fba571bf2fcad982ab27a5" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>size_t</type>
+            <declname>k</declname>
+            <defname>k</defname>
+          </param>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1SetArgRefereeAction" kindref="compound">internal::SetArgRefereeAction</ref>&lt; k, typename std::decay&lt; T &gt;::type &gt;</type>
+        <definition>internal::SetArgRefereeAction&lt;k, typename std::decay&lt;T&gt;::type&gt; testing::SetArgReferee</definition>
+        <argsstring>(T &amp;&amp;value)</argsstring>
+        <name>SetArgReferee</name>
+        <param>
+          <type>T &amp;&amp;</type>
+          <declname>value</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1427" column="32" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1427" bodyend="1430"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1aa9c44a402f7612d920718cc1491cbd97" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>size_t</type>
+            <declname>k</declname>
+            <defname>k</defname>
+          </param>
+          <param>
+            <type>typename I1</type>
+          </param>
+          <param>
+            <type>typename I2</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1SetArrayArgumentAction" kindref="compound">internal::SetArrayArgumentAction</ref>&lt; k, I1, I2 &gt;</type>
+        <definition>internal::SetArrayArgumentAction&lt;k, I1, I2&gt; testing::SetArrayArgument</definition>
+        <argsstring>(I1 first, I2 last)</argsstring>
+        <name>SetArrayArgument</name>
+        <param>
+          <type>I1</type>
+          <declname>first</declname>
+        </param>
+        <param>
+          <type>I2</type>
+          <declname>last</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1438" column="34" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1438" bodyend="1441"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1a111b75b446e561cb9a317c765a185bea" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>size_t</type>
+            <declname>k</declname>
+            <defname>k</defname>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1DeleteArgAction" kindref="compound">internal::DeleteArgAction</ref>&lt; k &gt;</type>
+        <definition>internal::DeleteArgAction&lt;k&gt; testing::DeleteArg</definition>
+        <argsstring>()</argsstring>
+        <name>DeleteArg</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1446" column="27" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1446" bodyend="1448"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-actions_8h_1ab06f10fbbfbded950bf97bdd2c2e1505" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename Ptr</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1ReturnPointeeAction" kindref="compound">internal::ReturnPointeeAction</ref>&lt; Ptr &gt;</type>
+        <definition>internal::ReturnPointeeAction&lt;Ptr&gt; testing::ReturnPointee</definition>
+        <argsstring>(Ptr pointer)</argsstring>
+        <name>ReturnPointee</name>
+        <param>
+          <type>Ptr</type>
+          <declname>pointer</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1452" column="31" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1452" bodyend="1454"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-more-actions_8h_1aea07672ccab38b97d1a7fbf17707e2d2" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>std::size_t</type>
+            <declname>index</declname>
+            <defname>index</defname>
+          </param>
+          <param>
+            <type>typename...</type>
+            <declname>Params</declname>
+            <defname>Params</defname>
+          </param>
+        </templateparamlist>
+        <type><ref refid="structtesting_1_1internal_1_1InvokeArgumentAction" kindref="compound">internal::InvokeArgumentAction</ref>&lt; index, typename std::decay&lt; Params &gt;::type... &gt;</type>
+        <definition>internal::InvokeArgumentAction&lt;index, typename std::decay&lt;Params&gt;::type...&gt; testing::InvokeArgument</definition>
+        <argsstring>(Params &amp;&amp;... params)</argsstring>
+        <name>InvokeArgument</name>
+        <param>
+          <type>Params &amp;&amp;...</type>
+          <declname>params</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-more-actions.h" line="562" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-more-actions.h" bodystart="562" bodyend="565"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-more-matchers_8h_1a4fcb3f407119590471bea5a90a8d2dda" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::MATCHER</definition>
+        <argsstring>(IsEmpty, negation ? &quot;isn&apos;t empty&quot; :&quot;is empty&quot;)</argsstring>
+        <name>MATCHER</name>
+        <param>
+          <type>IsEmpty</type>
+        </param>
+        <param>
+          <type>negation ? &quot;isn&apos;t empty&quot; :&quot;is empty&quot;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-more-matchers.h" line="61" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-more-matchers.h" bodystart="61" bodyend="67"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-more-matchers_8h_1ab2b645db6909220993662cf43ed0d9e8" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::MATCHER</definition>
+        <argsstring>(IsTrue, negation ? &quot;is false&quot; :&quot;is true&quot;)</argsstring>
+        <name>MATCHER</name>
+        <param>
+          <type>IsTrue</type>
+        </param>
+        <param>
+          <type>negation ? &quot;is false&quot; :&quot;is true&quot;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-more-matchers.h" line="73" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-more-matchers.h" bodystart="73" bodyend="75"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock-more-matchers_8h_1a03fb223cceaefc67991ac36286dcbb34" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::MATCHER</definition>
+        <argsstring>(IsFalse, negation ? &quot;is true&quot; :&quot;is false&quot;)</argsstring>
+        <name>MATCHER</name>
+        <param>
+          <type>IsFalse</type>
+        </param>
+        <param>
+          <type>negation ? &quot;is true&quot; :&quot;is false&quot;</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-more-matchers.h" line="81" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-more-matchers.h" bodystart="81" bodyend="83"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock_8h_1a9dd7591091234b86ce48ce1aff6feeb5" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::GMOCK_DECLARE_bool_</definition>
+        <argsstring>(catch_leaked_mocks)</argsstring>
+        <name>GMOCK_DECLARE_bool_</name>
+        <param>
+          <type>catch_leaked_mocks</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock.h" line="71" column="1" declfile="/home/jan/packages/elements/include/gmock/gmock.h" declline="71" declcolumn="1"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock_8h_1a4dd099d1d538f26a16fcc2f94011b37e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::GMOCK_DECLARE_string_</definition>
+        <argsstring>(verbose)</argsstring>
+        <name>GMOCK_DECLARE_string_</name>
+        <param>
+          <type>verbose</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock.h" line="72" column="1" declfile="/home/jan/packages/elements/include/gmock/gmock.h" declline="72" declcolumn="1"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock_8h_1a8db48e64b7ad3536f6ccf28ce39f9111" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::GMOCK_DECLARE_int32_</definition>
+        <argsstring>(default_mock_behavior)</argsstring>
+        <name>GMOCK_DECLARE_int32_</name>
+        <param>
+          <type>default_mock_behavior</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock.h" line="73" column="1" declfile="/home/jan/packages/elements/include/gmock/gmock.h" declline="73" declcolumn="1"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock_8h_1a32b1c6db9ba5133ccabfa67616b3c041" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ void</type>
+        <definition>GTEST_API_ void testing::InitGoogleMock</definition>
+        <argsstring>(int *argc, char **argv)</argsstring>
+        <name>InitGoogleMock</name>
+        <param>
+          <type>int *</type>
+          <declname>argc</declname>
+        </param>
+        <param>
+          <type>char **</type>
+          <declname>argv</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock.h" line="86" column="17" declfile="/home/jan/packages/elements/include/gmock/gmock.h" declline="86" declcolumn="17"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock_8h_1a20fb86152763dddef67bc1dd8b090800" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ void</type>
+        <definition>GTEST_API_ void testing::InitGoogleMock</definition>
+        <argsstring>(int *argc, wchar_t **argv)</argsstring>
+        <name>InitGoogleMock</name>
+        <param>
+          <type>int *</type>
+          <declname>argc</declname>
+        </param>
+        <param>
+          <type>wchar_t **</type>
+          <declname>argv</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock.h" line="90" column="17" declfile="/home/jan/packages/elements/include/gmock/gmock.h" declline="90" declcolumn="17"/>
+      </memberdef>
+      <memberdef kind="function" id="gmock_8h_1a9276d4bc746722cb4fe99415c1dc778f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ void</type>
+        <definition>GTEST_API_ void testing::InitGoogleMock</definition>
+        <argsstring>()</argsstring>
+        <name>InitGoogleMock</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock.h" line="94" column="17" declfile="/home/jan/packages/elements/include/gmock/gmock.h" declline="94" declcolumn="17"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-death-test_8h_1a37b7e87f0a5f502c6918f37d1768c1f3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::GTEST_DECLARE_string_</definition>
+        <argsstring>(death_test_style)</argsstring>
+        <name>GTEST_DECLARE_string_</name>
+        <param>
+          <type>death_test_style</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-death-test.h" line="50" column="1" declfile="/home/jan/packages/elements/include/gtest/gtest-death-test.h" declline="50" declcolumn="1"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-message_8h_1a7b802e532fd68749765cb7dc156130db" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::ostream &amp;</type>
+        <definition>std::ostream&amp; testing::operator&lt;&lt;</definition>
+        <argsstring>(std::ostream &amp;os, const Message &amp;sb)</argsstring>
+        <name>operator&lt;&lt;</name>
+        <param>
+          <type>std::ostream &amp;</type>
+          <declname>os</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classtesting_1_1Message" kindref="compound">Message</ref> &amp;</type>
+          <declname>sb</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-message.h" line="199" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest-message.h" bodystart="199" bodyend="201"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-param-test_8h_1a265ed70a86cf2d6641582c45ad9529e2" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+          <param>
+            <type>typename IncrementT</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ParamGenerator" kindref="compound">internal::ParamGenerator</ref>&lt; T &gt;</type>
+        <definition>internal::ParamGenerator&lt;T&gt; testing::Range</definition>
+        <argsstring>(T start, T end, IncrementT step)</argsstring>
+        <name>Range</name>
+        <param>
+          <type>T</type>
+          <declname>start</declname>
+        </param>
+        <param>
+          <type>T</type>
+          <declname>end</declname>
+        </param>
+        <param>
+          <type>IncrementT</type>
+          <declname>step</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-param-test.h" line="226" column="26" bodyfile="/home/jan/packages/elements/include/gtest/gtest-param-test.h" bodystart="226" bodyend="229"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-param-test_8h_1a56a45f85a1238dfc92e6fca03eb3a2e4" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ParamGenerator" kindref="compound">internal::ParamGenerator</ref>&lt; T &gt;</type>
+        <definition>internal::ParamGenerator&lt;T&gt; testing::Range</definition>
+        <argsstring>(T start, T end)</argsstring>
+        <name>Range</name>
+        <param>
+          <type>T</type>
+          <declname>start</declname>
+        </param>
+        <param>
+          <type>T</type>
+          <declname>end</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-param-test.h" line="232" column="26" bodyfile="/home/jan/packages/elements/include/gtest/gtest-param-test.h" bodystart="232" bodyend="234"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-param-test_8h_1a7980b1be1ffc3b53c9c5ad7ac33080ad" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename ForwardIterator</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ParamGenerator" kindref="compound">internal::ParamGenerator</ref>&lt; typename std::iterator_traits&lt; ForwardIterator &gt;::value_type &gt;</type>
+        <definition>internal::ParamGenerator&lt; typename std::iterator_traits&lt;ForwardIterator&gt;::value_type&gt; testing::ValuesIn</definition>
+        <argsstring>(ForwardIterator begin, ForwardIterator end)</argsstring>
+        <name>ValuesIn</name>
+        <param>
+          <type>ForwardIterator</type>
+          <declname>begin</declname>
+        </param>
+        <param>
+          <type>ForwardIterator</type>
+          <declname>end</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-param-test.h" line="294" column="1" bodyfile="/home/jan/packages/elements/include/gtest/gtest-param-test.h" bodystart="294" bodyend="298"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-param-test_8h_1a0b9ea6594ac06ad5d9eba2511ffa0fb7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+          <param>
+            <type>size_t</type>
+            <declname>N</declname>
+            <defname>N</defname>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ParamGenerator" kindref="compound">internal::ParamGenerator</ref>&lt; T &gt;</type>
+        <definition>internal::ParamGenerator&lt;T&gt; testing::ValuesIn</definition>
+        <argsstring>(const T(&amp;array)[N])</argsstring>
+        <name>ValuesIn</name>
+        <param>
+          <type>const T(&amp;)</type>
+          <declname>array</declname>
+          <array>[N]</array>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-param-test.h" line="301" column="26" bodyfile="/home/jan/packages/elements/include/gtest/gtest-param-test.h" bodystart="301" bodyend="303"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-param-test_8h_1aa67d0c8470c5f69fcfcacc9e775fa982" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class Container</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ParamGenerator" kindref="compound">internal::ParamGenerator</ref>&lt; typename Container::value_type &gt;</type>
+        <definition>internal::ParamGenerator&lt; typename Container::value_type &gt; testing::ValuesIn</definition>
+        <argsstring>(const Container &amp;container)</argsstring>
+        <name>ValuesIn</name>
+        <param>
+          <type>const Container &amp;</type>
+          <declname>container</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-param-test.h" line="306" column="26" bodyfile="/home/jan/packages/elements/include/gtest/gtest-param-test.h" bodystart="306" bodyend="309" declfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" declline="780" declcolumn="26"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-param-test_8h_1a374d4e5fbb4c938058fbe81d4c7ff6a6" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename...</type>
+            <declname>T</declname>
+            <defname>T</defname>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1ValueArray" kindref="compound">internal::ValueArray</ref>&lt; T... &gt;</type>
+        <definition>internal::ValueArray&lt;T...&gt; testing::Values</definition>
+        <argsstring>(T... v)</argsstring>
+        <name>Values</name>
+        <param>
+          <type>T...</type>
+          <declname>v</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-param-test.h" line="332" column="22" bodyfile="/home/jan/packages/elements/include/gtest/gtest-param-test.h" bodystart="332" bodyend="334"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-param-test_8h_1aa9f9150ed43f949c8a6bacf3f04c03ce" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classtesting_1_1internal_1_1ParamGenerator" kindref="compound">internal::ParamGenerator</ref>&lt; bool &gt;</type>
+        <definition>internal::ParamGenerator&lt;bool&gt; testing::Bool</definition>
+        <argsstring>()</argsstring>
+        <name>Bool</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-param-test.h" line="356" column="33" bodyfile="/home/jan/packages/elements/include/gtest/gtest-param-test.h" bodystart="356" bodyend="358"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-param-test_8h_1a2cb3b8fe262f59bf150998eb8fd0752d" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename...</type>
+            <declname>Generator</declname>
+            <defname>Generator</defname>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1internal_1_1CartesianProductHolder" kindref="compound">internal::CartesianProductHolder</ref>&lt; Generator... &gt;</type>
+        <definition>internal::CartesianProductHolder&lt;Generator...&gt; testing::Combine</definition>
+        <argsstring>(const Generator &amp;... g)</argsstring>
+        <name>Combine</name>
+        <param>
+          <type>const Generator &amp;...</type>
+          <declname>g</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-param-test.h" line="405" column="34" bodyfile="/home/jan/packages/elements/include/gtest/gtest-param-test.h" bodystart="405" bodyend="407"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest-printers_8h_1aa5717bb1144edd1d262d310ba70c82ed" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T</type>
+          </param>
+        </templateparamlist>
+        <type>::std::string</type>
+        <definition>::std::string testing::PrintToString</definition>
+        <argsstring>(const T &amp;value)</argsstring>
+        <name>PrintToString</name>
+        <param>
+          <type>const T &amp;</type>
+          <declname>value</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest-printers.h" line="1016" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest-printers.h" bodystart="1016" bodyend="1020" declfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" declline="109" declcolumn="15"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a460d7b998622e332392c1e00be3a60d5" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type><ref refid="classtesting_1_1Environment" kindref="compound">Environment</ref> *</type>
+        <definition>Environment* testing::AddGlobalTestEnvironment</definition>
+        <argsstring>(Environment *env)</argsstring>
+        <name>AddGlobalTestEnvironment</name>
+        <param>
+          <type><ref refid="classtesting_1_1Environment" kindref="compound">Environment</ref> *</type>
+          <declname>env</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1493" column="20" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1493" bodyend="1495"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1aee3f6f99df893f576f705f66c0559482" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ void</type>
+        <definition>GTEST_API_ void testing::InitGoogleTest</definition>
+        <argsstring>(int *argc, char **argv)</argsstring>
+        <name>InitGoogleTest</name>
+        <param>
+          <type>int *</type>
+          <declname>argc</declname>
+        </param>
+        <param>
+          <type>char **</type>
+          <declname>argv</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1506" column="17" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="1506" declcolumn="17"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a6e9d83553f1d10818d698d45689d8adb" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ void</type>
+        <definition>GTEST_API_ void testing::InitGoogleTest</definition>
+        <argsstring>(int *argc, wchar_t **argv)</argsstring>
+        <name>InitGoogleTest</name>
+        <param>
+          <type>int *</type>
+          <declname>argc</declname>
+        </param>
+        <param>
+          <type>wchar_t **</type>
+          <declname>argv</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1510" column="17" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="1510" declcolumn="17"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a2201e3fba11205a7edc2418fae82523e" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ void</type>
+        <definition>GTEST_API_ void testing::InitGoogleTest</definition>
+        <argsstring>()</argsstring>
+        <name>InitGoogleTest</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1514" column="17" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="1514" declcolumn="17"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a5c90a86562b2470213c07742e0eeb0fe" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ AssertionResult</type>
+        <definition>GTEST_API_ AssertionResult testing::IsSubstring</definition>
+        <argsstring>(const char *needle_expr, const char *haystack_expr, const char *needle, const char *haystack)</argsstring>
+        <name>IsSubstring</name>
+        <param>
+          <type>const char *</type>
+          <declname>needle_expr</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>haystack_expr</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>needle</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>haystack</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1695" column="28" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="1695" declcolumn="28"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a08ce65847491b27a38cbac3ac15e3035" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ AssertionResult</type>
+        <definition>GTEST_API_ AssertionResult testing::IsSubstring</definition>
+        <argsstring>(const char *needle_expr, const char *haystack_expr, const wchar_t *needle, const wchar_t *haystack)</argsstring>
+        <name>IsSubstring</name>
+        <param>
+          <type>const char *</type>
+          <declname>needle_expr</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>haystack_expr</declname>
+        </param>
+        <param>
+          <type>const wchar_t *</type>
+          <declname>needle</declname>
+        </param>
+        <param>
+          <type>const wchar_t *</type>
+          <declname>haystack</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1698" column="28" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="1698" declcolumn="28"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1ab553b649b06ef2339cbd90f8dfa119f0" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ AssertionResult</type>
+        <definition>GTEST_API_ AssertionResult testing::IsNotSubstring</definition>
+        <argsstring>(const char *needle_expr, const char *haystack_expr, const char *needle, const char *haystack)</argsstring>
+        <name>IsNotSubstring</name>
+        <param>
+          <type>const char *</type>
+          <declname>needle_expr</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>haystack_expr</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>needle</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>haystack</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1701" column="28" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="1701" declcolumn="28"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a28868925c50d541c8568a540b6457e54" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ AssertionResult</type>
+        <definition>GTEST_API_ AssertionResult testing::IsNotSubstring</definition>
+        <argsstring>(const char *needle_expr, const char *haystack_expr, const wchar_t *needle, const wchar_t *haystack)</argsstring>
+        <name>IsNotSubstring</name>
+        <param>
+          <type>const char *</type>
+          <declname>needle_expr</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>haystack_expr</declname>
+        </param>
+        <param>
+          <type>const wchar_t *</type>
+          <declname>needle</declname>
+        </param>
+        <param>
+          <type>const wchar_t *</type>
+          <declname>haystack</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1704" column="28" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="1704" declcolumn="28"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a32718fab95b2833ab5ffc9cfc9f5c8b0" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ AssertionResult</type>
+        <definition>GTEST_API_ AssertionResult testing::IsSubstring</definition>
+        <argsstring>(const char *needle_expr, const char *haystack_expr, const ::std::string &amp;needle, const ::std::string &amp;haystack)</argsstring>
+        <name>IsSubstring</name>
+        <param>
+          <type>const char *</type>
+          <declname>needle_expr</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>haystack_expr</declname>
+        </param>
+        <param>
+          <type>const ::std::string &amp;</type>
+          <declname>needle</declname>
+        </param>
+        <param>
+          <type>const ::std::string &amp;</type>
+          <declname>haystack</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1707" column="28" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="1707" declcolumn="28"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a645d822e47dc64b9923e78c880807f12" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ AssertionResult</type>
+        <definition>GTEST_API_ AssertionResult testing::IsNotSubstring</definition>
+        <argsstring>(const char *needle_expr, const char *haystack_expr, const ::std::string &amp;needle, const ::std::string &amp;haystack)</argsstring>
+        <name>IsNotSubstring</name>
+        <param>
+          <type>const char *</type>
+          <declname>needle_expr</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>haystack_expr</declname>
+        </param>
+        <param>
+          <type>const ::std::string &amp;</type>
+          <declname>needle</declname>
+        </param>
+        <param>
+          <type>const ::std::string &amp;</type>
+          <declname>haystack</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1710" column="28" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="1710" declcolumn="28"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a69106491c2e7f50e50da0ce5e8ae4374" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ AssertionResult</type>
+        <definition>GTEST_API_ AssertionResult testing::FloatLE</definition>
+        <argsstring>(const char *expr1, const char *expr2, float val1, float val2)</argsstring>
+        <name>FloatLE</name>
+        <param>
+          <type>const char *</type>
+          <declname>expr1</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>expr2</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>val1</declname>
+        </param>
+        <param>
+          <type>float</type>
+          <declname>val2</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="2175" column="28" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="2175" declcolumn="28"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a84c020b981d0eb4eabfb0feda155aaaf" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ AssertionResult</type>
+        <definition>GTEST_API_ AssertionResult testing::DoubleLE</definition>
+        <argsstring>(const char *expr1, const char *expr2, double val1, double val2)</argsstring>
+        <name>DoubleLE</name>
+        <param>
+          <type>const char *</type>
+          <declname>expr1</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>expr2</declname>
+        </param>
+        <param>
+          <type>double</type>
+          <declname>val1</declname>
+        </param>
+        <param>
+          <type>double</type>
+          <declname>val2</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="2177" column="28" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="2177" declcolumn="28"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a8318a0c014ef26fc3d5b8b3492198ff7" prot="public" static="no" constexpr="yes" const="no" explicit="no" inline="no" noexcept="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename T1</type>
+          </param>
+          <param>
+            <type>typename T2</type>
+          </param>
+        </templateparamlist>
+        <type>constexpr bool</type>
+        <definition>constexpr bool testing::StaticAssertTypeEq</definition>
+        <argsstring>() noexcept</argsstring>
+        <name>StaticAssertTypeEq</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="2316" column="16" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="2316" bodyend="2319"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1abcf5181cecc3c07915dceb3de46ab07f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>GTEST_API_ std::string</type>
+        <definition>GTEST_API_ std::string testing::TempDir</definition>
+        <argsstring>()</argsstring>
+        <name>TempDir</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="2391" column="24" declfile="/home/jan/packages/elements/include/gtest/gtest.h" declline="2391" declcolumn="24"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest_8h_1a302c84bdc88f2138696da2a4756b6466" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>int &amp;...</type>
+            <declname>ExplicitParameterBarrier</declname>
+            <defname>ExplicitParameterBarrier</defname>
+          </param>
+          <param>
+            <type>typename Factory</type>
+          </param>
+        </templateparamlist>
+        <type><ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+        <definition>TestInfo* testing::RegisterTest</definition>
+        <argsstring>(const char *test_suite_name, const char *test_name, const char *type_param, const char *value_param, const char *file, int line, Factory factory)</argsstring>
+        <name>RegisterTest</name>
+        <param>
+          <type>const char *</type>
+          <declname>test_suite_name</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>test_name</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>type_param</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>value_param</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>file</declname>
+        </param>
+        <param>
+          <type>int</type>
+          <declname>line</declname>
+        </param>
+        <param>
+          <type>Factory</type>
+          <declname>factory</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="2455" column="10" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="2455" bodyend="2475"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest__pred__impl_8h_1a7f73180474723be6e92185d6fa9e7c9f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename Pred</type>
+          </param>
+          <param>
+            <type>typename T1</type>
+          </param>
+        </templateparamlist>
+        <type>AssertionResult</type>
+        <definition>AssertionResult testing::AssertPred1Helper</definition>
+        <argsstring>(const char *pred_text, const char *e1, Pred pred, const T1 &amp;v1)</argsstring>
+        <name>AssertPred1Helper</name>
+        <param>
+          <type>const char *</type>
+          <declname>pred_text</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e1</declname>
+        </param>
+        <param>
+          <type>Pred</type>
+          <declname>pred</declname>
+        </param>
+        <param>
+          <type>const T1 &amp;</type>
+          <declname>v1</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest_pred_impl.h" line="87" column="17" bodyfile="/home/jan/packages/elements/include/gtest/gtest_pred_impl.h" bodystart="87" bodyend="97"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest__pred__impl_8h_1aa6587938029dd8733ecb885068f08247" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename Pred</type>
+          </param>
+          <param>
+            <type>typename T1</type>
+          </param>
+          <param>
+            <type>typename T2</type>
+          </param>
+        </templateparamlist>
+        <type>AssertionResult</type>
+        <definition>AssertionResult testing::AssertPred2Helper</definition>
+        <argsstring>(const char *pred_text, const char *e1, const char *e2, Pred pred, const T1 &amp;v1, const T2 &amp;v2)</argsstring>
+        <name>AssertPred2Helper</name>
+        <param>
+          <type>const char *</type>
+          <declname>pred_text</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e1</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e2</declname>
+        </param>
+        <param>
+          <type>Pred</type>
+          <declname>pred</declname>
+        </param>
+        <param>
+          <type>const T1 &amp;</type>
+          <declname>v1</declname>
+        </param>
+        <param>
+          <type>const T2 &amp;</type>
+          <declname>v2</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest_pred_impl.h" line="130" column="17" bodyfile="/home/jan/packages/elements/include/gtest/gtest_pred_impl.h" bodystart="130" bodyend="144"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest__pred__impl_8h_1ac92dcbd00a0ffb2913e65d286e321a22" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename Pred</type>
+          </param>
+          <param>
+            <type>typename T1</type>
+          </param>
+          <param>
+            <type>typename T2</type>
+          </param>
+          <param>
+            <type>typename T3</type>
+          </param>
+        </templateparamlist>
+        <type>AssertionResult</type>
+        <definition>AssertionResult testing::AssertPred3Helper</definition>
+        <argsstring>(const char *pred_text, const char *e1, const char *e2, const char *e3, Pred pred, const T1 &amp;v1, const T2 &amp;v2, const T3 &amp;v3)</argsstring>
+        <name>AssertPred3Helper</name>
+        <param>
+          <type>const char *</type>
+          <declname>pred_text</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e1</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e2</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e3</declname>
+        </param>
+        <param>
+          <type>Pred</type>
+          <declname>pred</declname>
+        </param>
+        <param>
+          <type>const T1 &amp;</type>
+          <declname>v1</declname>
+        </param>
+        <param>
+          <type>const T2 &amp;</type>
+          <declname>v2</declname>
+        </param>
+        <param>
+          <type>const T3 &amp;</type>
+          <declname>v3</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest_pred_impl.h" line="180" column="17" bodyfile="/home/jan/packages/elements/include/gtest/gtest_pred_impl.h" bodystart="180" bodyend="197"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest__pred__impl_8h_1ae90c778d69db4682e8fd8baaa0a9f9cd" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename Pred</type>
+          </param>
+          <param>
+            <type>typename T1</type>
+          </param>
+          <param>
+            <type>typename T2</type>
+          </param>
+          <param>
+            <type>typename T3</type>
+          </param>
+          <param>
+            <type>typename T4</type>
+          </param>
+        </templateparamlist>
+        <type>AssertionResult</type>
+        <definition>AssertionResult testing::AssertPred4Helper</definition>
+        <argsstring>(const char *pred_text, const char *e1, const char *e2, const char *e3, const char *e4, Pred pred, const T1 &amp;v1, const T2 &amp;v2, const T3 &amp;v3, const T4 &amp;v4)</argsstring>
+        <name>AssertPred4Helper</name>
+        <param>
+          <type>const char *</type>
+          <declname>pred_text</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e1</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e2</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e3</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e4</declname>
+        </param>
+        <param>
+          <type>Pred</type>
+          <declname>pred</declname>
+        </param>
+        <param>
+          <type>const T1 &amp;</type>
+          <declname>v1</declname>
+        </param>
+        <param>
+          <type>const T2 &amp;</type>
+          <declname>v2</declname>
+        </param>
+        <param>
+          <type>const T3 &amp;</type>
+          <declname>v3</declname>
+        </param>
+        <param>
+          <type>const T4 &amp;</type>
+          <declname>v4</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest_pred_impl.h" line="236" column="17" bodyfile="/home/jan/packages/elements/include/gtest/gtest_pred_impl.h" bodystart="236" bodyend="256"/>
+      </memberdef>
+      <memberdef kind="function" id="gtest__pred__impl_8h_1addcf52b273ce17269cbf4956cfe600a6" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename Pred</type>
+          </param>
+          <param>
+            <type>typename T1</type>
+          </param>
+          <param>
+            <type>typename T2</type>
+          </param>
+          <param>
+            <type>typename T3</type>
+          </param>
+          <param>
+            <type>typename T4</type>
+          </param>
+          <param>
+            <type>typename T5</type>
+          </param>
+        </templateparamlist>
+        <type>AssertionResult</type>
+        <definition>AssertionResult testing::AssertPred5Helper</definition>
+        <argsstring>(const char *pred_text, const char *e1, const char *e2, const char *e3, const char *e4, const char *e5, Pred pred, const T1 &amp;v1, const T2 &amp;v2, const T3 &amp;v3, const T4 &amp;v4, const T5 &amp;v5)</argsstring>
+        <name>AssertPred5Helper</name>
+        <param>
+          <type>const char *</type>
+          <declname>pred_text</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e1</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e2</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e3</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e4</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>e5</declname>
+        </param>
+        <param>
+          <type>Pred</type>
+          <declname>pred</declname>
+        </param>
+        <param>
+          <type>const T1 &amp;</type>
+          <declname>v1</declname>
+        </param>
+        <param>
+          <type>const T2 &amp;</type>
+          <declname>v2</declname>
+        </param>
+        <param>
+          <type>const T3 &amp;</type>
+          <declname>v3</declname>
+        </param>
+        <param>
+          <type>const T4 &amp;</type>
+          <declname>v4</declname>
+        </param>
+        <param>
+          <type>const T5 &amp;</type>
+          <declname>v5</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest_pred_impl.h" line="298" column="17" bodyfile="/home/jan/packages/elements/include/gtest/gtest_pred_impl.h" bodystart="298" bodyend="321"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="154" column="1"/>
+  </compounddef>
+</doxygen>

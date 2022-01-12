@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="dir_5bb193b7db6ac977cda4b06af9ebdb7e" kind="dir">
+    <compoundname>/home/jan/packages/elements/include/gmock</compoundname>
+    <innerdir refid="dir_1c0d0f97b2efa3f43bb6d5b9d9bfebf4">/home/jan/packages/elements/include/gmock/internal</innerdir>
+    <innerfile refid="gmock-actions_8h">gmock-actions.h</innerfile>
+    <innerfile refid="gmock-cardinalities_8h">gmock-cardinalities.h</innerfile>
+    <innerfile refid="gmock-function-mocker_8h">gmock-function-mocker.h</innerfile>
+    <innerfile refid="gmock-matchers_8h">gmock-matchers.h</innerfile>
+    <innerfile refid="gmock-more-actions_8h">gmock-more-actions.h</innerfile>
+    <innerfile refid="gmock-more-matchers_8h">gmock-more-matchers.h</innerfile>
+    <innerfile refid="gmock-nice-strict_8h">gmock-nice-strict.h</innerfile>
+    <innerfile refid="gmock-spec-builders_8h">gmock-spec-builders.h</innerfile>
+    <innerfile refid="gmock_8h">gmock.h</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/"/>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="gtest_2internal_2custom_2README_8md" kind="file" language="Markdown">
+    <compoundname>README.md</compoundname>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline><highlight class="normal">#<sp/>Customization<sp/>Points</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">The<sp/>custom<sp/>directory<sp/>is<sp/>an<sp/>injection<sp/>point<sp/>for<sp/>custom<sp/>user<sp/>configurations.</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">##<sp/>Header<sp/>`gtest.h`</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">###<sp/>The<sp/>following<sp/>macros<sp/>can<sp/>be<sp/>defined:</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_OS_STACK_TRACE_GETTER_`<sp/>-<sp/>The<sp/>name<sp/>of<sp/>an<sp/>implementation<sp/>of</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>`OsStackTraceGetterInterface`.</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_CUSTOM_TEMPDIR_FUNCTION_`<sp/>-<sp/>An<sp/>override<sp/>for<sp/>`testing::TempDir()`.<sp/>See</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>`testing::TempDir`<sp/>for<sp/>semantics<sp/>and<sp/>signature.</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">##<sp/>Header<sp/>`gtest-port.h`</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">The<sp/>following<sp/>macros<sp/>can<sp/>be<sp/>defined:</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">###<sp/>Flag<sp/>related<sp/>macros:</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_FLAG(flag_name)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_USE_OWN_FLAGFILE_FLAG_`<sp/>-<sp/>Define<sp/>to<sp/>0<sp/>when<sp/>the<sp/>system<sp/>provides<sp/>its</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>own<sp/>flagfile<sp/>flag<sp/>parsing.</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_DECLARE_bool_(name)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_DECLARE_int32_(name)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_DECLARE_string_(name)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_DEFINE_bool_(name,<sp/>default_val,<sp/>doc)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_DEFINE_int32_(name,<sp/>default_val,<sp/>doc)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_DEFINE_string_(name,<sp/>default_val,<sp/>doc)`</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">###<sp/>Logging:</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_LOG_(severity)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_CHECK_(condition)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>Functions<sp/>`LogToStderr()`<sp/>and<sp/>`FlushInfoLog()`<sp/>have<sp/>to<sp/>be<sp/>provided<sp/>too.</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">###<sp/>Threading:</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_HAS_NOTIFICATION_`<sp/>-<sp/>Enabled<sp/>if<sp/>Notification<sp/>is<sp/>already<sp/>provided.</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_HAS_MUTEX_AND_THREAD_LOCAL_`<sp/>-<sp/>Enabled<sp/>if<sp/>`Mutex`<sp/>and<sp/>`ThreadLocal`</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>are<sp/>already<sp/>provided.<sp/>Must<sp/>also<sp/>provide<sp/>`GTEST_DECLARE_STATIC_MUTEX_(mutex)`</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>and<sp/>`GTEST_DEFINE_STATIC_MUTEX_(mutex)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_EXCLUSIVE_LOCK_REQUIRED_(locks)`</highlight></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_LOCK_EXCLUDED_(locks)`</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">###<sp/>Underlying<sp/>library<sp/>support<sp/>features</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_HAS_CXXABI_H_`</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">###<sp/>Exporting<sp/>API<sp/>symbols:</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>`GTEST_API_`<sp/>-<sp/>Specifier<sp/>for<sp/>exported<sp/>symbols.</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">##<sp/>Header<sp/>`gtest-printers.h`</highlight></codeline>
+<codeline></codeline>
+<codeline><highlight class="normal">*<sp/><sp/><sp/>See<sp/>documentation<sp/>at<sp/>`gtest/gtest-printers.h`<sp/>for<sp/>details<sp/>on<sp/>how<sp/>to<sp/>define<sp/>a</highlight></codeline>
+<codeline><highlight class="normal"><sp/><sp/><sp/><sp/>custom<sp/>printer.</highlight></codeline>
+    </programlisting>
+    <location file="/home/jan/packages/elements/include/gtest/internal/custom/README.md"/>
+  </compounddef>
+</doxygen>

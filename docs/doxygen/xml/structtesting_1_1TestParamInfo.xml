@@ -1,0 +1,72 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1TestParamInfo" kind="struct" language="C++" prot="public">
+    <compoundname>testing::TestParamInfo</compoundname>
+    <templateparamlist>
+      <param>
+        <type>class ParamType</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structtesting_1_1TestParamInfo_1a146d921039f9da8b1336f7cc6e8436c2" prot="public" static="no" mutable="no">
+        <type>ParamType</type>
+        <definition>ParamType testing::TestParamInfo&lt; ParamType &gt;::param</definition>
+        <argsstring></argsstring>
+        <name>param</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="62" column="13" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="62" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structtesting_1_1TestParamInfo_1ad4d7bc02cbcc571eb3c1d2ec3ba5bb53" prot="public" static="no" mutable="no">
+        <type>size_t</type>
+        <definition>size_t testing::TestParamInfo&lt; ParamType &gt;::index</definition>
+        <argsstring></argsstring>
+        <name>index</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="63" column="10" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="63" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structtesting_1_1TestParamInfo_1aa54199319bcad5a33c8538ecaecb6de5" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::TestParamInfo&lt; ParamType &gt;::TestParamInfo</definition>
+        <argsstring>(const ParamType &amp;a_param, size_t an_index)</argsstring>
+        <name>TestParamInfo</name>
+        <param>
+          <type>const ParamType &amp;</type>
+          <declname>a_param</declname>
+        </param>
+        <param>
+          <type>size_t</type>
+          <declname>an_index</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="59" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="59" bodyend="61"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="58" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="58" bodyend="64"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1TestParamInfo_1ad4d7bc02cbcc571eb3c1d2ec3ba5bb53" prot="public" virt="non-virtual"><scope>testing::TestParamInfo</scope><name>index</name></member>
+      <member refid="structtesting_1_1TestParamInfo_1a146d921039f9da8b1336f7cc6e8436c2" prot="public" virt="non-virtual"><scope>testing::TestParamInfo</scope><name>param</name></member>
+      <member refid="structtesting_1_1TestParamInfo_1aa54199319bcad5a33c8538ecaecb6de5" prot="public" virt="non-virtual"><scope>testing::TestParamInfo</scope><name>TestParamInfo</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

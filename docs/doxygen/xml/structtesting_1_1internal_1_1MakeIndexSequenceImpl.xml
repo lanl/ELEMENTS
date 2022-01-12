@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1MakeIndexSequenceImpl" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::MakeIndexSequenceImpl</compoundname>
+    <basecompoundref prot="public" virt="non-virtual">DoubleSequence::type</basecompoundref>
+    <templateparamlist>
+      <param>
+        <type>size_t</type>
+        <declname>N</declname>
+        <defname>N</defname>
+      </param>
+    </templateparamlist>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>DoubleSequence&lt; N % 2==1, MakeIndexSequenceImpl&lt; N/2 &gt;::type, N/2 &gt;::type</label>
+      </node>
+      <node id="1">
+        <label>testing::internal::MakeIndexSequenceImpl&lt; N &gt;</label>
+        <link refid="structtesting_1_1internal_1_1MakeIndexSequenceImpl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="2">
+        <label>DoubleSequence&lt; N % 2==1, MakeIndexSequenceImpl&lt; N/2 &gt;::type, N/2 &gt;::type</label>
+      </node>
+      <node id="1">
+        <label>testing::internal::MakeIndexSequenceImpl&lt; N &gt;</label>
+        <link refid="structtesting_1_1internal_1_1MakeIndexSequenceImpl"/>
+        <childnode refid="2" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="1177" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="1179" bodyend="1179"/>
+    <listofallmembers>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

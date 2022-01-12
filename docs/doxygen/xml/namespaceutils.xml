@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="namespaceutils" kind="namespace" language="C++">
+    <compoundname>utils</compoundname>
+      <sectiondef kind="typedef">
+      <memberdef kind="typedef" id="utilities_8h_1adedc1f57561f1ccd6b9c677c9f363176" prot="public" static="no">
+        <type>double</type>
+        <definition>using utils::real_t = typedef double</definition>
+        <argsstring></argsstring>
+        <name>real_t</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/common/utilities.h" line="56" column="1" bodyfile="/home/jan/packages/elements/include/common/utilities.h" bodystart="56" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/common/utilities.h" line="53" column="1"/>
+  </compounddef>
+</doxygen>

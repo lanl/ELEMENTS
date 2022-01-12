@@ -1,0 +1,828 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1TestSuite" kind="class" language="C++" prot="public">
+    <compoundname>testing::TestSuite</compoundname>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classtesting_1_1TestSuite_1a5b78b1c2e1fa07ffed92da365593eaa4" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class Test</definition>
+        <argsstring></argsstring>
+        <name>Test</name>
+        <param>
+          <type><ref refid="classtesting_1_1Test" kindref="compound">Test</ref></type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="924" column="3" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="924" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="friend" id="classtesting_1_1TestSuite_1acc0a5e7573fd6ae7ad1878613bb86853" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>class</type>
+        <definition>friend class internal::UnitTestImpl</definition>
+        <argsstring></argsstring>
+        <name>internal::UnitTestImpl</name>
+        <param>
+          <type>internal::UnitTestImpl</type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="925" column="3" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="925" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classtesting_1_1TestSuite_1a46e3ab93d0ee8885c5348b0de145cd9b" prot="private" static="no" mutable="no">
+        <type>std::string</type>
+        <definition>std::string testing::TestSuite::name_</definition>
+        <argsstring></argsstring>
+        <name>name_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1019" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1019" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1TestSuite_1a64f4695713d1f8e416472016f265f76e" prot="private" static="no" mutable="no">
+        <type>const std::unique_ptr&lt; const ::std::string &gt;</type>
+        <definition>const std::unique_ptr&lt;const ::std::string&gt; testing::TestSuite::type_param_</definition>
+        <argsstring></argsstring>
+        <name>type_param_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1022" column="25" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1022" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1TestSuite_1a685150382823f5711d4bcf4e208f6a1f" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> * &gt;</type>
+        <definition>std::vector&lt;TestInfo*&gt; testing::TestSuite::test_info_list_</definition>
+        <argsstring></argsstring>
+        <name>test_info_list_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1025" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1025" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1TestSuite_1ab62db5c2a93d2c1099d7282977df6701" prot="private" static="no" mutable="no">
+        <type>std::vector&lt; int &gt;</type>
+        <definition>std::vector&lt;int&gt; testing::TestSuite::test_indices_</definition>
+        <argsstring></argsstring>
+        <name>test_indices_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1029" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1029" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1TestSuite_1a67f2469764b1e9ca0c3c6458d13876ad" prot="private" static="no" mutable="no">
+        <type>internal::SetUpTestSuiteFunc</type>
+        <definition>internal::SetUpTestSuiteFunc testing::TestSuite::set_up_tc_</definition>
+        <argsstring></argsstring>
+        <name>set_up_tc_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1031" column="32" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1031" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1TestSuite_1a20c1697fd783f2b2a9069803ff991891" prot="private" static="no" mutable="no">
+        <type>internal::TearDownTestSuiteFunc</type>
+        <definition>internal::TearDownTestSuiteFunc testing::TestSuite::tear_down_tc_</definition>
+        <argsstring></argsstring>
+        <name>tear_down_tc_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1033" column="35" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1033" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1TestSuite_1a15749716f1d6b91d6b9e735e662c6d2c" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool testing::TestSuite::should_run_</definition>
+        <argsstring></argsstring>
+        <name>should_run_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1035" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1035" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1TestSuite_1a0255c4d4fb09e4be38d38a5e7be83f0f" prot="private" static="no" mutable="no">
+        <type>TimeInMillis</type>
+        <definition>TimeInMillis testing::TestSuite::start_timestamp_</definition>
+        <argsstring></argsstring>
+        <name>start_timestamp_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1037" column="16" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1037" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1TestSuite_1aec25aff7c1e837c236e060736e61bea4" prot="private" static="no" mutable="no">
+        <type>TimeInMillis</type>
+        <definition>TimeInMillis testing::TestSuite::elapsed_time_</definition>
+        <argsstring></argsstring>
+        <name>elapsed_time_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1039" column="16" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1039" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1TestSuite_1ac2b1629cb484d874f4cfc12a18e04d90" prot="private" static="no" mutable="no">
+        <type><ref refid="classtesting_1_1TestResult" kindref="compound">TestResult</ref></type>
+        <definition>TestResult testing::TestSuite::ad_hoc_test_result_</definition>
+        <argsstring></argsstring>
+        <name>ad_hoc_test_result_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1042" column="14" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1042" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a2d6469bcb83701e1bbfe47c465e9731f" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::TestSuite::TestSuite</definition>
+        <argsstring>(const char *name, const char *a_type_param, internal::SetUpTestSuiteFunc set_up_tc, internal::TearDownTestSuiteFunc tear_down_tc)</argsstring>
+        <name>TestSuite</name>
+        <param>
+          <type>const char *</type>
+          <declname>name</declname>
+        </param>
+        <param>
+          <type>const char *</type>
+          <declname>a_type_param</declname>
+        </param>
+        <param>
+          <type>internal::SetUpTestSuiteFunc</type>
+          <declname>set_up_tc</declname>
+        </param>
+        <param>
+          <type>internal::TearDownTestSuiteFunc</type>
+          <declname>tear_down_tc</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="856" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a78af2d96b44c8b8f2002b4e74df31c38" prot="public" static="no" const="no" explicit="no" inline="no" virt="virtual">
+        <type></type>
+        <definition>virtual testing::TestSuite::~TestSuite</definition>
+        <argsstring>()</argsstring>
+        <name>~TestSuite</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="861" column="11"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1ab3369db678ca3d9648d6fd63ad038986" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const char *</type>
+        <definition>const char* testing::TestSuite::name</definition>
+        <argsstring>() const</argsstring>
+        <name>name</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="864" column="14" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="864" bodyend="864"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1ab2ea12318bdbfb6aa97792344b49e3db" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const char *</type>
+        <definition>const char* testing::TestSuite::type_param</definition>
+        <argsstring>() const</argsstring>
+        <name>type_param</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="868" column="14" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="868" bodyend="871"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a8f62c17baef80042e0ff03ef5d5e4ba7" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool testing::TestSuite::should_run</definition>
+        <argsstring>() const</argsstring>
+        <name>should_run</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="874" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="874" bodyend="874"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a85bc4191681df7e8bae810c1744465ec" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::TestSuite::successful_test_count</definition>
+        <argsstring>() const</argsstring>
+        <name>successful_test_count</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="877" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1ae48c72ff92fa1c555e3b577f8661285c" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::TestSuite::skipped_test_count</definition>
+        <argsstring>() const</argsstring>
+        <name>skipped_test_count</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="880" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1aaf18223e67cf0761f56bd4b8167abc6c" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::TestSuite::failed_test_count</definition>
+        <argsstring>() const</argsstring>
+        <name>failed_test_count</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="883" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1ab0b3d1ee8efaa18ceb2553a71002c678" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::TestSuite::reportable_disabled_test_count</definition>
+        <argsstring>() const</argsstring>
+        <name>reportable_disabled_test_count</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="886" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1adba738351633471e3256dcf7d3c2e61e" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::TestSuite::disabled_test_count</definition>
+        <argsstring>() const</argsstring>
+        <name>disabled_test_count</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="889" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a24f62e17cfd37b90263f1194fb7d4d74" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::TestSuite::reportable_test_count</definition>
+        <argsstring>() const</argsstring>
+        <name>reportable_test_count</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="892" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a1ccf2681712a3a27659789009815db8f" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::TestSuite::test_to_run_count</definition>
+        <argsstring>() const</argsstring>
+        <name>test_to_run_count</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="895" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a38a5e95341cfee5a88d8910f69da4960" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>int</type>
+        <definition>int testing::TestSuite::total_test_count</definition>
+        <argsstring>() const</argsstring>
+        <name>total_test_count</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="898" column="7"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1add51ece89b069b29e07f0476e0e6aae9" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool testing::TestSuite::Passed</definition>
+        <argsstring>() const</argsstring>
+        <name>Passed</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="901" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="901" bodyend="901"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1adec55446c23dc2d0bfea91c6125a1047" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>bool testing::TestSuite::Failed</definition>
+        <argsstring>() const</argsstring>
+        <name>Failed</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="904" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="904" bodyend="906"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a2ede69fa37985ab8b21128955c56d6d7" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>TimeInMillis</type>
+        <definition>TimeInMillis testing::TestSuite::elapsed_time</definition>
+        <argsstring>() const</argsstring>
+        <name>elapsed_time</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="909" column="16" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="909" bodyend="909"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1ac0cbbbe96addf56964380b2bbc013e41" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>TimeInMillis</type>
+        <definition>TimeInMillis testing::TestSuite::start_timestamp</definition>
+        <argsstring>() const</argsstring>
+        <name>start_timestamp</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="913" column="16" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="913" bodyend="913"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1aa6e617d79e4272362735ca9be4fb40d7" prot="public" static="no" const="yes" explicit="no" inline="no" virt="non-virtual">
+        <type>const <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+        <definition>const TestInfo* testing::TestSuite::GetTestInfo</definition>
+        <argsstring>(int i) const</argsstring>
+        <name>GetTestInfo</name>
+        <param>
+          <type>int</type>
+          <declname>i</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="917" column="18"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a3391a0ec111c66e1ac16a800f5068af7" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const <ref refid="classtesting_1_1TestResult" kindref="compound">TestResult</ref> &amp;</type>
+        <definition>const TestResult&amp; testing::TestSuite::ad_hoc_test_result</definition>
+        <argsstring>() const</argsstring>
+        <name>ad_hoc_test_result</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="921" column="20" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="921" bodyend="921"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a9aae5da520bc0f25d67c948c0a5fa6b6" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>std::vector&lt; <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> * &gt; &amp;</type>
+        <definition>std::vector&lt;TestInfo*&gt;&amp; testing::TestSuite::test_info_list</definition>
+        <argsstring>()</argsstring>
+        <name>test_info_list</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="928" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="928" bodyend="928"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1aad784d4e25767e359e6bae1ef4196404" prot="private" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const std::vector&lt; <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> * &gt; &amp;</type>
+        <definition>const std::vector&lt;TestInfo*&gt;&amp; testing::TestSuite::test_info_list</definition>
+        <argsstring>() const</argsstring>
+        <name>test_info_list</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="931" column="21" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="931" bodyend="933"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a7295cf0f654d5e9cd8a47d485e11396d" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type><ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+        <definition>TestInfo* testing::TestSuite::GetMutableTestInfo</definition>
+        <argsstring>(int i)</argsstring>
+        <name>GetMutableTestInfo</name>
+        <param>
+          <type>int</type>
+          <declname>i</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="937" column="12"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a783c072998fdbdfd600221823cea1de1" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::TestSuite::set_should_run</definition>
+        <argsstring>(bool should)</argsstring>
+        <name>set_should_run</name>
+        <param>
+          <type>bool</type>
+          <declname>should</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="940" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="940" bodyend="940"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a9d8d94a589481923b7cf6c7ce3a48f8b" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::TestSuite::AddTestInfo</definition>
+        <argsstring>(TestInfo *test_info)</argsstring>
+        <name>AddTestInfo</name>
+        <param>
+          <type><ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+          <declname>test_info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="944" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a87bb26673c51e952e4904afcfa418c51" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::TestSuite::ClearResult</definition>
+        <argsstring>()</argsstring>
+        <name>ClearResult</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="947" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a16c6fb9e056f1d9113ca1e6eaf9b58bc" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::TestSuite::Run</definition>
+        <argsstring>()</argsstring>
+        <name>Run</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="955" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a05ee4481262f828c8df5190d5bd36475" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::TestSuite::Skip</definition>
+        <argsstring>()</argsstring>
+        <name>Skip</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="958" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a366c17f4d7a8c9130bfa2fc37d316e8b" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::TestSuite::RunSetUpTestSuite</definition>
+        <argsstring>()</argsstring>
+        <name>RunSetUpTestSuite</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="962" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="962" bodyend="966"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1adde3df6963a73760cfb53bbf69f47f29" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::TestSuite::RunTearDownTestSuite</definition>
+        <argsstring>()</argsstring>
+        <name>RunTearDownTestSuite</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="970" column="8" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="970" bodyend="974"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1ab5c2055e93f43a2029e36adc5d75347a" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::TestSuite::ShuffleTests</definition>
+        <argsstring>(internal::Random *random)</argsstring>
+        <name>ShuffleTests</name>
+        <param>
+          <type><ref refid="classtesting_1_1internal_1_1Random" kindref="compound">internal::Random</ref> *</type>
+          <declname>random</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1013" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1afcf87bf5cf6bc373a286c0258ff39f8d" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::TestSuite::UnshuffleTests</definition>
+        <argsstring>()</argsstring>
+        <name>UnshuffleTests</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1016" column="8"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a4b3b080cb92343fbd1611b621d63bbe9" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::TestSuite::GTEST_DISALLOW_COPY_AND_ASSIGN_</definition>
+        <argsstring>(TestSuite)</argsstring>
+        <name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name>
+        <param>
+          <type><ref refid="classtesting_1_1TestSuite" kindref="compound">TestSuite</ref></type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1045" column="3"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-static-func">
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1ac369ed8314da7fc6a322c57e5d5537ed" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>void</type>
+        <definition>static void testing::TestSuite::ClearTestSuiteResult</definition>
+        <argsstring>(TestSuite *test_suite)</argsstring>
+        <name>ClearTestSuiteResult</name>
+        <param>
+          <type><ref refid="classtesting_1_1TestSuite" kindref="compound">TestSuite</ref> *</type>
+          <declname>test_suite</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="950" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="950" bodyend="952"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a30cb6d26a98feda5c2af89a15abd3264" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::TestSuite::TestPassed</definition>
+        <argsstring>(const TestInfo *test_info)</argsstring>
+        <name>TestPassed</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+          <declname>test_info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="977" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="977" bodyend="979"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a0e162a1f49f40049a5b16fe989dc75e7" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::TestSuite::TestSkipped</definition>
+        <argsstring>(const TestInfo *test_info)</argsstring>
+        <name>TestSkipped</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+          <declname>test_info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="982" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="982" bodyend="984"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1ae4a91afa37c495d36bf30dd9d6cf0e9c" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::TestSuite::TestFailed</definition>
+        <argsstring>(const TestInfo *test_info)</argsstring>
+        <name>TestFailed</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+          <declname>test_info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="987" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="987" bodyend="989"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a6f9748db6f3382f65c747bcc2bc46b4c" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::TestSuite::TestReportableDisabled</definition>
+        <argsstring>(const TestInfo *test_info)</argsstring>
+        <name>TestReportableDisabled</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+          <declname>test_info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="993" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="993" bodyend="995"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a01cf264bd705388df0778160ed433b93" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::TestSuite::TestDisabled</definition>
+        <argsstring>(const TestInfo *test_info)</argsstring>
+        <name>TestDisabled</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+          <declname>test_info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="998" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="998" bodyend="1000"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1a939aba8925d609fb5d01464edad0b4d7" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::TestSuite::TestReportable</definition>
+        <argsstring>(const TestInfo *test_info)</argsstring>
+        <name>TestReportable</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+          <declname>test_info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1003" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1003" bodyend="1005"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1TestSuite_1ad6db30ec4e23a809f398dc2f50008541" prot="private" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::TestSuite::ShouldRunTest</definition>
+        <argsstring>(const TestInfo *test_info)</argsstring>
+        <name>ShouldRunTest</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1TestInfo" kindref="compound">TestInfo</ref> *</type>
+          <declname>test_info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="1008" column="15" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="1008" bodyend="1010"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="842" column="1" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="842" bodyend="1046"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1TestSuite_1a3391a0ec111c66e1ac16a800f5068af7" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>ad_hoc_test_result</name></member>
+      <member refid="classtesting_1_1TestSuite_1ac2b1629cb484d874f4cfc12a18e04d90" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>ad_hoc_test_result_</name></member>
+      <member refid="classtesting_1_1TestSuite_1a9d8d94a589481923b7cf6c7ce3a48f8b" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>AddTestInfo</name></member>
+      <member refid="classtesting_1_1TestSuite_1a87bb26673c51e952e4904afcfa418c51" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>ClearResult</name></member>
+      <member refid="classtesting_1_1TestSuite_1ac369ed8314da7fc6a322c57e5d5537ed" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>ClearTestSuiteResult</name></member>
+      <member refid="classtesting_1_1TestSuite_1adba738351633471e3256dcf7d3c2e61e" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>disabled_test_count</name></member>
+      <member refid="classtesting_1_1TestSuite_1a2ede69fa37985ab8b21128955c56d6d7" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>elapsed_time</name></member>
+      <member refid="classtesting_1_1TestSuite_1aec25aff7c1e837c236e060736e61bea4" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>elapsed_time_</name></member>
+      <member refid="classtesting_1_1TestSuite_1adec55446c23dc2d0bfea91c6125a1047" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>Failed</name></member>
+      <member refid="classtesting_1_1TestSuite_1aaf18223e67cf0761f56bd4b8167abc6c" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>failed_test_count</name></member>
+      <member refid="classtesting_1_1TestSuite_1a7295cf0f654d5e9cd8a47d485e11396d" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>GetMutableTestInfo</name></member>
+      <member refid="classtesting_1_1TestSuite_1aa6e617d79e4272362735ca9be4fb40d7" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>GetTestInfo</name></member>
+      <member refid="classtesting_1_1TestSuite_1a4b3b080cb92343fbd1611b621d63bbe9" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name></member>
+      <member refid="classtesting_1_1TestSuite_1acc0a5e7573fd6ae7ad1878613bb86853" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>internal::UnitTestImpl</name></member>
+      <member refid="classtesting_1_1TestSuite_1ab3369db678ca3d9648d6fd63ad038986" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>name</name></member>
+      <member refid="classtesting_1_1TestSuite_1a46e3ab93d0ee8885c5348b0de145cd9b" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>name_</name></member>
+      <member refid="classtesting_1_1TestSuite_1add51ece89b069b29e07f0476e0e6aae9" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>Passed</name></member>
+      <member refid="classtesting_1_1TestSuite_1ab0b3d1ee8efaa18ceb2553a71002c678" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>reportable_disabled_test_count</name></member>
+      <member refid="classtesting_1_1TestSuite_1a24f62e17cfd37b90263f1194fb7d4d74" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>reportable_test_count</name></member>
+      <member refid="classtesting_1_1TestSuite_1a16c6fb9e056f1d9113ca1e6eaf9b58bc" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>Run</name></member>
+      <member refid="classtesting_1_1TestSuite_1a366c17f4d7a8c9130bfa2fc37d316e8b" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>RunSetUpTestSuite</name></member>
+      <member refid="classtesting_1_1TestSuite_1adde3df6963a73760cfb53bbf69f47f29" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>RunTearDownTestSuite</name></member>
+      <member refid="classtesting_1_1TestSuite_1a783c072998fdbdfd600221823cea1de1" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>set_should_run</name></member>
+      <member refid="classtesting_1_1TestSuite_1a67f2469764b1e9ca0c3c6458d13876ad" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>set_up_tc_</name></member>
+      <member refid="classtesting_1_1TestSuite_1a8f62c17baef80042e0ff03ef5d5e4ba7" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>should_run</name></member>
+      <member refid="classtesting_1_1TestSuite_1a15749716f1d6b91d6b9e735e662c6d2c" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>should_run_</name></member>
+      <member refid="classtesting_1_1TestSuite_1ad6db30ec4e23a809f398dc2f50008541" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>ShouldRunTest</name></member>
+      <member refid="classtesting_1_1TestSuite_1ab5c2055e93f43a2029e36adc5d75347a" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>ShuffleTests</name></member>
+      <member refid="classtesting_1_1TestSuite_1a05ee4481262f828c8df5190d5bd36475" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>Skip</name></member>
+      <member refid="classtesting_1_1TestSuite_1ae48c72ff92fa1c555e3b577f8661285c" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>skipped_test_count</name></member>
+      <member refid="classtesting_1_1TestSuite_1ac0cbbbe96addf56964380b2bbc013e41" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>start_timestamp</name></member>
+      <member refid="classtesting_1_1TestSuite_1a0255c4d4fb09e4be38d38a5e7be83f0f" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>start_timestamp_</name></member>
+      <member refid="classtesting_1_1TestSuite_1a85bc4191681df7e8bae810c1744465ec" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>successful_test_count</name></member>
+      <member refid="classtesting_1_1TestSuite_1a20c1697fd783f2b2a9069803ff991891" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>tear_down_tc_</name></member>
+      <member refid="classtesting_1_1TestSuite_1a5b78b1c2e1fa07ffed92da365593eaa4" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>Test</name></member>
+      <member refid="classtesting_1_1TestSuite_1ab62db5c2a93d2c1099d7282977df6701" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>test_indices_</name></member>
+      <member refid="classtesting_1_1TestSuite_1a9aae5da520bc0f25d67c948c0a5fa6b6" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>test_info_list</name></member>
+      <member refid="classtesting_1_1TestSuite_1aad784d4e25767e359e6bae1ef4196404" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>test_info_list</name></member>
+      <member refid="classtesting_1_1TestSuite_1a685150382823f5711d4bcf4e208f6a1f" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>test_info_list_</name></member>
+      <member refid="classtesting_1_1TestSuite_1a1ccf2681712a3a27659789009815db8f" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>test_to_run_count</name></member>
+      <member refid="classtesting_1_1TestSuite_1a01cf264bd705388df0778160ed433b93" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>TestDisabled</name></member>
+      <member refid="classtesting_1_1TestSuite_1ae4a91afa37c495d36bf30dd9d6cf0e9c" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>TestFailed</name></member>
+      <member refid="classtesting_1_1TestSuite_1a30cb6d26a98feda5c2af89a15abd3264" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>TestPassed</name></member>
+      <member refid="classtesting_1_1TestSuite_1a939aba8925d609fb5d01464edad0b4d7" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>TestReportable</name></member>
+      <member refid="classtesting_1_1TestSuite_1a6f9748db6f3382f65c747bcc2bc46b4c" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>TestReportableDisabled</name></member>
+      <member refid="classtesting_1_1TestSuite_1a0e162a1f49f40049a5b16fe989dc75e7" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>TestSkipped</name></member>
+      <member refid="classtesting_1_1TestSuite_1a2d6469bcb83701e1bbfe47c465e9731f" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>TestSuite</name></member>
+      <member refid="classtesting_1_1TestSuite_1a38a5e95341cfee5a88d8910f69da4960" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>total_test_count</name></member>
+      <member refid="classtesting_1_1TestSuite_1ab2ea12318bdbfb6aa97792344b49e3db" prot="public" virt="non-virtual"><scope>testing::TestSuite</scope><name>type_param</name></member>
+      <member refid="classtesting_1_1TestSuite_1a64f4695713d1f8e416472016f265f76e" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>type_param_</name></member>
+      <member refid="classtesting_1_1TestSuite_1afcf87bf5cf6bc373a286c0258ff39f8d" prot="private" virt="non-virtual"><scope>testing::TestSuite</scope><name>UnshuffleTests</name></member>
+      <member refid="classtesting_1_1TestSuite_1a78af2d96b44c8b8f2002b4e74df31c38" prot="public" virt="virtual"><scope>testing::TestSuite</scope><name>~TestSuite</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

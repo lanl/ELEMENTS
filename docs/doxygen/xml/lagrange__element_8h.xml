@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="lagrange__element_8h" kind="file" language="C++">
+    <compoundname>lagrange_element.h</compoundname>
+    <includes refid="common_8h" local="yes">common/common.h</includes>
+    <incdepgraph>
+      <node id="2">
+        <label>common/common.h</label>
+        <link refid="common_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>/home/jan/packages/elements/include/element_types/lagrange_element.h</label>
+        <link refid="lagrange__element_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>cmath</label>
+      </node>
+      <node id="5">
+        <label>complex</label>
+      </node>
+      <node id="6">
+        <label>limits</label>
+      </node>
+      <node id="3">
+        <label>matar.h</label>
+      </node>
+    </incdepgraph>
+    <innerclass refid="structLagrangeElement" prot="public">LagrangeElement</innerclass>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&quot;common/common.h&quot;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal"><sp/>&lt;</highlight><highlight class="keyword">typename</highlight><highlight class="normal"><sp/>NumType&gt;</highlight></codeline>
+<codeline lineno="6" refid="structLagrangeElement" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal"><ref refid="structLagrangeElement" kindref="compound">LagrangeElement</ref><sp/>{</highlight></codeline>
+<codeline lineno="7"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Element<sp/>specifications</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">static</highlight><highlight class="normal"><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType<sp/>Nd<sp/>=<sp/>3;</highlight></codeline>
+<codeline lineno="9"><highlight class="normal"><sp/><sp/>SizeType<sp/>Np;</highlight></codeline>
+<codeline lineno="10"><highlight class="normal"><sp/><sp/>SizeType<sp/>N;</highlight></codeline>
+<codeline lineno="11"><highlight class="normal"><sp/><sp/>SizeType<sp/>Ne;</highlight></codeline>
+<codeline lineno="12"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*Z;</highlight></codeline>
+<codeline lineno="13"><highlight class="normal"><sp/><sp/>NumType<sp/>*w;</highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Arrays<sp/>for<sp/>converting<sp/>from<sp/>flat<sp/>to<sp/>multidimensional<sp/>indices</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"><sp/><sp/>SizeType<sp/>ijk[Nd];</highlight></codeline>
+<codeline lineno="17"><highlight class="normal"><sp/><sp/>SizeType<sp/>rad[Nd];</highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Work<sp/>array<sp/>for<sp/>intermediate<sp/>coefficients</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"><sp/><sp/>NumType<sp/>*C;</highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight></codeline>
+<codeline lineno="22"><highlight class="normal"><sp/><sp/><ref refid="structLagrangeElement" kindref="compound">LagrangeElement</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*);</highlight></codeline>
+<codeline lineno="23"><highlight class="normal"><sp/><sp/>~<ref refid="structLagrangeElement" kindref="compound">LagrangeElement</ref>();</highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight></codeline>
+<codeline lineno="25"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Basis<sp/>functions<sp/>and<sp/>basis<sp/>function<sp/>gradients</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="26"><highlight class="normal"><sp/><sp/>NumType<sp/>eval_basis(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*);</highlight></codeline>
+<codeline lineno="27"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>eval_grad_basis(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SizeType,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/>NumType<sp/>*);</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Function<sp/>approximation<sp/>over<sp/>element</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/>NumType<sp/>eval_approx(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*);</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>eval_grad_approx(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/>NumType<sp/>*);</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33"><highlight class="normal"><sp/><sp/></highlight><highlight class="comment">//<sp/>Jacobian<sp/>of<sp/>spatial<sp/>mapping</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="34"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>eval_jac(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight></codeline>
+<codeline lineno="35"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/>NumType<sp/>*);</highlight></codeline>
+<codeline lineno="36"><highlight class="normal"><sp/><sp/>NumType<sp/>eval_det_jac(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*);</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"><sp/><sp/></highlight><highlight class="keywordtype">void</highlight><highlight class="normal"><sp/>eval_inv_jac(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/></highlight></codeline>
+<codeline lineno="39"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>NumType<sp/>*,<sp/>NumType<sp/>*);</highlight></codeline>
+<codeline lineno="40"><highlight class="normal">};</highlight></codeline>
+    </programlisting>
+    <location file="/home/jan/packages/elements/include/element_types/lagrange_element.h"/>
+  </compounddef>
+</doxygen>

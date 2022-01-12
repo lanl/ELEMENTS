@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1ParamGeneratorInterface" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>testing::internal::ParamGeneratorInterface</compoundname>
+    <derivedcompoundref refid="classtesting_1_1internal_1_1RangeGenerator" prot="public" virt="non-virtual">testing::internal::RangeGenerator&lt; T, IncrementT &gt;</derivedcompoundref>
+    <derivedcompoundref refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator" prot="public" virt="non-virtual">testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;</derivedcompoundref>
+    <templateparamlist>
+      <param>
+        <type>typename T</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-type">
+      <memberdef kind="typedef" id="classtesting_1_1internal_1_1ParamGeneratorInterface_1ab33d2ea424c50beaf503cb125b3cd003" prot="public" static="no">
+        <type>T</type>
+        <definition>typedef T testing::internal::ParamGeneratorInterface&lt; T &gt;::ParamType</definition>
+        <argsstring></argsstring>
+        <name>ParamType</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="168" column="13" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="168" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParamGeneratorInterface_1ac2767cb9ad2e292e291c4903323c6eff" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type></type>
+        <definition>virtual testing::internal::ParamGeneratorInterface&lt; T &gt;::~ParamGeneratorInterface</definition>
+        <argsstring>()</argsstring>
+        <name>~ParamGeneratorInterface</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="170" column="11" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="170" bodyend="170"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParamGeneratorInterface_1ae1de83b16fe9a53c67778a026c6a9569" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type><ref refid="classtesting_1_1internal_1_1ParamIteratorInterface" kindref="compound">ParamIteratorInterface</ref>&lt; T &gt; *</type>
+        <definition>virtual ParamIteratorInterface&lt;T&gt;* testing::internal::ParamGeneratorInterface&lt; T &gt;::Begin</definition>
+        <argsstring>() const =0</argsstring>
+        <name>Begin</name>
+        <reimplementedby refid="classtesting_1_1internal_1_1RangeGenerator_1a502913fbcf14e89d5765dfb44f3c1295">Begin</reimplementedby>
+        <reimplementedby refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1a71ffed6f1deba05f11c9d45f6ab5b85d">Begin</reimplementedby>
+        <reimplementedby refid="classtesting_1_1internal_1_1CartesianProductGenerator_1ad2f1bc6289b6dd7e4b5f4fecbfdf2883">Begin</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="173" column="34"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1ParamGeneratorInterface_1afa7211b74990e11d3fc7ad4e7113da4f" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type><ref refid="classtesting_1_1internal_1_1ParamIteratorInterface" kindref="compound">ParamIteratorInterface</ref>&lt; T &gt; *</type>
+        <definition>virtual ParamIteratorInterface&lt;T&gt;* testing::internal::ParamGeneratorInterface&lt; T &gt;::End</definition>
+        <argsstring>() const =0</argsstring>
+        <name>End</name>
+        <reimplementedby refid="classtesting_1_1internal_1_1RangeGenerator_1ac112ca69567b9c47bf14554e0473e1e2">End</reimplementedby>
+        <reimplementedby refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator_1a298cfb66a90b1a39c0cea3ca7ae1ece1">End</reimplementedby>
+        <reimplementedby refid="classtesting_1_1internal_1_1CartesianProductGenerator_1ae072dcf8400ac9dd5692e417262a664b">End</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="174" column="34"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>testing::internal::ParamGeneratorInterface&lt; T &gt;</label>
+        <link refid="classtesting_1_1internal_1_1ParamGeneratorInterface"/>
+      </node>
+      <node id="2">
+        <label>testing::internal::RangeGenerator&lt; T, IncrementT &gt;</label>
+        <link refid="classtesting_1_1internal_1_1RangeGenerator"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>testing::internal::ValuesInIteratorRangeGenerator&lt; T &gt;</label>
+        <link refid="classtesting_1_1internal_1_1ValuesInIteratorRangeGenerator"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="166" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="166" bodyend="175"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1ParamGeneratorInterface_1ae1de83b16fe9a53c67778a026c6a9569" prot="public" virt="pure-virtual"><scope>testing::internal::ParamGeneratorInterface</scope><name>Begin</name></member>
+      <member refid="classtesting_1_1internal_1_1ParamGeneratorInterface_1afa7211b74990e11d3fc7ad4e7113da4f" prot="public" virt="pure-virtual"><scope>testing::internal::ParamGeneratorInterface</scope><name>End</name></member>
+      <member refid="classtesting_1_1internal_1_1ParamGeneratorInterface_1ab33d2ea424c50beaf503cb125b3cd003" prot="public" virt="non-virtual"><scope>testing::internal::ParamGeneratorInterface</scope><name>ParamType</name></member>
+      <member refid="classtesting_1_1internal_1_1ParamGeneratorInterface_1ac2767cb9ad2e292e291c4903323c6eff" prot="public" virt="virtual"><scope>testing::internal::ParamGeneratorInterface</scope><name>~ParamGeneratorInterface</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

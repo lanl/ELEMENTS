@@ -1,0 +1,1510 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="gmock-pp_8h" kind="file" language="C++">
+    <compoundname>gmock-pp.h</compoundname>
+    <includedby refid="gmock-actions_8h" local="yes">/home/jan/packages/elements/include/gmock/gmock-actions.h</includedby>
+    <includedby refid="gmock-function-mocker_8h" local="yes">/home/jan/packages/elements/include/gmock/gmock-function-mocker.h</includedby>
+    <includedby refid="gmock-matchers_8h" local="yes">/home/jan/packages/elements/include/gmock/gmock-matchers.h</includedby>
+    <invincdepgraph>
+      <node id="2">
+        <label>/home/jan/packages/elements/include/gmock/gmock-actions.h</label>
+        <link refid="gmock-actions_8h_source"/>
+        <childnode refid="3" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="6">
+        <label>/home/jan/packages/elements/include/gmock/gmock-function-mocker.h</label>
+        <link refid="gmock-function-mocker_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="8">
+        <label>/home/jan/packages/elements/include/gmock/gmock-matchers.h</label>
+        <link refid="gmock-matchers_8h_source"/>
+        <childnode refid="9" relation="include">
+        </childnode>
+        <childnode refid="5" relation="include">
+        </childnode>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="3">
+        <label>/home/jan/packages/elements/include/gmock/gmock-more-actions.h</label>
+        <link refid="gmock-more-actions_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="9">
+        <label>/home/jan/packages/elements/include/gmock/gmock-more-matchers.h</label>
+        <link refid="gmock-more-matchers_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="7">
+        <label>/home/jan/packages/elements/include/gmock/gmock-nice-strict.h</label>
+        <link refid="gmock-nice-strict_8h_source"/>
+        <childnode refid="4" relation="include">
+        </childnode>
+      </node>
+      <node id="5">
+        <label>/home/jan/packages/elements/include/gmock/gmock-spec-builders.h</label>
+        <link refid="gmock-spec-builders_8h_source"/>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="7" relation="include">
+        </childnode>
+      </node>
+      <node id="4">
+        <label>/home/jan/packages/elements/include/gmock/gmock.h</label>
+        <link refid="gmock_8h_source"/>
+      </node>
+      <node id="1">
+        <label>/home/jan/packages/elements/include/gmock/internal/gmock-pp.h</label>
+        <link refid="gmock-pp_8h"/>
+        <childnode refid="2" relation="include">
+        </childnode>
+        <childnode refid="6" relation="include">
+        </childnode>
+        <childnode refid="8" relation="include">
+        </childnode>
+      </node>
+    </invincdepgraph>
+      <sectiondef kind="define">
+      <memberdef kind="define" id="gmock-pp_8h_1a108c52ffa81ab99348d23b8fa76fded3" prot="public" static="no">
+        <name>GMOCK_PP_CAT</name>
+        <param><defname>_1</defname></param>
+        <param><defname>_2</defname></param>
+        <initializer>GMOCK_PP_INTERNAL_CAT(_1, _2)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="5" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="5" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a5e7b60e34a7bb66bac56c440f6aa52cb" prot="public" static="no">
+        <name>GMOCK_PP_STRINGIZE</name>
+        <param><defname>...</defname></param>
+        <initializer>GMOCK_PP_INTERNAL_STRINGIZE(__VA_ARGS__)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="8" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="8" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a7dc39000427944f011a62b2aa915fc2a" prot="public" static="no">
+        <name>GMOCK_PP_EMPTY</name>
+        <param><defname>...</defname></param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="11" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="11" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a44870968c9989ec20c90812361e21a55" prot="public" static="no">
+        <name>GMOCK_PP_COMMA</name>
+        <param><defname>...</defname></param>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="14" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="14" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a6123441ddc433915bfc8996a0a4eb397" prot="public" static="no">
+        <name>GMOCK_PP_IDENTITY</name>
+        <param><defname>_1</defname></param>
+        <initializer>_1</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="17" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="17" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a9db18220b88597a07704bc7cf3b13304" prot="public" static="no">
+        <name>GMOCK_PP_NARG</name>
+        <param><defname>...</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_16TH(  \
+      (__VA_ARGS__, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="29" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="29" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1aaf83e01e56eb26d7eac9efb477587510" prot="public" static="no">
+        <name>GMOCK_PP_HAS_COMMA</name>
+        <param><defname>...</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_16TH(       \
+      (__VA_ARGS__, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="35" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="35" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ad7910160dfc0fb20b239efcf1f3ddd85" prot="public" static="no">
+        <name>GMOCK_PP_HEAD</name>
+        <param><defname>...</defname></param>
+        <initializer>GMOCK_PP_INTERNAL_HEAD((__VA_ARGS__, unusedArg))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="40" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="40" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a1373615930e6eb6772c914fa8416f88e" prot="public" static="no">
+        <name>GMOCK_PP_TAIL</name>
+        <param><defname>...</defname></param>
+        <initializer>GMOCK_PP_INTERNAL_TAIL((__VA_ARGS__))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="44" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="44" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a4dd8715f753c7c3957f7185acf609e55" prot="public" static="no">
+        <name>GMOCK_PP_VARIADIC_CALL</name>
+        <param><defname>_Macro</defname></param>
+        <param><defname>...</defname></param>
+        <initializer>  GMOCK_PP_IDENTITY(                        \
+      GMOCK_PP_CAT(_Macro, GMOCK_PP_NARG(__VA_ARGS__))(__VA_ARGS__))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="47" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="47" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a14eb10c5cc7380d072cd748661140f45" prot="public" static="no">
+        <name>GMOCK_PP_IS_EMPTY</name>
+        <param><defname>...</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_IS_EMPTY(GMOCK_PP_HAS_COMMA(__VA_ARGS__),                \
+                             GMOCK_PP_HAS_COMMA(GMOCK_PP_COMMA __VA_ARGS__), \
+                             GMOCK_PP_HAS_COMMA(__VA_ARGS__()),              \
+                             GMOCK_PP_HAS_COMMA(GMOCK_PP_COMMA __VA_ARGS__()))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="79" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="79" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a82f153fedbaf56bf71b8272bdf672875" prot="public" static="no">
+        <name>GMOCK_PP_IF</name>
+        <param><defname>_Cond</defname></param>
+        <param><defname>_Then</defname></param>
+        <param><defname>_Else</defname></param>
+        <initializer>  GMOCK_PP_CAT(GMOCK_PP_INTERNAL_IF_, _Cond)(_Then, _Else)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="86" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="86" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a6302f79c11bf4042f7cfd5530dd00979" prot="public" static="no">
+        <name>GMOCK_PP_GENERIC_IF</name>
+        <param><defname>_Cond</defname></param>
+        <param><defname>_Then</defname></param>
+        <param><defname>_Else</defname></param>
+        <initializer>  GMOCK_PP_REMOVE_PARENS(GMOCK_PP_IF(_Cond, _Then, _Else))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="94" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="94" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a0f49faf3c63534a722e2f320ff8d4cd0" prot="public" static="no">
+        <name>GMOCK_PP_NARG0</name>
+        <param><defname>...</defname></param>
+        <initializer>  GMOCK_PP_IF(GMOCK_PP_IS_EMPTY(__VA_ARGS__), 0, GMOCK_PP_NARG(__VA_ARGS__))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="110" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="110" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a7b8ff4a4176413e60e3f46d14760182a" prot="public" static="no">
+        <name>GMOCK_PP_IS_BEGIN_PARENS</name>
+        <param><defname>...</defname></param>
+        <initializer>  GMOCK_PP_HEAD(GMOCK_PP_CAT(GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_R_, \
+                             GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_C __VA_ARGS__))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="115" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="115" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a10bbc38452431607a40619475c5248aa" prot="public" static="no">
+        <name>GMOCK_PP_IS_ENCLOSED_PARENS</name>
+        <param><defname>...</defname></param>
+        <initializer>  GMOCK_PP_IF(GMOCK_PP_IS_BEGIN_PARENS(__VA_ARGS__), \
+              GMOCK_PP_IS_EMPTY(GMOCK_PP_EMPTY __VA_ARGS__), 0)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="120" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="120" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a56df0c468739cd6319be90b805a6d5b0" prot="public" static="no">
+        <name>GMOCK_PP_REMOVE_PARENS</name>
+        <param><defname>...</defname></param>
+        <initializer>GMOCK_PP_INTERNAL_REMOVE_PARENS __VA_ARGS__</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="125" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="125" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1abc9368d9b0960531e3cfb9e5d6a41816" prot="public" static="no">
+        <name>GMOCK_PP_FOR_EACH</name>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_CAT(GMOCK_PP_INTERNAL_FOR_EACH_IMPL_, GMOCK_PP_NARG0 _Tuple) \
+  (0, _Macro, _Data, _Tuple)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="131" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="131" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ab2a0d358d2eb3f04395d0494ab7aab01" prot="public" static="no">
+        <name>GMOCK_PP_REPEAT</name>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_N</defname></param>
+        <initializer>  GMOCK_PP_CAT(GMOCK_PP_INTERNAL_FOR_EACH_IMPL_, _N) \
+  (0, _Macro, _Data, GMOCK_PP_INTENRAL_EMPTY_TUPLE)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="139" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="139" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1abcffb7b948f0eed30aa35ba3c1e77299" prot="public" static="no">
+        <name>GMOCK_PP_INC</name>
+        <param><defname>_i</defname></param>
+        <initializer>GMOCK_PP_CAT(GMOCK_PP_INTERNAL_INC_, _i)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="144" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="144" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1acad3f789b483c40204f25a56c3342103" prot="public" static="no">
+        <name>GMOCK_PP_COMMA_IF</name>
+        <param><defname>_i</defname></param>
+        <initializer>GMOCK_PP_CAT(GMOCK_PP_INTERNAL_COMMA_IF_, _i)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="147" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="147" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a7a4a2a8606d20424b0ec1db4236819e4" prot="public" static="no">
+        <name>GMOCK_PP_INTENRAL_EMPTY_TUPLE</name>
+        <initializer>(, , , , , , , , , , , , , , , )</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="151" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="151" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a2b034c776c832e3d951f5d123658a7ba" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_CAT</name>
+        <param><defname>_1</defname></param>
+        <param><defname>_2</defname></param>
+        <initializer>_1##_2</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="152" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="152" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1afd092b75707cbc1efd7fe183c94afb79" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_STRINGIZE</name>
+        <param><defname>...</defname></param>
+        <initializer>#__VA_ARGS__</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="153" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="153" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a11241887f4be09cdb6a57bb841620581" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_CAT_5</name>
+        <param><defname>_1</defname></param>
+        <param><defname>_2</defname></param>
+        <param><defname>_3</defname></param>
+        <param><defname>_4</defname></param>
+        <param><defname>_5</defname></param>
+        <initializer>_1##_2##_3##_4##_5</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="154" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="154" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a7ed13884d5ca70a35102f76d65677b13" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_IS_EMPTY</name>
+        <param><defname>_1</defname></param>
+        <param><defname>_2</defname></param>
+        <param><defname>_3</defname></param>
+        <param><defname>_4</defname></param>
+        <initializer>  GMOCK_PP_HAS_COMMA(GMOCK_PP_INTERNAL_CAT_5(GMOCK_PP_INTERNAL_IS_EMPTY_CASE_, \
+                                             _1, _2, _3, _4))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="155" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="155" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ad02fd031aeb323ae431ebdfda4acdc99" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_IS_EMPTY_CASE_0001</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="158" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="158" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a9983cbccb2cbb6892e983b28ac9e2077" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_IF_1</name>
+        <param><defname>_Then</defname></param>
+        <param><defname>_Else</defname></param>
+        <initializer>_Then</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="159" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="159" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1afa9219c0158e29914036bfe9959ed0d7" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_IF_0</name>
+        <param><defname>_Then</defname></param>
+        <param><defname>_Else</defname></param>
+        <initializer>_Else</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="160" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="160" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ac3815de01d162a72578830f0ffbfbeb3" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INTERNAL_16TH</name>
+        <param><defname>_1</defname></param>
+        <param><defname>_2</defname></param>
+        <param><defname>_3</defname></param>
+        <param><defname>_4</defname></param>
+        <param><defname>_5</defname></param>
+        <param><defname>_6</defname></param>
+        <param><defname>_7</defname></param>
+        <param><defname>_8</defname></param>
+        <param><defname>_9</defname></param>
+        <param><defname>_10</defname></param>
+        <param><defname>_11</defname></param>
+        <param><defname>_12</defname></param>
+        <param><defname>_13</defname></param>
+        <param><defname>_14</defname></param>
+        <param><defname>_15</defname></param>
+        <param><defname>_16</defname></param>
+        <param><defname>...</defname></param>
+        <initializer>  _16</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="169" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="167" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a110a0ca9a2c9ecda2e39dd814af47db5" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_16TH</name>
+        <param><defname>_Args</defname></param>
+        <initializer>  GMOCK_PP_IDENTITY(GMOCK_PP_INTERNAL_INTERNAL_16TH _Args)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="171" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="171" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1afea64f48a1e8a08237af9356baccb864" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INTERNAL_HEAD</name>
+        <param><defname>_1</defname></param>
+        <param><defname>...</defname></param>
+        <initializer>_1</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="173" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="173" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a742c00efb1c9980a1ea3a6e99f0107ed" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_HEAD</name>
+        <param><defname>_Args</defname></param>
+        <initializer>  GMOCK_PP_IDENTITY(GMOCK_PP_INTERNAL_INTERNAL_HEAD _Args)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="174" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="174" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ab91e721819ebf380a15969cd3be3abfe" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INTERNAL_TAIL</name>
+        <param><defname>_1</defname></param>
+        <param><defname>...</defname></param>
+        <initializer>__VA_ARGS__</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="176" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="176" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a8413ffa17afc955b9a5f09218969e32b" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_TAIL</name>
+        <param><defname>_Args</defname></param>
+        <initializer>  GMOCK_PP_IDENTITY(GMOCK_PP_INTERNAL_INTERNAL_TAIL _Args)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="177" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="177" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a5bec02a24e70c087e6dca52f735356ba" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_C</name>
+        <param><defname>...</defname></param>
+        <initializer>1 _</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="180" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="180" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a80e10be13b34c05a5bc4a2db66f6090e" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_R_1</name>
+        <initializer>1,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="181" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="181" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a0415d68018422fd678c14c84e2390142" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_R_GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_C</name>
+        <initializer>  0,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="182" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="182" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ac3c1fba05dad44080330c0ecd1208ca6" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_REMOVE_PARENS</name>
+        <param><defname>...</defname></param>
+        <initializer>__VA_ARGS__</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="184" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="184" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a67c3172a9b55aca4445d8399a27d7bb3" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_0</name>
+        <initializer>1</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="185" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="185" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a5c8d218b722f86a9f6b1af37075abba0" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_1</name>
+        <initializer>2</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="186" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="186" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a56f097ec235d0c099596397429130b5f" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_2</name>
+        <initializer>3</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="187" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="187" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a0208ca2062b923cd12255f68d18f9e46" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_3</name>
+        <initializer>4</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="188" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="188" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a513e563d704ca901b696d367ed28ed63" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_4</name>
+        <initializer>5</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="189" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="189" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a5a1c4a56fb224e8b8453a28f2798a2ec" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_5</name>
+        <initializer>6</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="190" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="190" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1adb538658076399eb3b761132a37b8104" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_6</name>
+        <initializer>7</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="191" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="191" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a521b0414b80af9fe8e7eca11ba275c82" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_7</name>
+        <initializer>8</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="192" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="192" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1aa58ad9678e056e935fc13d7c8020f3ff" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_8</name>
+        <initializer>9</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="193" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="193" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a505a762430097704c55882063daf4f46" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_9</name>
+        <initializer>10</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="194" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="194" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1aa3810860ab9ebd07601acdbedb612824" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_10</name>
+        <initializer>11</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="195" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="195" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a59e17461e0baa9b154625f7861af34b4" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_11</name>
+        <initializer>12</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="196" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="196" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a4ac354e1e915139aa339364418a5c189" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_12</name>
+        <initializer>13</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="197" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="197" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a3ddc4589e38ae717aa4766aba2bf0bbf" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_13</name>
+        <initializer>14</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="198" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="198" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a2df1f864eb3b389b50791639f32b7142" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_14</name>
+        <initializer>15</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="199" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="199" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a98718a29ed1a47d49f25974ba01deda2" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_INC_15</name>
+        <initializer>16</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="200" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="200" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a214534d4a95f56765555dd6a634b3ec0" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_0</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="201" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="201" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a7e24c589c5166c7db18207ea856b757e" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_1</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="202" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="202" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ace0591e876b40a1954cc1e9a72c5413b" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_2</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="203" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="203" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a2d5a1a8b63194783114ec21a0a81f11a" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_3</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="204" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="204" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a7b531142e60aa3411e6b11c598ee53bf" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_4</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="205" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="205" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a7f13063361c7eb6017ca649c0efdeec1" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_5</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="206" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="206" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a3471d8cc6b174ee5440868cb37633aaa" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_6</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="207" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="207" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a237b21a985a3d7a22539b87c46d53d6f" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_7</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="208" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="208" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a04c6dbf79411c6c468be3dcef87972b9" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_8</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="209" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="209" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ab4914950cb2dc462f55a1e069ee9e8e6" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_9</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="210" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="210" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1af15e9b374c945eaac237bd17583ba553" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_10</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="211" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="211" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a0d8f427b8f338b4157bf81f9989d69e2" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_11</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="212" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="212" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1abf8465b714dfac3a485b3774264a005f" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_12</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="213" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="213" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a37b278fd32a872c53eb98c886888f442" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_13</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="214" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="214" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a1b3568514e11317780d63491765df95b" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_14</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="215" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="215" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ab768aec3f52e0f8c5825a45ad83d8836" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_COMMA_IF_15</name>
+        <initializer>,</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="216" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="216" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a3fe0cf255d103cc945cd91e0e953846f" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_CALL_MACRO</name>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_i</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_element</defname></param>
+        <initializer>  _Macro(_i, _Data, _element)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="217" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="217" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1afa4ea4d70383d332e2d2367b077ce31a" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_0</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="219" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="219" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a6dde0a6b2371de18b44f8671b8d0dc22" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_1</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple)</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="220" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="220" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ad8277a9a0a83d35b403223078486756e" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_2</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_1(GMOCK_PP_INC(_i), _Macro, _Data,    \
+                                    (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="222" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="222" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a2ae498910fad6a0796cdc24e7436c1af" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_3</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_2(GMOCK_PP_INC(_i), _Macro, _Data,    \
+                                    (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="226" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="226" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ac8edd023c5a089a51b8ec78a12a37941" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_4</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_3(GMOCK_PP_INC(_i), _Macro, _Data,    \
+                                    (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="230" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="230" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a3a7b6250eb5ceec84c604088b69f88ca" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_5</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_4(GMOCK_PP_INC(_i), _Macro, _Data,    \
+                                    (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="234" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="234" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a8a0eb9f1389af438da01467e915fce2c" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_6</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_5(GMOCK_PP_INC(_i), _Macro, _Data,    \
+                                    (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="238" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="238" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1aff9ac7a5d231f8dac30c8436fffb887e" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_7</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_6(GMOCK_PP_INC(_i), _Macro, _Data,    \
+                                    (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="242" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="242" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1affbf923847bedeff0e6b2a7c33f63ff8" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_8</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_7(GMOCK_PP_INC(_i), _Macro, _Data,    \
+                                    (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="246" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="246" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a07acbb7a6546c3c8e3f4f6c037831c54" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_9</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_8(GMOCK_PP_INC(_i), _Macro, _Data,    \
+                                    (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="250" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="250" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ae6a832612f7db9940c60e2551343f697" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_10</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_9(GMOCK_PP_INC(_i), _Macro, _Data,    \
+                                    (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="254" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="254" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a5f357dfae141ba984eec9f8e1ceb0bb7" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_11</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_10(GMOCK_PP_INC(_i), _Macro, _Data,   \
+                                     (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="258" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="258" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a70e6ea8b4a366244b729e56b3c2b0988" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_12</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_11(GMOCK_PP_INC(_i), _Macro, _Data,   \
+                                     (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="262" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="262" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ac43d06ac5ac29ce5b40e570c3c8b53ee" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_13</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_12(GMOCK_PP_INC(_i), _Macro, _Data,   \
+                                     (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="266" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="266" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1a73de321e9dd5117fdd32520525296b60" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_14</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_13(GMOCK_PP_INC(_i), _Macro, _Data,   \
+                                     (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="270" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="270" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="define" id="gmock-pp_8h_1ab9670ce2eb23a136b2978041d6f36f1b" prot="public" static="no">
+        <name>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_15</name>
+        <param><defname>_i</defname></param>
+        <param><defname>_Macro</defname></param>
+        <param><defname>_Data</defname></param>
+        <param><defname>_Tuple</defname></param>
+        <initializer>  GMOCK_PP_INTERNAL_CALL_MACRO(_Macro, _i, _Data, GMOCK_PP_HEAD _Tuple) \
+  GMOCK_PP_INTERNAL_FOR_EACH_IMPL_14(GMOCK_PP_INC(_i), _Macro, _Data,   \
+                                     (GMOCK_PP_TAIL _Tuple))</initializer>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" line="274" column="9" bodyfile="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h" bodystart="274" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="preprocessor">#ifndef<sp/>GOOGLEMOCK_INCLUDE_GMOCK_INTERNAL_GMOCK_PP_H_</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="2"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GOOGLEMOCK_INCLUDE_GMOCK_INTERNAL_GMOCK_PP_H_</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="3"><highlight class="normal"></highlight></codeline>
+<codeline lineno="4"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Expands<sp/>and<sp/>concatenates<sp/>the<sp/>arguments.<sp/>Constructed<sp/>macros<sp/>reevaluate.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="5"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_CAT(_1,<sp/>_2)<sp/>GMOCK_PP_INTERNAL_CAT(_1,<sp/>_2)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="6"><highlight class="normal"></highlight></codeline>
+<codeline lineno="7"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Expands<sp/>and<sp/>stringifies<sp/>the<sp/>only<sp/>argument.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="8"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_STRINGIZE(...)<sp/>GMOCK_PP_INTERNAL_STRINGIZE(__VA_ARGS__)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="9"><highlight class="normal"></highlight></codeline>
+<codeline lineno="10"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Returns<sp/>empty.<sp/>Given<sp/>a<sp/>variadic<sp/>number<sp/>of<sp/>arguments.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_EMPTY(...)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight></codeline>
+<codeline lineno="13"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Returns<sp/>a<sp/>comma.<sp/>Given<sp/>a<sp/>variadic<sp/>number<sp/>of<sp/>arguments.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="14"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_COMMA(...)<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="15"><highlight class="normal"></highlight></codeline>
+<codeline lineno="16"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Returns<sp/>the<sp/>only<sp/>argument.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_IDENTITY(_1)<sp/>_1</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Evaluates<sp/>to<sp/>the<sp/>number<sp/>of<sp/>arguments<sp/>after<sp/>expansion.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>#define<sp/>PAIR<sp/>x,<sp/>y</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="23"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>GMOCK_PP_NARG()<sp/>=&gt;<sp/>1</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="24"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>GMOCK_PP_NARG(x)<sp/>=&gt;<sp/>1</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="25"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>GMOCK_PP_NARG(x,<sp/>y)<sp/>=&gt;<sp/>2</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="26"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>GMOCK_PP_NARG(PAIR)<sp/>=&gt;<sp/>2</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="27"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Requires:<sp/>the<sp/>number<sp/>of<sp/>arguments<sp/>after<sp/>expansion<sp/>is<sp/>at<sp/>most<sp/>15.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="29"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_NARG(...)<sp/>\</highlight></codeline>
+<codeline lineno="30"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_16TH(<sp/><sp/>\</highlight></codeline>
+<codeline lineno="31"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/>(__VA_ARGS__,<sp/>15,<sp/>14,<sp/>13,<sp/>12,<sp/>11,<sp/>10,<sp/>9,<sp/>8,<sp/>7,<sp/>6,<sp/>5,<sp/>4,<sp/>3,<sp/>2,<sp/>1,<sp/>0))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Returns<sp/>1<sp/>if<sp/>the<sp/>expansion<sp/>of<sp/>arguments<sp/>has<sp/>an<sp/>unprotected<sp/>comma.<sp/>Otherwise</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="34"><highlight class="normal"></highlight><highlight class="comment">//<sp/>returns<sp/>0.<sp/>Requires<sp/>no<sp/>more<sp/>than<sp/>15<sp/>unprotected<sp/>commas.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="35"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_HAS_COMMA(...)<sp/>\</highlight></codeline>
+<codeline lineno="36"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_16TH(<sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="37"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/>(__VA_ARGS__,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>1,<sp/>0,<sp/>0))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="38"><highlight class="normal"></highlight></codeline>
+<codeline lineno="39"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Returns<sp/>the<sp/>first<sp/>argument.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="40"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_HEAD(...)<sp/>GMOCK_PP_INTERNAL_HEAD((__VA_ARGS__,<sp/>unusedArg))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="41"><highlight class="normal"></highlight></codeline>
+<codeline lineno="42"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Returns<sp/>the<sp/>tail.<sp/>A<sp/>variadic<sp/>list<sp/>of<sp/>all<sp/>arguments<sp/>minus<sp/>the<sp/>first.<sp/>Requires</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="43"><highlight class="normal"></highlight><highlight class="comment">//<sp/>at<sp/>least<sp/>one<sp/>argument.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="44"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_TAIL(...)<sp/>GMOCK_PP_INTERNAL_TAIL((__VA_ARGS__))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="45"><highlight class="normal"></highlight></codeline>
+<codeline lineno="46"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Calls<sp/>CAT(_Macro,<sp/>NARG(__VA_ARGS__))(__VA_ARGS__)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="47"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_VARIADIC_CALL(_Macro,<sp/>...)<sp/>\</highlight></codeline>
+<codeline lineno="48"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_IDENTITY(<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="49"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/>GMOCK_PP_CAT(_Macro,<sp/>GMOCK_PP_NARG(__VA_ARGS__))(__VA_ARGS__))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="50"><highlight class="normal"></highlight></codeline>
+<codeline lineno="51"><highlight class="normal"></highlight><highlight class="comment">//<sp/>If<sp/>the<sp/>arguments<sp/>after<sp/>expansion<sp/>have<sp/>no<sp/>tokens,<sp/>evaluates<sp/>to<sp/>`1`.<sp/>Otherwise</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="52"><highlight class="normal"></highlight><highlight class="comment">//<sp/>evaluates<sp/>to<sp/>`0`.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="53"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="54"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Requires:<sp/>*<sp/>the<sp/>number<sp/>of<sp/>arguments<sp/>after<sp/>expansion<sp/>is<sp/>at<sp/>most<sp/>15.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="55"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>*<sp/>If<sp/>the<sp/>argument<sp/>is<sp/>a<sp/>macro,<sp/>it<sp/>must<sp/>be<sp/>able<sp/>to<sp/>be<sp/>called<sp/>with<sp/>one</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="56"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>argument.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="57"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="58"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Implementation<sp/>details:</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="59"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="60"><highlight class="normal"></highlight><highlight class="comment">//<sp/>There<sp/>is<sp/>one<sp/>case<sp/>when<sp/>it<sp/>generates<sp/>a<sp/>compile<sp/>error:<sp/>if<sp/>the<sp/>argument<sp/>is<sp/>macro</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"></highlight><highlight class="comment">//<sp/>that<sp/>cannot<sp/>be<sp/>called<sp/>with<sp/>one<sp/>argument.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="63"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>#define<sp/>M(a,<sp/>b)<sp/><sp/>//<sp/>it<sp/>doesn&apos;t<sp/>matter<sp/>what<sp/>it<sp/>expands<sp/>to</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="64"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="65"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>//<sp/>Expected:<sp/>expands<sp/>to<sp/>`0`.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="66"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>//<sp/>Actual:<sp/>compile<sp/>error.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="67"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>GMOCK_PP_IS_EMPTY(M)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="68"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="69"><highlight class="normal"></highlight><highlight class="comment">//<sp/>There<sp/>are<sp/>4<sp/>cases<sp/>tested:</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="70"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="71"><highlight class="normal"></highlight><highlight class="comment">//<sp/>*<sp/>__VA_ARGS__<sp/>possible<sp/>expansion<sp/>has<sp/>no<sp/>unparen&apos;d<sp/>commas.<sp/>Expected<sp/>0.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="72"><highlight class="normal"></highlight><highlight class="comment">//<sp/>*<sp/>__VA_ARGS__<sp/>possible<sp/>expansion<sp/>is<sp/>not<sp/>enclosed<sp/>in<sp/>parenthesis.<sp/>Expected<sp/>0.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="73"><highlight class="normal"></highlight><highlight class="comment">//<sp/>*<sp/>__VA_ARGS__<sp/>possible<sp/>expansion<sp/>is<sp/>not<sp/>a<sp/>macro<sp/>that<sp/>()-evaluates<sp/>to<sp/>a<sp/>comma.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="74"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>Expected<sp/>0</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="75"><highlight class="normal"></highlight><highlight class="comment">//<sp/>*<sp/>__VA_ARGS__<sp/>is<sp/>empty,<sp/>or<sp/>has<sp/>unparen&apos;d<sp/>commas,<sp/>or<sp/>is<sp/>enclosed<sp/>in</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>parenthesis,<sp/>or<sp/>is<sp/>a<sp/>macro<sp/>that<sp/>()-evaluates<sp/>to<sp/>comma.<sp/>Expected<sp/>1.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="77"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="78"><highlight class="normal"></highlight><highlight class="comment">//<sp/>We<sp/>trigger<sp/>detection<sp/>on<sp/>&apos;0001&apos;,<sp/>i.e.<sp/>on<sp/>empty.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="79"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_IS_EMPTY(...)<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="80"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_IS_EMPTY(GMOCK_PP_HAS_COMMA(__VA_ARGS__),<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="81"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>GMOCK_PP_HAS_COMMA(GMOCK_PP_COMMA<sp/>__VA_ARGS__),<sp/>\</highlight></codeline>
+<codeline lineno="82"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>GMOCK_PP_HAS_COMMA(__VA_ARGS__()),<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="83"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>GMOCK_PP_HAS_COMMA(GMOCK_PP_COMMA<sp/>__VA_ARGS__()))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="84"><highlight class="normal"></highlight></codeline>
+<codeline lineno="85"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Evaluates<sp/>to<sp/>_Then<sp/>if<sp/>_Cond<sp/>is<sp/>1<sp/>and<sp/>_Else<sp/>if<sp/>_Cond<sp/>is<sp/>0.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="86"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_IF(_Cond,<sp/>_Then,<sp/>_Else)<sp/>\</highlight></codeline>
+<codeline lineno="87"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_CAT(GMOCK_PP_INTERNAL_IF_,<sp/>_Cond)(_Then,<sp/>_Else)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="88"><highlight class="normal"></highlight></codeline>
+<codeline lineno="89"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Similar<sp/>to<sp/>GMOCK_PP_IF<sp/>but<sp/>takes<sp/>_Then<sp/>and<sp/>_Else<sp/>in<sp/>parentheses.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="90"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="91"><highlight class="normal"></highlight><highlight class="comment">//<sp/>GMOCK_PP_GENERIC_IF(1,<sp/>(a,<sp/>b,<sp/>c),<sp/>(d,<sp/>e,<sp/>f))<sp/>=&gt;<sp/>a,<sp/>b,<sp/>c</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="92"><highlight class="normal"></highlight><highlight class="comment">//<sp/>GMOCK_PP_GENERIC_IF(0,<sp/>(a,<sp/>b,<sp/>c),<sp/>(d,<sp/>e,<sp/>f))<sp/>=&gt;<sp/>d,<sp/>e,<sp/>f</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="93"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="94"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_GENERIC_IF(_Cond,<sp/>_Then,<sp/>_Else)<sp/>\</highlight></codeline>
+<codeline lineno="95"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_REMOVE_PARENS(GMOCK_PP_IF(_Cond,<sp/>_Then,<sp/>_Else))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="96"><highlight class="normal"></highlight></codeline>
+<codeline lineno="97"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Evaluates<sp/>to<sp/>the<sp/>number<sp/>of<sp/>arguments<sp/>after<sp/>expansion.<sp/>Identifies<sp/>&apos;empty&apos;<sp/>as</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="98"><highlight class="normal"></highlight><highlight class="comment">//<sp/>0.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="99"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="100"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>#define<sp/>PAIR<sp/>x,<sp/>y</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="101"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="102"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>GMOCK_PP_NARG0()<sp/>=&gt;<sp/>0</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="103"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>GMOCK_PP_NARG0(x)<sp/>=&gt;<sp/>1</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="104"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>GMOCK_PP_NARG0(x,<sp/>y)<sp/>=&gt;<sp/>2</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="105"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/>GMOCK_PP_NARG0(PAIR)<sp/>=&gt;<sp/>2</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="106"><highlight class="normal"></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="107"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Requires:<sp/>*<sp/>the<sp/>number<sp/>of<sp/>arguments<sp/>after<sp/>expansion<sp/>is<sp/>at<sp/>most<sp/>15.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="108"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>*<sp/>If<sp/>the<sp/>argument<sp/>is<sp/>a<sp/>macro,<sp/>it<sp/>must<sp/>be<sp/>able<sp/>to<sp/>be<sp/>called<sp/>with<sp/>one</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="109"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>argument.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="110"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_NARG0(...)<sp/>\</highlight></codeline>
+<codeline lineno="111"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_IF(GMOCK_PP_IS_EMPTY(__VA_ARGS__),<sp/>0,<sp/>GMOCK_PP_NARG(__VA_ARGS__))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="112"><highlight class="normal"></highlight></codeline>
+<codeline lineno="113"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Expands<sp/>to<sp/>1<sp/>if<sp/>the<sp/>first<sp/>argument<sp/>starts<sp/>with<sp/>something<sp/>in<sp/>parentheses,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="114"><highlight class="normal"></highlight><highlight class="comment">//<sp/>otherwise<sp/>to<sp/>0.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="115"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_IS_BEGIN_PARENS(...)<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="116"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_HEAD(GMOCK_PP_CAT(GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_R_,<sp/>\</highlight></codeline>
+<codeline lineno="117"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_C<sp/>__VA_ARGS__))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="118"><highlight class="normal"></highlight></codeline>
+<codeline lineno="119"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Expands<sp/>to<sp/>1<sp/>is<sp/>there<sp/>is<sp/>only<sp/>one<sp/>argument<sp/>and<sp/>it<sp/>is<sp/>enclosed<sp/>in<sp/>parentheses.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="120"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_IS_ENCLOSED_PARENS(...)<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="121"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_IF(GMOCK_PP_IS_BEGIN_PARENS(__VA_ARGS__),<sp/>\</highlight></codeline>
+<codeline lineno="122"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>GMOCK_PP_IS_EMPTY(GMOCK_PP_EMPTY<sp/>__VA_ARGS__),<sp/>0)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="123"><highlight class="normal"></highlight></codeline>
+<codeline lineno="124"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Remove<sp/>the<sp/>parens,<sp/>requires<sp/>GMOCK_PP_IS_ENCLOSED_PARENS(args)<sp/>=&gt;<sp/>1.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="125"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_REMOVE_PARENS(...)<sp/>GMOCK_PP_INTERNAL_REMOVE_PARENS<sp/>__VA_ARGS__</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="126"><highlight class="normal"></highlight></codeline>
+<codeline lineno="127"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Expands<sp/>to<sp/>_Macro(0,<sp/>_Data,<sp/>e1)<sp/>_Macro(1,<sp/>_Data,<sp/>e2)<sp/>...<sp/>_Macro(K<sp/>-1,<sp/>_Data,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="128"><highlight class="normal"></highlight><highlight class="comment">//<sp/>eK)<sp/>as<sp/>many<sp/>of<sp/>GMOCK_INTERNAL_NARG0<sp/>_Tuple.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="129"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Requires:<sp/>*<sp/>|_Macro|<sp/>can<sp/>be<sp/>called<sp/>with<sp/>3<sp/>arguments.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="130"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>*<sp/>|_Tuple|<sp/>expansion<sp/>has<sp/>no<sp/>more<sp/>than<sp/>15<sp/>elements.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="131"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_FOR_EACH(_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="132"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_CAT(GMOCK_PP_INTERNAL_FOR_EACH_IMPL_,<sp/>GMOCK_PP_NARG0<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="133"><highlight class="preprocessor"><sp/><sp/>(0,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="134"><highlight class="normal"></highlight></codeline>
+<codeline lineno="135"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Expands<sp/>to<sp/>_Macro(0,<sp/>_Data,<sp/>)<sp/>_Macro(1,<sp/>_Data,<sp/>)<sp/>...<sp/>_Macro(K<sp/>-<sp/>1,<sp/>_Data,<sp/>)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="136"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Empty<sp/>if<sp/>_K<sp/>=<sp/>0.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="137"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Requires:<sp/>*<sp/>|_Macro|<sp/>can<sp/>be<sp/>called<sp/>with<sp/>3<sp/>arguments.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="138"><highlight class="normal"></highlight><highlight class="comment">//<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>*<sp/>|_K|<sp/>literal<sp/>between<sp/>0<sp/>and<sp/>15</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="139"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_REPEAT(_Macro,<sp/>_Data,<sp/>_N)<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="140"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_CAT(GMOCK_PP_INTERNAL_FOR_EACH_IMPL_,<sp/>_N)<sp/>\</highlight></codeline>
+<codeline lineno="141"><highlight class="preprocessor"><sp/><sp/>(0,<sp/>_Macro,<sp/>_Data,<sp/>GMOCK_PP_INTENRAL_EMPTY_TUPLE)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="142"><highlight class="normal"></highlight></codeline>
+<codeline lineno="143"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Increments<sp/>the<sp/>argument,<sp/>requires<sp/>the<sp/>argument<sp/>to<sp/>be<sp/>between<sp/>0<sp/>and<sp/>15.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="144"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INC(_i)<sp/>GMOCK_PP_CAT(GMOCK_PP_INTERNAL_INC_,<sp/>_i)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="145"><highlight class="normal"></highlight></codeline>
+<codeline lineno="146"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Returns<sp/>comma<sp/>if<sp/>_i<sp/>!=<sp/>0.<sp/>Requires<sp/>_i<sp/>to<sp/>be<sp/>between<sp/>0<sp/>and<sp/>15.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="147"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_COMMA_IF(_i)<sp/>GMOCK_PP_CAT(GMOCK_PP_INTERNAL_COMMA_IF_,<sp/>_i)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="148"><highlight class="normal"></highlight></codeline>
+<codeline lineno="149"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Internal<sp/>details<sp/>follow.<sp/>Do<sp/>not<sp/>use<sp/>any<sp/>of<sp/>these<sp/>symbols<sp/>outside<sp/>of<sp/>this</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="150"><highlight class="normal"></highlight><highlight class="comment">//<sp/>file<sp/>or<sp/>we<sp/>will<sp/>break<sp/>your<sp/>code.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="151"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTENRAL_EMPTY_TUPLE<sp/>(,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>,<sp/>)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="152"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_CAT(_1,<sp/>_2)<sp/>_1##_2</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="153"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_STRINGIZE(...)<sp/>#__VA_ARGS__</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="154"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_CAT_5(_1,<sp/>_2,<sp/>_3,<sp/>_4,<sp/>_5)<sp/>_1##_2##_3##_4##_5</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="155"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_IS_EMPTY(_1,<sp/>_2,<sp/>_3,<sp/>_4)<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="156"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_HAS_COMMA(GMOCK_PP_INTERNAL_CAT_5(GMOCK_PP_INTERNAL_IS_EMPTY_CASE_,<sp/>\</highlight></codeline>
+<codeline lineno="157"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_1,<sp/>_2,<sp/>_3,<sp/>_4))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="158"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_IS_EMPTY_CASE_0001<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="159"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_IF_1(_Then,<sp/>_Else)<sp/>_Then</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="160"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_IF_0(_Then,<sp/>_Else)<sp/>_Else</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="161"><highlight class="normal"></highlight></codeline>
+<codeline lineno="162"><highlight class="normal"></highlight><highlight class="comment">//<sp/>Because<sp/>of<sp/>MSVC<sp/>treating<sp/>a<sp/>token<sp/>with<sp/>a<sp/>comma<sp/>in<sp/>it<sp/>as<sp/>a<sp/>single<sp/>token<sp/>when</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="163"><highlight class="normal"></highlight><highlight class="comment">//<sp/>passed<sp/>to<sp/>another<sp/>macro,<sp/>we<sp/>need<sp/>to<sp/>force<sp/>it<sp/>to<sp/>evaluate<sp/>it<sp/>as<sp/>multiple</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="164"><highlight class="normal"></highlight><highlight class="comment">//<sp/>tokens.<sp/>We<sp/>do<sp/>that<sp/>by<sp/>using<sp/>a<sp/>&quot;IDENTITY(MACRO<sp/>PARENTHESIZED_ARGS)&quot;<sp/>macro.<sp/>We</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="165"><highlight class="normal"></highlight><highlight class="comment">//<sp/>define<sp/>one<sp/>per<sp/>possible<sp/>macro<sp/>that<sp/>relies<sp/>on<sp/>this<sp/>behavior.<sp/>Note<sp/>&quot;_Args&quot;<sp/>must</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="166"><highlight class="normal"></highlight><highlight class="comment">//<sp/>be<sp/>parenthesized.</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="167"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INTERNAL_16TH(_1,<sp/>_2,<sp/>_3,<sp/>_4,<sp/>_5,<sp/>_6,<sp/>_7,<sp/>_8,<sp/>_9,<sp/>\</highlight></codeline>
+<codeline lineno="168"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>_10,<sp/>_11,<sp/>_12,<sp/>_13,<sp/>_14,<sp/>_15,<sp/>_16,<sp/><sp/>\</highlight></codeline>
+<codeline lineno="169"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>...)<sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="170"><highlight class="preprocessor"><sp/><sp/>_16</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="171"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_16TH(_Args)<sp/>\</highlight></codeline>
+<codeline lineno="172"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_IDENTITY(GMOCK_PP_INTERNAL_INTERNAL_16TH<sp/>_Args)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="173"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INTERNAL_HEAD(_1,<sp/>...)<sp/>_1</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="174"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_HEAD(_Args)<sp/>\</highlight></codeline>
+<codeline lineno="175"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_IDENTITY(GMOCK_PP_INTERNAL_INTERNAL_HEAD<sp/>_Args)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="176"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INTERNAL_TAIL(_1,<sp/>...)<sp/>__VA_ARGS__</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="177"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_TAIL(_Args)<sp/>\</highlight></codeline>
+<codeline lineno="178"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_IDENTITY(GMOCK_PP_INTERNAL_INTERNAL_TAIL<sp/>_Args)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="179"><highlight class="normal"></highlight></codeline>
+<codeline lineno="180"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_C(...)<sp/>1<sp/>_</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="181"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_R_1<sp/>1,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="182"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_R_GMOCK_PP_INTERNAL_IBP_IS_VARIADIC_C<sp/>\</highlight></codeline>
+<codeline lineno="183"><highlight class="preprocessor"><sp/><sp/>0,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="184"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_REMOVE_PARENS(...)<sp/>__VA_ARGS__</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="185"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_0<sp/>1</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="186"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_1<sp/>2</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="187"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_2<sp/>3</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="188"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_3<sp/>4</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="189"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_4<sp/>5</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="190"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_5<sp/>6</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="191"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_6<sp/>7</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="192"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_7<sp/>8</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="193"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_8<sp/>9</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="194"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_9<sp/>10</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="195"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_10<sp/>11</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="196"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_11<sp/>12</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="197"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_12<sp/>13</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="198"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_13<sp/>14</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="199"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_14<sp/>15</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="200"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_INC_15<sp/>16</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="201"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_0</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="202"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_1<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="203"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_2<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="204"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_3<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="205"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_4<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="206"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_5<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="207"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_6<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="208"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_7<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="209"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_8<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="210"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_9<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="211"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_10<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="212"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_11<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="213"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_12<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="214"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_13<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="215"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_14<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="216"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_COMMA_IF_15<sp/>,</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="217"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>_element)<sp/>\</highlight></codeline>
+<codeline lineno="218"><highlight class="preprocessor"><sp/><sp/>_Macro(_i,<sp/>_Data,<sp/>_element)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="219"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_0(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="220"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_1(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="221"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="222"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_2(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="223"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="224"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_1(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="225"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="226"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_3(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="227"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="228"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_2(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="229"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="230"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_4(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="231"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="232"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_3(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="233"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="234"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_5(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="235"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="236"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_4(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="237"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="238"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_6(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="239"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="240"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_5(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="241"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="242"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_7(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="243"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="244"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_6(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="245"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="246"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_8(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="247"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="248"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_7(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="249"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="250"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_9(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="251"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="252"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_8(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="253"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="254"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_10(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="255"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="256"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_9(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="257"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="258"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_11(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="259"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="260"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_10(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="261"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="262"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_12(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="263"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="264"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_11(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="265"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="266"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_13(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="267"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="268"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_12(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="269"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="270"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_14(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="271"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="272"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_13(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="273"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="274"><highlight class="normal"></highlight><highlight class="preprocessor">#define<sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_15(_i,<sp/>_Macro,<sp/>_Data,<sp/>_Tuple)<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="275"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_CALL_MACRO(_Macro,<sp/>_i,<sp/>_Data,<sp/>GMOCK_PP_HEAD<sp/>_Tuple)<sp/>\</highlight></codeline>
+<codeline lineno="276"><highlight class="preprocessor"><sp/><sp/>GMOCK_PP_INTERNAL_FOR_EACH_IMPL_14(GMOCK_PP_INC(_i),<sp/>_Macro,<sp/>_Data,<sp/><sp/><sp/>\</highlight></codeline>
+<codeline lineno="277"><highlight class="preprocessor"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>(GMOCK_PP_TAIL<sp/>_Tuple))</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="278"><highlight class="normal"></highlight></codeline>
+<codeline lineno="279"><highlight class="normal"></highlight><highlight class="preprocessor">#endif<sp/><sp/></highlight><highlight class="comment">//<sp/>GOOGLEMOCK_INCLUDE_GMOCK_INTERNAL_GMOCK_PP_H_</highlight><highlight class="normal"></highlight></codeline>
+    </programlisting>
+    <location file="/home/jan/packages/elements/include/gmock/internal/gmock-pp.h"/>
+  </compounddef>
+</doxygen>

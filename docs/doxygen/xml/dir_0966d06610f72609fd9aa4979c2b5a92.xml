@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="dir_0966d06610f72609fd9aa4979c2b5a92" kind="dir">
+    <compoundname>/home/jan/packages/elements/include/common</compoundname>
+    <innerfile refid="c__blas__lapack__interface_8h">c_blas_lapack_interface.h</innerfile>
+    <innerfile refid="common_8h">common.h</innerfile>
+    <innerfile refid="error_8h">error.h</innerfile>
+    <innerfile refid="matar__blas__lapack__interface_8h">matar_blas_lapack_interface.h</innerfile>
+    <innerfile refid="utilities_8h">utilities.h</innerfile>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/common/"/>
+  </compounddef>
+</doxygen>

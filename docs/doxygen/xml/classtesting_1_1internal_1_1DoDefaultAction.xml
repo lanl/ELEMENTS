@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1DoDefaultAction" kind="class" language="C++" prot="public">
+    <compoundname>testing::internal::DoDefaultAction</compoundname>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1DoDefaultAction_1aea08828a0d64847e29ab7a5abeb74149" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename F</type>
+          </param>
+        </templateparamlist>
+        <type></type>
+        <definition>testing::internal::DoDefaultAction::operator Action&lt; F &gt;</definition>
+        <argsstring>() const</argsstring>
+        <name>operator Action&lt; F &gt;</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="865" column="3" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="865" bodyend="865"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="860" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="860" bodyend="866"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1DoDefaultAction_1aea08828a0d64847e29ab7a5abeb74149" prot="public" virt="non-virtual"><scope>testing::internal::DoDefaultAction</scope><name>operator Action&lt; F &gt;</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,186 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classelements_1_1Element4D" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>elements::Element4D</compoundname>
+    <derivedcompoundref refid="classelements_1_1Tess16" prot="public" virt="non-virtual">elements::Tess16</derivedcompoundref>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="classelements_1_1Element4D_1a27c3dec7d6687c327e6872840adfd34b" prot="public" static="no" mutable="no">
+        <type>CArray&lt; int &gt;</type>
+        <definition>CArray&lt;int&gt; elements::Element4D::surface_to_dof_lid</definition>
+        <argsstring></argsstring>
+        <name>surface_to_dof_lid</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="328" column="16" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="328" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classelements_1_1Element4D_1a471d4054a945f962c4d8df4b83fe5c98" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void elements::Element4D::physical_position</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;x_point, const ViewCArray&lt; real_t &gt; &amp;xi_point, const ViewCArray&lt; real_t &gt; &amp;vertices)=0</argsstring>
+        <name>physical_position</name>
+        <reimplementedby refid="classelements_1_1Tess16_1ae73fbd8e476c0d42800bd9230fdae3a7">physical_position</reimplementedby>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>x_point</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>vertices</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="331" column="22"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Element4D_1a932ab8cb5fc9771459289e86d20c2c78" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void elements::Element4D::basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;basis, const ViewCArray&lt; real_t &gt; &amp;xi_point)=0</argsstring>
+        <name>basis</name>
+        <reimplementedby refid="classelements_1_1Tess16_1a55ce4d690774b3093b1c7fcbe19dc596">basis</reimplementedby>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>basis</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="337" column="22"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Element4D_1a9751154d6c4c7ed0933582711bab5532" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void elements::Element4D::partial_xi_basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;partial_xi, const ViewCArray&lt; real_t &gt; &amp;xi_point)=0</argsstring>
+        <name>partial_xi_basis</name>
+        <reimplementedby refid="classelements_1_1Tess16_1af8ae2d2ff4293e86ed455b82600bcabb">partial_xi_basis</reimplementedby>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>partial_xi</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="342" column="22"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Element4D_1a82ca662edd31a6969eb9490008fe8b79" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void elements::Element4D::partial_eta_basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;partial_eta, const ViewCArray&lt; real_t &gt; &amp;xi_point)=0</argsstring>
+        <name>partial_eta_basis</name>
+        <reimplementedby refid="classelements_1_1Tess16_1a7d911f79526deec8de5f85f2f3230905">partial_eta_basis</reimplementedby>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>partial_eta</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="347" column="22"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Element4D_1a588ff2496128651dceb9f8b1b2da5832" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void elements::Element4D::partial_mu_basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;partial_mu, const ViewCArray&lt; real_t &gt; &amp;xi_point)=0</argsstring>
+        <name>partial_mu_basis</name>
+        <reimplementedby refid="classelements_1_1Tess16_1af68e9fec8816e28e6c67b22918305e43">partial_mu_basis</reimplementedby>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>partial_mu</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="352" column="22"/>
+      </memberdef>
+      <memberdef kind="function" id="classelements_1_1Element4D_1abc4b9080ffd7560746c33a63e634bf23" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type>void</type>
+        <definition>virtual void elements::Element4D::partial_tau_basis</definition>
+        <argsstring>(ViewCArray&lt; real_t &gt; &amp;partial_tau, const ViewCArray&lt; real_t &gt; &amp;xi_point)=0</argsstring>
+        <name>partial_tau_basis</name>
+        <reimplementedby refid="classelements_1_1Tess16_1a391ef325b963e65b2a59f2a00a085b0b">partial_tau_basis</reimplementedby>
+        <param>
+          <type>ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>partial_tau</declname>
+        </param>
+        <param>
+          <type>const ViewCArray&lt; real_t &gt; &amp;</type>
+          <declname>xi_point</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="357" column="22"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="1">
+        <label>elements::Element4D</label>
+        <link refid="classelements_1_1Element4D"/>
+      </node>
+      <node id="2">
+        <label>elements::Tess16</label>
+        <link refid="classelements_1_1Tess16"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <location file="/home/jan/packages/elements/include/element_types/elements.h" line="323" column="5" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="323" bodyend="362"/>
+    <listofallmembers>
+      <member refid="classelements_1_1Element4D_1a932ab8cb5fc9771459289e86d20c2c78" prot="public" virt="pure-virtual"><scope>elements::Element4D</scope><name>basis</name></member>
+      <member refid="classelements_1_1Element4D_1a82ca662edd31a6969eb9490008fe8b79" prot="public" virt="pure-virtual"><scope>elements::Element4D</scope><name>partial_eta_basis</name></member>
+      <member refid="classelements_1_1Element4D_1a588ff2496128651dceb9f8b1b2da5832" prot="public" virt="pure-virtual"><scope>elements::Element4D</scope><name>partial_mu_basis</name></member>
+      <member refid="classelements_1_1Element4D_1abc4b9080ffd7560746c33a63e634bf23" prot="public" virt="pure-virtual"><scope>elements::Element4D</scope><name>partial_tau_basis</name></member>
+      <member refid="classelements_1_1Element4D_1a9751154d6c4c7ed0933582711bab5532" prot="public" virt="pure-virtual"><scope>elements::Element4D</scope><name>partial_xi_basis</name></member>
+      <member refid="classelements_1_1Element4D_1a471d4054a945f962c4d8df4b83fe5c98" prot="public" virt="pure-virtual"><scope>elements::Element4D</scope><name>physical_position</name></member>
+      <member refid="classelements_1_1Element4D_1a27c3dec7d6687c327e6872840adfd34b" prot="public" virt="non-virtual"><scope>elements::Element4D</scope><name>surface_to_dof_lid</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

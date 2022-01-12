@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1PrintToStringParamName" kind="struct" language="C++" prot="public">
+    <compoundname>testing::PrintToStringParamName</compoundname>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structtesting_1_1PrintToStringParamName_1a05b411cfb75dadb2c3c0355aee1dcf21" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class ParamType</type>
+          </param>
+        </templateparamlist>
+        <type>std::string</type>
+        <definition>std::string testing::PrintToStringParamName::operator()</definition>
+        <argsstring>(const TestParamInfo&lt; ParamType &gt; &amp;info) const</argsstring>
+        <name>operator()</name>
+        <param>
+          <type>const <ref refid="structtesting_1_1TestParamInfo" kindref="compound">TestParamInfo</ref>&lt; ParamType &gt; &amp;</type>
+          <declname>info</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="70" column="15" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="70" bodyend="72"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" line="68" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-param-util.h" bodystart="68" bodyend="73"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1PrintToStringParamName_1a05b411cfb75dadb2c3c0355aee1dcf21" prot="public" virt="non-virtual"><scope>testing::PrintToStringParamName</scope><name>operator()</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

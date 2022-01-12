@@ -1,0 +1,133 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="namespacelegendre" kind="namespace" language="C++">
+    <compoundname>legendre</compoundname>
+      <sectiondef kind="func">
+      <memberdef kind="function" id="legendre__polynomials_8h_1aca0fe9e3777ee6bbd6b8972c6d13f2ff" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>NumType</type>
+        <definition>NumType legendre::eval</definition>
+        <argsstring>(const int n, const NumType X)</argsstring>
+        <name>eval</name>
+        <param>
+          <type>const int</type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>const NumType</type>
+          <declname>X</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_polynomials.h" line="8" column="11" declfile="/home/jan/packages/elements/include/element_types/legendre_polynomials.h" declline="8" declcolumn="11"/>
+      </memberdef>
+      <memberdef kind="function" id="legendre__polynomials_8h_1a21bedc6eb244a1325659428487ff9bf7" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>NumType</type>
+        <definition>NumType legendre::eval_der</definition>
+        <argsstring>(const int n, const int k, const NumType X)</argsstring>
+        <name>eval_der</name>
+        <param>
+          <type>const int</type>
+          <declname>n</declname>
+        </param>
+        <param>
+          <type>const int</type>
+          <declname>k</declname>
+        </param>
+        <param>
+          <type>const NumType</type>
+          <declname>X</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_polynomials.h" line="11" column="11" declfile="/home/jan/packages/elements/include/element_types/legendre_polynomials.h" declline="11" declcolumn="11"/>
+      </memberdef>
+      <memberdef kind="function" id="legendre__polynomials_8h_1abb03858f24061beb193404c26494385d" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>NumType</type>
+        <definition>NumType legendre::eval_approx</definition>
+        <argsstring>(const SizeType N, const NumType *c, const NumType X)</argsstring>
+        <name>eval_approx</name>
+        <param>
+          <type>const SizeType</type>
+          <declname>N</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>c</declname>
+        </param>
+        <param>
+          <type>const NumType</type>
+          <declname>X</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_polynomials.h" line="15" column="11" declfile="/home/jan/packages/elements/include/element_types/legendre_polynomials.h" declline="15" declcolumn="11"/>
+      </memberdef>
+      <memberdef kind="function" id="legendre__polynomials_8h_1aeff6c5ca4821bd411e6b46c81d53e413" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename NumType</type>
+          </param>
+        </templateparamlist>
+        <type>NumType</type>
+        <definition>NumType legendre::eval_der_approx</definition>
+        <argsstring>(const SizeType N, const SizeType k, const NumType *c, const NumType X)</argsstring>
+        <name>eval_der_approx</name>
+        <param>
+          <type>const SizeType</type>
+          <declname>N</declname>
+        </param>
+        <param>
+          <type>const SizeType</type>
+          <declname>k</declname>
+        </param>
+        <param>
+          <type>const NumType *</type>
+          <declname>c</declname>
+        </param>
+        <param>
+          <type>const NumType</type>
+          <declname>X</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/legendre_polynomials.h" line="18" column="11" declfile="/home/jan/packages/elements/include/element_types/legendre_polynomials.h" declline="18" declcolumn="11"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/element_types/legendre_polynomials.h" line="5" column="1"/>
+  </compounddef>
+</doxygen>

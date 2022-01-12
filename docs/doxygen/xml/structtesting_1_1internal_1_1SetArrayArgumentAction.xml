@@ -1,0 +1,83 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1internal_1_1SetArrayArgumentAction" kind="struct" language="C++" prot="public">
+    <compoundname>testing::internal::SetArrayArgumentAction</compoundname>
+    <templateparamlist>
+      <param>
+        <type>size_t</type>
+        <declname>k</declname>
+        <defname>k</defname>
+      </param>
+      <param>
+        <type>typename I1</type>
+      </param>
+      <param>
+        <type>typename I2</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structtesting_1_1internal_1_1SetArrayArgumentAction_1a79b1b44f5838949c0162de4b74b68fe3" prot="public" static="no" mutable="no">
+        <type>I1</type>
+        <definition>I1 testing::internal::SetArrayArgumentAction&lt; k, I1, I2 &gt;::first</definition>
+        <argsstring></argsstring>
+        <name>first</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1124" column="6" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1124" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="structtesting_1_1internal_1_1SetArrayArgumentAction_1a24f143788df5e8cb21d9bb0595ff69ba" prot="public" static="no" mutable="no">
+        <type>I2</type>
+        <definition>I2 testing::internal::SetArrayArgumentAction&lt; k, I1, I2 &gt;::last</definition>
+        <argsstring></argsstring>
+        <name>last</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1125" column="6" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1125" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="structtesting_1_1internal_1_1SetArrayArgumentAction_1a2ce5599069cf164d0c880dca6371ccbf" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>typename...</type>
+            <declname>Args</declname>
+            <defname>Args</defname>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void testing::internal::SetArrayArgumentAction&lt; k, I1, I2 &gt;::operator()</definition>
+        <argsstring>(const Args &amp;... args) const</argsstring>
+        <name>operator()</name>
+        <param>
+          <type>const Args &amp;...</type>
+          <declname>args</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1128" column="8" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1128" bodyend="1133"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gmock/gmock-actions.h" line="1123" column="1" bodyfile="/home/jan/packages/elements/include/gmock/gmock-actions.h" bodystart="1123" bodyend="1134"/>
+    <listofallmembers>
+      <member refid="structtesting_1_1internal_1_1SetArrayArgumentAction_1a79b1b44f5838949c0162de4b74b68fe3" prot="public" virt="non-virtual"><scope>testing::internal::SetArrayArgumentAction</scope><name>first</name></member>
+      <member refid="structtesting_1_1internal_1_1SetArrayArgumentAction_1a24f143788df5e8cb21d9bb0595ff69ba" prot="public" virt="non-virtual"><scope>testing::internal::SetArrayArgumentAction</scope><name>last</name></member>
+      <member refid="structtesting_1_1internal_1_1SetArrayArgumentAction_1a2ce5599069cf164d0c880dca6371ccbf" prot="public" virt="non-virtual"><scope>testing::internal::SetArrayArgumentAction</scope><name>operator()</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

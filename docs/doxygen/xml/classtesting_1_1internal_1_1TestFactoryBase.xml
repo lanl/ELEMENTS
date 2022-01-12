@@ -1,0 +1,100 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1TestFactoryBase" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>testing::internal::TestFactoryBase</compoundname>
+    <derivedcompoundref refid="classtesting_1_1internal_1_1ParameterizedTestFactory" prot="public" virt="non-virtual">testing::internal::ParameterizedTestFactory&lt; TestClass &gt;</derivedcompoundref>
+    <derivedcompoundref refid="classtesting_1_1internal_1_1TestFactoryImpl" prot="public" virt="non-virtual">testing::internal::TestFactoryImpl&lt; TestClass &gt;</derivedcompoundref>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1TestFactoryBase_1a18f22a7594336a36642289c1decddc9e" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type></type>
+        <definition>virtual testing::internal::TestFactoryBase::~TestFactoryBase</definition>
+        <argsstring>()</argsstring>
+        <name>~TestFactoryBase</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="454" column="11" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="454" bodyend="454"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1TestFactoryBase_1a07ac3ca0b196cdb092da0bb186b7c030" prot="public" static="no" const="no" explicit="no" inline="no" virt="pure-virtual">
+        <type><ref refid="classtesting_1_1Test" kindref="compound">Test</ref> *</type>
+        <definition>virtual Test* testing::internal::TestFactoryBase::CreateTest</definition>
+        <argsstring>()=0</argsstring>
+        <name>CreateTest</name>
+        <reimplementedby refid="classtesting_1_1internal_1_1TestFactoryImpl_1ab9b9236ef39b14f0a78e611748e970e3">CreateTest</reimplementedby>
+        <reimplementedby refid="classtesting_1_1internal_1_1ParameterizedTestFactory_1a36d962674d7bf845398637338b9f75cb">CreateTest</reimplementedby>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="458" column="16"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1TestFactoryBase_1afedbf147b2a213517b315880d8c81427" prot="protected" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::TestFactoryBase::TestFactoryBase</definition>
+        <argsstring>()</argsstring>
+        <name>TestFactoryBase</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="461" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="461" bodyend="461"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1TestFactoryBase_1a85d7cb90e00f165e61a008be77293fb4" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::TestFactoryBase::GTEST_DISALLOW_COPY_AND_ASSIGN_</definition>
+        <argsstring>(TestFactoryBase)</argsstring>
+        <name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name>
+        <param>
+          <type><ref refid="classtesting_1_1internal_1_1TestFactoryBase" kindref="compound">TestFactoryBase</ref></type>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="464" column="3"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="2">
+        <label>testing::internal::ParameterizedTestFactory&lt; TestClass &gt;</label>
+        <link refid="classtesting_1_1internal_1_1ParameterizedTestFactory"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="1">
+        <label>testing::internal::TestFactoryBase</label>
+        <link refid="classtesting_1_1internal_1_1TestFactoryBase"/>
+      </node>
+      <node id="3">
+        <label>testing::internal::TestFactoryImpl&lt; TestClass &gt;</label>
+        <link refid="classtesting_1_1internal_1_1TestFactoryImpl"/>
+        <childnode refid="1" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" line="452" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-internal.h" bodystart="452" bodyend="465"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1TestFactoryBase_1a07ac3ca0b196cdb092da0bb186b7c030" prot="public" virt="pure-virtual"><scope>testing::internal::TestFactoryBase</scope><name>CreateTest</name></member>
+      <member refid="classtesting_1_1internal_1_1TestFactoryBase_1a85d7cb90e00f165e61a008be77293fb4" prot="private" virt="non-virtual"><scope>testing::internal::TestFactoryBase</scope><name>GTEST_DISALLOW_COPY_AND_ASSIGN_</name></member>
+      <member refid="classtesting_1_1internal_1_1TestFactoryBase_1afedbf147b2a213517b315880d8c81427" prot="protected" virt="non-virtual"><scope>testing::internal::TestFactoryBase</scope><name>TestFactoryBase</name></member>
+      <member refid="classtesting_1_1internal_1_1TestFactoryBase_1a18f22a7594336a36642289c1decddc9e" prot="public" virt="virtual"><scope>testing::internal::TestFactoryBase</scope><name>~TestFactoryBase</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structtesting_1_1Test_1_1Setup__should__be__spelled__SetUp" kind="struct" language="C++" prot="private">
+    <compoundname>testing::Test::Setup_should_be_spelled_SetUp</compoundname>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/gtest.h" line="521" column="3" bodyfile="/home/jan/packages/elements/include/gtest/gtest.h" bodystart="521" bodyend="521"/>
+    <listofallmembers>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

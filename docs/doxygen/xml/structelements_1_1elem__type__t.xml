@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="structelements_1_1elem__type__t" kind="struct" language="C++" prot="public">
+    <compoundname>elements::elem_type_t</compoundname>
+      <sectiondef kind="public-attrib">
+      <memberdef kind="variable" id="structelements_1_1elem__type__t_1aee8dd559bade6349a7f34f9b2624c8fd" prot="public" static="no" mutable="no">
+        <type>elem_types::elem_type</type>
+        <definition>elem_types::elem_type elements::elem_type_t::type</definition>
+        <argsstring></argsstring>
+        <name>type</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/element_types/elements.h" line="1187" column="27" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="1187" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/element_types/elements.h" line="1185" column="1" bodyfile="/home/jan/packages/elements/include/element_types/elements.h" bodystart="1185" bodyend="1188"/>
+    <listofallmembers>
+      <member refid="structelements_1_1elem__type__t_1aee8dd559bade6349a7f34f9b2624c8fd" prot="public" virt="non-virtual"><scope>elements::elem_type_t</scope><name>type</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

@@ -1,0 +1,265 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.9.2" xml:lang="en-US">
+  <compounddef id="classtesting_1_1internal_1_1RE" kind="class" language="C++" prot="public">
+    <compoundname>testing::internal::RE</compoundname>
+      <sectiondef kind="private-attrib">
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1RE_1a44ab32241fab42db5b6f7482776658ec" prot="private" static="no" mutable="no">
+        <type>const char *</type>
+        <definition>const char* testing::internal::RE::pattern_</definition>
+        <argsstring></argsstring>
+        <name>pattern_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="924" column="14" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="924" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1RE_1af9062fefab96529ff785f50097416d64" prot="private" static="no" mutable="no">
+        <type>bool</type>
+        <definition>bool testing::internal::RE::is_valid_</definition>
+        <argsstring></argsstring>
+        <name>is_valid_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="925" column="8" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="925" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1RE_1a1627cf3c6e38a83518e7aefd659b938b" prot="private" static="no" mutable="no">
+        <type>regex_t</type>
+        <definition>regex_t testing::internal::RE::full_regex_</definition>
+        <argsstring></argsstring>
+        <name>full_regex_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="929" column="11" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="929" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="variable" id="classtesting_1_1internal_1_1RE_1a1b3e42916c61db479ae90c7a96c22a58" prot="private" static="no" mutable="no">
+        <type>regex_t</type>
+        <definition>regex_t testing::internal::RE::partial_regex_</definition>
+        <argsstring></argsstring>
+        <name>partial_regex_</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="930" column="11" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="930" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1RE_1ab215dbc2565fce641e1746ca43e9d68a" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::RE::RE</definition>
+        <argsstring>(const RE &amp;other)</argsstring>
+        <name>RE</name>
+        <param>
+          <type>const <ref refid="classtesting_1_1internal_1_1RE" kindref="compound">RE</ref> &amp;</type>
+          <declname>other</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="897" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="897" bodyend="897"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1RE_1a8840bd639642f3d4769a94a68ce463c2" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::RE::RE</definition>
+        <argsstring>(const ::std::string &amp;regex)</argsstring>
+        <name>RE</name>
+        <param>
+          <type>const ::std::string &amp;</type>
+          <declname>regex</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="900" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="900" bodyend="900"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1RE_1a908ea936a5b7a14479a1b292a7189ca6" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::RE::RE</definition>
+        <argsstring>(const char *regex)</argsstring>
+        <name>RE</name>
+        <param>
+          <type>const char *</type>
+          <declname>regex</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="902" column="3" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="902" bodyend="902"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1RE_1af3ad18e6c0b433f3d85ed23eda8119f3" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type></type>
+        <definition>testing::internal::RE::~RE</definition>
+        <argsstring>()</argsstring>
+        <name>~RE</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="903" column="3"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1RE_1a24236aab3a6b0183a145a6f4c0bb9848" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>const char *</type>
+        <definition>const char* testing::internal::RE::pattern</definition>
+        <argsstring>() const</argsstring>
+        <name>pattern</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="906" column="14" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="906" bodyend="906"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-static-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1RE_1aa79a950758d0f1d62f7762d1e9cefe86" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::internal::RE::FullMatch</definition>
+        <argsstring>(const ::std::string &amp;str, const RE &amp;re)</argsstring>
+        <name>FullMatch</name>
+        <param>
+          <type>const ::std::string &amp;</type>
+          <declname>str</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classtesting_1_1internal_1_1RE" kindref="compound">RE</ref> &amp;</type>
+          <declname>re</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="912" column="15" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="912" bodyend="914"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1RE_1a1e81f9a87211bdca645e025f8f0236c8" prot="public" static="yes" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::internal::RE::PartialMatch</definition>
+        <argsstring>(const ::std::string &amp;str, const RE &amp;re)</argsstring>
+        <name>PartialMatch</name>
+        <param>
+          <type>const ::std::string &amp;</type>
+          <declname>str</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classtesting_1_1internal_1_1RE" kindref="compound">RE</ref> &amp;</type>
+          <declname>re</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="915" column="15" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="915" bodyend="917"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1RE_1a2b13ec1f6ccd6c32f7efa01e21588f0b" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::internal::RE::FullMatch</definition>
+        <argsstring>(const char *str, const RE &amp;re)</argsstring>
+        <name>FullMatch</name>
+        <param>
+          <type>const char *</type>
+          <declname>str</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classtesting_1_1internal_1_1RE" kindref="compound">RE</ref> &amp;</type>
+          <declname>re</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="919" column="15"/>
+      </memberdef>
+      <memberdef kind="function" id="classtesting_1_1internal_1_1RE_1a97495dd4c2bb9589522823f060c8e8ba" prot="public" static="yes" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>bool</type>
+        <definition>static bool testing::internal::RE::PartialMatch</definition>
+        <argsstring>(const char *str, const RE &amp;re)</argsstring>
+        <name>PartialMatch</name>
+        <param>
+          <type>const char *</type>
+          <declname>str</declname>
+        </param>
+        <param>
+          <type>const <ref refid="classtesting_1_1internal_1_1RE" kindref="compound">RE</ref> &amp;</type>
+          <declname>re</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="920" column="15"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classtesting_1_1internal_1_1RE_1a4c3a519ce849abc57d6d5fffbf1e04dc" prot="private" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>void</type>
+        <definition>void testing::internal::RE::Init</definition>
+        <argsstring>(const char *regex)</argsstring>
+        <name>Init</name>
+        <param>
+          <type>const char *</type>
+          <declname>regex</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="923" column="8"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <location file="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" line="893" column="1" bodyfile="/home/jan/packages/elements/include/gtest/internal/gtest-port.h" bodystart="893" bodyend="937"/>
+    <listofallmembers>
+      <member refid="classtesting_1_1internal_1_1RE_1a1627cf3c6e38a83518e7aefd659b938b" prot="private" virt="non-virtual"><scope>testing::internal::RE</scope><name>full_regex_</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1aa79a950758d0f1d62f7762d1e9cefe86" prot="public" virt="non-virtual"><scope>testing::internal::RE</scope><name>FullMatch</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1a2b13ec1f6ccd6c32f7efa01e21588f0b" prot="public" virt="non-virtual"><scope>testing::internal::RE</scope><name>FullMatch</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1a4c3a519ce849abc57d6d5fffbf1e04dc" prot="private" virt="non-virtual"><scope>testing::internal::RE</scope><name>Init</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1af9062fefab96529ff785f50097416d64" prot="private" virt="non-virtual"><scope>testing::internal::RE</scope><name>is_valid_</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1a1b3e42916c61db479ae90c7a96c22a58" prot="private" virt="non-virtual"><scope>testing::internal::RE</scope><name>partial_regex_</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1a1e81f9a87211bdca645e025f8f0236c8" prot="public" virt="non-virtual"><scope>testing::internal::RE</scope><name>PartialMatch</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1a97495dd4c2bb9589522823f060c8e8ba" prot="public" virt="non-virtual"><scope>testing::internal::RE</scope><name>PartialMatch</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1a24236aab3a6b0183a145a6f4c0bb9848" prot="public" virt="non-virtual"><scope>testing::internal::RE</scope><name>pattern</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1a44ab32241fab42db5b6f7482776658ec" prot="private" virt="non-virtual"><scope>testing::internal::RE</scope><name>pattern_</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1ab215dbc2565fce641e1746ca43e9d68a" prot="public" virt="non-virtual"><scope>testing::internal::RE</scope><name>RE</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1a8840bd639642f3d4769a94a68ce463c2" prot="public" virt="non-virtual"><scope>testing::internal::RE</scope><name>RE</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1a908ea936a5b7a14479a1b292a7189ca6" prot="public" virt="non-virtual"><scope>testing::internal::RE</scope><name>RE</name></member>
+      <member refid="classtesting_1_1internal_1_1RE_1af3ad18e6c0b433f3d85ed23eda8119f3" prot="public" virt="non-virtual"><scope>testing::internal::RE</scope><name>~RE</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

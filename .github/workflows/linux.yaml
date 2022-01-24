@@ -3,9 +3,9 @@ name: linux
 
 on:
   push:
-    branches: [develop-msu]
+    branches: [feature-github_actions]
   pull_request: 
-    branches: [develop-msu]
+    branches: [feature-github_actions]
 
 env:
   # CMake configuration for basic build

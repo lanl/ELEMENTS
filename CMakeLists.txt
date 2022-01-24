@@ -23,23 +23,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 # Modules, macros, and packages
 ################################################################################
 # Set module path
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} 
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/)
-
-# Vector module
-find_package(Vector)
-if (CMAKE_VECTOR_NOVEC)
-  set(VECTOR_C_FLAGS "${VECTOR_NOVEC_C_FLAGS}")
-  set(VECTOR_CXX_FLAGS "${VECTOR_NOVEC_CXX_FLAGS}")
-endif (CMAKE_VECTOR_NOVEC)
-if (CMAKE_VECTOR_VERBOSE)
-  set(VECTOR_C_FLAGS "${VECTOR_C_FLAGS} ${VECTOR_C_VERBOSE}")
-  set(VECTOR_CXX_FLAGS "${VECTOR_CXX_FLAGS} ${VECTOR_CXX_VERBOSE}")
-  set(VECTOR_Fortran_FLAGS "${VECTOR_Fortran_FLAGS} ${VECTOR_Fortran_VERBOSE}")
-endif (CMAKE_VECTOR_VERBOSE)
-
-# TargetDistclean macro
-INCLUDE(cmake/Modules/TargetDistclean.cmake OPTIONAL)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Optional BLAS/LAPACK dependency (disabled by default)
 option(ENABLE_BLAS_LAPACK "Build ELEMENTS with BLAS/LAPACK" OFF)

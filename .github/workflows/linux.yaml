@@ -30,7 +30,7 @@ jobs:
       run: cmake --build ${{github.workspace}}/build
 
     - name: Test
-      run: ${{github.workspace}}/googletest_example
+      run: ${{github.workspace}}/build/tests/googletest_example
 
     - name: Install
       run: cmake --install ${{github.workspace}}/build

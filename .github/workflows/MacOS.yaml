@@ -1,11 +1,11 @@
-# Build, test, and install on different versions of Ubuntu
-name: linux
+# Build, test, and install on different versions of MacOS
+name: Windows
 
 on:
   push:
-    branches: [feature-github_actions]
+    branches: [develop-msu]
   pull_request: 
-    branches: [feature-github_actions]
+    branches: [develop-msu]
 
 env:
   # CMake configuration for basic build
@@ -15,7 +15,7 @@ jobs:
   build-test-install:
     strategy: 
       matrix:
-        os: [ubuntu-18.04, ubuntu-latest]
+        os: [macos-11, macos-latest]
     runs-on: ${{matrix.os}}
 
     steps:

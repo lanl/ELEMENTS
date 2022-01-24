@@ -1,6 +1,8 @@
 # ELEMENTS
 
-[![Linux](https://github.com/lanl/ELEMENTS/actions/workflows/linux.yaml/badge.svg)](https://github.com/lanl/ELEMENTS/actions/workflows/linux.yaml)
+[![Linux](https://github.com/lanl/ELEMENTS/actions/workflows/Linux.yaml/badge.svg)](https://github.com/lanl/ELEMENTS/actions/workflows/Linux.yaml)
+[![MacOS](https://github.com/lanl/ELEMENTS/actions/workflows/MacOS.yaml/badge.svg)](https://github.com/lanl/ELEMENTS/actions/workflows/MacOS.yaml)
+[![Windows](https://github.com/lanl/ELEMENTS/actions/workflows/Windows.yaml/badge.svg)](https://github.com/lanl/ELEMENTS/actions/workflows/Windows.yaml)
 
 ## What is ELEMENTS?
 

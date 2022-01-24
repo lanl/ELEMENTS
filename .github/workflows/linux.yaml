@@ -13,7 +13,7 @@ env:
 
 jobs:
   build-test-install:
-    stragegy: 
+    strategy: 
       matrix:
         os: [ubuntu-18.04, ubuntu-latest]
     runs-on: ${{matrix.os}}

@@ -35,3 +35,11 @@ How to include source documentation?
 ------------------------------------
 1. Write source documentation in the headers (``include/``) using comments and comments blocks formatted for Doxygen, as explained on `this page <https://www.doxygen.nl/manual/docblocks.html>`_ in the Doxygen documentation.
 2. Add `Breathe's Doxygen directives <https://breathe.readthedocs.io/en/latest/directives.html>`_, e.g. for documented namespaces, classes, structs, functions, to the Sphinx reStructuredText files.
+
+How to publish changes to GitHub Pages?
+---------------------------------------
+1. Merge your changes to the documentation into the ``gh-pages`` branch.
+2. Build the branch **in place**.
+3. Navigate to the ``docs/`` directory and run the ``stage_doc_build.sh`` script to stage the newly generated HTML to be committed.
+4. Commit and push the changes to the ``gh-pages`` branch on the remote.
+5. Wait for GitHub to build and deploy the new pages. (You can check the Actions tab on the repository on GitHub to see if it has finished deploying.)

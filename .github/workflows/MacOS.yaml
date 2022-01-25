@@ -1,5 +1,5 @@
 # Build, test, and install on different versions of MacOS
-name: Windows
+name: MacOS
 
 on:
   push:

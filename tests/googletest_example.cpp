@@ -56,7 +56,6 @@ class LagrangePolynomialsTest : public ::testing::Test {
     // You can do clean-up work that doesn't throw exceptions here.
     delete [] c;
     delete [] Z;
-    delete [] Z;
     delete [] w;
     delete [] C;
   }

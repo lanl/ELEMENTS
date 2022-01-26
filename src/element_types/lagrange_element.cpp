@@ -284,5 +284,5 @@ void LagrangeElement<NumType>::eval_inv_jac(const NumType *x, const NumType *y,
 }
 
 // Explicit instantiation of template class
-template class LagrangeElement<Real>;
-template class LagrangeElement<Complex>;
+template struct LagrangeElement<Real>;
+template struct LagrangeElement<Complex>;

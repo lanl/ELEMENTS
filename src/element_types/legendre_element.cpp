@@ -161,5 +161,5 @@ void LegendreElement<NumType>::eval_grad_approx(const NumType *c,
 }
 
 // Explicit instantiation of template class
-template class LegendreElement<Real>;
-template class LegendreElement<Complex>;
+template struct LegendreElement<Real>;
+template struct LegendreElement<Complex>;

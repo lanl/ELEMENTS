@@ -100,8 +100,8 @@ void LegendreElement<NumType>::eval_grad_basis(const SizeType I,
 template <typename NumType>
 NumType LegendreElement<NumType>::eval_approx(const NumType *c, 
     const NumType *X) {
-  for (int k = 0; k < N; k++) {
-    for (int j = 0; j < N; j++) {
+  for (SizeType k = 0; k < N; k++) {
+    for (SizeType j = 0; j < N; j++) {
       // Collapse first dimension into coefficients for second dimension
       C[j] = legendre::eval_approx(N, &c[j*N+k*N*N], X[0]);
     }
@@ -132,9 +132,9 @@ template <typename NumType>
 void LegendreElement<NumType>::eval_grad_approx(const NumType *c, 
     const NumType *X, NumType *grad_f) {
   SizeType q = 1;  // order of derivative
-  for (int l = 0; l < Nd; l++) {
-    for (int k = 0; k < N; k++) {
-      for (int j = 0; j < N; j++) {
+  for (SizeType l = 0; l < Nd; l++) {
+    for (SizeType k = 0; k < N; k++) {
+      for (SizeType j = 0; j < N; j++) {
         // Collapse first dimension into coefficients for second dimension
         if (l == 0) {
           C[j] = legendre::eval_der_approx(N, 1, &c[j*N+k*N*N], X[0]);

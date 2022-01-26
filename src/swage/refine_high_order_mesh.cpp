@@ -121,7 +121,6 @@ namespace swage {
 
     // Get minimum/maximum distance between any two vertices in the mesh
     Real min_dist_elem = NUM_MAX;
-    Real max_dist_elem = 0.0;
     for (int elem_id = 0; elem_id < input_mesh.num_elems(); elem_id++) {
       // Loop over combinations of two vertices in element
       for (int j = 0; j < num_verts_1d; j++) {        // index of first vertex
@@ -141,13 +140,11 @@ namespace swage {
 
           // Compare distance to current minimum/maximum
           min_dist_elem = std::min(min_dist_elem, dist);
-          max_dist_elem = std::max(max_dist_elem, dist);
         }
       }
     }
 
     Real min_dist = min_dist_elem;
-    Real max_dist = max_dist_elem;
 
     std::cout << "minimum distance between vertices: " << min_dist << std::endl;
 

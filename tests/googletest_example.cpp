@@ -54,7 +54,11 @@ class LagrangePolynomialsTest : public ::testing::Test {
 
   ~LagrangePolynomialsTest() override {
     // You can do clean-up work that doesn't throw exceptions here.
-    delete [] c, Z, w, C;
+    delete [] c;
+    delete [] Z;
+    delete [] Z;
+    delete [] w;
+    delete [] C;
   }
 
   // If the constructor and destructor are not enough for setting up

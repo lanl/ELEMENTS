@@ -187,7 +187,6 @@ bool test2(TestParams<Real> &p) {
     d2f += p.c[i]*grad_phi[2];
   }
 
-  grad_f[3];
   p.elem->eval_grad_approx(p.c, p.Xv, grad_f);
 
   rel_error0 = common::abs((d0f - grad_f[0])/d0f);

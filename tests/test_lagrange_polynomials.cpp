@@ -65,7 +65,10 @@ struct TestParams {
   };
 
   ~TestParams() {
-    delete [] c, Z, w, C;
+    delete [] c;
+    delete [] Z;
+    delete [] w;
+    delete [] C;
   }
 };
 

@@ -29,7 +29,6 @@ struct TestParams {
   TestParams(SizeType order) {
     // Test parameters
     SizeType Np = order;
-    SizeType N = order + 1;
 
     // Create Legendre element
     elem = new LegendreElement<NumType>(Np);

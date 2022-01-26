@@ -7,7 +7,7 @@
  * and Welsh, 1969)
  */
 void compute_gauss_jacobi_quadrature_rule(
-    size_t n, Real alpha, Real beta, 
+    SizeType n, Real alpha, Real beta, 
     CArray<Real> &points, CArray<Real> &weights) {
   assert(n > 0 and "Error: quadrature rule must have nonzero number of points");
 
@@ -17,7 +17,7 @@ void compute_gauss_jacobi_quadrature_rule(
     CArray<Real> diag(n);
     CArray<Real> subdiag(n-1);
 
-    for (int k = 0; k < n; k++) {
+    for (SizeType k = 0; k < n; k++) {
       Real 
       a_k = common::real(jacobi::a(alpha, beta, k+1)),
       b_k = common::real(jacobi::b(alpha, beta, k+1));
@@ -25,7 +25,7 @@ void compute_gauss_jacobi_quadrature_rule(
       diag(k) = -b_k/a_k;
     }
 
-    for (int k = 0; k < n-1; k++) {
+    for (SizeType k = 0; k < n-1; k++) {
       Real 
       a_k   = common::real(jacobi::a(alpha, beta, k+1)),
       a_kp1 = common::real(jacobi::a(alpha, beta, k+2)),
@@ -51,7 +51,7 @@ void compute_gauss_jacobi_quadrature_rule(
 
     // Extract quadrature points from the eigenvalues and weights from the
     // magnitude of the eigenvector
-    for (int j = 0; j < n; j++) {
+    for (SizeType j = 0; j < n; j++) {
       points(j) = eigvals(j); 
 
       Real q_0j = eigvecs(j,0);  // Note: eigvecs are along rows

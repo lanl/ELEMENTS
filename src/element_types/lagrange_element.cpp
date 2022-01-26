@@ -21,7 +21,8 @@ LagrangeElement<NumType>::LagrangeElement(const SizeType order,
 
 template <typename NumType>
 LagrangeElement<NumType>::~LagrangeElement() {
-  delete [] w, C;
+  delete [] w; 
+  delete [] C;
 }
 
 /*
@@ -124,8 +125,8 @@ NumType LagrangeElement<NumType>::eval_approx(const NumType *c,
   SizeType iy = lagrange::find_coincident_vertex(N, Z, X[1]);
   SizeType iz = lagrange::find_coincident_vertex(N, Z, X[2]);
 
-  for (int k = 0; k < N; k++) {
-    for (int j = 0; j < N; j++) {
+  for (SizeType k = 0; k < N; k++) {
+    for (SizeType j = 0; j < N; j++) {
       // Collapse first dimension into coefficients for second dimension
       C[j] = lagrange::eval_interp(N, ix, Z, w, X[0], &c[j*N+k*N*N]);
     }
@@ -170,9 +171,9 @@ void LagrangeElement<NumType>::eval_grad_approx(const NumType *c,
   SizeType iy = lagrange::find_coincident_vertex(N, Z, X[1]);
   SizeType iz = lagrange::find_coincident_vertex(N, Z, X[2]);
 
-  for (int l = 0; l < Nd; l++) {
-    for (int k = 0; k < N; k++) {
-      for (int j = 0; j < N; j++) {
+  for (SizeType l = 0; l < Nd; l++) {
+    for (SizeType k = 0; k < N; k++) {
+      for (SizeType j = 0; j < N; j++) {
         // Collapse first dimension into coefficients for second dimension
         std::copy(c+j*N+k*N*N, c+j*N+k*N*N+N, C);  // load first line
         if (l == 0) {

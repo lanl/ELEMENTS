@@ -44,7 +44,7 @@ void chebyshev_points(SizeType N, NumType &Zl, NumType &Zr, NumType *Z) {
   }
 
   // Scale the points to fit the domain
-  for (int i = 0; i < N; i++)
+  for (SizeType i = 0; i < N; i++)
     Z[i] = 0.5*(1.0 - Z[i])*Zl + 0.5*(1.0 + Z[i])*Zr;
 }
 

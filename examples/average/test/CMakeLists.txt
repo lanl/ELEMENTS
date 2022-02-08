@@ -4,7 +4,17 @@ set(Average_SRC_CXX average.cpp)
 
 add_executable(Average ${Average_SRC_CXX})
 
-target_link_libraries (Average swage)
-target_link_libraries (Average elements)
-target_link_libraries (Average geometry)
-target_link_libraries (Average input)
+target_include_directories(
+  Average
+  PUBLIC
+    ${ELEMENTS_PUBLIC_INCLUDE_DIRECTORIES}
+    ${MATAR_PUBLIC_INCLUDE_DIRECTORIES}
+)
+
+target_link_libraries(
+  Average 
+    swage
+    elements
+    geometry
+    input
+)

@@ -66,10 +66,10 @@ Once added to the configuration script, it becomes the following. ::
 
 Enable optional dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-To enable the VTK dependency, used for reading and writing high-order hexahedral meshes in the VTK format, add the following two options to the configuration script: ``-DENABLE_VTK=ON`` and ``-DVTK_DIR=/path/to/vtk/install``.
+To enable the VTK dependency, used for reading and writing high-order hexahedral meshes in the VTK format, add the following two options to the configuration script: ``-DWITH_VTK=ON`` and ``-DVTK_DIR=/path/to/vtk/install``.
 In the second option, you should substitute the placeholder ``/path/to/vtk/install`` with the actual path to your VTK installation.
 
-To enable the use of BLAS/LAPACK in ELEMENTS, add the following option to the configuration script: ``-DENABLE_BLAS_LAPACK=ON``.
+To enable the use of BLAS/LAPACK in ELEMENTS, add the following option to the configuration script: ``-DWITH_BLAS_LAPACK=ON``.
 
 To build the documentation locally, add the following option to the configuration script: ``-DWITH_DOCS=ON``. 
 Bear in mind that there are 3 dependencies involved in generating the documentation: Doxygen, Sphinx, and Breathe.

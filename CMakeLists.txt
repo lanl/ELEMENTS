@@ -24,19 +24,22 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 # Set module path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
+# Public header files
+set(ELEMENTS_PUBLIC_INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}/include)
+
 ################################################################################
 # Dependencies
 ################################################################################
 # Optional BLAS/LAPACK dependency (disabled by default)
-option(ENABLE_BLAS_LAPACK "Build ELEMENTS with BLAS/LAPACK" OFF)
-if (ENABLE_BLAS_LAPACK)
+option(WITH_BLAS_LAPACK "Build ELEMENTS with BLAS/LAPACK" OFF)
+if (WITH_BLAS_LAPACK)
   find_package(BLAS REQUIRED)
   find_package(LAPACK REQUIRED)
 endif()
 
 # Optional VTK dependency (disabled by default)
-option(ENABLE_VTK "Build ELEMENTS with VTK" OFF)
-if (ENABLE_VTK)
+option(WITH_VTK "Build ELEMENTS with VTK" OFF)
+if (WITH_VTK)
   # Have user provide VTK_DIR flag to identify VTK installation location
   find_package(VTK REQUIRED NO_MODULE)
 endif()
@@ -55,7 +58,7 @@ endif()
 # of linking Kokkos and other parts of Trilinos may change this.  Please update
 # this as needed.)
 add_subdirectory(submodules/matar)
-include_directories(submodules/matar/src)
+set(MATAR_PUBLIC_INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}/submodules/matar/src)
 
 # GoogleTest submodule
 option(WITH_GTEST "Use GoogleTest as testing framework" OFF)
@@ -65,11 +68,8 @@ endif()
 
 
 ################################################################################
-# Build
+# Build & install
 ################################################################################
-# Includes
-include_directories(include)
-
 # Source
 add_subdirectory(src)
 
@@ -90,6 +90,7 @@ install(
 )
 
 # Install libraries in lib/ subdirectory of the specified install directory
+# Install non-example, non-test executables in bin/
 install(
   TARGETS 
     common
@@ -97,9 +98,12 @@ install(
     geometry 
     slam 
     swage
-  DESTINATION 
-    lib
+    Meshbox
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
 )
-if (ENABLE_VTK AND VTK_FOUND)
+
+if (WITH_VTK AND VTK_FOUND)
   install(TARGETS swage2vtk DESTINATION lib)
 endif()

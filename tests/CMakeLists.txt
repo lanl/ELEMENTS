@@ -1,3 +1,9 @@
+include_directories(
+  ${ELEMENTS_PUBLIC_INCLUDE_DIRECTORIES}
+  ${MATAR_PUBLIC_INCLUDE_DIRECTORIES}
+)
+
+
 # Test SLAM
 add_executable(
   test_slam_math
@@ -20,6 +26,7 @@ target_link_libraries(
   elements
 )
 
+
 # Test Lagrange element
 add_executable(
   test_lagrange_element
@@ -30,6 +37,7 @@ target_link_libraries(
   elements
 )
 
+
 # Test Legendre polynomials
 add_executable(
   test_legendre_polynomials
@@ -39,6 +47,7 @@ target_link_libraries(
   test_legendre_polynomials
   elements
 )
+
 
 # Test Legendre element
 add_executable(
@@ -64,7 +73,7 @@ target_link_libraries(
 
 # Test Gauss-Jacobi quadrature
 # (Only if BLAS/LAPACK interface enabled)
-if (ENABLE_BLAS_LAPACK)
+if (WITH_BLAS_LAPACK)
   add_executable(
     test_gauss_jacobi_quadrature
     test_gauss_jacobi_quadrature.cpp

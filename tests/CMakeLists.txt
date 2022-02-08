@@ -80,12 +80,14 @@ endif()
 
 
 # GoogleTest example
-add_executable(
-  googletest_example
-  googletest_example.cpp
-)
-target_link_libraries(
-  googletest_example
-  elements
-  gtest
-)
+if (WITH_GTEST)
+  add_executable(
+    googletest_example
+    googletest_example.cpp
+  )
+  target_link_libraries(
+    googletest_example
+    elements
+    gtest
+  )
+endif()

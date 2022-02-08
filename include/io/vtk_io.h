@@ -1,10 +1,10 @@
 #pragma once
 
-#include "utilities.h"
-#include "error.h"
-#include "common.h"
+#include "common/utilities.h"
+#include "common/error.h"
+#include "common/common.h"
 
-#include "swage.h"
+#include "swage/swage.h"
 
 // For VTK input
 #include <vtkUnstructuredGridReader.h>     

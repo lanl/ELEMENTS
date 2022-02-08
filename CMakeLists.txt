@@ -7,7 +7,7 @@ project(ELEMENTS)
 cmake_minimum_required(VERSION 3.8)
 
 # C++17 standard required for MATAR
-set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 
 # Build type
 if (NOT CMAKE_BUILD_TYPE)
@@ -21,13 +21,12 @@ set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE}
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${VECTOR_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 
-
-################################################################################
-# Modules, macros, and packages
-################################################################################
 # Set module path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+################################################################################
+# Dependencies
+################################################################################
 # Optional BLAS/LAPACK dependency (disabled by default)
 option(ENABLE_BLAS_LAPACK "Build ELEMENTS with BLAS/LAPACK" OFF)
 if (ENABLE_BLAS_LAPACK)
@@ -59,7 +58,10 @@ add_subdirectory(submodules/matar)
 include_directories(submodules/matar/src)
 
 # GoogleTest submodule
-add_subdirectory(submodules/googletest)
+option(WITH_GTEST "Use GoogleTest as testing framework" OFF)
+if (WITH_GTEST)
+  add_subdirectory(submodules/googletest)
+endif()
 
 
 ################################################################################

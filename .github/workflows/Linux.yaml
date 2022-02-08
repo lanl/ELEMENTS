@@ -9,7 +9,7 @@ on:
 
 env:
   # CMake configuration for basic build
-  CMAKE_CONFIG_FLAGS: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release
+  CMAKE_CONFIG_FLAGS: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DWITH_GTEST=ON
 
 jobs:
   build-test-install:

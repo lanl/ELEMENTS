@@ -124,10 +124,9 @@ int main() {
 
   // Initialize a VTK grid file from the  the mesh and output
   std::string sol_name("j");
-  VtkGrid grid = swage2vtk::init_vtk_grid(mesh, sol_name, jac_dets);
-
   std::string output_name("output.vtk");
-  swage2vtk::write_grid(grid, output_name);
+  swage2vtk::write_vtk_grid_file_from_swage_mesh(mesh, sol_name, jac_dets, 
+      output_name);
 
   return 0;
 }

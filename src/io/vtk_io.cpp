@@ -2,57 +2,70 @@
 
 #include <ostream>
 
-/*
- * Generate a map from the local vertex ordering in SWAGE to the local vertex
- * ordering in VTK for high-order elements
- */
-void swage2vtk::make_vtk_vert_map(int elem_order, int *map, bool reverse) {
-  // Create a VTK N-Hexahedron reference element
-  int num_dims = 3;
-  int num_verts_per_dim = elem_order + 1;
-  int num_verts_per_elem = std::pow(num_verts_per_dim, num_dims);
+// For VTK input
+#include <vtkUnstructuredGridReader.h>     
+#include <vtkXMLUnstructuredGridReader.h>
 
-  vtkNew<vtkLagrangeHexahedron> hex;
-  hex->SetOrder(elem_order, elem_order, elem_order);
-  hex->GetPointIds()->SetNumberOfIds(num_verts_per_elem);
-  hex->GetPoints()->SetNumberOfPoints(num_verts_per_elem);
+// For VTK output
+#include "vtkNew.h"                        
+#include "vtkPoints.h"                     
+#include "vtkCellType.h"
+#include "vtkCell.h"
+#include "vtkHexahedron.h"         
+#include "vtkLagrangeHexahedron.h"         
+#include "vtkCellArray.h"                  
+#include "vtkDoubleArray.h"
+#include "vtkPointData.h"
+#include "vtkCellData.h"
+#include "vtkUnstructuredGrid.h"           
+#include "vtkUnstructuredGridWriter.h"           
+#include "vtkXMLUnstructuredGridWriter.h"  
 
-  SizeType radices[num_dims] = {SizeType(num_verts_per_dim), 
-      SizeType(num_verts_per_dim), SizeType(num_verts_per_dim)};
 
-  // Loop over the IJK coordinates to generate the map
-  for (int I = 0; I < num_verts_per_dim; I++) {
-    for (int J = 0; J < num_verts_per_dim; J++) {
-      for (int K = 0; K < num_verts_per_dim; K++) {
-        SizeType IJK[num_dims] = {SizeType(I), SizeType(J), SizeType(K)};
+typedef vtkSmartPointer<vtkUnstructuredGrid> VtkGrid;
 
-        int swage_vert_id = int(common::mixed_radix_to_base_10(num_dims, 
-            radices, IJK));
 
-        int vtk_vert_id = hex->PointIndexFromIJK(I, J, K); 
+// Auxiliary routines
+void make_vtk_vert_map(int elem_order, int *map, bool reverse);
+VtkGrid read_grid(const std::string &filename);
+void init_swage_mesh(const int &elem_order, const VtkGrid &grid, 
+    SwageMesh &mesh);
+VtkGrid init_vtk_grid(SwageMesh &mesh, const std::string &solution_name, 
+    const CArray<double> &solution);
+void write_grid(const VtkGrid &grid, const std::string &filename);
+void make_vtk_vert_map(int elem_order, int *map, bool reverse);
 
-        if (!reverse) {
-          map[swage_vert_id] = vtk_vert_id;
-        } else {
-          map[vtk_vert_id] = swage_vert_id;
-        }
-      }
-    }
-  }
+
+namespace swage2vtk {
+
+void init_swage_mesh_from_vtk_grid_file(const std::string &filename, 
+    const int &elem_order, SwageMesh &mesh) { 
+  VtkGrid grid = read_grid(filename);
+  init_swage_mesh(elem_order, grid, mesh);
 }
+
+void write_vtk_grid_file_from_swage_mesh(SwageMesh &mesh, 
+    const std::string &solution_name, const CArray<double> &solution, 
+    std::string &filename) {
+  VtkGrid grid = init_vtk_grid(mesh, solution_name, solution);
+  write_grid(grid, filename);
+}
+
+} // swage2vtk
+
 
 /*
  * Given the name of a VTK unstructured grid file (extensions .vtu or .vtk),
  * read the file into a VTK unstructured grid object and return it
  */
-VtkGrid swage2vtk::read_grid(const std::string &file_name) {
+VtkGrid read_grid(const std::string &filename) {
   // Initialize smart pointer to unstructured grid
   VtkGrid grid;
 
   // Extract the extension from the file name
   std::string extension = "";
-  if (file_name.find_last_of(".") != std::string::npos)
-    extension = file_name.substr(file_name.find_last_of("."));
+  if (filename.find_last_of(".") != std::string::npos)
+    extension = filename.substr(filename.find_last_of("."));
 
   // Drop the case of the extension
   std::transform(extension.begin(), extension.end(), extension.begin(), 
@@ -62,12 +75,12 @@ VtkGrid swage2vtk::read_grid(const std::string &file_name) {
   // and read the grid
   if (extension == ".vtu") {
     vtkNew<vtkXMLUnstructuredGridReader> reader;
-    reader->SetFileName(file_name.c_str());
+    reader->SetFileName(filename.c_str());
     reader->Update();
     grid = reader->GetOutput();
   } else if (extension == ".vtk") {
     vtkNew<vtkUnstructuredGridReader> reader;
-    reader->SetFileName(file_name.c_str());
+    reader->SetFileName(filename.c_str());
     reader->Update();
     grid = reader->GetOutput();
   }
@@ -87,7 +100,7 @@ VtkGrid swage2vtk::read_grid(const std::string &file_name) {
  *    VTK_TRIQUADRATIC_HEXAHEDRON) and of the same order; and
  *  - all elements in the SWAGE mesh are to be hexahedra of the same order.
  */
-void swage2vtk::init_swage_mesh(const int &elem_order, const VtkGrid &grid, 
+void init_swage_mesh(const int &elem_order, const VtkGrid &grid, 
     SwageMesh &mesh) {
   // Initialize the coordinate data structures in the SWAGE mesh object and
   // store the vertex coordinates from VTK grid in them
@@ -124,7 +137,7 @@ void swage2vtk::init_swage_mesh(const int &elem_order, const VtkGrid &grid,
   int num_verts_per_dim = elem_order + 1;
   int num_verts_per_elem = std::pow(num_verts_per_dim, num_dims);
   int *vert_map = new int[num_verts_per_elem];
-  swage2vtk::make_vtk_vert_map(elem_order, vert_map, true);
+  make_vtk_vert_map(elem_order, vert_map, true);
 
   // Loop over the elements in SWAGE and store the cell-vertex connectivity
   // from VTK in the SWAGE mesh object
@@ -157,7 +170,7 @@ void swage2vtk::init_swage_mesh(const int &elem_order, const VtkGrid &grid,
  *    of the same order; and
  *  - all elements in the SWAGE mesh are to be hexahedra of the same order.
  */
-VtkGrid swage2vtk::init_vtk_grid(SwageMesh &mesh, 
+VtkGrid init_vtk_grid(SwageMesh &mesh, 
     const std::string &solution_name, const CArray<double> &solution) {
   // Initialize VTK points array
   int num_verts = mesh.num_nodes();
@@ -185,7 +198,7 @@ VtkGrid swage2vtk::init_vtk_grid(SwageMesh &mesh,
 
   // Map from SWAGE ordering to VTK ordering
   int *vert_map = new int[num_verts_per_elem];
-  swage2vtk::make_vtk_vert_map(elem_order, vert_map, false);
+  make_vtk_vert_map(elem_order, vert_map, false);
 
   // Loop over the elements in the mesh
   int num_elems = mesh.num_elems();
@@ -228,12 +241,12 @@ VtkGrid swage2vtk::init_vtk_grid(SwageMesh &mesh,
   return grid;
 }
 
-void swage2vtk::write_grid(const VtkGrid &grid, const std::string &file_name) {
+void write_grid(const VtkGrid &grid, const std::string &filename) {
   // Give the input data to the writer and write out the file
   // Extract the extension from the file name
   std::string extension = "";
-  if (file_name.find_last_of(".") != std::string::npos) {
-    extension = file_name.substr(file_name.find_last_of("."));
+  if (filename.find_last_of(".") != std::string::npos) {
+    extension = filename.substr(filename.find_last_of("."));
   }
 
   // Drop the case of the extension
@@ -244,13 +257,52 @@ void swage2vtk::write_grid(const VtkGrid &grid, const std::string &file_name) {
   // and read the grid into a VTK unstructured grid object
   if (extension == ".vtu") {
     vtkNew<vtkXMLUnstructuredGridWriter> writer;
-    writer->SetFileName(file_name.c_str());
+    writer->SetFileName(filename.c_str());
     writer->SetInputData(grid);
     writer->Write();
   } else if (extension == ".vtk") {
     vtkNew<vtkUnstructuredGridWriter> writer;
-    writer->SetFileName(file_name.c_str());
+    writer->SetFileName(filename.c_str());
     writer->SetInputData(grid);
     writer->Write();
+  }
+}
+
+/*
+ * Generate a map from the local vertex ordering in SWAGE to the local vertex
+ * ordering in VTK for high-order elements
+ */
+void make_vtk_vert_map(int elem_order, int *map, bool reverse) {
+  // Create a VTK N-Hexahedron reference element
+  int num_dims = 3;
+  int num_verts_per_dim = elem_order + 1;
+  int num_verts_per_elem = std::pow(num_verts_per_dim, num_dims);
+
+  vtkNew<vtkLagrangeHexahedron> hex;
+  hex->SetOrder(elem_order, elem_order, elem_order);
+  hex->GetPointIds()->SetNumberOfIds(num_verts_per_elem);
+  hex->GetPoints()->SetNumberOfPoints(num_verts_per_elem);
+
+  SizeType radices[num_dims] = {SizeType(num_verts_per_dim), 
+      SizeType(num_verts_per_dim), SizeType(num_verts_per_dim)};
+
+  // Loop over the IJK coordinates to generate the map
+  for (int I = 0; I < num_verts_per_dim; I++) {
+    for (int J = 0; J < num_verts_per_dim; J++) {
+      for (int K = 0; K < num_verts_per_dim; K++) {
+        SizeType IJK[num_dims] = {SizeType(I), SizeType(J), SizeType(K)};
+
+        int swage_vert_id = int(common::mixed_radix_to_base_10(num_dims, 
+            radices, IJK));
+
+        int vtk_vert_id = hex->PointIndexFromIJK(I, J, K); 
+
+        if (!reverse) {
+          map[swage_vert_id] = vtk_vert_id;
+        } else {
+          map[vtk_vert_id] = swage_vert_id;
+        }
+      }
+    }
   }
 }

@@ -9,4 +9,3 @@ if (WITH_VTK AND VTK_FOUND)
         ${MATAR_PUBLIC_INCLUDE_DIRECTORIES}
   )
 endif()
-

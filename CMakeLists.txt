@@ -40,7 +40,8 @@ endif()
 # Optional VTK dependency (disabled by default)
 option(WITH_VTK "Build ELEMENTS with VTK" OFF)
 if (WITH_VTK)
-  # Have user provide VTK_DIR flag to identify VTK installation location
+  # Have user provide VTK_DIR flag to identify VTK installation location and
+  # VTK_SOURCE_DIR to identify VTK source location
   find_package(VTK REQUIRED NO_MODULE)
 endif()
 
@@ -104,6 +105,7 @@ install(
   RUNTIME DESTINATION bin
 )
 
-if (WITH_VTK AND VTK_FOUND)
+# If compiling with VTK, install the VTK headers and the swage2vtk library
+if (VTK_FOUND)
   install(TARGETS swage2vtk DESTINATION lib)
 endif()

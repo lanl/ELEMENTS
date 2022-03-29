@@ -139,7 +139,7 @@ TEST_F(LagrangePolynomialsTest, TestConsistentInterpolation) {
  * the Barycentric formula.
  */
 TEST_F(LagrangePolynomialsTest, TestConsistentDerivatives) {
-  EXPECT_TRUE(true);
+  EXPECT_TRUE(false);
 }
 
 /*

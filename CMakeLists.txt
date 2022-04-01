@@ -66,7 +66,7 @@ set(MATAR_PUBLIC_INCLUDE_DIRECTORIES ${PROJECT_SOURCE_DIR}/submodules/matar/src)
 # GoogleTest submodule
 option(WITH_GTEST "Use GoogleTest as testing framework" OFF)
 if (WITH_GTEST)
-  add_subdirectory(submodules/googletest)
+  add_subdirectory(submodules/googletest EXCLUDE_FROM_ALL)
 endif()
 
 

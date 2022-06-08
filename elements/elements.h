@@ -54,8 +54,13 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace utils;
 
-
-
+#ifdef MATAR_WITH_KOKKOS
+typedef CArrayKokkos<real_t> MatarRealCArray;
+typedef CArrayKokkos<size_t> MatarUIntCArray;
+#else
+typedef CArray<real_t> MatarRealCArray;
+typedef CArray<size_t> MatarUIntCArray;
+#endif // MATAR_WITH_KOKKOS
 
 namespace elements {
 
@@ -961,7 +966,7 @@ class Hex8: public Element3D {
     0--------1
     */
 
-    class HexN{
+    class HexN {
         
         protected:
             
@@ -971,18 +976,18 @@ class Hex8: public Element3D {
             int num_nodes_1d_;
             int num_nodes_;
 
-            CArray <real_t> HexN_Nodes_1d_;
-            CArray <real_t> HexN_Nodes_;
+            MatarRealCArray HexN_Nodes_1d_;
+            MatarRealCArray HexN_Nodes_;
 
             // Vertices
             int num_verts_1d_;
             int num_verts_;
             int num_basis_;
 
-            CArray <real_t> HexN_Verts_1d_;
-            CArray <real_t> HexN_Verts_;
+            MatarRealCArray HexN_Verts_1d_;
+            MatarRealCArray HexN_Verts_;
 
-            CArray <size_t> Vert_Node_map_;
+            MatarUIntCArray Vert_Node_map_;
             
             int order_;
 
@@ -1005,33 +1010,33 @@ class Hex8: public Element3D {
             
             // Evaluate the basis at a given point
             void basis(
-                CArray <real_t> &basis,
-                CArray <real_t> &point);
+                MatarRealCArray &basis,
+                MatarRealCArray &point);
 
             void build_nodal_gradient(
-                CArray <real_t> &gradient);
+                MatarRealCArray &gradient);
 
             // calculate the partial of the basis w.r.t xi at a given point
             void partial_xi_basis(
-                CArray <real_t> &partial_xi, 
-                CArray <real_t> &point);
+                MatarRealCArray &partial_xi, 
+                MatarRealCArray &point);
 
             // calculate the partial of the basis w.r.t eta at a given point
             void partial_eta_basis(
-                CArray <real_t> &partial_eta, 
-                CArray <real_t> &point);
+                MatarRealCArray &partial_eta, 
+                MatarRealCArray &point);
 
             // calculate the partial of the basis w.r.t mu at a given point
             void partial_mu_basis(
-                CArray <real_t> &partial_mu, 
-                CArray <real_t> &point);
+                MatarRealCArray &partial_mu, 
+                MatarRealCArray &point);
 
             void lagrange_basis_1D(
-                CArray <real_t> &interp,    // interpolant
+                MatarRealCArray &interp,    // interpolant
                 const real_t &x_point);     // point of interest in element
             
             void lagrange_derivative_1D(
-                CArray <real_t> &partials,  //derivative
+                MatarRealCArray &partials,  //derivative
                 const real_t &x_point);     // point of interest in element
 
             void create_lobatto_nodes(int element_order);

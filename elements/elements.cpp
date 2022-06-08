@@ -123,9 +123,7 @@ patch 6; [1,3,7,5]
 *  in place. The integer num is the numer of points being defined in 1D.
 *****************************************************************************************/
 
-void lobatto_nodes_1D(
-                      CArray <real_t> &lob_nodes_1D,
-                      const int &num){
+void lobatto_nodes_1D(MatarRealCArray &lob_nodes_1D, const int &num){
     if (num == 1){
         lob_nodes_1D(0) = 0.0;
     }
@@ -2637,14 +2635,14 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
         // --- evaluate the basis at the nodal positions
         for(int node_rlid = 0; node_rlid < num_ref_nodes_in_elem_; node_rlid++){
 
-            auto point = CArray <real_t> (3);
+            auto point = MatarRealCArray(3);
 
             // Get the nodal coordinates
             for(int dim = 0; dim < 3; dim++){
                 point(dim) = ref_node_positions_(node_rlid, dim);
             }
 
-            auto node_basis = CArray <real_t> (num_ref_verts_in_elem_);
+            auto node_basis = MatarRealCArray(num_ref_verts_in_elem_);
 
             elem.basis(node_basis, point);
 
@@ -2658,15 +2656,15 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
 
         // --- evaluate grad_basis functions at the ref nodes ---
 
-        auto partial_xi  = CArray <real_t> (num_ref_nodes_in_elem_);
-        auto partial_eta = CArray <real_t> (num_ref_nodes_in_elem_);
-        auto partial_mu  = CArray <real_t> (num_ref_nodes_in_elem_);
+        auto partial_xi  = MatarRealCArray(num_ref_nodes_in_elem_);
+        auto partial_eta = MatarRealCArray(num_ref_nodes_in_elem_);
+        auto partial_mu  = MatarRealCArray(num_ref_nodes_in_elem_);
 
         
 
         for(int node_lid = 0; node_lid < num_ref_nodes_in_elem_; node_lid++){
 
-            auto point = CArray <real_t> (3);
+            auto point = MatarRealCArray(3);
             
             // Get the nodal coordinates
             for(int dim = 0; dim < 3; dim++){
@@ -2906,7 +2904,7 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
         
         for (int patch_rlid = 0; patch_rlid < num_patches_in_elem_; patch_rlid++){
             
-            auto point = CArray <real_t> (3);
+            auto point = MatarRealCArray(3);
             
             // Get the patch coordinates
             for(int dim = 0; dim < 3; dim++){
@@ -2914,7 +2912,7 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             }
             
             // the basis function values at the patch for each vertex
-            auto patch_basis = CArray <real_t> (num_ref_verts_in_elem_);
+            auto patch_basis = MatarRealCArray(num_ref_verts_in_elem_);
             
             // calculate the patch basis function values at the point, for each vertex
             elem.basis(patch_basis, point);
@@ -2934,7 +2932,7 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
         // loop over the patches
         for (int patch_rlid = 0; patch_rlid < num_patches_in_elem_; patch_rlid++){
             
-            auto point = CArray <real_t> (3);
+            auto point = MatarRealCArray(3);
             
             // Get the patch coordinates
             for(int dim = 0; dim < 3; dim++){
@@ -2967,7 +2965,7 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
         
         for (int cell_rlid = 0; cell_rlid < num_ref_cells_in_elem_; cell_rlid++){
             
-            auto point = CArray <real_t> (3);
+            auto point = MatarRealCArray(3);
             
             // Get the patch coordinates
             for(int dim = 0; dim < 3; dim++){
@@ -2975,7 +2973,7 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             }
             
             // the basis function values at the patch for each vertex
-            auto cell_basis = CArray <real_t> (num_ref_verts_in_elem_);
+            auto cell_basis = MatarRealCArray(num_ref_verts_in_elem_);
             
             // calculate the cell basis function values at the point, for each vertex
             elem.basis(cell_basis, point);
@@ -2994,7 +2992,7 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
         // loop over the patches
         for (int cell_rlid = 0; cell_rlid < num_ref_cells_in_elem_; cell_rlid++){
             
-            auto point = CArray <real_t> (3);
+            auto point = MatarRealCArray(3);
             
             // Get the cell coordinates
             for(int dim = 0; dim < 3; dim++){
@@ -5380,8 +5378,8 @@ representative linear element for visualization
             num_nodes_1d_ = 2;
             num_nodes_ = pow(num_nodes_1d_, 3);
 
-            HexN_Nodes_1d_ = CArray <real_t> (num_nodes_);
-            HexN_Nodes_ = CArray <real_t> (num_nodes_, 3);
+            HexN_Nodes_1d_ = MatarRealCArray (num_nodes_);
+            HexN_Nodes_ = MatarRealCArray (num_nodes_, 3);
 
 
             // Vertices
@@ -5389,11 +5387,11 @@ representative linear element for visualization
             num_verts_ = pow(num_verts_1d_, 3);
             num_basis_ = pow(num_verts_1d_, 3);
             
-            HexN_Verts_1d_ = CArray <real_t> (num_verts_);
-            HexN_Verts_ = CArray <real_t> (num_verts_, 3);
+            HexN_Verts_1d_ = MatarRealCArray (num_verts_);
+            HexN_Verts_ = MatarRealCArray (num_verts_, 3);
 
 
-            Vert_Node_map_ = CArray <size_t> (num_verts_);
+            Vert_Node_map_ = MatarUIntCArray (num_verts_);
 
             order_ = elem_order+1;
 
@@ -5407,8 +5405,8 @@ representative linear element for visualization
             num_nodes_1d_ = 2 * elem_order + 1;
             num_nodes_ = pow(num_nodes_1d_, 3);
 
-            HexN_Nodes_1d_ = CArray <real_t> (num_nodes_);
-            HexN_Nodes_ = CArray <real_t> (num_nodes_, 3);
+            HexN_Nodes_1d_ = MatarRealCArray (num_nodes_);
+            HexN_Nodes_ = MatarRealCArray (num_nodes_, 3);
 
 
             // Vertices
@@ -5416,11 +5414,11 @@ representative linear element for visualization
             num_verts_ = pow(num_verts_1d_, 3);
             num_basis_ = pow(num_verts_1d_, 3);
             
-            HexN_Verts_1d_ = CArray <real_t> (num_verts_);
-            HexN_Verts_ = CArray <real_t> (num_verts_, 3);
+            HexN_Verts_1d_ = MatarRealCArray (num_verts_);
+            HexN_Verts_ = MatarRealCArray (num_verts_, 3);
 
 
-            Vert_Node_map_ = CArray <size_t> (num_verts_);
+            Vert_Node_map_ = MatarUIntCArray (num_verts_);
 
             order_ = elem_order;
 
@@ -5502,11 +5500,11 @@ representative linear element for visualization
         return i + j*num_verts_1d_ + k*num_verts_1d_*num_verts_1d_;
     };
 
-    void HexN::basis(CArray <real_t> &basis, CArray <real_t> &point)
+    void HexN::basis(MatarRealCArray &basis, MatarRealCArray &point)
     {
 
-        auto val_1d = CArray <real_t> (num_verts_1d_);
-        auto val_3d = CArray <real_t> (num_verts_1d_, 3);
+        auto val_1d = MatarRealCArray (num_verts_1d_);
+        auto val_3d = MatarRealCArray (num_verts_1d_, 3);
 
         // Calculate 1D basis for the X coordinate of the point
         lagrange_basis_1D(val_1d, point(0));
@@ -5549,15 +5547,15 @@ representative linear element for visualization
     };
 
 
-    void HexN::partial_xi_basis(CArray <real_t> &partial_xi, CArray <real_t> &point)
+    void HexN::partial_xi_basis(MatarRealCArray &partial_xi, MatarRealCArray &point)
     {
 
 
-        auto val_1d = CArray <real_t> (num_verts_1d_);
-        auto val_3d = CArray <real_t> (num_verts_1d_, 3);
+        auto val_1d = MatarRealCArray (num_verts_1d_);
+        auto val_3d = MatarRealCArray (num_verts_1d_, 3);
 
-        auto Dval_1d = CArray <real_t> (num_verts_1d_);
-        auto Dval_3d = CArray <real_t> (num_verts_1d_, 3);
+        auto Dval_1d = MatarRealCArray (num_verts_1d_);
+        auto Dval_3d = MatarRealCArray (num_verts_1d_, 3);
 
         // Calculate 1D partial w.r.t. xi for the X coordinate of the point
         lagrange_derivative_1D(Dval_1d, point(0));
@@ -5609,14 +5607,14 @@ representative linear element for visualization
     };
 
 
-    void HexN::partial_eta_basis(CArray <real_t> &partial_eta, CArray <real_t> &point)
+    void HexN::partial_eta_basis(MatarRealCArray &partial_eta, MatarRealCArray &point)
     {   
 
-        auto val_1d = CArray <real_t> (num_verts_1d_);
-        auto val_3d = CArray <real_t> (num_verts_1d_, 3);
+        auto val_1d = MatarRealCArray (num_verts_1d_);
+        auto val_3d = MatarRealCArray (num_verts_1d_, 3);
 
-        auto Dval_1d = CArray <real_t> (num_verts_1d_);
-        auto Dval_3d = CArray <real_t> (num_verts_1d_, 3);
+        auto Dval_1d = MatarRealCArray (num_verts_1d_);
+        auto Dval_3d = MatarRealCArray (num_verts_1d_, 3);
 
         // Calculate 1D basis for the Y coordinate of the point
         lagrange_basis_1D(val_1d, point(0));
@@ -5667,14 +5665,14 @@ representative linear element for visualization
     };
 
 
-    void HexN::partial_mu_basis(CArray <real_t> &partial_mu, CArray <real_t> &point){
+    void HexN::partial_mu_basis(MatarRealCArray &partial_mu, MatarRealCArray &point){
 
 
-        auto val_1d = CArray <real_t> (num_verts_1d_);
-        auto val_3d = CArray <real_t> (num_verts_1d_, 3);
+        auto val_1d = MatarRealCArray (num_verts_1d_);
+        auto val_3d = MatarRealCArray (num_verts_1d_, 3);
 
-        auto Dval_1d = CArray <real_t> (num_verts_1d_);
-        auto Dval_3d = CArray <real_t> (num_verts_1d_, 3);
+        auto Dval_1d = MatarRealCArray (num_verts_1d_);
+        auto Dval_3d = MatarRealCArray (num_verts_1d_, 3);
 
         // Calculate 1D basis for the X coordinate of the point
         lagrange_basis_1D(val_1d, point(0));
@@ -5727,7 +5725,7 @@ representative linear element for visualization
 
 
     void HexN::lagrange_basis_1D(
-        CArray <real_t> &interp,    // interpolant from each basis
+        MatarRealCArray &interp,    // interpolant from each basis
         const real_t &x_point){     // point of interest in element
                          
         
@@ -5761,7 +5759,7 @@ representative linear element for visualization
     } // end of Legrange_1D function
 
     void HexN::lagrange_derivative_1D(
-        CArray <real_t> &derivative,    // derivative
+        MatarRealCArray &derivative,    // derivative
         const real_t &x_point){         // point of interest in element
 
         for(int vert_i = 0; vert_i < num_verts_1d_; vert_i++){ // looping over the nodes

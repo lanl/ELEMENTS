@@ -52,6 +52,12 @@ if (ENABLE_VTK)
   find_package(VTK REQUIRED NO_MODULE)
 endif()
 
+# Optional Kokkos dependency for MATAR
+option(MATAR_WITH_KOKKOS "MATAR is to be compiled against Kokkos" OFF)
+if (MATAR_WITH_KOKKOS)
+  find_package(Kokkos REQUIRED)
+endif()
+
 ################################################################################
 # Build organization
 ################################################################################

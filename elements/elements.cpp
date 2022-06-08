@@ -395,9 +395,10 @@ void lobatto_nodes_1D(MatarRealCArray &lob_nodes_1D, const int &num){
 *  defined in 1D.
 *****************************************************************************************/
 
-void lobatto_weights_1D(
-                        CArray <real_t> &lob_weights_1D,  // Lobbatto weights
-                        const int &num){                     // Interpolation order
+/// @param lob_weights_1D Lobatto weights
+/// @param num            Interpolation order
+void lobatto_weights_1D( MatarRealCArray &lob_weights_1D,
+                         const int &num) {
     if (num == 1){
         lob_weights_1D(0) = 2.0;
     }
@@ -662,8 +663,7 @@ void lobatto_weights_1D(
     } // end if
 } // end of lobatto_weights_1D function
 
-void legendre_nodes_1D(
-                       CArray <real_t> &leg_nodes_1D,
+void legendre_nodes_1D(CArray <real_t> &leg_nodes_1D,
                        const int &num){
 
     if (num == 1){
@@ -1163,11 +1163,12 @@ void legendre_weights_1D(
 *  polynomial order of the desired element. Note: This function currently only supports up 
 *  to third order elements. 
 *****************************************************************************************/
-void length_weights(
-    CArray <real_t> &len_weights_1D,  // partitioned Lobbatto weights
-    CArray <real_t> &lob_weights_1D,  // Lobbatto weights
-    CArray <real_t> &lob_nodes_1D,
-    const int &p_order){
+/// @param len_weights_1D Partitioned Lobotto weights
+/// @param lob_weights_1D Lobotto weights
+void length_weights( MatarRealCArray &len_weights_1D,
+                     MatarRealCArray &lob_weights_1D,
+                     MatarRealCArray &lob_nodes_1D,
+                     const int &p_order) {
 
     real_t alpha1 = (lob_nodes_1D(1) - lob_nodes_1D(0) - lob_weights_1D(0))
                     /lob_weights_1D(1);
@@ -1201,15 +1202,15 @@ void length_weights(
 }
 
 
-/**************************************************************************************//**
-*  sub_weights partitions quadrature weights to the corners corresponding the 1D nodal 
-*  positions defined on [-1,1] using a distance weighted partition.
-*****************************************************************************************/
-void sub_weights(
-    CArray <real_t> &sub_weights_1D,  // Labbatto weights
-    CArray <real_t> &lob_weights_1D,  // Labbatto weights
-    CArray <real_t> &lob_nodes_1D,
-    const int &p_order){
+/********************************************************************
+*  sub_weights partitions quadrature weights to the corners
+*  corresponding the 1D nodal positions defined on [-1,1] using a
+*  distance weighted partition.
+*********************************************************************/
+void sub_weights( MatarRealCArray &sub_weights_1D,  // Labbatto weights
+                  MatarRealCArray &lob_weights_1D,  // Labbatto weights
+                  MatarRealCArray &lob_nodes_1D,
+                  const int &p_order ) {
 
     real_t alpha1 = (lob_nodes_1D(1) - lob_nodes_1D(0) - lob_weights_1D(0))
                     /lob_weights_1D(1);
@@ -1326,10 +1327,10 @@ void mat_inverse(
 *  partitioned weights and initializes everyting based of the desired polynomial order
 *****************************************************************************************/
 void set_nodes_wgts(
-    CArray <real_t> &lob_nodes_1D,
-    CArray <real_t> &lob_weights_1D,
-    CArray <real_t> &len_weights_1D,
-    CArray <real_t> &sub_weights_1D, 
+    MatarRealCArray &lob_nodes_1D,
+    MatarRealCArray &lob_weights_1D,
+    MatarRealCArray &len_weights_1D,
+    MatarRealCArray &sub_weights_1D, 
     const int p_order){
 
     int num_g_pts_1d = 2 * p_order + 1;
@@ -1348,7 +1349,8 @@ void set_nodes_wgts(
 }
 
 
-/**************************************************************************************//**
+/**************************************************************************************/
+/**
 *  set_unit_normals takes in the CArray defined to hold the unit normals of the corners 
 *  in a cell in reference space and initializes them.
 *****************************************************************************************/
@@ -2392,10 +2394,10 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
         ref_inside_nodes_in_elem_  = CArray <int> (num_ref_inside_nodes_in_elem_);
         
         // --- build gauss nodal positions and weights ---
-        auto lob_nodes_1D = CArray <real_t> (num_ref_nodes_1D_);
+        auto lob_nodes_1D = MatarRealCArray(num_ref_nodes_1D_);
         lobatto_nodes_1D(lob_nodes_1D, num_ref_nodes_1D_);
     
-        auto lob_weights_1D = CArray <real_t> (num_ref_nodes_1D_);
+        auto lob_weights_1D = MatarRealCArray(num_ref_nodes_1D_);
         lobatto_weights_1D(lob_weights_1D, num_ref_nodes_1D_);
     
         for(int k = 0; k < num_ref_nodes_1D_; k++){

@@ -72,11 +72,11 @@ namespace elements {
     // Used by Lobatto 1D/2D to set Lobatto quadrature points
 
     void lobatto_nodes_1D(
-        CArray <real_t> &lob_nodes_1D,
+        MatarRealCArray &lob_nodes_1D,
         const int &num);
 
     void lobatto_weights_1D(
-        CArray <real_t> &lob_weights_1D,  // Labbatto weights
+        MatarRealCArray &lob_weights_1D,  // Labbatto weights
         const int &num);
 
     
@@ -90,15 +90,15 @@ namespace elements {
     
 
     void length_weights(
-        CArray <real_t> &len_weights_1D,  // Labbatto weights
-        CArray <real_t> &lab_weights_1D,  // Labbatto weights
-        CArray <real_t> &lab_nodes_1D,
+        MatarRealCArray &len_weights_1D,  // Labbatto weights
+        MatarRealCArray &lab_weights_1D,  // Labbatto weights
+        MatarRealCArray &lab_nodes_1D,
         const int &order);
 
     void sub_weights(
-        CArray <real_t> &sub_weights_1D,  // Labbatto weights
-        CArray <real_t> &lab_weights_1D,  // Labbatto weights
-        CArray <real_t> &lab_nodes_1D,
+        MatarRealCArray &sub_weights_1D,  // Labbatto weights
+        MatarRealCArray &lab_weights_1D,  // Labbatto weights
+        MatarRealCArray &lab_nodes_1D,
         const int &order);
 
     void mat_inverse(

@@ -17,6 +17,7 @@ set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${VECTOR_Fortran
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${VECTOR_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
 
+
 ################################################################################
 # Modules, macros, and packages
 ################################################################################
@@ -58,8 +59,9 @@ if (MATAR_WITH_KOKKOS)
   find_package(Kokkos REQUIRED)
 endif()
 
+
 ################################################################################
-# Build organization
+# ELEMENTS Build
 ################################################################################
 # MATAR submodule
 # (Note: the way the MATAR submodule is handled may need to change in the
@@ -95,6 +97,18 @@ add_subdirectory(examples)
 # mesh tools
 add_subdirectory(mesh_tools)
 
+
+################################################################################
+# ELEMENTS-Kokkos Build
+################################################################################
+if (MATAR_WITH_KOKKOS)
+  add_subdirectory(elements-kokkos)
+endif()
+
+
+################################################################################
+# Installation
+################################################################################
 # Install headers in include/ subdirectory of the specified install directory
 # (Note: This is an inelegant way of installing the headers. Resursing through
 # subdirectories looking for anything that matches the pattern "*.h" is

@@ -1,5 +1,21 @@
 #pragma once
 
+
+// MATAR includes
+#include "matar.h"
+
+
+// Switch between MATAR Kokkos/non-Kokkos data structures, depending on
+// availability of Kokkos
+#ifdef MATAR_WITH_KOKKOS
+typedef CArrayKokkos<real_t> MatarRealCArray;
+typedef CArrayKokkos<size_t> MatarUIntCArray;
+#else
+typedef CArray<real_t> MatarRealCArray;
+typedef CArray<size_t> MatarUIntCArray;
+#endif // MATAR_WITH_KOKKOS
+
+
 struct HexRef {
 
   /*
@@ -104,21 +120,12 @@ struct HexRef {
   
   // Basis evaluation at nodes
   CArray <real_t> ref_nodal_basis_;
-  
-  // Pointer to HexN object
-  HexN *elem_ptr;
 
   // Gradient of basis
   CArray <real_t> ref_nodal_gradient_;
   //real_t * ref_nodal_gradient_;
   
   // Function Declarations
-  
-  // Default constructor
-  ref_element() : elem_ptr(nullptr) {};
-  
-  // Initialize reference element information
-  void init(int elem_order, HexN &elem);
   
   int num_dim() const;
   
@@ -209,8 +216,6 @@ struct HexRef {
   MatarUIntCArray Vert_Node_map_;
   
   int order_;
-
-  void setup_HexN(int elem_order);
 
   int num_verts();
   int num_nodes();

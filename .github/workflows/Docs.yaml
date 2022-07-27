@@ -8,48 +8,45 @@ on:
     branches: [master]
 
 env:
-  # CMake configuration for basic build
+  # CMake configuration for build with docs
   CMAKE_CONFIG_FLAGS: -DCMAKE_INSTALL_PREFIX=/home/runner/work/install -DCMAKE_BUILD_TYPE=Release -DWITH_DOCS=ON -DCMAKE_INSTALL_DOCDIR=/home/runner/work/install/docs
-  DEPLOY_BRANCH: origin/gh-pages
 
 jobs:
   publish-docs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout source code
-    - name: Checkout 
-      uses: actions/checkout@v2
+    - name: Checkout master branch
+      uses: actions/checkout@v3
       with: 
         submodules: true
         
-    # Install dependencies for build process
     - name: Install build dependencies
       run: |
         pip install -IU -r ${{github.workspace}}/docs/sphinx-dependencies.txt
         sudo apt-get install doxygen -y
     
-    # Configure CMake to build the docs
-    - name: Configure CMake
+    - name: Configure CMake to build the docs
       run: cmake ${{env.CMAKE_CONFIG_FLAGS}} -B ${{github.workspace}}/build
 
-    # Build ELEMENTS with docs
-    - name: Build
+    - name: Build ELEMENTS with docs
       run: cmake --build ${{github.workspace}}/build --verbose
 
-    # Install ELEMENTS with docs
-    - name: Install
+    - name: Install ELEMENTS with docs
       run: cmake --install ${{github.workspace}}/build
 
-    # Synchronize & push BUILD directory to docs branch
-    - name: Configure Git informations
+    - name: Checkout gh-pages branch
+      uses: actions/checkout@v3
+      with: 
+        ref: gh-pages
+
+    - name: Configure git information
       run: |
         git config --global user.name $GITHUB_ACTOR
         git config --global user.email $GITHUB_ACTOR@users.noreply.github.com
         
-    - name: Checkout publication branch, update/add files, and push
+    - name: Update/add doc files and push
       run: |
-        git checkout $DEPLOY_BRANCH
         cp -r /home/runner/work/install/docs/* .
         git add -A
         git commit -m "Automated publication of documentation"

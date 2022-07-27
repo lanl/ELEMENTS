@@ -10,7 +10,7 @@ on:
 env:
   # CMake configuration for basic build
   CMAKE_CONFIG_FLAGS: -DCMAKE_INSTALL_PREFIX=/home/runner/work/install -DCMAKE_BUILD_TYPE=Release -DWITH_DOCS=ON -DCMAKE_INSTALL_DOCDIR=/home/runner/work/install/docs
-  DEPLOY_BRANCH: gh-pages
+  DEPLOY_BRANCH: remotes/origin/gh-pages
 
 jobs:
   publish-docs:
@@ -49,8 +49,8 @@ jobs:
         
     - name: Checkout publication branch, update/add files, and push
       run: |
-        git checkout -b $DEPLOY_BRANCH
+        git checkout $DEPLOY_BRANCH
         cp -r /home/runner/work/install/docs/* .
         git add -A
         git commit -m "Automated publication of documentation"
-        git push origin $DEPLOY_BRANCH
+        git push

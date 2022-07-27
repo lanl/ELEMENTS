@@ -15,6 +15,9 @@ if (NOT CMAKE_BUILD_TYPE)
  # set(CMAKE_BUILD_TYPE Release)
 endif(NOT CMAKE_BUILD_TYPE)
 
+# Set module path
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+
 
 ################################################################################
 # Dependencies
@@ -32,6 +35,13 @@ if (WITH_VTK)
   # Have user provide VTK_DIR flag to identify VTK installation location and
   # VTK_SOURCE_DIR to identify VTK source location
   find_package(VTK REQUIRED NO_MODULE)
+endif()
+
+# Optional Doxygen and Sphinx dependencies
+option(WITH_DOCS "Build the documentation locally" OFF)
+if (WITH_DOCS)
+  find_package(Doxygen REQUIRED)
+  find_package(Sphinx REQUIRED)
 endif()
 
 # MATAR submodule
@@ -69,8 +79,14 @@ add_subdirectory(tests)
 # Examples
 add_subdirectory(examples)
 
+# Documentation
+if (WITH_DOCS)
+  add_subdirectory(docs)
+endif()
+
 # mesh tools
 add_subdirectory(mesh_tools)
+
 
 ################################################################################
 # Install

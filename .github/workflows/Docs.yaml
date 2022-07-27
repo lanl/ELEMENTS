@@ -25,7 +25,9 @@ jobs:
         
     # Install dependencies for build process
     - name: Install build dependencies
-      run: pip install -IU -r ${{github.workspace}}/docs/sphinx-dependencies.txt
+      run: |
+        pip install -IU -r ${{github.workspace}}/docs/sphinx-dependencies.txt
+        sudo apt-get install doxygen -y
     
     # Configure CMake to build the docs
     - name: Configure CMake

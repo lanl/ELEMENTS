@@ -10,7 +10,7 @@ on:
 env:
   # CMake configuration for basic build
   CMAKE_CONFIG_FLAGS: -DCMAKE_INSTALL_PREFIX=/home/runner/work/install -DCMAKE_BUILD_TYPE=Release -DWITH_DOCS=ON -DCMAKE_INSTALL_DOCDIR=/home/runner/work/install/docs
-  DEPLOY_BRANCH: remotes/origin/gh-pages
+  DEPLOY_BRANCH: origin/gh-pages
 
 jobs:
   publish-docs:

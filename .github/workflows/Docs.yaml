@@ -50,7 +50,7 @@ jobs:
     - name: Checkout publication branch, update/add files, and push
       run: |
         git checkout -b $DEPLOY_BRANCH
-        cp -r /home/runner/install/docs .
+        cp -r /home/runner/work/install/docs .
         git add -A
         git commit -m "Automated publication of documentation"
         git push origin $DEPLOY_BRANCH

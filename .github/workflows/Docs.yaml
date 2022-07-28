@@ -1,0 +1,59 @@
+# Build, test, and install on different versions of Ubuntu
+name: Linux
+
+on:
+  push:
+    branches: [master]
+  pull_request: 
+    branches: [master]
+
+env:
+  # CMake configuration for build with docs
+  CMAKE_CONFIG_FLAGS: -DCMAKE_INSTALL_PREFIX=/home/runner/work/install -DCMAKE_BUILD_TYPE=Release -DWITH_DOCS=ON -DCMAKE_INSTALL_DOCDIR=/home/runner/work/install/docs
+
+jobs:
+  publish-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout master branch
+      uses: actions/checkout@v3
+      with: 
+        submodules: true
+        
+    - name: Install build dependencies
+      run: |
+        pip install -IU -r ${{github.workspace}}/docs/sphinx-dependencies.txt
+        sudo apt-get install doxygen -y
+    
+    - name: Configure CMake to build the docs
+      run: cmake ${{env.CMAKE_CONFIG_FLAGS}} -B ${{github.workspace}}/build
+
+    - name: Build ELEMENTS with docs
+      run: cmake --build ${{github.workspace}}/build --verbose
+
+    - name: Install ELEMENTS with docs
+      run: cmake --install ${{github.workspace}}/build
+
+    - name: Clear out everything in directory except .git
+      run: |
+        mv .git ..
+        rm -rf *
+        mv ../.git .
+
+    - name: Checkout gh-pages branch
+      uses: actions/checkout@v3
+      with: 
+        ref: gh-pages
+
+    - name: Configure git information
+      run: |
+        git config --global user.name $GITHUB_ACTOR
+        git config --global user.email $GITHUB_ACTOR@users.noreply.github.com
+        
+    - name: Update/add doc files and push
+      run: |
+        cp -r /home/runner/work/install/docs/* .
+        git add -A
+        git commit -m "Automated publication of documentation"
+        git push

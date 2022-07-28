@@ -35,10 +35,11 @@ jobs:
     - name: Install ELEMENTS with docs
       run: cmake --install ${{github.workspace}}/build
 
-    - name: Change directory and delete ELEMENTS source
+    - name: Clear out everything in directory except .git
       run: |
-        cd /home/runner/work
-        rm -rf ELEMENTS
+        mv .git ..
+        rm -rf *
+        mv ../.git .
 
     - name: Checkout gh-pages branch
       uses: actions/checkout@v3

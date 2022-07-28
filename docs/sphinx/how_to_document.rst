@@ -43,6 +43,9 @@ How to generate documentation locally?
 2. Configure your CMake build of ELEMENTS with the option flags ``-DWITH_DOCS=ON`` and, if you plan to install the documentation somewhere, ``DCMAKE_INSTALL_DOCDIR=/path/to/your/docs/install``.
 3. Build ELEMENTS.
 
-How to publish changes in the documentation to GitHub Pages?
-------------------------------------------------------------
-In progress
+How to publish changes to GitHub Pages?
+---------------------------------------
+This is done automatically.
+When commits are pushed to the ``master`` branch, several GitHub Actions workflows are launched.
+One of these is a workflow that regenerates the documentation, commits, and pushes the updates to the ``gh-pages`` branch, which is sourced by GitHub Pages.
+

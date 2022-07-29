@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to use ELEMENTS &mdash; ELEMENTS  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="elements" href="elements.html" />
+    <link rel="prev" title="How to install" href="how_to_install.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ELEMENTS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="how_to_install.html">How to install</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How to use ELEMENTS</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#using-elements-as-a-library-in-a-standalone-application">Using ELEMENTS as a library in a standalone application</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="elements.html">elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="geometry.html">geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matar.html">MATAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slam.html">SLAM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="swage.html">SWAGE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_document.html">How to add to docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ELEMENTS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>How to use ELEMENTS</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/how_to_use.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="how-to-use-elements">
+<h1>How to use ELEMENTS<a class="headerlink" href="#how-to-use-elements" title="Permalink to this heading"></a></h1>
+<section id="using-elements-as-a-library-in-a-standalone-application">
+<h2>Using ELEMENTS as a library in a standalone application<a class="headerlink" href="#using-elements-as-a-library-in-a-standalone-application" title="Permalink to this heading"></a></h2>
+<p>If ELEMENTS is installed as a library via <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code>, using it is straightforward.
+In a cmake build system, something like the following will be necessary.
+In an appropriate <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> add the following.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span># Add the ELEMENTS include directory and find the appropriate libraries
+include_directories(${ELEMENTS_DIR}/include)
+find_library(COMMON_LIBRARY NAMES common HINTS ${ELEMENTS_DIR}/lib)
+find_library(ELEMENTS_LIBRARY NAMES elements HINTS ${ELEMENTS_DIR}/lib)
+find_library(GEOMETRY_LIBRARY NAMES geometry HINTS ${ELEMENTS_DIR}/lib)
+find_library(SWAGE_LIBRARY NAMES swage HINTS ${ELEMENTS_DIR}/lib)
+
+# Make includes and linking work
+# For an executable named &quot;Average&quot;
+add_executable(Average ${Average_SRC_CXX})
+target_link_libraries (Average ${COMMON_LIBRARY})
+target_link_libraries (Average ${ELEMENTS_LIBRARY})
+target_link_libraries (Average ${GEOMETRY_LIBRARY})
+target_link_libraries (Average ${SWAGE_LIBRARY})
+</pre></div>
+</div>
+<p>Then, when configuring CMake, add the option <code class="docutils literal notranslate"><span class="pre">-DELEMENTS_DIR=/path/to/ELEMENTS/</span></code>, where <code class="docutils literal notranslate"><span class="pre">/path/to/ELEMENTS</span></code> is placeholder for the path to the directory containing the <code class="docutils literal notranslate"><span class="pre">include/</span></code> and <code class="docutils literal notranslate"><span class="pre">lib/</span></code> directories installed for ELEMENTS.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="how_to_install.html" class="btn btn-neutral float-left" title="How to install" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="elements.html" class="btn btn-neutral float-right" title="elements" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, ELEMENTS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

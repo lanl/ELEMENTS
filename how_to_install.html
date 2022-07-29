@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How to install &mdash; ELEMENTS  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How to use ELEMENTS" href="how_to_use.html" />
+    <link rel="prev" title="ELEMENTS documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> ELEMENTS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How to install</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#clone">Clone</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configure">Configure</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configure-to-build-in-place">Configure to build in place</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configure-to-build-elsewhere">Configure to build elsewhere</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configure-to-install-in-place">Configure to install in place</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#enable-optional-dependencies">Enable optional dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#build-install">Build &amp; Install</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_use.html">How to use ELEMENTS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="elements.html">elements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="geometry.html">geometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="matar.html">MATAR</a></li>
+<li class="toctree-l1"><a class="reference internal" href="slam.html">SLAM</a></li>
+<li class="toctree-l1"><a class="reference internal" href="swage.html">SWAGE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_document.html">How to add to docs</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ELEMENTS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>How to install</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/how_to_install.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="how-to-install">
+<h1>How to install<a class="headerlink" href="#how-to-install" title="Permalink to this heading"></a></h1>
+<p>These instructions are written for installation from the terminal of a Unix-like (MacOS, Linux, etc.) system.</p>
+<section id="clone">
+<h2>Clone<a class="headerlink" href="#clone" title="Permalink to this heading"></a></h2>
+<p>To clone the <strong>ELEMENTS</strong> repository, enter the following command.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="o">--</span><span class="n">recursive</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">lanl</span><span class="o">/</span><span class="n">ELEMENTS</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">--recursive</span></code> flag ensures that the submodules are initialized as the repository is cloned.
+If you forget to add this flag, you can initialize the submodules later by entering the following command.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">submodule</span> <span class="n">update</span> <span class="o">--</span><span class="n">init</span>
+</pre></div>
+</div>
+<p>Then enter the ELEMENTS directory.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">ELEMENTS</span>
+</pre></div>
+</div>
+</section>
+<section id="configure">
+<h2>Configure<a class="headerlink" href="#configure" title="Permalink to this heading"></a></h2>
+<p>It is often convenient to write a configuration script to avoid having to write out option flags more than once and to have a record of what options were used in the build.
+A starting point for a configuration script might be:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>#!/bin/bash
+ELEMENTS_DIR=/path/to/elements/repo
+cmake \
+  ${ELEMENTS_DIR}
+</pre></div>
+</div>
+<p>Suppose you write this to a file called <code class="docutils literal notranslate"><span class="pre">my_config.sh</span></code>.
+To make the script executable, run the following command.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">chmod</span> <span class="o">+</span><span class="n">x</span> <span class="n">my_config</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<section id="configure-to-build-in-place">
+<h3>Configure to build in place<a class="headerlink" href="#configure-to-build-in-place" title="Permalink to this heading"></a></h3>
+<p>To build <strong>ELEMENTS</strong> in place, substitute the placeholder <code class="docutils literal notranslate"><span class="pre">/path/to/elements/repo</span></code> in the configuration script for <code class="docutils literal notranslate"><span class="pre">.</span></code>, specifying the current working directory.
+Then simply run the script as follows.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">my_config</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-to-build-elsewhere">
+<h3>Configure to build elsewhere<a class="headerlink" href="#configure-to-build-elsewhere" title="Permalink to this heading"></a></h3>
+<p>To build <strong>ELEMENTS</strong>, say, in a <code class="docutils literal notranslate"><span class="pre">build</span></code> subdirectory, enter the following commands.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="n">build</span><span class="p">;</span> <span class="n">cd</span> <span class="n">build</span>
+</pre></div>
+</div>
+<p>Substitute the placeholder <code class="docutils literal notranslate"><span class="pre">/path/to/elements/repo</span></code> in the configuration script for <code class="docutils literal notranslate"><span class="pre">..</span></code>, specifying the directory above the current working directory.
+Copy the configuration script into the build directory, enter it, and run the configuration.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cp</span> <span class="n">my_config</span><span class="o">.</span><span class="n">sh</span> <span class="n">build</span><span class="p">;</span> <span class="n">cd</span> <span class="n">build</span><span class="p">;</span> <span class="o">./</span><span class="n">my_config</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-to-install-in-place">
+<h3>Configure to install in place<a class="headerlink" href="#configure-to-install-in-place" title="Permalink to this heading"></a></h3>
+<p>Whether building in place or in a separate build directory, you add configure CMake to install in place.
+The option flag for this is <code class="docutils literal notranslate"><span class="pre">-DCMAKE_INSTALL_PREFIX=\`pwd\`</span></code>.
+Once added to the configuration script, it becomes the following.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>#!/bin/bash
+ELEMENTS_DIR=/path/to/elements/repo
+cmake \
+  -DCMAKE_INSTALL_PREFIX=`pwd` \
+  ${ELEMENTS_DIR}
+</pre></div>
+</div>
+</section>
+<section id="enable-optional-dependencies">
+<h3>Enable optional dependencies<a class="headerlink" href="#enable-optional-dependencies" title="Permalink to this heading"></a></h3>
+<p>To enable the VTK dependency, used for reading and writing high-order hexahedral meshes in the VTK format, add the following two options to the configuration script: <code class="docutils literal notranslate"><span class="pre">-DWITH_VTK=ON</span></code> and <code class="docutils literal notranslate"><span class="pre">-DVTK_DIR=/path/to/vtk/install</span></code>.
+In the second option, you should substitute the placeholder <code class="docutils literal notranslate"><span class="pre">/path/to/vtk/install</span></code> with the actual path to your VTK installation.</p>
+<p>To enable the use of BLAS/LAPACK in ELEMENTS, add the following option to the configuration script: <code class="docutils literal notranslate"><span class="pre">-DWITH_BLAS_LAPACK=ON</span></code>.</p>
+<p>To build the documentation locally, add the following option to the configuration script: <code class="docutils literal notranslate"><span class="pre">-DWITH_DOCS=ON</span></code>.
+Bear in mind that there are 3 dependencies involved in generating the documentation: Doxygen, Sphinx, and Breathe.
+The easiest way to install Doxygen is using whatever package manager you have on your OS, if it includes Doxygen.
+Since Sphinx and Breathe are Python-based, the easiest way to install them is using <code class="docutils literal notranslate"><span class="pre">pip</span></code> specifically.</p>
+</section>
+</section>
+<section id="build-install">
+<h2>Build &amp; Install<a class="headerlink" href="#build-install" title="Permalink to this heading"></a></h2>
+<p>To build <strong>ELEMENTS</strong>, first configure as explained above and then enter <code class="docutils literal notranslate"><span class="pre">make</span></code> in the build directory.
+To install the <strong>ELEMENTS</strong> libraries, binaries, and header files in the directory specified by the configuration, enter <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code> in the build directory.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="ELEMENTS documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="how_to_use.html" class="btn btn-neutral float-right" title="How to use ELEMENTS" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, ELEMENTS developers.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

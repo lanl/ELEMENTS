@@ -1,113 +1,82 @@
 #include <HexRef.h>
 
+HexRef::HexRef(int orderBasis, BasisType typeBasis=LAGRANGE, 
+    QuadratureType typeQuad=GAUSS_LOBATTO, bool verbose=false) {
 
-HexRef::HexRef(int elem_order) {
+  /* Determine sizes of data structures based on the order of the basis */
+  int numGaussPts1d = 2;
+  if(orderBasis == 0){       
+      numGaussPts1d = 2;
 
-
-  /* 
-   * BEGIN ref_element::init source up to call to HexN::setup_HexN
-   */
-
-
-  elem_ptr = &elem;
-
-  int num_g_pts_1d;
-
-  if(elem_order == 0){       
-      
-      num_g_pts_1d = 2;
-      num_ref_nodes_1D_ = num_g_pts_1d;
+      num_ref_nodes_1D_ = numGaussPts1d;
       num_ref_verts_1d_ = 2;
       num_zones_1d_ = 1;
-      num_zones_in_elem_ = num_zones_1d_*num_zones_1d_*num_zones_1d_;
   
-      cells_in_zone_list_ = CArray <int> (num_zones_in_elem_, 1);
+      cells_in_zone_list_ = MatarIntCArray(num_zones_in_elem_, 1);
+  } else if (orderBasis > 0) {
+      numGaussPts1d = 2*orderBasis + 1;
 
-  }
-
-  else{
-      
-      num_g_pts_1d = 2 * elem_order + 1; // num gauss points in 1d
-      num_ref_nodes_1D_ = num_g_pts_1d;
-      num_ref_verts_1d_ = elem_order+1;
+      num_ref_nodes_1D_ = numGaussPts1d;
+      num_ref_verts_1d_ = orderBasis+1;
       num_zones_1d_ = (num_ref_nodes_1D_ - 1) / 2;
-      num_zones_in_elem_ = num_zones_1d_*num_zones_1d_*num_zones_1d_;
 
-      cells_in_zone_list_ = CArray <int> (num_zones_in_elem_, 8);
-
-
+      cells_in_zone_list_ = MatarIntCArray(num_zones_in_elem_, 8);
+  } else {
+    std::cout << "Error: element order must be positive" << std::endl;
   }
-
-
 
   num_ref_cells_1D_ = num_ref_nodes_1D_ - 1;
-  
   num_ref_corners_1D_ = 2*(num_ref_nodes_1D_ - 2) + 2;
 
-
-  num_ref_nodes_in_elem_ =
-      num_ref_nodes_1D_*num_ref_nodes_1D_*num_ref_nodes_1D_;
-
+  num_zones_in_elem_ = num_zones_1d_*num_zones_1d_*num_zones_1d_;
+  num_ref_nodes_in_elem_ = num_ref_nodes_1D_*num_ref_nodes_1D_*num_ref_nodes_1D_;
   num_ref_verts_in_elem_ = num_ref_verts_1d_*num_ref_verts_1d_*num_ref_verts_1d_;
-  
-  num_ref_cells_in_elem_ =
-      (num_ref_nodes_1D_-1)*(num_ref_nodes_1D_-1)*(num_ref_nodes_1D_-1);
+  num_ref_cells_in_elem_ = num_ref_cells_1D_*num_ref_cells_*num_ref_cells_1D;
 
-  std::cout<<"Num cells in element reference  = "<<num_ref_cells_in_elem_<<std::endl;
+  if (verbose) {
+    std::cout << "Num cells in reference  element: "
+              << num_ref_cells_in_elem_
+              << std::endl;
+  }
   
-  cell_nodes_in_elem_list_ = CArray <int> (num_ref_cells_in_elem_, 8);
-  
+  cell_nodes_in_elem_list_ = MatarIntCArray (num_ref_cells_in_elem_, 8);
   num_ref_corners_in_cell_ = 8;
-  
-  num_ref_corners_in_elem_ =
-      num_ref_corners_1D_*num_ref_corners_1D_*num_ref_corners_1D_;
-  
+  num_ref_corners_in_elem_ = num_ref_corners_1D_*num_ref_corners_1D_*num_ref_corners_1D_;
   num_basis_ = num_ref_verts_in_elem_;
 
+  num_ref_inside_nodes_in_elem_  = (num_ref_nodes_1D_ - 2)*(num_ref_nodes_1D_ - 2)*(num_ref_nodes_1D_ - 2);
+  num_ref_surface_nodes_in_elem_ = num_ref_nodes_1D_*num_ref_nodes_1D_*num_ref_nodes_1D_  - num_ref_inside_nodes_in_elem_;
   
 
+  /* Allocate arrays */
 
-
-  // allocate memory
-  ref_nodes_in_cell_ = CArray <int> (num_ref_corners_in_elem_);
-
-  ref_corners_in_cell_ = CArray <int> (num_ref_corners_in_elem_);
-
-  ref_corner_g_weights_ = CArray <real_t> (num_ref_corners_in_elem_);
-
-  ref_corner_surf_g_weights_ = CArray <real_t> (num_ref_corners_in_elem_, num_dim_);
-  
-  ref_corner_surf_normals_ = CArray <real_t> (num_ref_corners_in_elem_, num_dim_, num_dim_);
-  
   ref_node_positions_ = CArray <real_t> (num_ref_nodes_in_elem_, num_dim_);
-  
   ref_node_g_weights_ = CArray <real_t> (num_ref_nodes_in_elem_);
 
-  // Memory for gradients
+  ref_corners_in_cell_ = MatarIntCArray (num_ref_corners_in_elem_);
+  ref_corner_g_weights_ = CArray <real_t> (num_ref_corners_in_elem_);
+  ref_corner_surf_g_weights_ = CArray <real_t> (num_ref_corners_in_elem_, num_dim_);
+  ref_corner_surf_normals_ = CArray <real_t> (num_ref_corners_in_elem_, num_dim_, num_dim_);
+
+  ref_nodes_in_cell_ = MatarIntCArray(num_ref_corners_in_elem_);
+
+  ref_nodal_basis_ = CArray <real_t> (num_ref_nodes_in_elem_, num_basis_);
   ref_nodal_gradient_ = CArray <real_t> (num_ref_nodes_in_elem_, num_basis_, num_dim_);
 
-  // Basis evaluation at the nodes
-  ref_nodal_basis_ = CArray <real_t> (num_ref_nodes_in_elem_, num_basis_);
+  ref_surface_nodes_in_elem_ = MatarIntCArray(num_ref_surface_nodes_in_elem_);
+  ref_inside_nodes_in_elem_  = MatarIntCArray(num_ref_inside_nodes_in_elem_);
 
 
-
-  // build reference index spaces
-  int N_1d = num_ref_nodes_1D_; // a temporary variable
-  num_ref_inside_nodes_in_elem_  = (N_1d - 2)*(N_1d - 2)*(N_1d - 2);
-  num_ref_surface_nodes_in_elem_ = N_1d*N_1d*N_1d  - num_ref_inside_nodes_in_elem_;
-  ref_surface_nodes_in_elem_ = CArray <int> (num_ref_surface_nodes_in_elem_);
-  ref_inside_nodes_in_elem_  = CArray <int> (num_ref_inside_nodes_in_elem_);
-  
-  // --- build gauss nodal positions and weights ---
+  /* Populate arrays containing quadrature points and weights */
   auto lob_nodes_1D = MatarRealCArray(num_ref_nodes_1D_);
   lobatto_nodes_1D(lob_nodes_1D, num_ref_nodes_1D_);
 
   auto lob_weights_1D = MatarRealCArray(num_ref_nodes_1D_);
   lobatto_weights_1D(lob_weights_1D, num_ref_nodes_1D_);
 
-  for(int k = 0; k < num_ref_nodes_1D_; k++){
-      for(int j = 0; j < num_ref_nodes_1D_; j++){
-          for(int i = 0; i < num_ref_nodes_1D_; i++){
+  for (int k = 0; k < num_ref_nodes_1D_; k++){
+      for (int j = 0; j < num_ref_nodes_1D_; j++){
+          for (int i = 0; i < num_ref_nodes_1D_; i++){
               
               int n_rid = node_rid(i,j,k);
               
@@ -120,9 +89,13 @@ HexRef::HexRef(int elem_order) {
       }
   }
 
-  // must partition the nodal guass weights to the corners
-  auto corner_lob_weights_1D = CArray <real_t> (num_ref_corners_1D_);
-  auto r_corner_part_g_weights = CArray <real_t> (num_ref_corners_in_elem_, num_dim_);
+  /* 
+   * BEGIN ref_element::init source up to call to HexN::setup_HexN
+   */
+
+  // must partition the nodal gauss weights to the corners
+  auto corner_lob_weights_1D = CArray <real_t>(num_ref_corners_1D_);
+  auto r_corner_part_g_weights = CArray <real_t>(num_ref_corners_in_elem_, num_dim_);
 
   // loop over interior corners in 1D
   corner_lob_weights_1D(0) = lob_weights_1D(0);
@@ -140,45 +113,7 @@ HexRef::HexRef(int elem_order) {
   
   corner_lob_weights_1D(num_ref_corners_1D_ - 1) = lob_weights_1D(num_ref_nodes_1D_ - 1);
 
-
-  // auto corner_lob_weights_1D = CArray <real_t> (num_ref_corners_1D_);
-  // auto r_corner_part_g_weights = CArray <real_t> (num_ref_corners_in_elem_, num_dim_);
-
-  // // use geometric partition
-  // corner_lob_weights_1D(0) = lob_weights_1D(0);
-
-  // for(int i = 1; i < num_ref_nodes_1D_ - 1; i++){
-      
-  //     // get the corner_rid index in 1D for the left and right corners
-  //     int corner_left = (2*i) - 1;
-  //     int corner_right = 2*i;
-
-  //     real_t bottom = ((lob_nodes_1D(i+1) -  lob_nodes_1D(i))/2.0) + ((lob_nodes_1D(i) -  lob_nodes_1D(i-1))/2.0);
-      
-  //     real_t top = fabs( ((lob_nodes_1D(i) -  lob_nodes_1D(i-1))/2.0) );
-
-      
-  //     std::cout<<"ref 1d node = "<<i<<" Top = "<<top<< ", bottom = "<<bottom<<std::endl;
-      
-  //     real_t alpha_l = top/bottom;
-  //     real_t alpha_r = (1.0 - alpha_l);
-
-  //     corner_lob_weights_1D(corner_left)  = alpha_l*lob_weights_1D(i);
-  //     corner_lob_weights_1D(corner_right) = alpha_r*lob_weights_1D(i);
-      
-  // }
-
-  // corner_lob_weights_1D(num_ref_corners_1D_ - 1) = lob_weights_1D(num_ref_nodes_1D_ - 1);
-
-  // std::cout<<std::endl;
-  // for(int i=0; i<num_ref_corners_1D_; i++){
-
-  //     std::cout<<"ref corner = "<<i<<" weight= "<<corner_lob_weights_1D(i)<<std::endl;
-
-  // }
-
-
-  if(elem_order == 0){
+  if(orderBasis == 0){
 
       cell_lid_in_zone(0, 0) = 0;
   }
@@ -345,7 +280,7 @@ HexRef::HexRef(int elem_order) {
    * BEGIN HexN::setup_HexN source
    */
 
-  if(elem_order == 0){
+  if (orderBasis == 0) {
 
       num_nodes_1d_ = 2;
       num_nodes_ = pow(num_nodes_1d_, 3);
@@ -365,7 +300,7 @@ HexRef::HexRef(int elem_order) {
 
       Vert_Node_map_ = MatarUIntCArray (num_verts_);
 
-      order_ = elem_order+1;
+      order_ = orderBasis+1;
 
 
   }
@@ -374,7 +309,7 @@ HexRef::HexRef(int elem_order) {
   else{
       
       // Nodes
-      num_nodes_1d_ = 2 * elem_order + 1;
+      num_nodes_1d_ = 2 * orderBasis + 1;
       num_nodes_ = pow(num_nodes_1d_, 3);
 
       HexN_Nodes_1d_ = MatarRealCArray (num_nodes_);
@@ -382,7 +317,7 @@ HexRef::HexRef(int elem_order) {
 
 
       // Vertices
-      num_verts_1d_ = elem_order + 1;
+      num_verts_1d_ = orderBasis + 1;
       num_verts_ = pow(num_verts_1d_, 3);
       num_basis_ = pow(num_verts_1d_, 3);
       
@@ -392,15 +327,15 @@ HexRef::HexRef(int elem_order) {
 
       Vert_Node_map_ = MatarUIntCArray (num_verts_);
 
-      order_ = elem_order;
+      order_ = orderBasis;
 
   }
   
-  create_lobatto_nodes(elem_order);
+  create_lobatto_nodes(orderBasis);
 
 
   // Set the vertex to node map (every other node)
-  if(elem_order == 0){
+  if (orderBasis == 0) {
 
       int vert_rid = 0;
       for(int k = 0; k < num_nodes_1d_; k++){
@@ -420,7 +355,7 @@ HexRef::HexRef(int elem_order) {
   }
 
 
-  if (elem_order >= 1){
+  if (orderBasis >= 1){
 
       int vert_rid = 0;
       for(int k = 0; k < num_nodes_1d_; k=k+2){
@@ -472,7 +407,7 @@ HexRef::HexRef(int elem_order) {
 
   auto partial_xi  = MatarRealCArray(num_ref_nodes_in_elem_);
   auto partial_eta = MatarRealCArray(num_ref_nodes_in_elem_);
-  auto partial_mu  = MatarRealCArray(num_ref_nodes_in_elem_);
+  auto partial_zeta  = MatarRealCArray(num_ref_nodes_in_elem_);
 
   
 
@@ -487,34 +422,33 @@ HexRef::HexRef(int elem_order) {
 
       evaluate_derivative_basis_xi(partial_xi, point);
       evaluate_derivative_basis_eta(partial_eta, point);
-      evaluate_derivative_basis_zeta(partial_mu, point);
+      evaluate_derivative_basis_zeta(partial_zeta, point);
 
       for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
 
 
           ref_nodal_gradient_(node_lid, basis_id, 0) = partial_xi(basis_id);
           ref_nodal_gradient_(node_lid, basis_id, 1) = partial_eta(basis_id);
-          ref_nodal_gradient_(node_lid, basis_id, 2) = partial_mu(basis_id);
+          ref_nodal_gradient_(node_lid, basis_id, 2) = partial_zeta(basis_id);
 
           partial_xi(basis_id)  = 0.0;
           partial_eta(basis_id) = 0.0;
-          partial_mu(basis_id)  = 0.0;
+          partial_zeta(basis_id)  = 0.0;
       }
   }
   
   // build a local rlid for the interior and surface nodes of the ref element
-  // remember that N_1d = num_ref_nodes_1D_;
   int count_surf = 0;
   int count_inside = 0;
-  for (int k=0; k<N_1d; k++){
-      for (int j=0; j<N_1d; j++){
-          for (int i=0; i<N_1d; i++){
+  for (int k=0; k<num_ref_nodes_1D_; k++){
+      for (int j=0; j<num_ref_nodes_1D_; j++){
+          for (int i=0; i<num_ref_nodes_1D_; i++){
               
               int rid = node_rid(i,j,k); // follows i,j,k convention
               
-              if (i>0 && i<N_1d-1 &&
-                  j>0 && j<N_1d-1 &&
-                  k>0 && k<N_1d-1)
+              if (i>0 && i<num_ref_nodes_1D_-1 &&
+                  j>0 && j<num_ref_nodes_1D_-1 &&
+                  k>0 && k<num_ref_nodes_1D_-1)
               {
                   ref_inside_nodes_in_elem_(count_inside) = rid;
                   count_inside ++;
@@ -541,7 +475,7 @@ HexRef::HexRef(int elem_order) {
   
   num_patches_in_elem_ = (num_ref_cells_1D_+1) * (num_ref_cells_1D_*num_ref_cells_1D_)*3;
   num_sides_in_elem_ = num_ref_cells_in_elem_*6;
-  ref_patches_in_cell_list_ = CArray <int> (num_sides_in_elem_);
+  ref_patches_in_cell_list_ = MatarIntCArray (num_sides_in_elem_);
   
   
   // allocate memory for the 1D Gauss Legendre points and weights
@@ -641,7 +575,7 @@ HexRef::HexRef(int elem_order) {
                           
                           ref_patch_positions_(patch_rid,0) = leg_points_1D(i); // legendre points
                           ref_patch_positions_(patch_rid,1) = leg_points_1D(j); // legendre points
-                          ref_patch_positions_(patch_rid,2) = lob_nodes_1D(k);  // mu-coord is the labatto point value at k
+                          ref_patch_positions_(patch_rid,2) = lob_nodes_1D(k);  // zeta-coord is the labatto point value at k
                           
                           // i,j tensor product for this surface
                           ref_patch_g_weights_(patch_rid) = leg_weights_1D(i)*leg_weights_1D(j);
@@ -650,16 +584,16 @@ HexRef::HexRef(int elem_order) {
                           
                           ref_patch_positions_(patch_rid,0) = leg_points_1D(i);  // legendre points
                           ref_patch_positions_(patch_rid,1) = leg_points_1D(j);  // legendre points
-                          ref_patch_positions_(patch_rid,2) = lob_nodes_1D(k+1); // mu-coord is the labatto point value at k
+                          ref_patch_positions_(patch_rid,2) = lob_nodes_1D(k+1); // zeta-coord is the labatto point value at k
                           
                           // i,j tensor product for this surface
                           ref_patch_g_weights_(patch_rid) = leg_weights_1D(i)*leg_weights_1D(j);
                       }
-                      // end mu direction patches
+                      // end zeta direction patches
                            
                                
                       // also save the patch_rid in the neighboring cell for this patch
-                      // select neighbors for +/- xi, eta, and mu directions
+                      // select neighbors for +/- xi, eta, and zeta directions
                       int neighbor_cell_rid;
                       if (side_lid == 0 && i>0){
                           neighbor_cell_rid = cell_rid(i-1, j, k);
@@ -675,10 +609,10 @@ HexRef::HexRef(int elem_order) {
                       } // end eta plus direction
                       else if (side_lid == 4 && k>0){
                           neighbor_cell_rid = cell_rid(i, j, k-1);
-                      } // end mu minus direction
+                      } // end zeta minus direction
                       else if (side_lid == 5 && k<num_ref_cells_1D_-1){
                           neighbor_cell_rid = cell_rid(i, j, k+1);
-                      } // end mu plus direction
+                      } // end zeta plus direction
                       else{
                           neighbor_cell_rid = -1;
                       } // end no neighboring cell
@@ -756,18 +690,18 @@ HexRef::HexRef(int elem_order) {
       // calculate the partials at the patch location for each vertex
       evaluate_derivative_basis_xi(partial_xi, point);
       evaluate_derivative_basis_eta(partial_eta, point);
-      evaluate_derivative_basis_zeta(partial_mu, point);
+      evaluate_derivative_basis_zeta(partial_zeta, point);
       
       // loop over the basis polynomials where there is one from each vertex
       for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
           
           ref_patch_gradient_(patch_rlid, basis_id, 0) = partial_xi(basis_id);
           ref_patch_gradient_(patch_rlid, basis_id, 1) = partial_eta(basis_id);
-          ref_patch_gradient_(patch_rlid, basis_id, 2) = partial_mu(basis_id);
+          ref_patch_gradient_(patch_rlid, basis_id, 2) = partial_zeta(basis_id);
           
           partial_xi(basis_id)  = 0.0;
           partial_eta(basis_id) = 0.0;
-          partial_mu(basis_id)  = 0.0;
+          partial_zeta(basis_id)  = 0.0;
       } // end for basis_id
       
   } // end for patch_rlid
@@ -816,18 +750,18 @@ HexRef::HexRef(int elem_order) {
       // calculate the partials at the cell location for each vertex
       evaluate_derivative_basis_xi(partial_xi, point);
       evaluate_derivative_basis_eta(partial_eta, point);
-      evaluate_derivative_basis_zeta(partial_mu, point);
+      evaluate_derivative_basis_zeta(partial_zeta, point);
       
       // loop over the basis polynomials where there is one from each vertex
       for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
           
           ref_cell_gradient_(cell_rlid, basis_id, 0) = partial_xi(basis_id);
           ref_cell_gradient_(cell_rlid, basis_id, 1) = partial_eta(basis_id);
-          ref_cell_gradient_(cell_rlid, basis_id, 2) = partial_mu(basis_id);
+          ref_cell_gradient_(cell_rlid, basis_id, 2) = partial_zeta(basis_id);
           
           partial_xi(basis_id)  = 0.0;
           partial_eta(basis_id) = 0.0;
-          partial_mu(basis_id)  = 0.0;
+          partial_zeta(basis_id)  = 0.0;
       } // end for basis_id
       
   } // end for patch_rlid
@@ -1000,7 +934,7 @@ HexRef::evaluate_derivative_basis_eta(MatarRealCArray &partial_xi,
 }
 
 
-HexRef::evaluate_derivative_basis_zeta(MatarRealCArray &partial_mu, 
+HexRef::evaluate_derivative_basis_zeta(MatarRealCArray &partial_zeta, 
     MatarRealCArray &point) {
   auto val_1d = MatarRealCArray (num_verts_1d_);
   auto val_3d = MatarRealCArray (num_verts_1d_, 3);
@@ -1030,7 +964,7 @@ HexRef::evaluate_derivative_basis_zeta(MatarRealCArray &partial_mu,
   }
 
 
-  // Calculate 1D partial w.r.t. mu for the Z coordinate of the point
+  // Calculate 1D partial w.r.t. zeta for the Z coordinate of the point
   lagrange_derivative_1D(Dval_1d, point(2));
   
   // Save the basis value at the point to a temp array and zero out the temp array
@@ -1048,8 +982,8 @@ HexRef::evaluate_derivative_basis_zeta(MatarRealCArray &partial_mu,
               
               int vert_rlid = vert_rid(i,j,k);
 
-              // Partial w.r.t mu
-              partial_mu(vert_rlid) = val_3d(i, 0)*val_3d(j, 1)*Dval_3d(k, 2);
+              // Partial w.r.t zeta
+              partial_zeta(vert_rlid) = val_3d(i, 0)*val_3d(j, 1)*Dval_3d(k, 2);
 
           }
       }

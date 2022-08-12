@@ -10,10 +10,25 @@
 #ifdef MATAR_WITH_KOKKOS
 typedef CArrayKokkos<real_t> MatarRealCArray;
 typedef CArrayKokkos<size_t> MatarUIntCArray;
+typedef CArrayKokkos<int> MatarIntCArray;
 #else
 typedef CArray<real_t> MatarRealCArray;
 typedef CArray<size_t> MatarUIntCArray;
+typedef CArray<int> MatarIntCArray;
 #endif // MATAR_WITH_KOKKOS
+
+
+enum BasisType {
+  LAGRANGE,
+  LEGENDRE,
+  BEZIER
+};
+
+
+enum QuadratureType {
+  GAUSS_LOBATTO,
+  GAUSS_LEGENDRE
+};
 
 
 struct HexRef {
@@ -30,7 +45,7 @@ struct HexRef {
       // patches in eta-dir
       0,4,5,1,
       2,6,7,3,
-      // patches in mu-dir
+      // patches in zeta-dir
       0,1,3,2,
       4,5,7,6
   };
@@ -41,8 +56,8 @@ struct HexRef {
       0, // xi right side of my cell
       3, // eta front side of my cell
       2, // eta bact side of my cell
-      5, // mu bottom side of my cell
-      4  // mu top side of my cell
+      5, // zeta bottom side of my cell
+      4  // zeta top side of my cell
   };
   
   // return the reference coordinate unit normal of the sides in a cell
@@ -51,8 +66,8 @@ struct HexRef {
       1, 0, 0, // xi right side of my cell
       0,-1, 0, // eta minus side of my cell
       0, 1, 0, // eta plus side of my cell
-      0, 0,-1, // mu minus side of my cell
-      0, 0, 1  // mu plus side of my cell
+      0, 0,-1, // zeta minus side of my cell
+      0, 0, 1  // zeta plus side of my cell
   };
   
   int num_ref_nodes_1D_;
@@ -69,20 +84,20 @@ struct HexRef {
   // cells
   int num_ref_cells_in_elem_;
   
-  CArray <int>cells_in_zone_list_;
+  MatarIntCArray cells_in_zone_list_;
   
   // nodes
   int num_ref_nodes_in_elem_;
   int num_ref_nodes_in_cell_;
   
-  CArray <int> ref_nodes_in_cell_;
-  CArray <int> ref_surface_nodes_in_elem_;
-  CArray <int> ref_inside_nodes_in_elem_;
+  MatarIntCArray ref_nodes_in_cell_;
+  MatarIntCArray ref_surface_nodes_in_elem_;
+  MatarIntCArray ref_inside_nodes_in_elem_;
   
   CArray <real_t> ref_node_positions_;
   CArray <real_t> ref_node_g_weights_;
   
-  CArray <int> cell_nodes_in_elem_list_;
+  MatarIntCArray cell_nodes_in_elem_list_;
   
   // Vertices
   int num_ref_verts_1d_;
@@ -92,7 +107,7 @@ struct HexRef {
   int num_ref_corners_in_cell_;
   int num_ref_corners_in_elem_;
   
-  CArray <int> ref_corners_in_cell_;
+  MatarIntCArray ref_corners_in_cell_;
   
   CArray <real_t> ref_corner_surf_normals_;
   CArray <real_t> ref_corner_g_weights_;
@@ -107,7 +122,7 @@ struct HexRef {
   CArray <real_t> ref_patch_positions_;
   CArray <real_t> ref_patch_g_weights_;
   
-  CArray <int> ref_patches_in_cell_list_;
+  MatarIntCArray ref_patches_in_cell_list_;
   
   CArray <real_t> ref_patch_basis_;
   CArray <real_t> ref_patch_gradient_;  // grad basis at patch
@@ -245,9 +260,9 @@ struct HexRef {
       MatarRealCArray &partial_eta, 
       MatarRealCArray &point);
 
-  // calculate the partial of the basis w.r.t mu at a given point
+  // calculate the partial of the basis w.r.t zeta at a given point
   void evaluate_derivative_basis_zeta(
-      MatarRealCArray &partial_mu, 
+      MatarRealCArray &partial_zeta, 
       MatarRealCArray &point);
 
   void lagrange_basis_1D(
@@ -265,9 +280,6 @@ struct HexRef {
    */
   
 
-  HexRef(int elem_order);
+  HexRef(int orderBasis, BasisType typeBasis, QuadratureType typeQuad, bool verbose);
   ~HexRef();
-  
-
-  
 };

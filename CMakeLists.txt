@@ -2,66 +2,24 @@
 # Preliminaries
 ################################################################################
 project(ELEMENTS)
-cmake_minimum_required(VERSION 3.2)
-enable_language(CXX)
-set (CMAKE_CXX_STANDARD 17)
+
+# CMake version > 3.8 required for C++17 standard
+cmake_minimum_required(VERSION 3.8)
+
+# C++17 standard required for MATAR
+set(CMAKE_CXX_STANDARD 17)
 
 # Build type
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
- # set(CMAKE_BUILD_TYPE Release)
-endif(NOT CMAKE_BUILD_TYPE)
+endif()
 
-# Compiler flags
-set(CMAKE_Fortran_FLAGS_RELEASE "${CMAKE_Fortran_FLAGS_RELEASE} ${VECTOR_Fortran_FLAGS}")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${VECTOR_C_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${VECTOR_CXX_FLAGS}")
-
-
-################################################################################
-# Modules, macros, and packages
-################################################################################
 # Set module path
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/)
-
-# Vector module
-find_package(Vector)
-if (CMAKE_VECTOR_NOVEC)
-  set(VECTOR_C_FLAGS "${VECTOR_NOVEC_C_FLAGS}")
-  set(VECTOR_CXX_FLAGS "${VECTOR_NOVEC_CXX_FLAGS}")
-endif (CMAKE_VECTOR_NOVEC)
-if (CMAKE_VECTOR_VERBOSE)
-  set(VECTOR_C_FLAGS "${VECTOR_C_FLAGS} ${VECTOR_C_VERBOSE}")
-  set(VECTOR_CXX_FLAGS "${VECTOR_CXX_FLAGS} ${VECTOR_CXX_VERBOSE}")
-  set(VECTOR_Fortran_FLAGS "${VECTOR_Fortran_FLAGS} ${VECTOR_Fortran_VERBOSE}")
-endif (CMAKE_VECTOR_VERBOSE)
-
-# TargetDistclean macro
-INCLUDE(cmake/Modules/TargetDistclean.cmake OPTIONAL)
-
-# Optional BLAS/LAPACK dependency (disabled by default)
-option(ENABLE_BLAS_LAPACK "Build ELEMENTS with BLAS/LAPACK" OFF)
-if (ENABLE_BLAS_LAPACK)
-  find_package(BLAS REQUIRED)
-  find_package(LAPACK REQUIRED)
-endif()
-
-# Optional VTK dependency (disabled by default)
-option(ENABLE_VTK "Build ELEMENTS with VTK" OFF)
-if (ENABLE_VTK)
-  # Have user provide VTK_DIR flag to identify VTK installation location
-  find_package(VTK REQUIRED NO_MODULE)
-endif()
-
-# Optional Kokkos dependency for MATAR
-option(MATAR_WITH_KOKKOS "MATAR is to be compiled against Kokkos" OFF)
-if (MATAR_WITH_KOKKOS)
-  find_package(Kokkos REQUIRED)
-endif()
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
 
 ################################################################################
-# ELEMENTS Build
+# Dependencies
 ################################################################################
 # MATAR submodule
 # (Note: the way the MATAR submodule is handled may need to change in the
@@ -72,9 +30,44 @@ endif()
 add_subdirectory(matar)
 include_directories(matar/src)
 
+# Optional Kokkos dependency for MATAR
+option(MATAR_WITH_KOKKOS "MATAR is to be compiled against Kokkos" OFF)
+if (MATAR_WITH_KOKKOS)
+  find_package(Kokkos REQUIRED)
+endif()
+
+# Optional Doxygen and Sphinx dependencies
+option(WITH_DOCS "Build the documentation locally" OFF)
+if (WITH_DOCS)
+  find_package(Doxygen REQUIRED)
+  find_package(Sphinx REQUIRED)
+endif()
+
+# Optional BLAS/LAPACK dependency (disabled by default)
+option(WITH_BLAS_LAPACK "Build ELEMENTS with BLAS/LAPACK" OFF)
+if (WITH_BLAS_LAPACK)
+  find_package(BLAS REQUIRED)
+  find_package(LAPACK REQUIRED)
+endif()
+
+# Optional VTK dependency (disabled by default)
+option(WITH_VTK "Build ELEMENTS with VTK" OFF)
+if (WITH_VTK)
+  # Have user provide VTK_DIR flag to identify VTK installation location and
+  # VTK_SOURCE_DIR to identify VTK source location
+  find_package(VTK REQUIRED NO_MODULE)
+endif()
+
+
+################################################################################
+# Build
+################################################################################
 # Includes
 include_directories(common)
 include_directories(elements)
+if (MATAR_WITH_KOKKOS)
+  add_subdirectory(elements-kokkos)
+endif()
 include_directories(geometry)
 include_directories(slam)
 include_directories(swage)
@@ -94,20 +87,17 @@ add_subdirectory(tests)
 # Examples
 add_subdirectory(examples)
 
+# Documentation
+if (WITH_DOCS)
+  add_subdirectory(docs)
+endif()
+
 # mesh tools
 add_subdirectory(mesh_tools)
 
 
 ################################################################################
-# ELEMENTS-Kokkos Build
-################################################################################
-if (MATAR_WITH_KOKKOS)
-  add_subdirectory(elements-kokkos)
-endif()
-
-
-################################################################################
-# Installation
+# Install
 ################################################################################
 # Install headers in include/ subdirectory of the specified install directory
 # (Note: This is an inelegant way of installing the headers. Resursing through
@@ -122,7 +112,7 @@ install(TARGETS elements DESTINATION lib)
 install(TARGETS geometry DESTINATION lib)
 install(TARGETS slam DESTINATION lib)
 install(TARGETS swage DESTINATION lib)
-if (ENABLE_VTK AND VTK_FOUND)
+if (WITH_VTK AND VTK_FOUND)
   install(TARGETS swage2vtk DESTINATION lib)
 endif()
 install(TARGETS common DESTINATION lib)

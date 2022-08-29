@@ -222,7 +222,7 @@ namespace elements {
 
     // creates nodal positions with Chebyshev spacing
     void chebyshev_nodes_1D(
-        ViewCArray <real_t> &cheb_nodes_1D,   // Chebyshev nodes
+        CArray <real_t> &cheb_nodes_1D,   // Chebyshev nodes (changed to CArray from ViewCArray --steven)
         const int &order);                      // Interpolation order
 
 

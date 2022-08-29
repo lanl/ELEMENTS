@@ -49,7 +49,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *****************************************************************************************/
 
 
-
 #include <iostream>  // std::cout etc.
 #include <cmath>
 
@@ -57,6 +56,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "elements.h"
 #include "bernstein_polynomials.h"
 
+#define bern // specify bern for bernstein or lagr for lagrange
 #define EPSILON 1.0e-12
 
 using namespace utils;
@@ -2275,7 +2275,7 @@ void jacobian_inverse_4d(
 
 // creates nodal positions with Chebyshev spacing
 void chebyshev_nodes_1D(
-    ViewCArray <real_t> &cheb_nodes_1D,   // Chebyshev nodes
+    CArray <real_t> &cheb_nodes_1D,   // Chebyshev nodes (changed to CArray from ViewCArray --steven )
     const int &order){                      // Interpolation order
 
     real_t pi = 3.14159265358979323846;
@@ -2647,8 +2647,11 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
 
             auto node_basis = CArray <real_t> (num_ref_verts_in_elem_);
             
-            //elem.basis(node_basis,point);
-            elem.bernstein_basis(node_basis, point);
+            #ifdef bern
+              elem.bernstein_basis(node_basis, point);
+            #else
+              elem.basis(node_basis, point);
+            #endif
 
             for(int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++){
 
@@ -2675,12 +2678,16 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
                 point(dim) = ref_node_positions_(node_lid, dim);
             }
             
-            //elem.partial_xi_basis(partial_xi,point);
-            elem.bernstein_partial_xi_basis(partial_xi, point);
-            //elem.partial_eta_basis(partial_eta, point);
-            elem.bernstein_partial_eta_basis(partial_eta, point);
-            //elem.partial_mu_basis(partial_mu, point);
-            elem.bernstein_partial_mu_basis(partial_mu, point);
+            
+            #ifdef bern
+              elem.bernstein_partial_xi_basis(partial_xi, point);
+              elem.bernstein_partial_eta_basis(partial_eta, point);
+              elem.bernstein_partial_mu_basis(partial_mu, point);
+            #else
+              elem.partial_xi_basis(partial_xi, point);
+              elem.partial_eta_basis(partial_eta, point);
+              elem.partial_mu_basis(partial_mu, point);
+            #endif
 
             for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
 
@@ -2922,9 +2929,13 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             auto patch_basis = CArray <real_t> (num_ref_verts_in_elem_);
             
             // calculate the patch basis function values at the point, for each vertex
-            elem.bernstein_basis(patch_basis, point);
-            //elem.basis(patch_basis, point);
-            
+
+            #ifdef bern
+              elem.bernstein_basis(patch_basis, point);
+            #else
+              elem.basis(patch_basis, point);
+            #endif
+
             // save the basis values at the patch for each vertex
             for(int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++){
                 ref_patch_basis_(patch_rlid, vert_rlid) = patch_basis(vert_rlid);
@@ -2948,12 +2959,16 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             }
             
             // calculate the partials at the patch location for each vertex
-            elem.bernstein_partial_xi_basis(partial_xi, point);
-            //elem.partial_xi_basis(partial_xi, point);
-            elem.bernstein_partial_eta_basis(partial_eta, point);
-            //elem.partial_eta_basis(partial_eta, point);
-            elem.bernstein_partial_mu_basis(partial_mu, point);
-            //elem.partial_mu_basis(partial_mu, point);
+
+            #ifdef bern
+              elem.bernstein_partial_xi_basis(partial_xi, point);
+              elem.bernstein_partial_eta_basis(partial_eta, point);
+              elem.bernstein_partial_mu_basis(partial_mu, point);
+            #else
+              elem.partial_xi_basis(partial_xi, point);
+              elem.partial_eta_basis(partial_eta, point);
+              elem.partial_mu_basis(partial_mu, point);
+            #endif
 
             // loop over the basis polynomials where there is one from each vertex
             for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
@@ -2987,8 +3002,11 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             auto cell_basis = CArray <real_t> (num_ref_verts_in_elem_);
             
             // calculate the cell basis function values at the point, for each vertex
-            elem.bernstein_basis(cell_basis, point);
-            //elem.basis(cell_basis, point);
+            #ifdef bern
+              elem.bernstein_basis(cell_basis, point);
+            #else
+              elem.basis(cell_basis, point);
+            #endif
 
             // save the basis values at the patch for each vertex
             for(int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++){
@@ -3012,12 +3030,15 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             }
             
             // calculate the partials at the cell location for each vertex
-            elem.bernstein_partial_xi_basis(partial_xi, point);
-            elem.bernstein_partial_eta_basis(partial_eta, point);
-            elem.bernstein_partial_mu_basis(partial_mu, point);
-            //elem.partial_xi_basis(partial_xi, point);
-            //elem.partial_eta_basis(partial_eta, point);
-            //elem.partial_mu_basis(partial_mu, point);
+            #ifdef bern
+              elem.bernstein_partial_xi_basis(partial_xi, point);
+              elem.bernstein_partial_eta_basis(partial_eta, point);
+              elem.bernstein_partial_mu_basis(partial_mu, point);
+            #else
+              elem.partial_xi_basis(partial_xi, point);
+              elem.partial_eta_basis(partial_eta, point);
+              elem.partial_mu_basis(partial_mu, point);
+            #endif
 
             // loop over the basis polynomials where there is one from each vertex
             for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
@@ -5822,65 +5843,6 @@ representative linear element for visualization
         } // end loop over all nodes
     } // end of Legrange_1D function
 
-    void HexN::create_lobatto_nodes(int element_order){
-
-        int num_nodes_1d = 0;
-        int num_nodes_3d = 0;
-
-        if( element_order == 0){
-
-            num_nodes_1d = 2;
-            num_nodes_3d = pow(num_nodes_1d, 3);
-
-        }
-
-        else{
-            num_nodes_1d = 2.0 * element_order + 1;
-            num_nodes_3d = pow(num_nodes_1d, 3);
-        }
-
-        // --- build gauss nodal positions and weights ---
-        // std::cout<< "Num Nodes passed to create lobatto nodes "<<std::endl;
-        //elements::lobatto_nodes_1D(HexN_Nodes_1d_, num_nodes_1d);
-        lobatto_nodes_1D(HexN_Nodes_1d_, num_nodes_1d);
-        
-        for(int num_k = 0; num_k < num_nodes_1d; num_k++){
-            for(int num_j = 0; num_j < num_nodes_1d; num_j++){
-                for(int num_i = 0; num_i < num_nodes_1d; num_i++){
-        
-                    int node_rlid = node_rid(num_i, num_j, num_k);
-
-                    HexN_Nodes_(node_rlid, 0) = HexN_Nodes_1d_(num_i);
-                    HexN_Nodes_(node_rlid, 1) = HexN_Nodes_1d_(num_j);
-                    HexN_Nodes_(node_rlid, 2) = HexN_Nodes_1d_(num_k);
-                }
-            }
-        }
-
-        // Saving vertex positions in 1D
-        if( element_order == 0){
-
-            int vert_id = 0;
-            for(int i = 0; i < num_nodes_1d; i++){
-
-                HexN_Verts_1d_(vert_id) = HexN_Nodes_1d_(i);
-
-                vert_id++;
-            }  
-
-        }
-
-        else{
-            
-            int vert_id = 0;
-            for(int i = 0; i < num_nodes_1d; i=i+2){
-
-                HexN_Verts_1d_(vert_id) = HexN_Nodes_1d_(i);
-
-                vert_id++;
-            }  
-        }
-    }
 
     void HexN::bernstein_basis(CArray <real_t> &basis, CArray <real_t> &point)
     {
@@ -6069,7 +6031,7 @@ representative linear element for visualization
         
         // calculate the basis value associated with each node_i
         for( int vert_i = 0; vert_i < num_verts_1d_; vert_i++){
-            interp(vert_i) = bernstein::eval(num_verts_1d_- 1, vert_i, point);
+            interp(vert_i) = bernstein::eval(num_verts_1d_-1, vert_i, point);
         }
 
     }//end of bernstein_basis_1D
@@ -6079,10 +6041,70 @@ representative linear element for visualization
         const real_t &point){
         
         for( int vert_i = 0; vert_i < num_verts_1d_; vert_i++){
-            derivative(vert_i)  = bernstein::eval_der(num_verts_1d_- 1, vert_i, point);
+            derivative(vert_i)  = bernstein::eval_der(num_verts_1d_-1, vert_i, point); 
         }
     
     }// end of bernstein_derivative_1D
+
+void HexN::create_lobatto_nodes(int element_order){
+
+        int num_nodes_1d = 0;
+        int num_nodes_3d = 0;
+
+        if( element_order == 0){
+
+            num_nodes_1d = 2;
+            num_nodes_3d = pow(num_nodes_1d, 3);
+
+        }
+
+        else{
+            num_nodes_1d = 2.0 * element_order + 1;
+            num_nodes_3d = pow(num_nodes_1d, 3);
+        }
+
+        // --- build gauss nodal positions and weights ---
+        // std::cout<< "Num Nodes passed to create lobatto nodes "<<std::endl;
+        //elements::lobatto_nodes_1D(HexN_Nodes_1d_, num_nodes_1d);
+        lobatto_nodes_1D(HexN_Nodes_1d_, num_nodes_1d);
+
+        for(int num_k = 0; num_k < num_nodes_1d; num_k++){
+            for(int num_j = 0; num_j < num_nodes_1d; num_j++){
+                for(int num_i = 0; num_i < num_nodes_1d; num_i++){
+
+                    int node_rlid = node_rid(num_i, num_j, num_k);
+
+                    HexN_Nodes_(node_rlid, 0) = HexN_Nodes_1d_(num_i);
+                    HexN_Nodes_(node_rlid, 1) = HexN_Nodes_1d_(num_j);
+                    HexN_Nodes_(node_rlid, 2) = HexN_Nodes_1d_(num_k);
+                }
+            }
+        }
+
+        // Saving vertex positions in 1D
+        if( element_order == 0){
+
+            int vert_id = 0;
+            for(int i = 0; i < num_nodes_1d; i++){
+
+                HexN_Verts_1d_(vert_id) = HexN_Nodes_1d_(i);
+
+                vert_id++;
+            }
+
+        }
+
+        else{
+
+            int vert_id = 0;
+            for(int i = 0; i < num_nodes_1d; i=i+2){
+
+                HexN_Verts_1d_(vert_id) = HexN_Nodes_1d_(i);
+
+                vert_id++;
+            }
+        }
+    }
 
 /*
 ==========================

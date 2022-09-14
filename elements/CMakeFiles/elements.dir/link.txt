@@ -1,2 +1,0 @@
-/usr/bin/ar qc libelements.a CMakeFiles/elements.dir/elements.cpp.o CMakeFiles/elements.dir/lagrange_polynomials.cpp.o CMakeFiles/elements.dir/lagrange_element.cpp.o CMakeFiles/elements.dir/legendre_polynomials.cpp.o CMakeFiles/elements.dir/legendre_element.cpp.o CMakeFiles/elements.dir/jacobi_polynomials.cpp.o CMakeFiles/elements.dir/gauss_jacobi_quadrature.cpp.o CMakeFiles/elements.dir/point_distributions.cpp.o CMakeFiles/elements.dir/bernstein_polynomials.cpp.o
-/usr/bin/ranlib libelements.a

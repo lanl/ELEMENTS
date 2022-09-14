@@ -8,6 +8,7 @@ add_library(
   jacobi_polynomials.cpp
   gauss_jacobi_quadrature.cpp
   point_distributions.cpp
+  bernstein_polynomials.cpp
 )
 target_link_libraries(
   elements

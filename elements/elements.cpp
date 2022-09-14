@@ -49,13 +49,14 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *****************************************************************************************/
 
 
-
 #include <iostream>  // std::cout etc.
 #include <cmath>
 
 #include "utilities.h"
 #include "elements.h"
+#include "bernstein_polynomials.h"
 
+#define bern // specify bern for bernstein or lagr for lagrange
 #define EPSILON 1.0e-12
 
 using namespace utils;
@@ -2274,7 +2275,7 @@ void jacobian_inverse_4d(
 
 // creates nodal positions with Chebyshev spacing
 void chebyshev_nodes_1D(
-    ViewCArray <real_t> &cheb_nodes_1D,   // Chebyshev nodes
+    CArray <real_t> &cheb_nodes_1D,   // Chebyshev nodes (changed to CArray from ViewCArray --steven )
     const int &order){                      // Interpolation order
 
     real_t pi = 3.14159265358979323846;
@@ -2645,8 +2646,12 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             }
 
             auto node_basis = CArray <real_t> (num_ref_verts_in_elem_);
-
-            elem.basis(node_basis, point);
+            
+            #ifdef bern
+              elem.bernstein_basis(node_basis, point);
+            #else
+              elem.basis(node_basis, point);
+            #endif
 
             for(int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++){
 
@@ -2672,10 +2677,17 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             for(int dim = 0; dim < 3; dim++){
                 point(dim) = ref_node_positions_(node_lid, dim);
             }
-
-            elem.partial_xi_basis(partial_xi, point);
-            elem.partial_eta_basis(partial_eta, point);
-            elem.partial_mu_basis(partial_mu, point);
+            
+            
+            #ifdef bern
+              elem.bernstein_partial_xi_basis(partial_xi, point);
+              elem.bernstein_partial_eta_basis(partial_eta, point);
+              elem.bernstein_partial_mu_basis(partial_mu, point);
+            #else
+              elem.partial_xi_basis(partial_xi, point);
+              elem.partial_eta_basis(partial_eta, point);
+              elem.partial_mu_basis(partial_mu, point);
+            #endif
 
             for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
 
@@ -2917,8 +2929,13 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             auto patch_basis = CArray <real_t> (num_ref_verts_in_elem_);
             
             // calculate the patch basis function values at the point, for each vertex
-            elem.basis(patch_basis, point);
-            
+
+            #ifdef bern
+              elem.bernstein_basis(patch_basis, point);
+            #else
+              elem.basis(patch_basis, point);
+            #endif
+
             // save the basis values at the patch for each vertex
             for(int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++){
                 ref_patch_basis_(patch_rlid, vert_rlid) = patch_basis(vert_rlid);
@@ -2942,10 +2959,17 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             }
             
             // calculate the partials at the patch location for each vertex
-            elem.partial_xi_basis(partial_xi, point);
-            elem.partial_eta_basis(partial_eta, point);
-            elem.partial_mu_basis(partial_mu, point);
-            
+
+            #ifdef bern
+              elem.bernstein_partial_xi_basis(partial_xi, point);
+              elem.bernstein_partial_eta_basis(partial_eta, point);
+              elem.bernstein_partial_mu_basis(partial_mu, point);
+            #else
+              elem.partial_xi_basis(partial_xi, point);
+              elem.partial_eta_basis(partial_eta, point);
+              elem.partial_mu_basis(partial_mu, point);
+            #endif
+
             // loop over the basis polynomials where there is one from each vertex
             for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
                 
@@ -2978,8 +3002,12 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             auto cell_basis = CArray <real_t> (num_ref_verts_in_elem_);
             
             // calculate the cell basis function values at the point, for each vertex
-            elem.basis(cell_basis, point);
-            
+            #ifdef bern
+              elem.bernstein_basis(cell_basis, point);
+            #else
+              elem.basis(cell_basis, point);
+            #endif
+
             // save the basis values at the patch for each vertex
             for(int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++){
                 ref_cell_basis_(cell_rlid, vert_rlid) = cell_basis(vert_rlid);
@@ -3002,10 +3030,16 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             }
             
             // calculate the partials at the cell location for each vertex
-            elem.partial_xi_basis(partial_xi, point);
-            elem.partial_eta_basis(partial_eta, point);
-            elem.partial_mu_basis(partial_mu, point);
-            
+            #ifdef bern
+              elem.bernstein_partial_xi_basis(partial_xi, point);
+              elem.bernstein_partial_eta_basis(partial_eta, point);
+              elem.bernstein_partial_mu_basis(partial_mu, point);
+            #else
+              elem.partial_xi_basis(partial_xi, point);
+              elem.partial_eta_basis(partial_eta, point);
+              elem.partial_mu_basis(partial_mu, point);
+            #endif
+
             // loop over the basis polynomials where there is one from each vertex
             for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++){
                 
@@ -4018,7 +4052,7 @@ void QuadN::lagrange_1D(
 } // end of Legrange_1D function
 
 
-// Corners of Lagrange element for mapping
+// Corners of Lagrange element for mappintein_basis
 void QuadN::corners (
     ViewCArray <real_t> &lag_nodes,   // Nodes of Lagrange elements 
     ViewCArray <real_t> &lag_corner,  // corner nodes of QuadN element
@@ -5754,7 +5788,7 @@ representative linear element for visualization
                 
             } // end looping over nodes != vert_i
 
-            // writing value to vectors for later use
+            // writing value to vectors for later use 
             interp(vert_i)   = interpolant;           // Interpolant value at given point
 
         } // end loop over all nodes
@@ -5771,10 +5805,10 @@ representative linear element for visualization
             real_t num_gradient = 0.0;      // placeholder for numerator of the gradient
             real_t gradient = 0.0;
 
-            for(int vert_j = 0; vert_j < num_verts_1d_; vert_j++){
+            //for(int vert_j = 0; vert_j < num_verts_1d_; vert_j++){
 
                 // std::cout<<"HexN 1D Vert "<<vert_j<< " = "<<HexN_Verts_1d_(vert_j)<<std::endl;
-            }
+            //}
 
             for(int vert_j = 0; vert_j < num_verts_1d_; vert_j++){  // looping over the nodes !=vert_i
                 if (vert_j != vert_i ){
@@ -5803,13 +5837,216 @@ representative linear element for visualization
             
             } // end looping over nodes != vert_i
 
-            // writing value to vectors for later use
+            // writing value to vectors for later use 
             derivative(vert_i)  = gradient;    // derivative of each function
-
+        
         } // end loop over all nodes
     } // end of Legrange_1D function
 
-    void HexN::create_lobatto_nodes(int element_order){
+
+    void HexN::bernstein_basis(CArray <real_t> &basis, CArray <real_t> &point)
+    {
+        auto val_1d = CArray <real_t> (num_verts_1d_);
+        auto val_3d = CArray <real_t> (num_verts_1d_, 3);
+        // Calculate 1D Bernstein basis for the X coordinate of the point
+        bernstein_basis_1D(val_1d, point(0));
+
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            val_3d(i,0) = val_1d(i);
+            val_1d(i) =0.0;
+        }
+
+        // Calculate the 1D Bernstein basis for the Y coordinate of the point
+        bernstein_basis_1D(val_1d, point(1));
+
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            val_3d(i,1) = val_1d(i);
+            val_1d(i) =0.0;
+        }
+        
+        // Calculate the 1D Bernstein basis for the Z coordinate of the point
+        bernstein_basis_1D(val_1d, point(2));
+        
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            val_3d(i,2) = val_1d(i);
+            val_1d(i) =0.0;
+        }
+        
+
+        // Multiply the (i,j,k) components of the basis from each node
+        // to get the tensor product basis for the node
+
+        for( int k = 0; k < num_verts_1d_;k++){
+            for(int j = 0; j < num_verts_1d_; j ++){
+                for(int i =0; i < num_verts_1d_; i++){
+                    
+                    int vert_rlid = vert_rid(i,j,k);
+                    basis(vert_rlid) = val_3d(i,0)*val_3d(j,1)*val_3d(k,2);
+                }
+            }
+        }
+    };
+
+    void HexN::bernstein_partial_xi_basis(CArray <real_t> &partial_xi, CArray <real_t> &point)
+    {
+        auto val_1d = CArray <real_t> (num_verts_1d_);
+        auto val_3d = CArray <real_t> (num_verts_1d_,3);
+
+        auto Dval_1d = CArray <real_t> (num_verts_1d_);
+        auto Dval_3d = CArray <real_t> (num_verts_1d_,3);
+
+        // Calculate partial w.r.t. xi for the X coordinate of the point
+        bernstein_derivative_1D(Dval_1d, point(0));
+
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            Dval_3d(i,0) = Dval_1d(i);
+            Dval_1d(i) = 0.0;
+        }
+
+        // Calculate 1D basis for the Y coordinate of the point
+        bernstein_basis_1D(val_1d, point(1));
+
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            val_3d(i,1) = val_1d(i);
+            val_1d(i) = 0.0;
+        }
+        
+        // Calculate 1D basis for the Z coordinate of the point
+        bernstein_basis_1D(val_1d, point(2));
+
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            val_3d(i,2) = val_1d(i);
+            val_1d(i) = 0.0;
+        }                                         
+
+        // Multiply the i,j,k components of the basis and partial_xi from each node
+        // to get the tensor product partial derivatives of the basis at each node
+        for( int k = 0; k < num_verts_1d_; k++){
+            for( int j = 0; j < num_verts_1d_; j++){
+                for( int i = 0; i < num_verts_1d_; i++){
+                    
+                    int vert_rlid = vert_rid(i,j,k);
+                    // Partial w.r.t. xi
+                    partial_xi(vert_rlid) = Dval_3d(i,0)*val_3d(j,1)*val_3d(k,2);
+                }
+            }
+        }
+    };
+    
+    void HexN::bernstein_partial_eta_basis(CArray <real_t> &partial_eta, CArray <real_t> &point)
+    {
+        auto val_1d = CArray <real_t> (num_verts_1d_);
+        auto val_3d = CArray <real_t> (num_verts_1d_,3);
+
+        auto Dval_1d = CArray <real_t> (num_verts_1d_);
+        auto Dval_3d = CArray <real_t> (num_verts_1d_,3);
+
+        // Calculate basis for the X coordinate of the point
+        bernstein_basis_1D(val_1d, point(0));
+        //
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            val_3d(i,0) = val_1d(i);
+            val_1d(i) = 0.0;
+        }
+        
+        // Calculate partial derivative w.r.t. eta for the Y coordinate of the point
+        bernstein_derivative_1D(Dval_1d, point(1));
+        
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            Dval_3d(i,1) = Dval_1d(i);
+            Dval_1d(i) = 0.0;
+        }
+        
+        // Calculate 1D basis for the Z coordinate of the point
+        bernstein_basis_1D(val_1d, point(2));
+        
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            val_3d(i,2) = val_1d(i);
+            val_1d(i) = 0.0;
+        }                                                                                                                                                                       // Multiply the i,j,k components of the basis and partial_eta from each node
+        // to get the tensor product partial derivatives of the basis at each node
+                                                                                                                                                                                for( int k = 0; k < num_verts_1d_; k++){
+            for( int j = 0; j < num_verts_1d_; j++){
+                for( int i = 0; i < num_verts_1d_; i++){
+        
+                    int vert_rlid = vert_rid(i,j,k);
+                    partial_eta(vert_rlid) = val_3d(i,0)*Dval_3d(j,1)*val_3d(k,2);
+
+                }
+            }
+        }
+    };
+    
+    void HexN::bernstein_partial_mu_basis(CArray <real_t> &partial_mu, CArray <real_t> &point)
+    {
+        auto val_1d = CArray <real_t> (num_verts_1d_);
+        auto val_3d = CArray <real_t> (num_verts_1d_,3);
+        auto Dval_1d = CArray <real_t> (num_verts_1d_);
+        auto Dval_3d = CArray <real_t> (num_verts_1d_,3);
+        // Calculate basis for the X coordinate of the point
+        bernstein_basis_1D(val_1d, point(0));
+        //
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            val_3d(i,0) = val_1d(i);
+            val_1d(i) = 0.0;
+        }                                                                                                                                                                       // Calculate 1D basis for the Y coordinate of the point
+        bernstein_basis_1D(val_1d, point(1));
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            val_3d(i,1) = val_1d(i);
+            val_1d(i) = 0.0;
+        }
+        // Calculate 1D basis for the Z coordinate of the point
+        bernstein_derivative_1D(Dval_1d, point(2));
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_verts_1d_; i++){
+            Dval_3d(i,2) = Dval_1d(i);
+            Dval_1d(i) = 0.0;
+        }
+        // Multiply the i,j,k components of the basis and partial_mu from each node
+        // to get the tensor product partial derivatives of the basis at each node
+        for( int k = 0; k < num_verts_1d_; k++){
+            for( int j = 0; j < num_verts_1d_; j++){
+                for( int i = 0; i < num_verts_1d_; i++){
+                    int vert_rlid = vert_rid(i,j,k);
+                    partial_mu(vert_rlid) = val_3d(i,0)*val_3d(j,1)*Dval_3d(k,2);
+                }
+            }
+        }
+    };
+    
+    void HexN::bernstein_basis_1D(
+        CArray <real_t> &interp, 
+        const real_t &point){
+        
+        // calculate the basis value associated with each node_i
+        for( int vert_i = 0; vert_i < num_verts_1d_; vert_i++){
+            interp(vert_i) = bernstein::eval(num_verts_1d_-1, vert_i, point);
+        }
+
+    }//end of bernstein_basis_1D
+        
+    void HexN::bernstein_derivative_1D(
+        CArray <real_t> &derivative,
+        const real_t &point){
+        
+        for( int vert_i = 0; vert_i < num_verts_1d_; vert_i++){
+            derivative(vert_i)  = bernstein::eval_der(num_verts_1d_-1, vert_i, point); 
+        }
+    
+    }// end of bernstein_derivative_1D
+
+void HexN::create_lobatto_nodes(int element_order){
 
         int num_nodes_1d = 0;
         int num_nodes_3d = 0;
@@ -5830,11 +6067,11 @@ representative linear element for visualization
         // std::cout<< "Num Nodes passed to create lobatto nodes "<<std::endl;
         //elements::lobatto_nodes_1D(HexN_Nodes_1d_, num_nodes_1d);
         lobatto_nodes_1D(HexN_Nodes_1d_, num_nodes_1d);
-        
+
         for(int num_k = 0; num_k < num_nodes_1d; num_k++){
             for(int num_j = 0; num_j < num_nodes_1d; num_j++){
                 for(int num_i = 0; num_i < num_nodes_1d; num_i++){
-        
+
                     int node_rlid = node_rid(num_i, num_j, num_k);
 
                     HexN_Nodes_(node_rlid, 0) = HexN_Nodes_1d_(num_i);
@@ -5853,23 +6090,21 @@ representative linear element for visualization
                 HexN_Verts_1d_(vert_id) = HexN_Nodes_1d_(i);
 
                 vert_id++;
-            }  
+            }
 
         }
 
         else{
-            
+
             int vert_id = 0;
             for(int i = 0; i < num_nodes_1d; i=i+2){
 
                 HexN_Verts_1d_(vert_id) = HexN_Nodes_1d_(i);
 
                 vert_id++;
-            }  
+            }
         }
     }
-
-
 
 /*
 ==========================

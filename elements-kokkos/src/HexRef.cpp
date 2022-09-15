@@ -1,4 +1,9 @@
 #include "HexRef.h"
+#include "LagrangeProductBasis.h"
+#include "LegendreProductBasis.h"
+#include "BernsteinProductBasis.h"
+#include "points_and_weights.h"
+#include "error.h"
 
 
 HexRef::HexRef(int order_basis, BasisType type_basis=LAGRANGE) {
@@ -20,8 +25,8 @@ HexRef::HexRef(int order_basis, BasisType type_basis=LAGRANGE) {
       *(num_ref_cells_1D_*num_ref_cells_1D_)*3;
   num_sides_in_elem_ = num_ref_cells_in_elem_*6;
 
-  num_ref_verts_in_elem_ = num_ref_verts_1d_*num_ref_verts_1d_
-      *num_ref_verts_1d_;
+  num_ref_verts_in_elem_ = num_ref_verts_1D_*num_ref_verts_1D_
+      *num_ref_verts_1D_;
   num_basis_ = num_ref_verts_in_elem_;
 
 
@@ -33,11 +38,13 @@ HexRef::HexRef(int order_basis, BasisType type_basis=LAGRANGE) {
   ref_patch_positions_ = MatarRealCArray(num_patches_in_elem_, 3);
   ref_patch_g_weights_ = MatarRealCArray(num_patches_in_elem_);
 
-  ref_cell_basis_ = MatarRealCArray(num_ref_cells_in_elem_, num_basis_, num_dim_);
+  ref_cell_basis_ = MatarRealCArray(num_ref_cells_in_elem_, num_basis_);
   ref_cell_gradient_ = MatarRealCArray(num_ref_cells_in_elem_, num_basis_, num_dim_);
 
-  ref_patch_basis_ =  MatarRealCArray(num_patches_in_elem_, num_ref_verts_in_elem_);
+  ref_patch_basis_ =  MatarRealCArray(num_patches_in_elem_, num_basis_);
   ref_patch_gradient_ = MatarRealCArray(num_patches_in_elem_, num_basis_, num_dim_);
+
+  ref_verts_1D_ = new real_t[num_ref_verts_1D_];
 
 
   // Retrieve Gauss-Legendre and Gauss-Lobatto quadrature points and weights
@@ -52,6 +59,15 @@ HexRef::HexRef(int order_basis, BasisType type_basis=LAGRANGE) {
   
   auto lob_weights_1D = MatarRealCArray(num_ref_nodes_1D_);
   lobatto_weights(lob_weights_1D, num_ref_nodes_1D_);
+
+
+  // Store every other node (quadrature point) coordinate as a vertex coordinate
+  int vert_id = 0, node_id = 0;
+  while (node_id < num_ref_nodes_1D_) {
+    ref_verts_1D_[vert_id] = lob_points_1D(node_id);
+    vert_id += 1;
+    node_id += 2;
+  }
 
 
   // Fill in cell data structures
@@ -138,6 +154,7 @@ HexRef::HexRef(int order_basis, BasisType type_basis=LAGRANGE) {
                      
             // Get the rID for the neighboring cell in the element
             // that communicates with this cell across this patch
+            int neighbor_cell_rid;
             if (side_lid == 0 && 0 < i) {
               neighbor_cell_rid = cell_rid(i-1, j, k);
             } else if (side_lid == 1 && i < num_ref_cells_1D_ - 1) {
@@ -175,81 +192,80 @@ HexRef::HexRef(int order_basis, BasisType type_basis=LAGRANGE) {
   }
 
 
+  // Initialize basis object based on type specified
+  switch (type_basis) {
+    case BasisType::LAGRANGE:
+      basis = new LagrangeProductBasis<real_t>(order_basis, ref_verts_1D_);
+      break;
+    case BasisType::LEGENDRE:
+      basis = new LegendreProductBasis<real_t>(order_basis);
+      break;
+    case BasisType::BERNSTEIN:
+      basis = new BernsteinProductBasis<real_t>(order_basis);
+      break;
+    default:
+      basis = nullptr;
+      std::string err_msg("Error: basis class not implemented for this type.");
+      throw NotImplementedError(err_msg);
+  }
+
+
   // Fill in evaluations of basis functions and their gradients in cells 
   for (int cell_rlid = 0; cell_rlid < num_ref_cells_in_elem_; cell_rlid++) {
-    auto point = MatarRealCArray(3);
+    // Get the cell coordinates
+    real_t point[num_dim_];
+    for (int dim = 0; dim < num_dim_; dim++)
+      point[dim] = ref_cell_positions(cell_rlid, dim);
     
-    // Get the patch coordinates
-    for (int dim = 0; dim < 3; dim++){
-      point(dim) = ref_cell_positions(cell_rlid, dim);
-    }
+    // Compute and store all the basis values at the cell
+    for (int basis_id = 0; basis_id < num_basis_; basis_id++)
+      ref_cell_basis_(cell_rlid, basis_id) = basis->eval_basis(basis_id, point);
     
-    // the basis function values at the patch for each vertex
-    auto cell_basis = MatarRealCArray(num_ref_verts_in_elem_);
-    
-    // calculate the cell basis function values at the point, for each vertex
-    elem.basis(cell_basis, point);
-    
-    // save the basis values at the patch for each vertex
-    for (int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++) {
-      ref_cell_basis_(cell_rlid, vert_rlid) = cell_basis(vert_rlid);
-    }
-
-    // calculate the partials at the cell location for each vertex
-    elem.partial_xi_basis(partial_xi, point);
-    elem.partial_eta_basis(partial_eta, point);
-    elem.partial_mu_basis(partial_mu, point);
-    
-    // loop over the basis polynomials where there is one from each vertex
-    for(int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++) {
-      ref_cell_gradient_(cell_rlid, basis_id, 0) = partial_xi(basis_id);
-      ref_cell_gradient_(cell_rlid, basis_id, 1) = partial_eta(basis_id);
-      ref_cell_gradient_(cell_rlid, basis_id, 2) = partial_mu(basis_id);
-      
-      partial_xi(basis_id)  = 0.0;
-      partial_eta(basis_id) = 0.0;
-      partial_mu(basis_id)  = 0.0;
+    // Compute and store all the basis gradient values at the cell
+    for (int basis_id = 0; basis_id < num_basis_; basis_id++) {
+      real_t grad_basis[num_dim_];
+      basis->eval_grad_basis(basis_id, point, grad_basis);
+      ref_cell_gradient_(cell_rlid, basis_id, 0) = grad_basis[0];
+      ref_cell_gradient_(cell_rlid, basis_id, 1) = grad_basis[1];
+      ref_cell_gradient_(cell_rlid, basis_id, 2) = grad_basis[2];
     } 
   } 
 
 
   // Fill in evaluations of basis functions and their gradients on patches
   for (int patch_rlid = 0; patch_rlid < num_patches_in_elem_; patch_rlid++) {
-    auto point = MatarRealCArray(3);
-    
+    // Get the cell coordinates
     // Get the patch coordinates
-    for(int dim = 0; dim < 3; dim++){
-        point(dim) = ref_patch_positions(patch_rlid, dim);
-    }
+    real_t point[num_dim_];
+    for (int dim = 0; dim < num_dim_; dim++)
+      point[dim] = ref_patch_positions(patch_rlid, dim);
     
-    // the basis function values at the patch for each vertex
-    auto patch_basis = MatarRealCArray(num_ref_verts_in_elem_);
-    
-    // calculate the patch basis function values at the point, for each vertex
-    elem.basis(patch_basis, point);
-    
-    // save the basis values at the patch for each vertex
-    for (int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++) {
-      ref_patch_basis_(patch_rlid, vert_rlid) = patch_basis(vert_rlid);
-    }
-
-    // calculate the partials at the patch location for each vertex
-    elem.partial_xi_basis(partial_xi, point);
-    elem.partial_eta_basis(partial_eta, point);
-    elem.partial_mu_basis(partial_mu, point);
+    // Compute and store all the basis values at the patch
+    for (int basis_id = 0; basis_id < num_basis_; basis_id++)
+      ref_patch_basis_(patch_rlid, basis_id) = basis->eval_basis(basis_id, 
+          point);
     
     // loop over the basis polynomials where there is one from each vertex
-    for (int basis_id = 0; basis_id < num_ref_verts_in_elem_; basis_id++) {
-      ref_patch_gradient_(patch_rlid, basis_id, 0) = partial_xi(basis_id);
-      ref_patch_gradient_(patch_rlid, basis_id, 1) = partial_eta(basis_id);
-      ref_patch_gradient_(patch_rlid, basis_id, 2) = partial_mu(basis_id);
-      
-      partial_xi(basis_id)  = 0.0;
-      partial_eta(basis_id) = 0.0;
-      partial_mu(basis_id)  = 0.0;
+    for (int basis_id = 0; basis_id < num_basis_; basis_id++) {
+      real_t grad_basis[num_dim_];
+      basis->eval_grad_basis(basis_id, point, grad_basis);
+      ref_patch_gradient_(patch_rlid, basis_id, 0) = grad_basis[0];
+      ref_patch_gradient_(patch_rlid, basis_id, 1) = grad_basis[1];
+      ref_patch_gradient_(patch_rlid, basis_id, 2) = grad_basis[2];
     } 
   } 
 }
+
+
+HexRef::~HexRef() {
+  delete[] ref_verts_1D_;
+  delete basis;
+}
+
+
+int HexRef::num_ref_cells_in_elem() const {
+    return num_ref_cells_in_elem_;
+};
 
 
 int HexRef::cell_rid(int i, int j, int k) const {
@@ -267,19 +283,24 @@ real_t HexRef::ref_cell_g_weights(int cell_rid) const {
 }
 
 
+int HexRef::patch_rlid_in_cell_neighbor(int patch_rlid) const {
+  return patch_rlid_cell_neighbor_[patch_rlid];
+}
+
+
 int HexRef::ref_patches_in_cell(int cell_rid, int patch_rlid) const {
   int index = patch_rlid + cell_rid*6;
   return ref_patches_in_cell_list_(index);
 }
 
 
-real_t HexRef::ref_patch_g_weights(int patch_rid) const {
-  return ref_patch_g_weights_(patch_rid);
+real_t HexRef::ref_patch_positions(int patch_rid, int dim) const {
+  return ref_patch_positions_(patch_rid, dim);
 }
 
 
-int HexRef::patch_rlid_in_cell_neighbor(int patch_rlid) const {
-  return patch_rlid_cell_neighbor_[patch_rlid];
+real_t HexRef::ref_patch_g_weights(int patch_rid) const {
+  return ref_patch_g_weights_(patch_rid);
 }
 
 
@@ -302,3 +323,25 @@ int HexRef::num_dim() const {
 int HexRef::num_basis() const {
   return num_basis_;
 }
+
+
+real_t HexRef::ref_cell_basis(int cell_rid, int basis_id) const {
+    return ref_cell_basis_(cell_rid, basis_id);
+};
+
+
+real_t HexRef::ref_cell_gradient(int cell_rid, int basis_id, 
+    int dim) const {
+    return ref_cell_gradient_(cell_rid, basis_id, dim);
+};
+
+
+real_t HexRef::ref_patch_basis(int patch_rid, int basis_id) const {
+    return ref_patch_basis_(patch_rid, basis_id);
+};
+
+
+real_t HexRef::ref_patch_gradient(int patch_rid, int basis_id, 
+    int dim) const {
+    return ref_patch_gradient_(patch_rid, basis_id, dim);
+};

@@ -4,7 +4,8 @@
 ELEMENTS_DIR=/path/to/elements
 MATAR_DIR=/path/to/matar/within/elements
 PROJECT_BUILD_DIR=/path/to/project/build/directory
-OMP_NUM_THREADS=sensible_number_of_openmp_threads_for_your_machine
+export OMP_NUM_THREADS=sensible_number_of_openmp_threads_for_your_machine
+export OMP_PROC_BIND=spread
 
 
 # Build and install Kokkos with OpenMP

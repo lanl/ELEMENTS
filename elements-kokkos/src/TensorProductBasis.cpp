@@ -3,28 +3,34 @@
 #include "error.h"
 
 
-void TensorProductBasis::eval_jac(const NumType *, const NumType *, 
+template <typename NumType>
+TensorProductBasis<NumType>::TensorProductBasis(const SizeType order) : Np(order) {}
+
+template <typename NumType>
+void TensorProductBasis<NumType>::eval_jac(const NumType *, const NumType *, 
     const NumType *, const NumType *, NumType *) {
   std::string err_msg(
-      "Error: Jacobian routines not implemented for this basis type.")
+      "Error: Jacobian routines not implemented for this basis type.");
   throw NotImplementedError(err_msg);
 };
 
-NumType TensorProductBasis::eval_det_jac(const NumType *, const NumType *, 
-    const NumType *, const NumType *) {
+template <typename NumType>
+NumType TensorProductBasis<NumType>::eval_det_jac(const NumType *, 
+    const NumType *, const NumType *, const NumType *) {
   std::string err_msg(
-      "Error: Jacobian routines not implemented for this basis type.")
+      "Error: Jacobian routines not implemented for this basis type.");
   throw NotImplementedError(err_msg);
   return 0.0;
 }
 
-void TensorProductBasis::eval_inv_jac(const NumType *, const NumType *, 
-    const NumType *, const NumType *, NumType *) {
+template <typename NumType>
+void TensorProductBasis<NumType>::eval_inv_jac(const NumType *, 
+    const NumType *, const NumType *, const NumType *, NumType *) {
   std::string err_msg(
-      "Error: Jacobian routines not implemented for this basis type.")
+      "Error: Jacobian routines not implemented for this basis type.");
   throw NotImplementedError(err_msg);
 }
 
 // Explicit instantiation of template class
 template class TensorProductBasis<Real>;
-template class LegendreProductBasis<Complex>;
+template class TensorProductBasis<Complex>;

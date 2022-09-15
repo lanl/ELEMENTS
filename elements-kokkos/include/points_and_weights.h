@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include "MatarTypeDefs.h"
 #include "common.h"
 
 
@@ -13,8 +14,8 @@ void chebyshev_points(SizeType N, NumType &zl, NumType &zr, NumType *z);
 
 
 /* Hard-coded Gauss-Lobatto and Gauss-Legendre quadrature points and weights */
-void lobatto_nodes_1D(MatarRealCArray &lob_nodes_1D, const int &num);
-void lobatto_weights_1D(MatarRealCArray &lob_weights_1D, const int &num);
+void lobatto_points(MatarRealCArray &lob_nodes_1D, const int &num);
+void lobatto_weights(MatarRealCArray &lob_weights_1D, const int &num);
 
-void legendre_nodes_1D(CArray <real_t> &leg_nodes_1D, const int &num);
-void legendre_weights_1D(CArray <real_t> &leg_weights_1D, const int &num);
+void legendre_points(MatarRealCArray &leg_nodes_1D, const int &num);
+void legendre_weights(MatarRealCArray &leg_weights_1D, const int &num);

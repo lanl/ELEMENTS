@@ -1,6 +1,9 @@
 #pragma once
 
 
+#include "common.h"
+
+
 /*
  * Interface class for 3D tensor product basis, to be called for evaluating: 
  *  - basis functions and their gradients;
@@ -16,6 +19,9 @@ struct TensorProductBasis {
   // Arrays for converting from flat to multidimensional indices
   SizeType ijk[Nd];
   SizeType rad[Nd];
+
+  TensorProductBasis(const SizeType);
+  ~TensorProductBasis() {};
 
   // Basis functions and basis function gradients
   virtual NumType eval_basis(const SizeType, const NumType *) = 0;

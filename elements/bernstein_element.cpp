@@ -36,7 +36,7 @@ template <typename NumType>
 void BernsteinElement<NumType>::eval_grad_basis(const SizeType I, const NumType *X, NumType *grad_phi) {
   // Decompose index of 3D tensor product basis function into indices of Bernstein polynomials
 
-  common::base_10_to_mized_radix(Nd, rad, I, ijk);
+  common::base_10_to_mixed_radix(Nd, rad, I, ijk);
 
   // Evaluate Bernstein polynomials
   NumType Bi = bernstein::eval(N, int(ijk[0]), X[0]);
@@ -58,7 +58,7 @@ void BernsteinElement<NumType>::eval_grad_basis(const SizeType I, const NumType 
 
 template <typename NumType>
 NumType BernsteinElement<NumType>::eval_approx(const NumType *c, const NumType *X) { 
-  for (int k = 0, k < N; k++) {
+  for (int k = 0; k < N; k++) {
     for (int j = 0; j < N; j++){
       // Collapse first dimension into coefficients for second dimension
       C[j] = bernstein::eval_approx(N, &c[j*N+k*N*N], X[0]);  
@@ -138,7 +138,7 @@ NumType BernsteinElement<NumType>::eval_det_jac(const NumType *x, const NumType 
 /* x, y, z in physical space. X in reference space. Jinv = Invers Jacobian (column-major). */
 
 template <typename NumType>
-void BernsteinElement<NumType>::eval_inv_jac(const NumType *x, const Numtype *y,
+void BernsteinElement<NumType>::eval_inv_jac(const NumType *x, const NumType *y,
      const  NumType *z, const NumType *X, NumType *Jinv) {
     
     // instantiate jacobian //

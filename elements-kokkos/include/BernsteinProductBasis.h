@@ -1,11 +1,14 @@
 #pragma once
 
+
 #include "TensorProductBasis.h"
-#include "common.h"
 
 
 template <typename NumType>
-struct BernsteinProductBasis : public TensorProductBasis { 
+struct BernsteinProductBasis : TensorProductBasis<NumType> { 
+  using TensorProductBasis<NumType>::Nd, TensorProductBasis<NumType>::Np, 
+      TensorProductBasis<NumType>::ijk, TensorProductBasis<NumType>::rad; 
+
   SizeType N;
   SizeType Ne;
   

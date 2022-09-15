@@ -2,27 +2,19 @@
 
 
 // MATAR includes
-#include "matar.h"
-
-
-// Switch between MATAR Kokkos/non-Kokkos data structures, depending on
-// availability of Kokkos
-#ifdef MATAR_WITH_KOKKOS
-typedef CArrayKokkos<real_t> MatarRealCArray;
-typedef CArrayKokkos<size_t> MatarUIntCArray;
-typedef CArrayKokkos<int> MatarIntCArray;
-#else
-typedef CArray<real_t> MatarRealCArray;
-typedef CArray<size_t> MatarUIntCArray;
-typedef CArray<int> MatarIntCArray;
-#endif // MATAR_WITH_KOKKOS
+#include "MatarTypeDefs.h"
 
 
 enum BasisType {
-    LAGRANGE,
-    LEGENDRE,
-    BEZIER
+  LAGRANGE,
+  LEGENDRE,
+  BERNSTEIN
 };
+
+
+// Forward declarations
+template <typename NumType>
+struct TensorProductBasis;
 
 
 struct HexRef {
@@ -32,6 +24,8 @@ struct HexRef {
 
   // Cells (subelements used in volume integration)
   int num_ref_cells_1D_;
+
+  int num_ref_cells_in_elem_;
   int num_ref_cells_in_elem() const;
 
   int cell_rid(int i, int j, int k) const;
@@ -78,6 +72,7 @@ struct HexRef {
 
 
   // Nodes (quadrature points) and vertices (degrees of freedom)
+  int num_ref_nodes_1D_;
   int num_ref_nodes_in_elem_;
   int num_ref_nodes() const;
 
@@ -104,4 +99,7 @@ struct HexRef {
 
   MatarRealCArray ref_patch_gradient_;
   real_t ref_patch_gradient(int patch_rid, int basis_id, int dim) const;
+
+  real_t *ref_verts_1D_;
+  TensorProductBasis<real_t> *basis;
 };

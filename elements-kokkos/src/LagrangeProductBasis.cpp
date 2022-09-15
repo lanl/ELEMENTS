@@ -4,7 +4,8 @@
 
 template <typename NumType>
 LagrangeProductBasis<NumType>::LagrangeProductBasis(const SizeType order, 
-    const NumType *vert_coords) : Np(order), Z(vert_coords) {
+    const NumType *vert_coords) : TensorProductBasis<NumType>(order), 
+    Z(vert_coords) {
   N = Np + 1;
   Ne = std::pow(N, Nd);
 

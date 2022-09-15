@@ -4,7 +4,7 @@
 
 template <typename NumType>
 LegendreProductBasis<NumType>::LegendreProductBasis(const SizeType order) 
-    : Np(order) {
+    : TensorProductBasis<NumType>(order) {
   N = Np + 1;
   Ne = std::pow(N, Nd);
 

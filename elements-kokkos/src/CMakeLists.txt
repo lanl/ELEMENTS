@@ -1,6 +1,15 @@
 add_library(
   elements_kokkos
     HexRef.cpp
+    LagrangeProductBasis.cpp  
+    LegendreProductBasis.cpp  
+    BernsteinProductBasis.cpp  
+    TensorProductBasis.cpp
+    lagrange_polynomials.cpp  
+    legendre_polynomials.cpp  
+    jacobi_polynomials.cpp  
+    bernstein_polynomials.cpp  
+    points_and_weights.cpp
 )
 
 target_compile_definitions(
@@ -19,13 +28,13 @@ target_include_directories(
 
 
 if (CUDA)
-  target_compile_definitions(elements PUBLIC -DHAVE_CUDA=1)
-elseif (HIP)
-  target_compile_definitions(elements PUBLIC -DHAVE_HIP=1)
-elseif (OPENMP)
-  target_compile_definitions(elements PUBLIC -DHAVE_OPENMP=1)
-elseif (THREADS)
-  target_compile_definitions(elements PUBLIC -DHAVE_THREADS=1)
+  target_compile_definitions(elements_kokkos PUBLIC -DHAVE_CUDA=1)
+elseif (HIP)                        
+  target_compile_definitions(elements_kokkos PUBLIC -DHAVE_HIP=1)
+elseif (OPENMP)                    
+  target_compile_definitions(elements_kokkos PUBLIC -DHAVE_OPENMP=1)
+elseif (THREADS)                  
+  target_compile_definitions(elements_kokkos PUBLIC -DHAVE_THREADS=1)
 else()
   message(FATAL_ERROR "Please specify whether you are using CUDA, HIP, OPENMP, etc.")
 endif()

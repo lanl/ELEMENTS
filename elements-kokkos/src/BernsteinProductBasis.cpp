@@ -4,7 +4,7 @@
 
 template <typename NumType>
 BernsteinProductBasis<NumType>::BernsteinProductBasis(const SizeType order) 
-    : Np( order) { 
+    : TensorProductBasis<NumType>(order) { 
   N = Np + 1;
   Ne = std::pow(N, Nd);
 
@@ -40,7 +40,7 @@ void BernsteinProductBasis<NumType>::eval_grad_basis(const SizeType I,
     const NumType *X, NumType *grad_phi) {
   // Decompose index of 3D tensor product basis function into indices of
   // Bernstein polynomials
-  common::base_10_to_mized_radix(Nd, rad, I, ijk);
+  common::base_10_to_mixed_radix(Nd, rad, I, ijk);
 
   // Evaluate Bernstein polynomials
   NumType Bi = bernstein::eval(N, int(ijk[0]), X[0]);
@@ -62,7 +62,7 @@ void BernsteinProductBasis<NumType>::eval_grad_basis(const SizeType I,
 template <typename NumType>
 NumType BernsteinProductBasis<NumType>::eval_approx(const NumType *c, 
     const NumType *X) { 
-  for (int k = 0, k < N; k++) {
+  for (int k = 0; k < N; k++) {
     for (int j = 0; j < N; j++){
       // Collapse first dimension into coefficients for second dimension
       C[j] = bernstein::eval_approx(N, &c[j*N+k*N*N], X[0]);  
@@ -148,7 +148,7 @@ NumType BernsteinProductBasis<NumType>::eval_det_jac(const NumType *x,
 
 template <typename NumType>
 void BernsteinProductBasis<NumType>::eval_inv_jac(const NumType *x, 
-    const Numtype *y, const  NumType *z, const NumType *X, NumType *Jinv) {
+    const NumType *y, const  NumType *z, const NumType *X, NumType *Jinv) {
   // instantiate jacobian //
   NumType J[9];
 

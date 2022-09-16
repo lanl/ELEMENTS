@@ -31,10 +31,10 @@ struct HexRef {
   int cell_rid(int i, int j, int k) const;
 
   MatarRealCArray ref_cell_positions_;
-  real_t ref_cell_positions(int cell_rid, int dim) const;
+  Real ref_cell_positions(int cell_rid, int dim) const;
 
   MatarRealCArray ref_cell_g_weights_;
-  real_t ref_cell_g_weights(int cell_rid) const;
+  Real ref_cell_g_weights(int cell_rid) const;
 
 
   // Patches (subelement faces used in surface integration)
@@ -55,12 +55,12 @@ struct HexRef {
   int ref_patches_in_cell(int cell_lid, int patch_rlid) const;
 
   MatarRealCArray ref_patch_positions_;
-  real_t ref_patch_positions(int patch_rid, int dim) const;
+  Real ref_patch_positions(int patch_rid, int dim) const;
 
   MatarRealCArray ref_patch_g_weights_;
-  real_t ref_patch_g_weights(int patch_rid) const;
+  Real ref_patch_g_weights(int patch_rid) const;
 
-  const real_t cell_side_unit_normals_[18] = {
+  const Real cell_side_unit_normals_[18] = {
     -1,  0,  0, // -xi 
      1,  0,  0, // +xi 
      0, -1,  0, // -eta 
@@ -68,7 +68,7 @@ struct HexRef {
      0,  0, -1, // -zeta 
      0,  0,  1  // +zeta 
   };
-  real_t cell_side_unit_normals(int side_rlid, int dim) const;
+  Real cell_side_unit_normals(int side_rlid, int dim) const;
 
 
   // Nodes (quadrature points) and vertices (degrees of freedom)
@@ -78,6 +78,8 @@ struct HexRef {
 
   int num_ref_verts_1D_;
   int num_ref_verts_in_elem_;
+
+  Real *ref_verts_1D_;
 
 
   // Evaluations of basis functions and their gradients at quadrature points
@@ -89,17 +91,16 @@ struct HexRef {
   int num_basis() const;
   
   MatarRealCArray ref_cell_basis_;
-  real_t ref_cell_basis(int cell_rid, int basis_id) const;
+  Real ref_cell_basis(int cell_rid, int basis_id) const;
 
   MatarRealCArray ref_cell_gradient_;
-  real_t ref_cell_gradient(int cell_rid, int basis_id, int dim) const;
+  Real ref_cell_gradient(int cell_rid, int basis_id, int dim) const;
 
   MatarRealCArray ref_patch_basis_;
-  real_t ref_patch_basis(int patch_rid, int basis_id) const;
+  Real ref_patch_basis(int patch_rid, int basis_id) const;
 
   MatarRealCArray ref_patch_gradient_;
-  real_t ref_patch_gradient(int patch_rid, int basis_id, int dim) const;
+  Real ref_patch_gradient(int patch_rid, int basis_id, int dim) const;
 
-  real_t *ref_verts_1D_;
-  TensorProductBasis<real_t> *basis;
+  TensorProductBasis<Real> *basis;
 };

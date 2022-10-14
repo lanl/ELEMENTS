@@ -1,0 +1,1 @@
+/usr/bin/c++ -O2 -g -DNDEBUG CMakeFiles/test_legendre_ref_integration.dir/test_legendre_ref_integration.cpp.o -o test_legendre_ref_integration  ../elements/libelements.a ../common/libcommon.a 

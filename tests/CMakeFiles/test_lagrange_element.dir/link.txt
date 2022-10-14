@@ -1,0 +1,1 @@
+/usr/bin/c++ -O2 -g -DNDEBUG CMakeFiles/test_lagrange_element.dir/test_lagrange_element.cpp.o -o test_lagrange_element  ../elements/libelements.a ../common/libcommon.a 

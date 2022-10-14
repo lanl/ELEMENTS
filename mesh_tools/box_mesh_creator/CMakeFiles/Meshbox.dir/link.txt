@@ -1,0 +1,1 @@
+/usr/bin/c++ -O2 -g -DNDEBUG CMakeFiles/Meshbox.dir/meshbox.cpp.o -o Meshbox 

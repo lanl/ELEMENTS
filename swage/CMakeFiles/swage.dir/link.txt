@@ -1,0 +1,2 @@
+/usr/bin/ar qc libswage.a CMakeFiles/swage.dir/swage.cpp.o CMakeFiles/swage.dir/refine_high_order_mesh.cpp.o CMakeFiles/swage.dir/evaluate_jacobian_determinants.cpp.o
+/usr/bin/ranlib libswage.a

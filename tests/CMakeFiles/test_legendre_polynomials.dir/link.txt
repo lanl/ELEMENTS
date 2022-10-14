@@ -1,0 +1,1 @@
+/usr/bin/c++ -O2 -g -DNDEBUG CMakeFiles/test_legendre_polynomials.dir/test_legendre_polynomials.cpp.o -o test_legendre_polynomials  ../elements/libelements.a ../common/libcommon.a 

@@ -4,8 +4,6 @@ name: Linux
 on:
   push:
     branches: [master]
-  pull_request: 
-    branches: [master]
 
 env:
   # CMake configuration for build with docs
@@ -45,16 +43,22 @@ jobs:
       uses: actions/checkout@v3
       with: 
         ref: gh-pages
-        token: ${{ secrets.GH_TOKEN }}
 
     - name: Configure git information
       run: |
         git config --global user.name Jan Kiviaho
         git config --global user.email jfk115@msstate.edu
         
-    - name: Update/add doc files and push
+    - name: Update/add doc files
       run: |
         cp -r /home/runner/work/install/docs/* .
         git add -A
         git commit -m "Automated publication of documentation"
-        git push
+
+    - name: Push changes
+      # You may pin to the exact commit or the version.
+      # uses: ad-m/github-push-action@40bf560936a8022e68a3c00e7d2abefaf01305a6
+      uses: ad-m/github-push-action@v0.6.0
+      with:
+        github_token: ${{secrets.GITHUB_TOKEN}}
+        branch: gh-pages

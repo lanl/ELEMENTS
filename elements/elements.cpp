@@ -2312,6 +2312,7 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
         num_g_pts_1d = 2;
         num_ref_nodes_1D_ = num_g_pts_1d;
         num_ref_verts_1d_ = 2;
+	num_ref_dual_verts_1d_ = 2;
         num_zones_1d_ = 1;
         num_zones_in_elem_ = num_zones_1d_*num_zones_1d_*num_zones_1d_;
     
@@ -2324,6 +2325,7 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
         num_g_pts_1d = 2 * p_order + 1; // num gauss points in 1d
         num_ref_nodes_1D_ = num_g_pts_1d;
         num_ref_verts_1d_ = p_order+1;
+	num_ref_dual_verts_1d_ = p_order;
         num_zones_1d_ = (num_ref_nodes_1D_ - 1) / 2;
         num_zones_in_elem_ = num_zones_1d_*num_zones_1d_*num_zones_1d_;
 
@@ -2344,6 +2346,8 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
 
     num_ref_verts_in_elem_ = num_ref_verts_1d_*num_ref_verts_1d_*num_ref_verts_1d_;
     
+    num_ref_dual_verts_in_elem_ = num_ref_dual_verts_1d_*num_ref_dual_verts_1d_*num_ref_dual_verts_1d_;
+
     num_ref_cells_in_elem_ =
         (num_ref_nodes_1D_-1)*(num_ref_nodes_1D_-1)*(num_ref_nodes_1D_-1);
 
@@ -2358,7 +2362,7 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
     
     num_basis_ = num_ref_verts_in_elem_;
 
-    
+    num_dual_basis_ = num_ref_dual_verts_in_elem_;
 
 
 
@@ -2382,9 +2386,9 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
 
     // Basis evaluation at the nodes
     ref_nodal_basis_ = CArray <real_t> (num_ref_nodes_in_elem_, num_basis_);
-
-
-
+    
+    ref_nodal_dual_basis_ = CArray <real_t> (num_ref_nodes_in_elem_, num_dual_basis_); 
+    
     // --- build reference index spaces for 3D ---
     if(num_dim_ == 3){
         
@@ -2630,8 +2634,8 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
                 }
             }
         } // end of loop over the ref cells in element
-
-        // Set up tensor product element
+        
+	// Set up tensor product element
         elem_ptr->setup_HexN(p_order);
 
 
@@ -2646,9 +2650,11 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
             }
 
             auto node_basis = CArray <real_t> (num_ref_verts_in_elem_);
-            
+            auto node_dual_basis = CArray <real_t> (num_ref_dual_verts_in_elem_);
+
             #ifdef bern
               elem.bernstein_basis(node_basis, point);
+	      elem.bernstein_dual_basis(node_dual_basis, point);
             #else
               elem.basis(node_basis, point);
             #endif
@@ -2657,6 +2663,10 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
 
                 ref_nodal_basis_(node_rlid, vert_rlid) = node_basis(vert_rlid);
             }
+
+	    for (int vert_rlid = 0; vert_rlid < num_ref_dual_verts_in_elem_; vert_rlid++){
+	       ref_nodal_dual_basis_(node_rlid, vert_rlid) = node_dual_basis(vert_rlid);
+	    }
 
         }
 
@@ -3069,6 +3079,11 @@ int ref_element::num_basis() const
     return num_ref_verts_in_elem_;
 }
 
+int ref_element::num_dual_basis() const
+{
+    return num_ref_dual_verts_in_elem_;
+}
+
 int ref_element::num_ref_nodes() const
 {
     return num_ref_nodes_in_elem_;
@@ -3168,66 +3183,71 @@ real_t& ref_element::ref_nodal_gradient(int node_rid, int basis_id, int dim) con
 {
     //return ref_nodal_gradient_[node_rid*num_dim_*num_basis_ + basis_id*num_dim_ + dim];
     return ref_nodal_gradient_(node_rid, basis_id, dim);
-}
+};
 
 real_t& ref_element::ref_nodal_basis(int node_rid, int basis_id) const
 {
     //return ref_nodal_gradient_[node_rid*num_dim_*num_basis_ + basis_id*num_dim_ + dim];
     return ref_nodal_basis_(node_rid, basis_id);
-}
+};
+
+real_t& ref_element::ref_nodal_dual_basis(int node_rid, int basis_id) const
+{
+  return ref_nodal_dual_basis_(node_rid, basis_id);
+};
 
 int& ref_element::cell_lid_in_zone(int zone_lid, int cell_lid) const
 {
     return cells_in_zone_list_(zone_lid, cell_lid);
-}
+};
     
 real_t ref_element::ref_cell_positions(int cell_rid, int dim) const
 {
     return ref_cell_positions_(cell_rid, dim);
-}
+};
     
 real_t ref_element::ref_cell_g_weights(int cell_rid) const
 {
     return ref_cell_g_weights_(cell_rid);
-}
+};
 
 int& ref_element::cell_nodes_in_elem(int cell_lid, int node_lid) const
 {
     return cell_nodes_in_elem_list_(cell_lid, node_lid);
-}
+};
 
 int ref_element::node_in_patch_in_cell(int patch_rlid, int node_lid) const
 {
     int index = node_lid + patch_rlid*4;
     return node_rlid_in_patch_in_cell_[index];
-}
+};
 
 int ref_element::patch_rlid_in_cell_neighbor(int patch_rlid) const
 {
     return patch_rlid_cell_neighbor_[patch_rlid];
-}
+};
 
 int ref_element::ref_patches_in_cell(int cell_rid, int patch_rlid) const
 {
     int index = patch_rlid + cell_rid*6;
     return ref_patches_in_cell_list_(index);
-}
+};
     
 real_t ref_element::cell_side_unit_normals(int side_rlid, int dim) const
 {
     int index = side_rlid*3 + dim;
     return cell_side_unit_normals_[index];
-}
+};
     
 real_t ref_element::ref_patch_positions(int patch_rid, int dim) const
 {
     return ref_patch_positions_(patch_rid, dim);
-}
+};
     
 real_t ref_element::ref_patch_g_weights(int patch_rid) const
 {
     return ref_patch_g_weights_(patch_rid);
-}
+};
     
 real_t ref_element::ref_patch_basis(int patch_rid, int basis_id) const
 {
@@ -3255,10 +3275,13 @@ real_t ref_element::ref_cell_gradient(int cell_rid, int basis_id, int dim) const
 int ref_element::vert_node_map(int vert_lid)
 {
     return elem_ptr->vert_node_map(vert_lid);
-}
-
-
-
+};
+/*
+int ref_element::dual_vert_node_map(int vert_lid)
+{
+    return elem_ptr->dual_vert_node_map(vert_lid);
+};
+*/
 
 // Deconstructor
 ref_element::~ref_element(){
@@ -5420,16 +5443,19 @@ representative linear element for visualization
 
             // Vertices
             num_verts_1d_ = 2;
+	    num_dual_verts_1d_ = 2;
             num_verts_ = pow(num_verts_1d_, 3);
+	    num_dual_verts_ = num_verts_;
             num_basis_ = pow(num_verts_1d_, 3);
-            
+            num_dual_basis_ = num_basis_;
+
             HexN_Verts_1d_ = CArray <real_t> (num_verts_);
             HexN_Verts_ = CArray <real_t> (num_verts_, 3);
 
-
             Vert_Node_map_ = CArray <size_t> (num_verts_);
+	    Dual_Vert_Node_map_ = CArray <size_t> (num_dual_verts_);
 
-            order_ = elem_order+1;
+	    order_ = elem_order+1;
 
 
         }
@@ -5450,11 +5476,16 @@ representative linear element for visualization
             num_verts_ = pow(num_verts_1d_, 3);
             num_basis_ = pow(num_verts_1d_, 3);
             
+            num_dual_verts_1d_ = elem_order;
+            num_dual_verts_ = pow(num_dual_verts_1d_, 3);
+            num_dual_basis_ = pow(num_dual_verts_1d_, 3);
+            
             HexN_Verts_1d_ = CArray <real_t> (num_verts_);
             HexN_Verts_ = CArray <real_t> (num_verts_, 3);
+            
+	    Vert_Node_map_ = CArray <size_t> (num_verts_);
 
-
-            Vert_Node_map_ = CArray <size_t> (num_verts_);
+            Dual_Vert_Node_map_ = CArray <size_t> (num_dual_verts_);
 
             order_ = elem_order;
 
@@ -5474,7 +5505,7 @@ representative linear element for visualization
                         int node_id = node_rid(i, j, k);
                         
                         Vert_Node_map_(vert_rid) = node_id;
-
+                        Dual_Vert_Node_map_(vert_rid) = node_id;
                         vert_rid++;                        
                     }   
                 }
@@ -5493,7 +5524,21 @@ representative linear element for visualization
 
                         int node_id = node_rid(i, j, k);
                         Vert_Node_map_(vert_rid) = node_id;
+			
                         vert_rid++;
+                    }   
+                }
+            }
+
+	    int dual_vert_rid = 0;
+            for(int k = 1; k < num_nodes_1d_; k=k+2){
+                for(int j = 1; j <= order_; j++){
+                    for(int i = 1; i < num_nodes_1d_; i=i+2){
+
+                        int node_id = node_rid(i, j, k);
+                        Dual_Vert_Node_map_(dual_vert_rid) = node_id;
+			
+                        dual_vert_rid++;
                     }   
                 }
             }
@@ -5505,6 +5550,10 @@ representative linear element for visualization
     {
         return HexN::num_verts_;
     };
+    int HexN::num_dual_verts()
+    {
+        return HexN::num_dual_verts_;
+    };
     int HexN::num_nodes()
     {
         return HexN::num_nodes_;
@@ -5513,7 +5562,11 @@ representative linear element for visualization
     {
         return HexN::num_basis_;
     };
-
+    int HexN::num_dual_basis()
+    {
+        return HexN::num_dual_basis_;
+    };
+    
     real_t& HexN::node_coords(int node_rlid, int this_dim)
     {
         return HexN_Nodes_(node_rlid, this_dim);
@@ -5523,8 +5576,12 @@ representative linear element for visualization
     int HexN::vert_node_map(int vert_rid) const
     {
         return Vert_Node_map_(vert_rid);
-    }
-
+    };
+    
+    int HexN::dual_vert_node_map(int vert_rid) const
+    {
+        return Dual_Vert_Node_map_(vert_rid);
+    };
 
     int HexN::node_rid(int i, int j, int k) const 
     {
@@ -5534,6 +5591,11 @@ representative linear element for visualization
     int HexN::vert_rid(int i, int j, int k) const 
     {
         return i + j*num_verts_1d_ + k*num_verts_1d_*num_verts_1d_;
+    };
+
+    int HexN::dual_vert_rid(int i, int j, int k) const 
+    {
+        return i + j*num_dual_verts_1d_ + k*num_dual_verts_1d_*num_dual_verts_1d_;
     };
 
     void HexN::basis(CArray <real_t> &basis, CArray <real_t> &point)
@@ -5890,6 +5952,52 @@ representative linear element for visualization
         }
     };
 
+    void HexN::bernstein_dual_basis(CArray <real_t> &dual_basis, CArray <real_t> &point)
+    {
+        auto val_1d = CArray <real_t> (num_dual_verts_1d_);
+        auto val_3d = CArray <real_t> (num_dual_verts_1d_, 3);
+        // Calculate 1D Bernstein basis for the X coordinate of the point
+        bernstein_dual_basis_1D(val_1d, point(0));
+
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_dual_verts_1d_; i++){
+            val_3d(i,0) = val_1d(i);
+            val_1d(i) =0.0;
+        }
+
+        // Calculate the 1D Bernstein basis for the Y coordinate of the point
+        bernstein_dual_basis_1D(val_1d, point(1));
+
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_dual_verts_1d_; i++){
+            val_3d(i,1) = val_1d(i);
+            val_1d(i) =0.0;
+        }
+        
+        // Calculate the 1D Bernstein basis for the Z coordinate of the point
+        bernstein_dual_basis_1D(val_1d, point(2));
+        
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for( int i = 0; i < num_dual_verts_1d_; i++){
+            val_3d(i,2) = val_1d(i);
+            val_1d(i) =0.0;
+        }
+        
+
+        // Multiply the (i,j,k) components of the basis from each node
+        // to get the tensor product basis for the node
+
+        for( int k = 0; k < num_dual_verts_1d_;k++){
+            for(int j = 0; j < num_dual_verts_1d_; j ++){
+                for(int i =0; i < num_dual_verts_1d_; i++){
+                    
+                    int vert_rlid = dual_vert_rid(i,j,k);
+                    dual_basis(vert_rlid) = val_3d(i,0)*val_3d(j,1)*val_3d(k,2);
+                }
+            }
+        }
+    };
+
     void HexN::bernstein_partial_xi_basis(CArray <real_t> &partial_xi, CArray <real_t> &point)
     {
         auto val_1d = CArray <real_t> (num_verts_1d_);
@@ -6035,6 +6143,17 @@ representative linear element for visualization
         }
 
     }//end of bernstein_basis_1D
+        
+    void HexN::bernstein_dual_basis_1D(
+        CArray <real_t> &interp, 
+        const real_t &point){
+        
+        // calculate the basis value associated with each node_i
+        for( int vert_i = 0; vert_i < num_dual_verts_1d_; vert_i++){
+            interp(vert_i) = bernstein::eval(num_dual_verts_1d_-1, vert_i, point);
+        }
+
+    }//end of bernstein_dual_basis_1D
         
     void HexN::bernstein_derivative_1D(
         CArray <real_t> &derivative,
@@ -6348,7 +6467,7 @@ void element_selector::choose_3Delem_type(elem_types::elem_type element_type, El
 
         case elem_types::HexN:
         {
-            // elem = &HexN_elem;
+           // elem = &HexN_elem;
             
             //std::cout<<"HexN Chosen"<<std::endl;
 

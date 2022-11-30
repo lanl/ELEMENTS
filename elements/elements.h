@@ -976,13 +976,16 @@ class Hex8: public Element3D {
 
             // Vertices
             int num_verts_1d_;
+	    int num_dual_verts_1d_;
+	    int num_dual_verts_;
             int num_verts_;
             int num_basis_;
+            int num_dual_basis_;
 
             CArray <real_t> HexN_Verts_1d_;
             CArray <real_t> HexN_Verts_;
-
             CArray <size_t> Vert_Node_map_;
+	    CArray <size_t> Dual_Vert_Node_map_;
             
             int order_;
 
@@ -992,16 +995,21 @@ class Hex8: public Element3D {
             void setup_HexN(int elem_order);
 
             int num_verts();
+	    int num_dual_verts();
             int num_nodes();
             int num_basis();
+	    int num_dual_basis();
             int node_rid(int i, int j, int k) const;
             int vert_rid(int i, int j, int k) const;
-
-            // Return the noda coordinates in reference space
+            int dual_vert_rid(int i, int j, int k) const;
+            
+	    // Return the noda coordinates in reference space
             real_t &node_coords(int node_rlid, int dim);
 
 
             int vert_node_map(int vert_rid) const;
+            
+            int dual_vert_node_map(int vert_rid) const;
             
             // Evaluate the basis at a given point
             void basis(
@@ -1038,6 +1046,10 @@ class Hex8: public Element3D {
                 CArray <real_t> &basis,
                 CArray <real_t> &point);
 
+            void bernstein_dual_basis(
+                CArray <real_t> &basis,
+                CArray <real_t> &point);
+
             void bernstein_build_nodal_gradient(
                 CArray <real_t> &gradient);
 
@@ -1054,6 +1066,10 @@ class Hex8: public Element3D {
                 CArray <real_t> &point);
 
             void bernstein_basis_1D(
+                CArray <real_t> &interp,
+                const real_t &x_point);
+
+            void bernstein_dual_basis_1D(
                 CArray <real_t> &interp,
                 const real_t &x_point);
 
@@ -1309,6 +1325,9 @@ private:
     int num_ref_verts_1d_;
     int num_ref_verts_in_elem_;
     
+    int num_ref_dual_verts_1d_;
+    int num_ref_dual_verts_in_elem_;
+    
     // corners
     int num_ref_corners_in_cell_;
     int num_ref_corners_in_elem_;
@@ -1338,18 +1357,20 @@ private:
     
     // Num basis functions
     int num_basis_;
-    
+    int num_dual_basis_;
+
     // Basis evaluation at nodes
     CArray <real_t> ref_nodal_basis_;
+    CArray <real_t> ref_nodal_dual_basis_;
+    
+    // Gradient of basis
+    CArray <real_t> ref_nodal_gradient_;
+    //real_t * ref_nodal_gradient_;
     
     // Pointer to HexN object
     HexN *elem_ptr;
     
 public:
-    
-    // Gradient of basis
-    CArray <real_t> ref_nodal_gradient_;
-    //real_t * ref_nodal_gradient_;
     
     // Function Declarations
     
@@ -1362,7 +1383,8 @@ public:
     int num_dim() const;
     
     int num_basis() const;
-    
+    int num_dual_basis() const;
+
     int num_ref_nodes() const;
     
     int num_ref_cells_in_elem() const;
@@ -1395,6 +1417,8 @@ public:
     
     real_t &ref_nodal_basis(int node_rid, int basis_id) const;
     
+    real_t &ref_nodal_dual_basis(int node_rid, int basis_id) const;
+
     int& cell_lid_in_zone(int zone_lid, int cell_lid) const;
     
     real_t ref_cell_positions(int cell_rid, int dim) const;
@@ -1418,7 +1442,7 @@ public:
     real_t ref_patch_gradient(int patch_rid, int basis_id, int dim) const;
     
     int vert_node_map(int vert_lid);
-    
+    int dual_vert_node_map(int vert_lid);    
     // Deconstructor
     ~ref_element();
     

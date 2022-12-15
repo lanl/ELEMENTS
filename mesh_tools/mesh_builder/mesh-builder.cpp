@@ -860,11 +860,15 @@ int main(int argc, char *argv[])
                     
                     // store the point IDs for this elem where the range is
                     // (i:i+1, j:j+1, k:k+1) for a linear hexahedron
-                    // (i:i+Pn_order, j:j+Pn_order, k:k+Pn_order) for a Pn hexahedron
+                    // (i:(i+1)*Pn_order, j:(j+1)*Pn_order, k:(k+1)*Pn_order) for a Pn hexahedron
                     int this_point = 0;
-                    for (int kcount=k; kcount<=k+Pn_order; kcount++){
-                        for (int jcount=j; jcount<=j+Pn_order; jcount++){
-                            for (int icount=i; icount<=i+Pn_order; icount++){
+                    
+                    int k_local = 0;
+                    for (int kcount=k*Pn_order; kcount<=(k+1)*Pn_order; kcount++){
+                        int j_local = 0;
+                        for (int jcount=j*Pn_order; jcount<=(j+1)*Pn_order; jcount++){
+                            int i_local = 0;
+                            for (int icount=i*Pn_order; icount<=(i+1)*Pn_order; icount++){
                                 
                                 // global id for the points
                                 point_id = get_id(icount, jcount, kcount,
@@ -872,18 +876,23 @@ int main(int argc, char *argv[])
                                 
                                 // convert this_point index to the FE index convention
                                 int order[3] = {Pn_order, Pn_order, Pn_order};
-                                int this_index = PointIndexFromIJK(icount, jcount, kcount, order);
+                                int this_index = PointIndexFromIJK(i_local, j_local, k_local, order);
+
                                 
                                 // store the points in this elem according the the finite
                                 // element numbering convention
                                 elem_point_list(elem_id,this_index) = point_id;
                                 
-                                
                                 // increment the point counting index
                                 this_point = this_point + 1;
                                 
+                                i_local++;
                             } // end for icount
+                            
+                            j_local++;
                         } // end for jcount
+                        
+                        k_local ++;
                     }  // end for kcount
                     
                     

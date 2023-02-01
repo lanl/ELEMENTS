@@ -56,7 +56,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "elements.h"
 #include "bernstein_polynomials.h"
 
-#define bern // specify bern for bernstein or lagr for lagrange
+#define lagr // specify bern for bernstein or lagr for lagrange
 #define EPSILON 1.0e-12
 
 using namespace utils;
@@ -2325,6 +2325,7 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
         num_g_pts_1d = 2 * p_order + 1; // num gauss points in 1d
         num_ref_nodes_1D_ = num_g_pts_1d;
         num_ref_verts_1d_ = p_order+1;
+	num_ref_dual_nodes_1D_ = 2*p_order - 1;
 	num_ref_dual_verts_1d_ = p_order;
         num_zones_1d_ = (num_ref_nodes_1D_ - 1) / 2;
         num_zones_in_elem_ = num_zones_1d_*num_zones_1d_*num_zones_1d_;
@@ -2340,18 +2341,20 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
     
     num_ref_corners_1D_ = 2*(num_ref_nodes_1D_ - 2) + 2;
 
- 
     num_ref_nodes_in_elem_ =
         num_ref_nodes_1D_*num_ref_nodes_1D_*num_ref_nodes_1D_;
 
     num_ref_verts_in_elem_ = num_ref_verts_1d_*num_ref_verts_1d_*num_ref_verts_1d_;
     
+    num_ref_dual_nodes_in_elem_ = 
+        num_ref_dual_nodes_1D_*num_ref_dual_nodes_1D_*num_ref_dual_nodes_1D_;
+
     num_ref_dual_verts_in_elem_ = num_ref_dual_verts_1d_*num_ref_dual_verts_1d_*num_ref_dual_verts_1d_;
 
     num_ref_cells_in_elem_ =
         (num_ref_nodes_1D_-1)*(num_ref_nodes_1D_-1)*(num_ref_nodes_1D_-1);
 
-    std::cout<<"Num cells in element reference  = "<<num_ref_cells_in_elem_<<std::endl;
+    std::cout<< " Num cells in element reference  = "<< num_ref_cells_in_elem_<<std::endl;
     
     cell_nodes_in_elem_list_ = CArray <int> (num_ref_cells_in_elem_, 8);
     
@@ -2378,6 +2381,8 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
     ref_corner_surf_normals_ = CArray <real_t> (num_ref_corners_in_elem_, num_dim_, num_dim_);
     
     ref_node_positions_ = CArray <real_t> (num_ref_nodes_in_elem_, num_dim_);
+
+    ref_dual_node_positions_ = CArray <real_t> (num_ref_dual_nodes_in_elem_, num_dim_);
     
     ref_node_g_weights_ = CArray <real_t> (num_ref_nodes_in_elem_);
 
@@ -2405,6 +2410,9 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
         auto lob_weights_1D = CArray <real_t> (num_ref_nodes_1D_);
         lobatto_weights_1D(lob_weights_1D, num_ref_nodes_1D_);
     
+        auto lob_dual_nodes_1D = CArray <real_t> (num_ref_dual_nodes_1D_);
+        lobatto_nodes_1D(lob_dual_nodes_1D, num_ref_dual_nodes_1D_);
+    
         for(int k = 0; k < num_ref_nodes_1D_; k++){
             for(int j = 0; j < num_ref_nodes_1D_; j++){
                 for(int i = 0; i < num_ref_nodes_1D_; i++){
@@ -2416,6 +2424,20 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
                     ref_node_positions_(n_rid,2) = lob_nodes_1D(k);
                     
                     ref_node_g_weights_(n_rid) = lob_weights_1D(i)*lob_weights_1D(j)*lob_weights_1D(k);
+                }
+            }
+        }
+    
+        for(int k = 0; k < num_ref_dual_nodes_1D_; k++){
+            for(int j = 0; j < num_ref_dual_nodes_1D_; j++){
+                for(int i = 0; i < num_ref_dual_nodes_1D_; i++){
+                    
+                    int n_rid = node_rid(i,j,k);
+                    
+                    ref_dual_node_positions_(n_rid,0) = lob_dual_nodes_1D(i);
+                    ref_dual_node_positions_(n_rid,1) = lob_dual_nodes_1D(j);
+                    ref_dual_node_positions_(n_rid,2) = lob_dual_nodes_1D(k);
+                    
                 }
             }
         }
@@ -2654,9 +2676,10 @@ void ref_element::init(int p_order, int num_dim, HexN &elem){
 
             #ifdef bern
               elem.bernstein_basis(node_basis, point);
-	      elem.bernstein_dual_basis(node_dual_basis, point);
+              elem.bernstein_dual_basis(node_dual_basis, point);
             #else
               elem.basis(node_basis, point);
+	      elem.dual_basis(node_dual_basis, point);
             #endif
 
             for(int vert_rlid = 0; vert_rlid < num_ref_verts_in_elem_; vert_rlid++){
@@ -3112,6 +3135,11 @@ int ref_element::node_rid(int i, int j, int k) const
     return i + j*num_ref_nodes_1D_ + k*num_ref_nodes_1D_*num_ref_nodes_1D_;
 };
 
+int ref_element::dual_node_rid(int i, int j, int k) const 
+{
+    return i + j*num_ref_dual_nodes_1D_ + k*num_ref_dual_nodes_1D_*num_ref_dual_nodes_1D_;
+};
+
 int ref_element::corner_rid(int i, int j, int k) const 
 {
     return i + j*num_ref_corners_1D_ + k*num_ref_corners_1D_*num_ref_corners_1D_;
@@ -3156,6 +3184,11 @@ real_t ref_element::ref_node_positions(int node_rid, int dim) const
     //DANreturn ref_node_positions_[dim + node_rid*num_dim_];
     return ref_node_positions_(node_rid, dim);
 };
+
+real_t ref_element::ref_dual_node_positions(int dual_node_rid, int dim) const
+{
+    return ref_dual_node_positions(dual_node_rid, dim);
+}
 
 real_t ref_element::ref_corner_surface_normals(int corner_rid, int surf_rlid, int dim) const 
 {
@@ -3276,12 +3309,12 @@ int ref_element::vert_node_map(int vert_lid)
 {
     return elem_ptr->vert_node_map(vert_lid);
 };
-/*
+
 int ref_element::dual_vert_node_map(int vert_lid)
 {
     return elem_ptr->dual_vert_node_map(vert_lid);
 };
-*/
+
 
 // Deconstructor
 ref_element::~ref_element(){
@@ -5440,6 +5473,11 @@ representative linear element for visualization
             HexN_Nodes_1d_ = CArray <real_t> (num_nodes_);
             HexN_Nodes_ = CArray <real_t> (num_nodes_, 3);
 
+            num_dual_nodes_1d_ = 2;
+            num_dual_nodes_ = pow(num_dual_nodes_1d_, 3);
+
+            HexN_Dual_Nodes_1d_ = CArray <real_t> (num_dual_nodes_);
+            HexN_Dual_Nodes_ = CArray <real_t> (num_dual_nodes_, 3);
 
             // Vertices
             num_verts_1d_ = 2;
@@ -5451,6 +5489,9 @@ representative linear element for visualization
 
             HexN_Verts_1d_ = CArray <real_t> (num_verts_);
             HexN_Verts_ = CArray <real_t> (num_verts_, 3);
+
+            HexN_Dual_Verts_1d_ = CArray <real_t> (num_verts_);
+            HexN_Dual_Verts_ = CArray <real_t> (num_verts_, 3);
 
             Vert_Node_map_ = CArray <size_t> (num_verts_);
 	    Dual_Vert_Node_map_ = CArray <size_t> (num_dual_verts_);
@@ -5467,8 +5508,14 @@ representative linear element for visualization
             num_nodes_1d_ = 2 * elem_order + 1;
             num_nodes_ = pow(num_nodes_1d_, 3);
 
+	    num_dual_nodes_1d_ = 2*elem_order - 1;
+	    num_dual_nodes_ = pow(num_dual_nodes_1d_,3);
+
             HexN_Nodes_1d_ = CArray <real_t> (num_nodes_);
             HexN_Nodes_ = CArray <real_t> (num_nodes_, 3);
+
+            HexN_Dual_Nodes_1d_ = CArray <real_t> (num_dual_nodes_);
+            HexN_Dual_Nodes_ = CArray <real_t> (num_dual_nodes_, 3);
 
 
             // Vertices
@@ -5483,6 +5530,9 @@ representative linear element for visualization
             HexN_Verts_1d_ = CArray <real_t> (num_verts_);
             HexN_Verts_ = CArray <real_t> (num_verts_, 3);
             
+            HexN_Dual_Verts_1d_ = CArray <real_t> (num_dual_verts_);
+            HexN_Dual_Verts_ = CArray <real_t> (num_dual_verts_, 3);
+            
 	    Vert_Node_map_ = CArray <size_t> (num_verts_);
 
             Dual_Vert_Node_map_ = CArray <size_t> (num_dual_verts_);
@@ -5492,21 +5542,21 @@ representative linear element for visualization
         }
         
         create_lobatto_nodes(elem_order);
-
+        create_lobatto_dual_nodes(elem_order-1);        
 
         // Set the vertex to node map (every other node)
         if(elem_order == 0){
 
-            int vert_rid = 0;
+            int vert_lrid = 0;
             for(int k = 0; k < num_nodes_1d_; k++){
                 for(int j = 0; j < num_nodes_1d_; j++){
                     for(int i = 0; i < num_nodes_1d_; i++){
 
                         int node_id = node_rid(i, j, k);
                         
-                        Vert_Node_map_(vert_rid) = node_id;
-                        Dual_Vert_Node_map_(vert_rid) = node_id;
-                        vert_rid++;                        
+                        Vert_Node_map_(vert_lrid) = node_id;
+                        Dual_Vert_Node_map_(vert_lrid) = node_id;
+                        vert_lrid++;                        
                     }   
                 }
             }
@@ -5517,21 +5567,35 @@ representative linear element for visualization
 
         if (elem_order >= 1){
 
-            int vert_rid = 0;
+            int vert_lrid = 0;
             for(int k = 0; k < num_nodes_1d_; k=k+2){
                 for(int j = 0; j < num_nodes_1d_; j=j+2){
                     for(int i = 0; i < num_nodes_1d_; i=i+2){
 
                         int node_id = node_rid(i, j, k);
-                        Vert_Node_map_(vert_rid) = node_id;
+                        Vert_Node_map_(vert_lrid) = node_id;
 			
-                        vert_rid++;
+                        vert_lrid++;
                     }   
                 }
             }
 
 	    int dual_vert_rid = 0;
-            for(int k = 1; k < num_nodes_1d_; k=k+2){
+
+	    for(int k = 0; k < num_nodes_1d_; k=k+4){
+                for(int j = 0; j < num_nodes_1d_; j=j+4){
+                    for(int i = 0; i < num_nodes_1d_; i=i+4){
+
+                        int node_id = node_rid(i, j, k);
+                        Dual_Vert_Node_map_(dual_vert_rid) = node_id;
+			
+                        dual_vert_rid++;
+                    }   
+                }
+            }
+/*
+	    
+	    for(int k = 1; k < num_nodes_1d_; k=k+2){
                 for(int j = 1; j <= order_; j++){
                     for(int i = 1; i < num_nodes_1d_; i=i+2){
 
@@ -5542,6 +5606,7 @@ representative linear element for visualization
                     }   
                 }
             }
+*/	    
         }
     
     }
@@ -5558,6 +5623,10 @@ representative linear element for visualization
     {
         return HexN::num_nodes_;
     };
+    int HexN::num_dual_nodes()
+    {
+        return HexN::num_dual_nodes_;
+    };
     int HexN::num_basis()
     {
         return HexN::num_basis_;
@@ -5571,7 +5640,11 @@ representative linear element for visualization
     {
         return HexN_Nodes_(node_rlid, this_dim);
     };
-
+    
+    real_t& HexN::dual_node_coords(int node_rlid, int this_dim)
+    {
+        return HexN_Dual_Nodes_(node_rlid, this_dim);
+    };
 
     int HexN::vert_node_map(int vert_rid) const
     {
@@ -5587,6 +5660,11 @@ representative linear element for visualization
     {
         return i + j*num_nodes_1d_ + k*num_nodes_1d_*num_nodes_1d_;
     };
+
+    int HexN::dual_node_rid(int i, int j, int k) const
+    {
+        return i + j*num_dual_nodes_1d_ + k*num_dual_nodes_1d_*num_dual_nodes_1d_;
+    }
 
     int HexN::vert_rid(int i, int j, int k) const 
     {
@@ -5644,6 +5722,52 @@ representative linear element for visualization
         }
     };
 
+
+    void HexN::dual_basis(CArray <real_t> &dual_basis, CArray <real_t> &point)
+    {
+
+        auto val_1d = CArray <real_t> (num_dual_verts_1d_);
+        auto val_3d = CArray <real_t> (num_dual_verts_1d_, 3);
+
+        // Calculate 1D basis for the X coordinate of the point
+        lagrange_dual_basis_1D(val_1d, point(0));
+        
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for(int i = 0; i < num_dual_verts_1d_; i++){
+            val_3d(i, 0) = val_1d(i);
+            val_1d(i) = 0.0;
+        }
+
+        // Calculate 1D basis for the Y coordinate of the point
+        lagrange_dual_basis_1D(val_1d, point(1));
+        
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for(int i = 0; i < num_dual_verts_1d_; i++){
+            val_3d(i, 1) = val_1d(i);
+            val_1d(i) = 0.0;
+        }
+
+        // Calculate 1D basis for the Z coordinate of the point
+        lagrange_dual_basis_1D(val_1d, point(2));
+        
+        // Save the basis value at the point to a temp array and zero out the temp array
+        for(int i = 0; i < num_dual_verts_1d_; i++){
+            val_3d(i, 2) = val_1d(i);
+            val_1d(i) = 0.0;
+        }
+        
+        // Multiply the i, j, k components of the basis from each node
+        // to get the tensor product basis for the node
+        for(int k = 0; k < num_dual_verts_1d_; k++){
+            for(int j = 0; j < num_dual_verts_1d_; j++){
+                for(int i = 0; i < num_dual_verts_1d_; i++){
+
+                    int vert_rlid = dual_vert_rid(i,j,k);
+                    dual_basis(vert_rlid) = val_3d(i, 0)*val_3d(j, 1)*val_3d(k, 2);
+                }
+            }
+        }
+    };
 
     void HexN::partial_xi_basis(CArray <real_t> &partial_xi, CArray <real_t> &point)
     {
@@ -5855,6 +5979,40 @@ representative linear element for visualization
 
         } // end loop over all nodes
     } // end of Legrange_1D function
+
+    void HexN::lagrange_dual_basis_1D(
+        CArray <real_t> &interp,    // interpolant from each basis
+        const real_t &x_point){     // point of interest in element
+                         
+        
+        // calculate the basis value associated with each node_i
+        for(int vert_i = 0; vert_i < num_dual_verts_1d_; vert_i++){ 
+            
+            real_t numerator = 1.0;         // placeholder numerator
+            real_t denominator = 1.0;       // placeholder denominator
+            real_t interpolant = 1.0;       // placeholder value of numerator/denominator
+            
+
+            for(int vert_j = 0; vert_j < num_dual_verts_1d_; vert_j++){  // looping over the verts !=vert_i
+                if (vert_j != vert_i ){
+                    
+                    // Calculate the numerator
+                    numerator = numerator*(x_point - HexN_Dual_Verts_1d_(vert_j));
+                    
+                    // Calculate the denominator 
+                    denominator = denominator*(HexN_Dual_Verts_1d_(vert_i) - HexN_Dual_Verts_1d_(vert_j));
+                
+                }//end if
+                
+                interpolant = numerator/denominator; // storing a single value for interpolation for node vert_i
+                
+            } // end looping over nodes != vert_i
+
+            // writing value to vectors for later use 
+            interp(vert_i)   = interpolant;           // Interpolant value at given point
+
+        } // end loop over all nodes
+    } // end of Lagrange_1D dual basis function
 
     void HexN::lagrange_derivative_1D(
         CArray <real_t> &derivative,    // derivative
@@ -6207,7 +6365,7 @@ void HexN::create_lobatto_nodes(int element_order){
             for(int i = 0; i < num_nodes_1d; i++){
 
                 HexN_Verts_1d_(vert_id) = HexN_Nodes_1d_(i);
-
+                
                 vert_id++;
             }
 
@@ -6223,8 +6381,67 @@ void HexN::create_lobatto_nodes(int element_order){
                 vert_id++;
             }
         }
-    }
+  }
 
+void HexN::create_lobatto_dual_nodes(int element_order){
+
+        int num_nodes_1d = 0;
+        int num_nodes_3d = 0;
+
+        if( element_order == 0){
+
+            num_nodes_1d = 2;
+            num_nodes_3d = pow(num_nodes_1d, 3);
+
+        }
+
+        else{
+            num_nodes_1d = 2.0 * element_order + 1;
+            num_nodes_3d = pow(num_nodes_1d, 3);
+        }
+
+        // --- build gauss nodal positions and weights ---
+        // std::cout<< "Num Nodes passed to create lobatto nodes "<<std::endl;
+        //elements::lobatto_nodes_1D(HexN_Nodes_1d_, num_nodes_1d);
+        lobatto_nodes_1D(HexN_Dual_Nodes_1d_, num_nodes_1d);
+
+        for(int num_k = 0; num_k < num_nodes_1d; num_k++){
+            for(int num_j = 0; num_j < num_nodes_1d; num_j++){
+                for(int num_i = 0; num_i < num_nodes_1d; num_i++){
+
+                    int node_rlid = node_rid(num_i, num_j, num_k);
+
+                    HexN_Dual_Nodes_(node_rlid, 0) = HexN_Dual_Nodes_1d_(num_i);
+                    HexN_Dual_Nodes_(node_rlid, 1) = HexN_Dual_Nodes_1d_(num_j);
+                    HexN_Dual_Nodes_(node_rlid, 2) = HexN_Dual_Nodes_1d_(num_k);
+                }
+            }
+        }
+
+        // Saving vertex positions in 1D
+        if( element_order == 0){
+
+            int vert_id = 0;
+            for(int i = 0; i < num_nodes_1d; i++){
+
+                HexN_Dual_Verts_1d_(vert_id) = HexN_Dual_Nodes_1d_(i);
+                
+                vert_id++;
+            }
+
+        }
+
+        else{
+
+            int vert_id = 0;
+            for(int i = 0; i < num_nodes_1d; i=i+2){
+
+                HexN_Dual_Verts_1d_(vert_id) = HexN_Dual_Nodes_1d_(i);
+
+                vert_id++;
+            }
+        }
+  }
 /*
 ==========================
    4D Tesseract element

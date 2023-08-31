@@ -11,11 +11,11 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -88,13 +88,13 @@
            <div itemprop="articleBody">
              
   <section id="how-to-add-to-docs">
-<h1>How to add to docs<a class="headerlink" href="#how-to-add-to-docs" title="Permalink to this heading"></a></h1>
+<h1>How to add to docs<a class="headerlink" href="#how-to-add-to-docs" title="Link to this heading"></a></h1>
 <section id="how-are-the-docs-generated">
-<h2>How are the docs generated?<a class="headerlink" href="#how-are-the-docs-generated" title="Permalink to this heading"></a></h2>
+<h2>How are the docs generated?<a class="headerlink" href="#how-are-the-docs-generated" title="Link to this heading"></a></h2>
 <p>The process of generating the ELEMENTS documentation is based on <a class="reference external" href="https://devblogs.microsoft.com/cppblog/clear-functional-c-documentation-with-sphinx-breathe-doxygen-cmake/">this blog</a>.</p>
 </section>
 <section id="why-do-it-this-way">
-<h2>Why do it this way?<a class="headerlink" href="#why-do-it-this-way" title="Permalink to this heading"></a></h2>
+<h2>Why do it this way?<a class="headerlink" href="#why-do-it-this-way" title="Link to this heading"></a></h2>
 <p>The reasoning for why we produce our documentation in such a complicated way goes as follows.
 Sphinx is our preferred tool for documentation:</p>
 <ol class="arabic simple">
@@ -105,7 +105,7 @@ Sphinx is our preferred tool for documentation:</p>
 The complication is that Sphinx cannot parse C++ source directly, so we must use Doxygen to parse the C++ source into XML files and Breathe, an extension of Sphinx, to parse those XML files so that they can be used by Sphinx.</p>
 </section>
 <section id="how-to-add-a-page-like-this-one">
-<h2>How to add a page like this one?<a class="headerlink" href="#how-to-add-a-page-like-this-one" title="Permalink to this heading"></a></h2>
+<h2>How to add a page like this one?<a class="headerlink" href="#how-to-add-a-page-like-this-one" title="Link to this heading"></a></h2>
 <ol class="arabic simple">
 <li><p>Create a new reStructuredText file in the <code class="docutils literal notranslate"><span class="pre">docs/sphinx/source</span></code> directory.</p></li>
 <li><p>Add the file name to the list of files under <code class="docutils literal notranslate"><span class="pre">Contents:</span></code> in the <code class="docutils literal notranslate"><span class="pre">docs/sphinx/source/index.rst</span></code> file.</p></li>
@@ -114,7 +114,7 @@ The complication is that Sphinx cannot parse C++ source directly, so we must use
 </ol>
 </section>
 <section id="how-to-write-a-page-of-restructuredtext">
-<h2>How to write a page of reStructuredText?<a class="headerlink" href="#how-to-write-a-page-of-restructuredtext" title="Permalink to this heading"></a></h2>
+<h2>How to write a page of reStructuredText?<a class="headerlink" href="#how-to-write-a-page-of-restructuredtext" title="Link to this heading"></a></h2>
 <p>Please see the reStructuredText <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html">primer</a> on the Sphinx web site.
 Also, when editing the reStructuredText source for this project’s documentation, please:</p>
 <ul class="simple">
@@ -123,14 +123,14 @@ Also, when editing the reStructuredText source for this project’s documentatio
 </ul>
 </section>
 <section id="how-to-include-source-documentation">
-<h2>How to include source documentation?<a class="headerlink" href="#how-to-include-source-documentation" title="Permalink to this heading"></a></h2>
+<h2>How to include source documentation?<a class="headerlink" href="#how-to-include-source-documentation" title="Link to this heading"></a></h2>
 <ol class="arabic simple">
 <li><p>Write source documentation in the headers using comments and comments blocks formatted for Doxygen, as explained on <a class="reference external" href="https://www.doxygen.nl/manual/docblocks.html">this page</a> in the Doxygen documentation.</p></li>
 <li><p>Add <a class="reference external" href="https://breathe.readthedocs.io/en/latest/directives.html">Breathe’s Doxygen directives</a>, e.g. for documented namespaces, classes, structs, functions, to the Sphinx reStructuredText files.</p></li>
 </ol>
 </section>
 <section id="how-to-generate-documentation-locally">
-<h2>How to generate documentation locally?<a class="headerlink" href="#how-to-generate-documentation-locally" title="Permalink to this heading"></a></h2>
+<h2>How to generate documentation locally?<a class="headerlink" href="#how-to-generate-documentation-locally" title="Link to this heading"></a></h2>
 <ol class="arabic simple">
 <li><p>Ensure that documentation generation dependencies are installed.
 Recall that these are <a class="reference external" href="https://doxygen.nl/download.html">Doxygen</a>, <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/installation.html">Sphinx</a>, <a class="reference external" href="https://breathe.readthedocs.io/en/latest/#download">Breathe</a>, and <a class="reference external" href="https://sphinx-rtd-theme.readthedocs.io/en/stable/installing.html">Read the Docs Sphinx Theme</a>.</p></li>
@@ -139,7 +139,7 @@ Recall that these are <a class="reference external" href="https://doxygen.nl/dow
 </ol>
 </section>
 <section id="how-to-publish-changes-to-github-pages">
-<h2>How to publish changes to GitHub Pages?<a class="headerlink" href="#how-to-publish-changes-to-github-pages" title="Permalink to this heading"></a></h2>
+<h2>How to publish changes to GitHub Pages?<a class="headerlink" href="#how-to-publish-changes-to-github-pages" title="Link to this heading"></a></h2>
 <p>This is done automatically.
 When commits are pushed to the <code class="docutils literal notranslate"><span class="pre">master</span></code> branch, several GitHub Actions workflows are launched.
 One of these is a workflow that regenerates the documentation, commits, and pushes the updates to the <code class="docutils literal notranslate"><span class="pre">gh-pages</span></code> branch, which is sourced by GitHub Pages.</p>

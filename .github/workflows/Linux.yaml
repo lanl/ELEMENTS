@@ -15,7 +15,8 @@ jobs:
   build-test-install:
     strategy: 
       matrix:
-        os: [ubuntu-18.04, ubuntu-latest]
+        #os: [ubuntu-18.04, ubuntu-latest]
+        os: [ubuntu-latest]
     runs-on: ${{matrix.os}}
 
     steps:

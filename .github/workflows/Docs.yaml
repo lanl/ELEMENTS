@@ -49,11 +49,11 @@ jobs:
         git config --global user.name Jan Kiviaho
         git config --global user.email jfk115@msstate.edu
         
-    - name: Update/add doc files
-      run: |
-        cp -r /home/runner/work/install/docs/* .
-        git add -A
-        git commit -m "Automated publication of documentation"
+    #- name: Update/add doc files
+    #  run: |
+    #    cp -r /home/runner/work/install/docs/* .
+    #    git add -A
+    #    git commit -m "Automated publication of documentation"
 
     - name: Push changes
       # You may pin to the exact commit or the version.

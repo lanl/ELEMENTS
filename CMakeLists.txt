@@ -74,7 +74,9 @@ add_subdirectory(swage)
 add_subdirectory(io)
 
 # Tests
-add_subdirectory(tests)
+if (BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
 
 # Examples
 add_subdirectory(examples)

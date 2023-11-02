@@ -9,6 +9,8 @@ cmake_minimum_required(VERSION 3.8)
 # C++17 standard required for MATAR
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 # Build type
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
@@ -44,14 +46,8 @@ if (WITH_DOCS)
   find_package(Sphinx REQUIRED)
 endif()
 
-# MATAR submodule
-# (Note: the way the MATAR submodule is handled may need to change in the
-# future. Currently, it is deployed as a header-only library, which is why it
-# seemed sufficient to simply include the MATAR header. However, the
-# requirements of linking Kokkos and other parts of Trilinos may change this.
-# Please update this as needed.)
 add_subdirectory(matar)
-include_directories(matar/src)
+include_directories(matar/src/include)
 
 
 ################################################################################
@@ -98,15 +94,67 @@ add_subdirectory(mesh_tools)
 # subdirectories looking for anything that matches the pattern "*.h" is
 # indiscriminate, and the resulting include/ directory isn't affected by
 # distclean. If there's a better way to do this, please introduce it here.)
-file(GLOB_RECURSE ALL_HEADERS *.h)
+add_library(Elements SHARED src/elements_lib_dummy.cpp)
+
+file(GLOB_RECURSE ALL_HEADERS elements/*.h geometry/*.h slam/*.h swage/*.h common/*.h swage2vtk/*.h)
 install(FILES ${ALL_HEADERS} DESTINATION include)
 
+target_include_directories(Elements PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Elements>  
+    $<INSTALL_INTERFACE:include/Elements>
+)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${PROJECT_BINARY_DIR}/ElementsConfigVersion.cmake"
+    VERSION 1.0
+    COMPATIBILITY AnyNewerVersion
+)
+
+install(TARGETS Elements
+    EXPORT ElementsTargets
+    LIBRARY DESTINATION lib COMPONENT Runtime
+    ARCHIVE DESTINATION lib COMPONENT Development
+    RUNTIME DESTINATION bin COMPONENT Runtime
+    PUBLIC_HEADER DESTINATION include COMPONENT Development
+    BUNDLE DESTINATION bin COMPONENT Runtime
+)
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    "${PROJECT_SOURCE_DIR}/cmake/ElementsConfig.cmake.in"
+    "${PROJECT_BINARY_DIR}/ElementsConfig.cmake"
+    INSTALL_DESTINATION lib/cmake/Elements
+)
+
+set_target_properties(Elements
+    PROPERTIES
+    PUBLIC_HEADER "${ALL_HEADERS}"
+)
+
+install(EXPORT ElementsTargets DESTINATION lib/cmake/Elements)
+install(FILES "${PROJECT_BINARY_DIR}/ElementsConfigVersion.cmake"
+    "${PROJECT_BINARY_DIR}/ElementsConfig.cmake"
+        DESTINATION lib/cmake/elements)
+    #install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/include/ DESTINATION include)
+
 # Install libraries in lib/ subdirectory of the specified install directory
-install(TARGETS elements DESTINATION lib)
-install(TARGETS geometry DESTINATION lib)
-install(TARGETS slam DESTINATION lib)
-install(TARGETS swage DESTINATION lib)
+install(TARGETS elements EXPORT ElementsTargets DESTINATION lib)
+install(TARGETS geometry EXPORT ElementsTargets DESTINATION lib)
+install(TARGETS slam EXPORT ElementsTargets DESTINATION lib)
+install(TARGETS swage EXPORT ElementsTargets DESTINATION lib)
 if (WITH_VTK AND VTK_FOUND)
-  install(TARGETS swage2vtk DESTINATION lib)
+    install(TARGETS swage2vtk EXPORT ElementsTargets DESTINATION lib)
 endif()
-install(TARGETS common DESTINATION lib)
+install(TARGETS common EXPORT ElementsTargets DESTINATION lib)
+
+target_link_libraries(Elements elements geometry slam swage common)
+#target_link_libraries(Elements geometry)
+if (WITH_VTK AND VTK_FOUND)
+    target_link_libraries(Elements PUBLIC swage2vtk)
+endif()
+target_link_libraries(Elements matar)
+if(Matar_ENABLE_KOKKOS)
+    target_link_libraries(Elements Kokkos::kokkos)
+endif()
+

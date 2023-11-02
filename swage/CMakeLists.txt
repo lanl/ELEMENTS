@@ -9,6 +9,6 @@ target_link_libraries(
   elements
 )
 
-target_include_directories(swage PUBLIC 
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
+#target_include_directories(swage PUBLIC 
+#  ${CMAKE_CURRENT_SOURCE_DIR}
+#)

@@ -1,3 +1,5 @@
+find_package(Elements)
+
 # "Average" example, an overview of ELEMENTS
 add_subdirectory(average)
 

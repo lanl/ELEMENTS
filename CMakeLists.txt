@@ -100,8 +100,8 @@ file(GLOB_RECURSE ALL_HEADERS elements/*.h geometry/*.h slam/*.h swage/*.h commo
 install(FILES ${ALL_HEADERS} DESTINATION include)
 
 target_include_directories(Elements PUBLIC 
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Elements>  
-    $<INSTALL_INTERFACE:include/Elements>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>  
+    $<INSTALL_INTERFACE:include>
 )
 
 include(CMakePackageConfigHelpers)
@@ -111,7 +111,7 @@ write_basic_package_version_file(
     COMPATIBILITY AnyNewerVersion
 )
 
-install(TARGETS Elements
+install(TARGETS Elements elements geometry slam swage common matar
     EXPORT ElementsTargets
     LIBRARY DESTINATION lib COMPONENT Runtime
     ARCHIVE DESTINATION lib COMPONENT Development
@@ -139,14 +139,9 @@ install(FILES "${PROJECT_BINARY_DIR}/ElementsConfigVersion.cmake"
     #install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/include/ DESTINATION include)
 
 # Install libraries in lib/ subdirectory of the specified install directory
-install(TARGETS elements EXPORT ElementsTargets DESTINATION lib)
-install(TARGETS geometry EXPORT ElementsTargets DESTINATION lib)
-install(TARGETS slam EXPORT ElementsTargets DESTINATION lib)
-install(TARGETS swage EXPORT ElementsTargets DESTINATION lib)
 if (WITH_VTK AND VTK_FOUND)
     install(TARGETS swage2vtk EXPORT ElementsTargets DESTINATION lib)
 endif()
-install(TARGETS common EXPORT ElementsTargets DESTINATION lib)
 
 target_link_libraries(Elements elements geometry slam swage common)
 #target_link_libraries(Elements geometry)
@@ -154,7 +149,4 @@ if (WITH_VTK AND VTK_FOUND)
     target_link_libraries(Elements PUBLIC swage2vtk)
 endif()
 target_link_libraries(Elements matar)
-if(Matar_ENABLE_KOKKOS)
-    target_link_libraries(Elements Kokkos::kokkos)
-endif()
 

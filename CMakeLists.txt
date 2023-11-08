@@ -75,7 +75,9 @@ if (BUILD_TESTS)
 endif()
 
 # Examples
-add_subdirectory(examples)
+if (BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 
 # Documentation
 if (WITH_DOCS)
@@ -136,7 +138,6 @@ install(EXPORT ElementsTargets DESTINATION lib/cmake/Elements)
 install(FILES "${PROJECT_BINARY_DIR}/ElementsConfigVersion.cmake"
     "${PROJECT_BINARY_DIR}/ElementsConfig.cmake"
         DESTINATION lib/cmake/elements)
-    #install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/include/ DESTINATION include)
 
 # Install libraries in lib/ subdirectory of the specified install directory
 if (WITH_VTK AND VTK_FOUND)
@@ -144,7 +145,6 @@ if (WITH_VTK AND VTK_FOUND)
 endif()
 
 target_link_libraries(Elements elements geometry slam swage common)
-#target_link_libraries(Elements geometry)
 if (WITH_VTK AND VTK_FOUND)
     target_link_libraries(Elements PUBLIC swage2vtk)
 endif()

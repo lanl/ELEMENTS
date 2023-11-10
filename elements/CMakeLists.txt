@@ -9,6 +9,7 @@ if (ENABLE_BLAS_LAPACK)
     jacobi_polynomials.cpp
     gauss_jacobi_quadrature.cpp
     point_distributions.cpp
+    bernstein_polynomials.cpp
   )
 else()
   add_library(
@@ -20,6 +21,7 @@ else()
     legendre_element.cpp
     jacobi_polynomials.cpp
     point_distributions.cpp
+    bernstein_polynomials.cpp
   )
 endif()
 target_link_libraries(

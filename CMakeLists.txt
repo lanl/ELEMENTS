@@ -12,8 +12,7 @@ set(CMAKE_CXX_STANDARD 17)
 # Build type
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
- # set(CMAKE_BUILD_TYPE Release)
-endif(NOT CMAKE_BUILD_TYPE)
+endif()
 
 # Set module path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
@@ -22,6 +21,28 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 ################################################################################
 # Dependencies
 ################################################################################
+# MATAR submodule
+# (Note: the way the MATAR submodule is handled may need to change in the
+# future. Currently, it is deployed as a header-only library, which is why it
+# seemed sufficient to simply include the MATAR header. However, the
+# requirements of linking Kokkos and other parts of Trilinos may change this.
+# Please update this as needed.)
+add_subdirectory(matar)
+include_directories(matar/src)
+
+# Optional Kokkos dependency for MATAR
+option(MATAR_WITH_KOKKOS "MATAR is to be compiled against Kokkos" OFF)
+if (MATAR_WITH_KOKKOS)
+  find_package(Kokkos REQUIRED)
+endif()
+
+# Optional Doxygen and Sphinx dependencies
+option(WITH_DOCS "Build the documentation locally" OFF)
+if (WITH_DOCS)
+  find_package(Doxygen REQUIRED)
+  find_package(Sphinx REQUIRED)
+endif()
+
 # Optional BLAS/LAPACK dependency (disabled by default)
 option(WITH_BLAS_LAPACK "Build ELEMENTS with BLAS/LAPACK" OFF)
 if (WITH_BLAS_LAPACK)
@@ -37,22 +58,6 @@ if (WITH_VTK)
   find_package(VTK REQUIRED NO_MODULE)
 endif()
 
-# Optional Doxygen and Sphinx dependencies
-option(WITH_DOCS "Build the documentation locally" OFF)
-if (WITH_DOCS)
-  find_package(Doxygen REQUIRED)
-  find_package(Sphinx REQUIRED)
-endif()
-
-# MATAR submodule
-# (Note: the way the MATAR submodule is handled may need to change in the
-# future. Currently, it is deployed as a header-only library, which is why it
-# seemed sufficient to simply include the MATAR header. However, the
-# requirements of linking Kokkos and other parts of Trilinos may change this.
-# Please update this as needed.)
-add_subdirectory(matar)
-include_directories(matar/src)
-
 
 ################################################################################
 # Build
@@ -60,6 +65,9 @@ include_directories(matar/src)
 # Includes
 include_directories(common)
 include_directories(elements)
+if (MATAR_WITH_KOKKOS)
+  add_subdirectory(elements-kokkos)
+endif()
 include_directories(geometry)
 include_directories(slam)
 include_directories(swage)

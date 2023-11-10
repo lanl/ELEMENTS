@@ -76,3 +76,13 @@ if (ENABLE_BLAS_LAPACK)
     ${LAPACK_LIBRARIES}
   )
 endif()
+
+#test Bernstein polynomials
+add_executable(
+  test_bernstein_polynomials
+  test_bernstein_polynomials.cpp
+)
+target_link_libraries(
+  test_bernstein_polynomials
+  elements
+)

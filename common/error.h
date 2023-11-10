@@ -19,3 +19,8 @@ class VtkGridError : public std::runtime_error {
  public:
   VtkGridError(const std::string info) : std::runtime_error(info) {}
 };
+
+class NotImplementedError : public std::runtime_error {
+ public:
+  NotImplementedError(const std::string info) : std::runtime_error(info) {}
+};

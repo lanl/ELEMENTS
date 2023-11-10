@@ -223,7 +223,7 @@ namespace elements {
 
     // creates nodal positions with Chebyshev spacing
     void chebyshev_nodes_1D(
-        ViewCArray <real_t> &cheb_nodes_1D,   // Chebyshev nodes
+        CArray <real_t> &cheb_nodes_1D,   // Chebyshev nodes (changed to CArray from ViewCArray --steven)
         const int &order);                      // Interpolation order
 
 
@@ -1035,6 +1035,37 @@ class Hex8: public Element3D {
                 CArray <real_t> &partials,  //derivative
                 const real_t &x_point);     // point of interest in element
 
+            void bernstein_basis(
+                CArray <real_t> &basis,
+                CArray <real_t> &point);
+
+            void bernstein_build_nodal_gradient(
+                CArray <real_t> &gradient);
+
+            void bernstein_partial_xi_basis(
+                CArray <real_t> &partial_xi,
+                CArray <real_t> &point);
+
+            void bernstein_partial_eta_basis(
+                CArray <real_t> &partial_eta,
+                CArray <real_t> &point);
+
+            void bernstein_partial_mu_basis(
+                CArray <real_t> &partial_mu,
+                CArray <real_t> &point);
+
+            void bernstein_basis_1D(
+                CArray <real_t> &interp,
+                const real_t &x_point);
+
+            void bernstein_derivative_1D(
+                CArray <real_t> &partials,
+                const real_t &x_point);
+
+
+
+
+
             void create_lobatto_nodes(int element_order);
 
     };
@@ -1153,7 +1184,7 @@ namespace elem_types
         Hex8   = 4,   // 8 node lagrangian hexahedral element 
         Hex20  = 5,   // 20 node serendipity hexahedral element 
         Hex32  = 6,   // 32 node serendipity hexahedral element 
-        HexN   = 7    // N node lagrangian hexahedral element 
+        HexN   = 7    // N node lagrangian or bernstein hexahedral element 
     
         // add tesseract element
 

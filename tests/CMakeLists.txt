@@ -1,3 +1,13 @@
+project(Tests)
+
+# CMake version > 3.8 required for C++17 standard
+cmake_minimum_required(VERSION 3.8)
+
+find_package(Elements)
+if(Matar_ENABLE_KOKKOS)
+    find_package(Kokkos)
+endif()
+
 # Test SLAM
 add_executable(
   test_slam_math
@@ -5,7 +15,9 @@ add_executable(
 )
 
 target_link_libraries(
-  slam
+  test_slam_math
+  Elements
+#  slam
 )
 
 # Test Lagrange polynomials
@@ -16,7 +28,8 @@ add_executable(
 
 target_link_libraries(
   test_lagrange_polynomials
-  elements
+  Elements
+  #elements
 )
 
 # Test Lagrange element
@@ -26,7 +39,8 @@ add_executable(
 )
 target_link_libraries(
   test_lagrange_element
-  elements
+  Elements
+  #elements
 )
 
 # Test Legendre polynomials
@@ -36,7 +50,8 @@ add_executable(
 )
 target_link_libraries(
   test_legendre_polynomials
-  elements
+  Elements
+  #elements
 )
 
 # Test Legendre element
@@ -46,7 +61,8 @@ add_executable(
 )
 target_link_libraries(
   test_legendre_element
-  elements
+  Elements
+  #elements
 )
 
 
@@ -57,7 +73,8 @@ add_executable(
 )
 target_link_libraries(
   test_legendre_ref_integration
-  elements
+  Elements
+  #elements
 )
 
 
@@ -70,8 +87,9 @@ if (ENABLE_BLAS_LAPACK)
   )
   target_link_libraries(
     test_gauss_jacobi_quadrature
-    common
-    elements
+    Elements
+    #common
+    #elements
     ${BLAS_LIBRARIES}
     ${LAPACK_LIBRARIES}
   )

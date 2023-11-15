@@ -154,13 +154,10 @@ source setup-env.sh ${machine} ${kokkos_build_type} ${build_cores}
 # Next, do action based on args
 if [ "$build_action" = "full-app" ]; then
     source kokkos-install.sh ${kokkos_build_type}
-    source matar-install.sh ${kokkos_build_type}
     source elements-install.sh ${kokkos_build_type}
     source cmake_build_${execution}.sh ${kokkos_build_type}
 elif [ "$build_action" = "install-kokkos" ]; then
     source kokkos-install.sh ${kokkos_build_type}
-elif [ "$build_action" = "install-matar" ]; then
-    source matar-install.sh ${kokkos_build_type}
 elif [ "$build_action" = "install-elements" ]; then
     source elements-install.sh ${kokkos_build_type}
 elif [ "$build_action" = "elements" ]; then

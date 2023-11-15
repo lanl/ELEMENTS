@@ -9,16 +9,16 @@ then
 fi
 
 cmake_options=(
-    -D CMAKE_PREFIX_PATH="${MATAR_INSTALL_DIR};${KOKKOS_INSTALL_DIR}"
+    -D CMAKE_PREFIX_PATH="${ELEMENTS_INSTALL_DIR};${KOKKOS_INSTALL_DIR}"
 )
 
 if [ "$kokkos_build_type" = "none" ]; then
     cmake_options+=(
-        -D KOKKOS=OFF
+        -D Matar_ENABLE_KOKKOS=OFF
     )
 else
     cmake_options+=(
-        -D KOKKOS=ON
+        -D Matar_ENABLE_KOKKOS=ON
     )
 fi
 

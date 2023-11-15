@@ -5,7 +5,7 @@ machine="$1"
 kokkos_build_type="$2"
 build_cores="$3"
 
-my_build="build-matar-${kokkos_build_type}"
+my_build="build-elements-${kokkos_build_type}"
 
 export scriptdir=`pwd`
 
@@ -20,7 +20,7 @@ export installdir=${basedir}/install
 export EXAMPLE_SOURCE_DIR=${basedir}/examples
 export EXAMPLE_BUILD_DIR=${builddir}
 
-export TEST_SOURCE_DIR=${basedir}/test
+export TEST_SOURCE_DIR=${basedir}/tests
 export TEST_BUILD_DIR=${builddir}
 
 export ELEMENTS_SOURCE_DIR=${basedir}

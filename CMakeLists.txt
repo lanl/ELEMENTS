@@ -69,16 +69,6 @@ add_subdirectory(slam)
 add_subdirectory(swage)
 add_subdirectory(io)
 
-# Tests
-if (BUILD_TESTS)
-  add_subdirectory(tests)
-endif()
-
-# Examples
-if (BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-
 # Documentation
 if (WITH_DOCS)
   add_subdirectory(docs)
@@ -96,12 +86,12 @@ add_subdirectory(mesh_tools)
 # subdirectories looking for anything that matches the pattern "*.h" is
 # indiscriminate, and the resulting include/ directory isn't affected by
 # distclean. If there's a better way to do this, please introduce it here.)
-add_library(Elements SHARED src/elements_lib_dummy.cpp)
+add_library(Elements INTERFACE)
 
 file(GLOB_RECURSE ALL_HEADERS elements/*.h geometry/*.h slam/*.h swage/*.h common/*.h swage2vtk/*.h)
 install(FILES ${ALL_HEADERS} DESTINATION include)
 
-target_include_directories(Elements PUBLIC 
+target_include_directories(Elements INTERFACE 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>  
     $<INSTALL_INTERFACE:include>
 )
@@ -137,16 +127,16 @@ set_target_properties(Elements
 install(EXPORT ElementsTargets DESTINATION lib/cmake/Elements)
 install(FILES "${PROJECT_BINARY_DIR}/ElementsConfigVersion.cmake"
     "${PROJECT_BINARY_DIR}/ElementsConfig.cmake"
-        DESTINATION lib/cmake/elements)
+        DESTINATION lib/cmake/Elements)
 
 # Install libraries in lib/ subdirectory of the specified install directory
 if (WITH_VTK AND VTK_FOUND)
     install(TARGETS swage2vtk EXPORT ElementsTargets DESTINATION lib)
 endif()
 
-target_link_libraries(Elements elements geometry slam swage common)
+target_link_libraries(Elements INTERFACE elements geometry slam swage common)
 if (WITH_VTK AND VTK_FOUND)
-    target_link_libraries(Elements PUBLIC swage2vtk)
+    target_link_libraries(Elements INTERFACE swage2vtk)
 endif()
-target_link_libraries(Elements matar)
+target_link_libraries(Elements INTERFACE matar)
 

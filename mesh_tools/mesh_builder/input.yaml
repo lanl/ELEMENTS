@@ -1,0 +1,48 @@
+# input file
+#mesh:
+#    create:
+#        type: "2D-Box"
+#    parameters:
+#        length_x: 1.0
+#        length_y: 1.0
+#        num_x_elems: 2
+#        num_y_elems: 2
+#        origin: [0.0, 0.0]
+#mesh:
+#    create:
+#        type: "2D-Polar"
+#    parameters:
+#        inner_radius: 7.0
+#        outer_radius: 8.0
+#        starting_angle: 45.0
+#        ending_angle: 90
+#        num_radial_elems: 10
+#        num_angular_elems: 5
+#        origin: [0.0, 0.0]
+mesh:
+    create:
+        type: "3D-Box"
+    parameters:
+        length_x: 1.0
+        length_y: 1.0
+        length_z: 1.0
+        num_x_elems: 5
+        num_y_elems: 5
+        num_z_elems: 5
+        origin: [0.0, 0.0, 0.0]
+#mesh:
+#    create:
+#        type: "3D-HexN-Box"
+#    parameters:
+#        length_x: 1.0
+#        length_y: 1.0
+#        length_z: 1.0
+#        num_x_elems: 1
+#        num_y_elems: 1
+#        num_z_elems: 1
+#        origin: [0.0, 0.0, 0.0]
+#        order: 20
+
+        
+#   ---- done ----
+    

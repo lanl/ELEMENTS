@@ -36,7 +36,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cmath>
 #include "matar.h"
-#include "ref_quadrature.hpp"
+#include "ref_quadrature.h"
 
 #define EPSILON 1.0e-12
 using namespace mtr;

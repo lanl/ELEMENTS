@@ -1,17 +1,13 @@
-# Includes
-include_directories(include)
+# examples/average/CMakeLists.txt
 
-set(Average_SRC_CXX src/average.cpp)
+# 1. Define the executable
+#    Point directly to the source file inside 'src/'
+add_executable(average_example src/average.cpp)
 
-add_executable(Average ${Average_SRC_CXX})
+# 2. Add this example's specific include path
+#    This allows main.cpp to find headers in examples/average/include/
+target_include_directories(average_example PRIVATE include)
 
-# Link libraries including MPI (required for mesh_io.h which includes mpi.h)
-# and Kokkos (required for Kokkos macros and types in swage/mesh.h)
-target_link_libraries(Average 
-    PRIVATE
-        Elements
-        input
-        matar
-        MPI::MPI_CXX
-        Kokkos::kokkos
-)
+# 3. Link against the main library (ELEMENTS)
+#    This pulls in Kokkos, MATAR, and the main library headers automatically.
+target_link_libraries(average_example PRIVATE ELEMENTS MPI::MPI_CXX)

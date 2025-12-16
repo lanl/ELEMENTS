@@ -1,142 +1,174 @@
-################################################################################
-# Preliminaries
-################################################################################
-project(ELEMENTS)
-
-# CMake version > 3.8 required for C++17 standard
-cmake_minimum_required(VERSION 3.8)
-
-# C++17 standard required for MATAR
-set(CMAKE_CXX_STANDARD 17)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-# Build type
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE RelWithDebInfo)
- # set(CMAKE_BUILD_TYPE Release)
-endif(NOT CMAKE_BUILD_TYPE)
-
-# Set module path
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+cmake_minimum_required(VERSION 3.20)
+project(ELEMENTS VERSION 1.0.0 LANGUAGES CXX C)
 
 
-################################################################################
-# Dependencies
-################################################################################
-# Optional BLAS/LAPACK dependency (disabled by default)
-option(WITH_BLAS_LAPACK "Build ELEMENTS with BLAS/LAPACK" OFF)
-if (WITH_BLAS_LAPACK)
-  find_package(BLAS REQUIRED)
-  find_package(LAPACK REQUIRED)
+# --- GLOBAL COMPILER FIXES (GCC 15 Compatibility) ---
+
+# 1. Force C11 Standard Globally
+#    This fixes the issue where "int func()" meant "0 arguments" in C23 
+#    but "unspecified arguments" in older C.
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON) # Enable GNU extensions (gnu11)
+
+# 2. Globally Downgrade GCC 15 Strictness Errors to Warnings
+#    Applies only to C files. Fixes "incompatible pointer type" errors in Scotch.
+add_compile_options(
+    $<$<COMPILE_LANGUAGE:C>:-Wno-error=incompatible-pointer-types>
+    $<$<COMPILE_LANGUAGE:C>:-Wno-error=int-conversion>
+    $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-int>
+    # Optional: Silence the warnings completely so they don't spam the log
+    $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
+    $<$<COMPILE_LANGUAGE:C>:-Wno-int-conversion>
+    $<$<COMPILE_LANGUAGE:C>:-Wno-implicit-int>
+)
+
+
+# --- 1. Find MPI  ---
+find_package(MPI)
+if(NOT MPI_FOUND)
+    message(WARNING "MPI not found! You may not be able to run parallel examples.")
+else()
+    if(MPI_CXX_VERSION LESS 3)
+        message(WARNING "MPI version ${MPI_CXX_VERSION} found, but version 3 or higher is required!")
+    endif()
 endif()
 
-# Optional VTK dependency (disabled by default)
-option(WITH_VTK "Build ELEMENTS with VTK" OFF)
-if (WITH_VTK)
-  # Have user provide VTK_DIR flag to identify VTK installation location and
-  # VTK_SOURCE_DIR to identify VTK source location
-  find_package(VTK REQUIRED NO_MODULE)
+
+# --- Options for Users ---
+option(ELEMENTS_BUILD_TESTS "Build unit tests" OFF) ## WARNING< NO TEST IMPLEMENTED YET
+option(ELEMENTS_BUILD_EXAMPLES "Build examples" ON) 
+
+option(ELEMENTS_ENABLE_SERIAL "Enable Serial support in Kokkos" ON)
+option(ELEMENTS_ENABLE_OPENMP "Enable OpenMP support in Kokkos" ON)
+option(ELEMENTS_ENABLE_PTHREADS "Enable PThreads support in Kokkos" OFF)
+option(ELEMENTS_ENABLE_CUDA "Enable CUDA support in Kokkos" OFF)
+option(ELEMENTS_ENABLE_HIP "Enable HIP support in Kokkos" OFF)
+
+# --- Dependency: Kokkos ---
+include(FetchContent)
+
+# Forward options to Kokkos BEFORE FetchContent
+# We use ordinary variables first; if Kokkos checks CACHE, we force it.
+set(Kokkos_ENABLE_SERIAL   ${ELEMENTS_ENABLE_SERIAL}   CACHE BOOL "" FORCE)
+set(Kokkos_ENABLE_OPENMP   ${ELEMENTS_ENABLE_OPENMP}   CACHE BOOL "" FORCE)
+set(Kokkos_ENABLE_PTHREADS ${ELEMENTS_ENABLE_PTHREADS} CACHE BOOL "" FORCE)
+set(Kokkos_ENABLE_CUDA     ${ELEMENTS_ENABLE_CUDA}     CACHE BOOL "" FORCE)
+set(Kokkos_ENABLE_HIP      ${ELEMENTS_ENABLE_HIP}      CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    Kokkos
+    GIT_REPOSITORY https://github.com/kokkos/kokkos
+    GIT_TAG        4.3.00 # Pin a specific version for stability
+)
+FetchContent_MakeAvailable(Kokkos)
+
+# --- Dependency: MATAR ---
+# Assuming MATAR is a CMake project. If it's just headers, this works fine if MATAR has a CMakeLists.txt
+FetchContent_Declare(
+    MATAR
+    GIT_REPOSITORY https://github.com/lanl/MATAR # Replace with actual URL
+    GIT_TAG        main   # Pin a specific commit/tag
+)
+FetchContent_MakeAvailable(MATAR)
+
+
+# Get the directory where MATAR was downloaded
+FetchContent_GetProperties(MATAR SOURCE_DIR MATAR_SOURCE_DIR)
+
+# --- MATAR Patching ---
+if(TARGET matar)
+    if(NOT TARGET matar::matar)
+        add_library(matar::matar ALIAS matar)
+    endif()
+
+    FetchContent_GetProperties(MATAR SOURCE_DIR MATAR_SOURCE_DIR)
+    
+    get_target_property(_matar_includes matar INTERFACE_INCLUDE_DIRECTORIES)
+
+    # 1. Fix Include Path (Existing Fix)
+    if(NOT "${MATAR_SOURCE_DIR}/src/include" IN_LIST _matar_includes)
+        message(STATUS "Patching MATAR target with missing include directory")
+        target_include_directories(matar INTERFACE 
+            $<BUILD_INTERFACE:${MATAR_SOURCE_DIR}/src/include>
+        )
+    endif()
+
+    # 2. Fix Definitions (NEW FIX)
+    # This adds -DHAVE_KOKKOS to the compile line for anything using matar
+    target_compile_definitions(matar INTERFACE HAVE_KOKKOS)
+
+    # 3. Fix MPI Definitions (Highly Recommended)
+    # Since you are using MPI, MATAR likely needs HAVE_MPI to enable its MPI types
+    if(MPI_FOUND)
+        target_compile_definitions(matar INTERFACE HAVE_MPI)
+    endif()
 endif()
 
-# Optional Doxygen and Sphinx dependencies
-option(WITH_DOCS "Build the documentation locally" OFF)
-if (WITH_DOCS)
-  find_package(Doxygen REQUIRED)
-  find_package(Sphinx REQUIRED)
-endif()
 
-add_subdirectory(matar)
-include_directories(matar/src/include)
+# --- Dependency: Scotch / PT-Scotch ---
+# We force SCOTCH_MPI to ON to build PT-Scotch.
+set(SCOTCH_MPI ON CACHE BOOL "Enable MPI for Scotch" FORCE)
+set(SCOTCH_BUILD_TESTS OFF CACHE BOOL "Disable Scotch Tests" FORCE)
 
+FetchContent_Declare(
+    Scotch
+    GIT_REPOSITORY https://gitlab.inria.fr/scotch/scotch.git
+    GIT_TAG        v7.0.4
+    # FIX: Robustly replace CMAKE_SOURCE_DIR with CMAKE_CURRENT_SOURCE_DIR.
+    # This prevents shell syntax errors and fixes the "include not found" bug.
+    PATCH_COMMAND  sed -i "s/CMAKE_SOURCE_DIR/CMAKE_CURRENT_SOURCE_DIR/g" CMakeLists.txt
+)
+FetchContent_MakeAvailable(Scotch)
 
-################################################################################
-# Build
-################################################################################
-# Includes
-include_directories(common)
-include_directories(elements)
-include_directories(geometry)
-include_directories(slam)
-include_directories(swage)
-include_directories(io)
+# --- FIX: Compatibility for Scotch with GCC 15 ---
+# We apply C11 standard and warning suppressions to ALL Scotch libraries and executables.
 
-# Libraries
-add_subdirectory(common)
-add_subdirectory(elements)
-add_subdirectory(geometry)
-add_subdirectory(slam)
+# # 1. Libraries
+# set(_scotch_targets 
+#     scotch ptscotch scotcherr scotcherrexit
+# )
+
+# # 2. Sequential Utilities (amk_m2, gmap, etc.)
+# list(APPEND _scotch_targets 
+#     amk_ccc amk_fft2 amk_grf amk_hy amk_m2 amk_p2 
+#     gbase gmap gord gout gpart gscat gtst 
+#     mcv mmk_m2 mmk_m3 mord mtst
+# )
+
+# # 3. Parallel Utilities (dggath, dgmap, etc.)
+# list(APPEND _scotch_targets 
+#     dggath dgmap dgord dgpart dgscat dgtst
+# )
+
+# foreach(_target ${_scotch_targets})
+#     if(TARGET ${_target})
+#         # Force C11 Standard (Fixes "too many arguments" errors)
+#         set_target_properties(${_target} PROPERTIES C_STANDARD 11)
+        
+#         # Silence strict GCC 15 warnings
+#         target_compile_options(${_target} PRIVATE 
+#             $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
+#             $<$<COMPILE_LANGUAGE:C>:-Wno-int-conversion>
+#             $<$<COMPILE_LANGUAGE:C>:-Wno-implicit-int>
+#         )
+#     endif()
+# endforeach()
+
+# --- Add ELEMENTS Source ---
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/swage
+    ${CMAKE_CURRENT_SOURCE_DIR}/elements
+)
 add_subdirectory(swage)
-add_subdirectory(io)
 
-# Documentation
-if (WITH_DOCS)
-  add_subdirectory(docs)
+# --- Optional Tests --- ## WARNING: NOTE YET IMPLEMENTED
+if(ELEMENTS_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
 endif()
 
-# mesh tools
-add_subdirectory(mesh_tools)
 
-
-################################################################################
-# Install
-################################################################################
-# Install headers in include/ subdirectory of the specified install directory
-# (Note: This is an inelegant way of installing the headers. Resursing through
-# subdirectories looking for anything that matches the pattern "*.h" is
-# indiscriminate, and the resulting include/ directory isn't affected by
-# distclean. If there's a better way to do this, please introduce it here.)
-add_library(Elements INTERFACE)
-
-file(GLOB_RECURSE ALL_HEADERS elements/*.h geometry/*.h slam/*.h swage/*.h common/*.h swage2vtk/*.h)
-install(FILES ${ALL_HEADERS} DESTINATION include)
-
-target_include_directories(Elements INTERFACE 
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>  
-    $<INSTALL_INTERFACE:include>
-)
-
-include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-    "${PROJECT_BINARY_DIR}/ElementsConfigVersion.cmake"
-    VERSION 1.0
-    COMPATIBILITY AnyNewerVersion
-)
-
-install(TARGETS Elements elements geometry slam swage common matar
-    EXPORT ElementsTargets
-    LIBRARY DESTINATION lib COMPONENT Runtime
-    ARCHIVE DESTINATION lib COMPONENT Development
-    RUNTIME DESTINATION bin COMPONENT Runtime
-    PUBLIC_HEADER DESTINATION include COMPONENT Development
-    BUNDLE DESTINATION bin COMPONENT Runtime
-)
-
-include(CMakePackageConfigHelpers)
-configure_package_config_file(
-    "${PROJECT_SOURCE_DIR}/cmake/ElementsConfig.cmake.in"
-    "${PROJECT_BINARY_DIR}/ElementsConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/Elements
-)
-
-set_target_properties(Elements
-    PROPERTIES
-    PUBLIC_HEADER "${ALL_HEADERS}"
-)
-
-install(EXPORT ElementsTargets DESTINATION lib/cmake/Elements)
-install(FILES "${PROJECT_BINARY_DIR}/ElementsConfigVersion.cmake"
-    "${PROJECT_BINARY_DIR}/ElementsConfig.cmake"
-        DESTINATION lib/cmake/Elements)
-
-# Install libraries in lib/ subdirectory of the specified install directory
-if (WITH_VTK AND VTK_FOUND)
-    install(TARGETS swage2vtk EXPORT ElementsTargets DESTINATION lib)
+# --- Optional Examples ---
+if(ELEMENTS_BUILD_EXAMPLES)
+    add_subdirectory(examples)
 endif()
-
-target_link_libraries(Elements INTERFACE elements geometry slam swage common)
-if (WITH_VTK AND VTK_FOUND)
-    target_link_libraries(Elements INTERFACE swage2vtk)
-endif()
-target_link_libraries(Elements INTERFACE matar)
-

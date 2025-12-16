@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "matar.h"
+
 #include "mesh.h"
 #include "mesh_inputs.h"
 #include "mesh_io.h"

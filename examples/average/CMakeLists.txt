@@ -10,4 +10,4 @@ target_include_directories(average_example PRIVATE include)
 
 # 3. Link against the main library (ELEMENTS)
 #    This pulls in Kokkos, MATAR, and the main library headers automatically.
-target_link_libraries(average_example PRIVATE ELEMENTS MPI::MPI_CXX)
+target_link_libraries(average_example PRIVATE ELEMENTS)

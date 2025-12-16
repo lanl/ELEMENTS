@@ -1,174 +1,135 @@
 cmake_minimum_required(VERSION 3.20)
 project(ELEMENTS VERSION 1.0.0 LANGUAGES CXX C)
 
+# --- 1. Global Compiler Fixes (Scoped to this project) ---
+# These settings apply to ELEMENTS and all its dependencies (Scotch, etc.)
+# but DO NOT leak up to the parent project (the solver).
 
-# --- GLOBAL COMPILER FIXES (GCC 15 Compatibility) ---
-
-# 1. Force C11 Standard Globally
-#    This fixes the issue where "int func()" meant "0 arguments" in C23 
-#    but "unspecified arguments" in older C.
+# Force C11 Standard (Required for PT-Scotch to build with GCC 15)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS ON) # Enable GNU extensions (gnu11)
+set(CMAKE_C_EXTENSIONS ON)
 
-# 2. Globally Downgrade GCC 15 Strictness Errors to Warnings
-#    Applies only to C files. Fixes "incompatible pointer type" errors in Scotch.
-add_compile_options(
-    $<$<COMPILE_LANGUAGE:C>:-Wno-error=incompatible-pointer-types>
-    $<$<COMPILE_LANGUAGE:C>:-Wno-error=int-conversion>
-    $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-int>
-    # Optional: Silence the warnings completely so they don't spam the log
-    $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
-    $<$<COMPILE_LANGUAGE:C>:-Wno-int-conversion>
-    $<$<COMPILE_LANGUAGE:C>:-Wno-implicit-int>
-)
-
-
-# --- 1. Find MPI  ---
-find_package(MPI)
-if(NOT MPI_FOUND)
-    message(WARNING "MPI not found! You may not be able to run parallel examples.")
+# --- 2. Check Scope for Options ---
+# We still use this check for things like "Should we build examples?"
+# because a solver user likely doesn't want to compile your examples.
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    set(ELEMENTS_IS_TOP_LEVEL ON)
 else()
-    if(MPI_CXX_VERSION LESS 3)
-        message(WARNING "MPI version ${MPI_CXX_VERSION} found, but version 3 or higher is required!")
-    endif()
+    set(ELEMENTS_IS_TOP_LEVEL OFF)
 endif()
 
+# --- 3. Find MPI (Required) ---
+find_package(MPI REQUIRED)
+if(MPI_CXX_VERSION LESS 3)
+    message(WARNING "ELEMENTS requires MPI version 3+. Found ${MPI_CXX_VERSION}.")
+endif()
 
-# --- Options for Users ---
-option(ELEMENTS_BUILD_TESTS "Build unit tests" OFF) ## WARNING< NO TEST IMPLEMENTED YET
-option(ELEMENTS_BUILD_EXAMPLES "Build examples" ON) 
-
+# --- 4. Options ---
 option(ELEMENTS_ENABLE_SERIAL "Enable Serial support in Kokkos" ON)
 option(ELEMENTS_ENABLE_OPENMP "Enable OpenMP support in Kokkos" ON)
 option(ELEMENTS_ENABLE_PTHREADS "Enable PThreads support in Kokkos" OFF)
 option(ELEMENTS_ENABLE_CUDA "Enable CUDA support in Kokkos" OFF)
 option(ELEMENTS_ENABLE_HIP "Enable HIP support in Kokkos" OFF)
 
-# --- Dependency: Kokkos ---
+option(ELEMENTS_BUILD_EXAMPLES "Build examples" ${ELEMENTS_IS_TOP_LEVEL}) 
+option(ELEMENTS_BUILD_TESTS "Build unit tests" OFF)
+
 include(FetchContent)
 
-# Forward options to Kokkos BEFORE FetchContent
-# We use ordinary variables first; if Kokkos checks CACHE, we force it.
-set(Kokkos_ENABLE_SERIAL   ${ELEMENTS_ENABLE_SERIAL}   CACHE BOOL "" FORCE)
-set(Kokkos_ENABLE_OPENMP   ${ELEMENTS_ENABLE_OPENMP}   CACHE BOOL "" FORCE)
-set(Kokkos_ENABLE_PTHREADS ${ELEMENTS_ENABLE_PTHREADS} CACHE BOOL "" FORCE)
-set(Kokkos_ENABLE_CUDA     ${ELEMENTS_ENABLE_CUDA}     CACHE BOOL "" FORCE)
-set(Kokkos_ENABLE_HIP      ${ELEMENTS_ENABLE_HIP}      CACHE BOOL "" FORCE)
-FetchContent_Declare(
-    Kokkos
-    GIT_REPOSITORY https://github.com/kokkos/kokkos
-    GIT_TAG        4.3.00 # Pin a specific version for stability
-)
-FetchContent_MakeAvailable(Kokkos)
-
-# --- Dependency: MATAR ---
-# Assuming MATAR is a CMake project. If it's just headers, this works fine if MATAR has a CMakeLists.txt
-FetchContent_Declare(
-    MATAR
-    GIT_REPOSITORY https://github.com/lanl/MATAR # Replace with actual URL
-    GIT_TAG        main   # Pin a specific commit/tag
-)
-FetchContent_MakeAvailable(MATAR)
-
-
-# Get the directory where MATAR was downloaded
-FetchContent_GetProperties(MATAR SOURCE_DIR MATAR_SOURCE_DIR)
-
-# --- MATAR Patching ---
-if(TARGET matar)
-    if(NOT TARGET matar::matar)
-        add_library(matar::matar ALIAS matar)
-    endif()
-
-    FetchContent_GetProperties(MATAR SOURCE_DIR MATAR_SOURCE_DIR)
+# --- 5. Dependency: Kokkos ---
+if(NOT TARGET Kokkos::kokkos)
+    set(Kokkos_ENABLE_SERIAL   ${ELEMENTS_ENABLE_SERIAL}   CACHE BOOL "" FORCE)
+    set(Kokkos_ENABLE_OPENMP   ${ELEMENTS_ENABLE_OPENMP}   CACHE BOOL "" FORCE)
+    set(Kokkos_ENABLE_PTHREADS ${ELEMENTS_ENABLE_PTHREADS} CACHE BOOL "" FORCE)
+    set(Kokkos_ENABLE_CUDA     ${ELEMENTS_ENABLE_CUDA}     CACHE BOOL "" FORCE)
+    set(Kokkos_ENABLE_HIP      ${ELEMENTS_ENABLE_HIP}      CACHE BOOL "" FORCE)
     
-    get_target_property(_matar_includes matar INTERFACE_INCLUDE_DIRECTORIES)
+    FetchContent_Declare(
+        Kokkos
+        GIT_REPOSITORY https://github.com/kokkos/kokkos
+        GIT_TAG        4.3.00
+    )
+    FetchContent_MakeAvailable(Kokkos)
+endif()
 
-    # 1. Fix Include Path (Existing Fix)
-    if(NOT "${MATAR_SOURCE_DIR}/src/include" IN_LIST _matar_includes)
-        message(STATUS "Patching MATAR target with missing include directory")
-        target_include_directories(matar INTERFACE 
-            $<BUILD_INTERFACE:${MATAR_SOURCE_DIR}/src/include>
-        )
-    endif()
+# --- 6. Dependency: MATAR ---
+if(NOT TARGET matar::matar)
+    FetchContent_Declare(
+        MATAR
+        GIT_REPOSITORY https://github.com/lanl/MATAR
+        GIT_TAG        main
+    )
+    FetchContent_MakeAvailable(MATAR)
 
-    # 2. Fix Definitions (NEW FIX)
-    # This adds -DHAVE_KOKKOS to the compile line for anything using matar
-    target_compile_definitions(matar INTERFACE HAVE_KOKKOS)
-
-    # 3. Fix MPI Definitions (Highly Recommended)
-    # Since you are using MPI, MATAR likely needs HAVE_MPI to enable its MPI types
-    if(MPI_FOUND)
-        target_compile_definitions(matar INTERFACE HAVE_MPI)
+    if(TARGET matar)
+        if(NOT TARGET matar::matar)
+            add_library(matar::matar ALIAS matar)
+        endif()
+        
+        FetchContent_GetProperties(MATAR SOURCE_DIR MATAR_SOURCE_DIR)
+        get_target_property(_matar_includes matar INTERFACE_INCLUDE_DIRECTORIES)
+        
+        if(NOT "${MATAR_SOURCE_DIR}/src/include" IN_LIST _matar_includes)
+            target_include_directories(matar INTERFACE 
+                $<BUILD_INTERFACE:${MATAR_SOURCE_DIR}/src/include>
+            )
+        endif()
+        
+        target_compile_definitions(matar INTERFACE HAVE_KOKKOS)
+        if(MPI_FOUND)
+            target_compile_definitions(matar INTERFACE HAVE_MPI)
+        endif()
     endif()
 endif()
 
+# --- 7. Dependency: Scotch / PT-Scotch ---
+if(NOT TARGET ptscotch)
+    set(SCOTCH_MPI ON CACHE BOOL "Enable MPI for Scotch" FORCE)
+    set(SCOTCH_BUILD_TESTS OFF CACHE BOOL "Disable Scotch Tests" FORCE)
 
-# --- Dependency: Scotch / PT-Scotch ---
-# We force SCOTCH_MPI to ON to build PT-Scotch.
-set(SCOTCH_MPI ON CACHE BOOL "Enable MPI for Scotch" FORCE)
-set(SCOTCH_BUILD_TESTS OFF CACHE BOOL "Disable Scotch Tests" FORCE)
+    FetchContent_Declare(
+        Scotch
+        GIT_REPOSITORY https://gitlab.inria.fr/scotch/scotch.git
+        GIT_TAG        v7.0.4
+        PATCH_COMMAND  sed -i "s/CMAKE_SOURCE_DIR/CMAKE_CURRENT_SOURCE_DIR/g" CMakeLists.txt
+    )
+    FetchContent_MakeAvailable(Scotch)
 
-FetchContent_Declare(
-    Scotch
-    GIT_REPOSITORY https://gitlab.inria.fr/scotch/scotch.git
-    GIT_TAG        v7.0.4
-    # FIX: Robustly replace CMAKE_SOURCE_DIR with CMAKE_CURRENT_SOURCE_DIR.
-    # This prevents shell syntax errors and fixes the "include not found" bug.
-    PATCH_COMMAND  sed -i "s/CMAKE_SOURCE_DIR/CMAKE_CURRENT_SOURCE_DIR/g" CMakeLists.txt
-)
-FetchContent_MakeAvailable(Scotch)
+    # FIX: GCC 15 Warning Suppressions (Target-Specific)
+    # Even though C11 is set globally above, we still need to silence the
+    # specific GCC 15 warnings for Scotch that are not fixed by C11 alone.
+    set(_scotch_targets 
+        scotch ptscotch scotcherr scotcherrexit
+        amk_ccc amk_fft2 amk_grf amk_hy amk_m2 amk_p2 
+        gbase gmap gord gout gpart gscat gtst 
+        mcv mmk_m2 mmk_m3 mord mtst
+        dggath dgmap dgord dgpart dgscat dgtst
+    )
+    foreach(_target ${_scotch_targets})
+        if(TARGET ${_target})
+            # Silence annoying warnings for legacy C code
+            target_compile_options(${_target} PRIVATE 
+                $<$<COMPILE_LANGUAGE:C>:-Wno-error=incompatible-pointer-types>
+                $<$<COMPILE_LANGUAGE:C>:-Wno-error=int-conversion>
+                $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-int>
+                $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
+                $<$<COMPILE_LANGUAGE:C>:-Wno-int-conversion>
+                $<$<COMPILE_LANGUAGE:C>:-Wno-implicit-int>
+            )
+        endif()
+    endforeach()
+endif()
 
-# --- FIX: Compatibility for Scotch with GCC 15 ---
-# We apply C11 standard and warning suppressions to ALL Scotch libraries and executables.
+# --- 8. Add ELEMENTS Source ---
+add_subdirectory(src)
 
-# # 1. Libraries
-# set(_scotch_targets 
-#     scotch ptscotch scotcherr scotcherrexit
-# )
+# --- 9. Optional Parts ---
+if(ELEMENTS_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 
-# # 2. Sequential Utilities (amk_m2, gmap, etc.)
-# list(APPEND _scotch_targets 
-#     amk_ccc amk_fft2 amk_grf amk_hy amk_m2 amk_p2 
-#     gbase gmap gord gout gpart gscat gtst 
-#     mcv mmk_m2 mmk_m3 mord mtst
-# )
-
-# # 3. Parallel Utilities (dggath, dgmap, etc.)
-# list(APPEND _scotch_targets 
-#     dggath dgmap dgord dgpart dgscat dgtst
-# )
-
-# foreach(_target ${_scotch_targets})
-#     if(TARGET ${_target})
-#         # Force C11 Standard (Fixes "too many arguments" errors)
-#         set_target_properties(${_target} PROPERTIES C_STANDARD 11)
-        
-#         # Silence strict GCC 15 warnings
-#         target_compile_options(${_target} PRIVATE 
-#             $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
-#             $<$<COMPILE_LANGUAGE:C>:-Wno-int-conversion>
-#             $<$<COMPILE_LANGUAGE:C>:-Wno-implicit-int>
-#         )
-#     endif()
-# endforeach()
-
-# --- Add ELEMENTS Source ---
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/swage
-    ${CMAKE_CURRENT_SOURCE_DIR}/elements
-)
-add_subdirectory(swage)
-
-# --- Optional Tests --- ## WARNING: NOTE YET IMPLEMENTED
 if(ELEMENTS_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
-endif()
-
-
-# --- Optional Examples ---
-if(ELEMENTS_BUILD_EXAMPLES)
-    add_subdirectory(examples)
 endif()

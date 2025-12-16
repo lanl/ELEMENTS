@@ -2,7 +2,7 @@
 #define MESH_IO_H
 
 #include "matar.h"
-#include "mesh.h"
+#include "unstructured_mesh.h"
 #include "state.h"
 
 using namespace mtr;

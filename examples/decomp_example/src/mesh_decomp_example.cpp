@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     // Mesh size
     double origin[3] = {0.0, 0.0, 0.0};
     double length[3] = {1.0, 1.0, 1.0};
-    int num_elems_dim[3] = {30, 30, 30};
+    int num_elems_dim[3] = {10, 10, 10};
 
     // Initial mesh built on rank zero
     Mesh_t initial_mesh;
@@ -80,12 +80,142 @@ int main(int argc, char** argv) {
 
     partition_mesh(initial_mesh, final_mesh, initial_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);
     double t_partition_end = MPI_Wtime();
-    
-    
-    
+
+    // Verify communicaiton plans
+    element_communication_plan.verify_graph_communicator();
+    node_communication_plan.verify_graph_communicator();
+    MPI_Barrier(MPI_COMM_WORLD);
+
     if(rank == 0) {
         printf("Mesh partitioning time: %.2f seconds\n", t_partition_end - t_partition_start);
     }
+
+
+// ****************************************************************************************** 
+//     Test element communication using MPI_Neighbor_alltoallv
+// ****************************************************************************************** 
+    // Gauss points share the same communication plan as elements.
+    // This test initializes gauss point fields on owned elements and exchanges them with ghost elements.
+
+    std::vector<gauss_pt_state> gauss_pt_states = {gauss_pt_state::fields, gauss_pt_state::fields_vec};
+    gauss_point.initialize(final_mesh.num_elems, final_mesh.num_dims, gauss_pt_states, element_communication_plan); // , &element_communication_plan
+
+    // Initialize the gauss point fields on each rank
+    // Set owned elements to rank number, ghost elements to -1 (to verify communication)
+    for (int i = 0; i < final_mesh.num_owned_elems; i++) {
+        gauss_point.fields.host(i) = static_cast<double>(rank);
+        gauss_point.fields_vec.host(i, 0) = static_cast<double>(rank);
+        gauss_point.fields_vec.host(i, 1) = static_cast<double>(rank);
+        gauss_point.fields_vec.host(i, 2) = static_cast<double>(rank);
+    }
+    for (int i = final_mesh.num_owned_elems; i < final_mesh.num_elems; i++) {
+        gauss_point.fields.host(i) = -1.0;  // Ghost elements should be updated
+        gauss_point.fields_vec.host(i, 0) = -100.0;
+        gauss_point.fields_vec.host(i, 1) = -100.0;
+        gauss_point.fields_vec.host(i, 2) = -100.0;
+    }
+    gauss_point.fields.update_device();
+    gauss_point.fields_vec.update_device();
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    gauss_point.fields.communicate();
+    gauss_point.fields_vec.communicate();
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    CArrayKokkos <double> tmp(final_mesh.num_elems);
+    
+    // Loop over all elements and average the values of elements connected to that element
+    FOR_ALL(i, 0, final_mesh.num_elems, {
+        double value = 0.0;
+        for (int j = 0; j < final_mesh.num_elems_in_elem(i); j++) {
+            value += gauss_point.fields(final_mesh.elems_in_elem(i, j));
+        }
+        value /= final_mesh.num_elems_in_elem(i);
+
+        tmp(i) = value;
+        
+
+        value = 0.0;
+        for (int j = 0; j < final_mesh.num_elems_in_elem(i); j++) {
+            value += gauss_point.fields_vec(final_mesh.elems_in_elem(i, j), 0);
+        }
+        value /= final_mesh.num_elems_in_elem(i);
+
+        gauss_point.fields_vec(i, 0) = value;
+        gauss_point.fields_vec(i, 1) = value;
+        gauss_point.fields_vec(i, 2) = value;
+    });
+    MATAR_FENCE();
+
+    FOR_ALL(i, 0, final_mesh.num_elems, {
+        gauss_point.fields(i) = tmp(i);
+    });
+    MATAR_FENCE();
+
+    gauss_point.fields.update_host();
+    gauss_point.fields_vec.update_host();
+
+    // Test node communication using MPI_Neighbor_alltoallv
+    std::vector<node_state> node_states = {node_state::coords, node_state::scalar_field, node_state::vector_field};
+    final_node.initialize(final_mesh.num_nodes, final_mesh.num_dims, node_states, node_communication_plan);
+
+
+    // Copy the final node coordinates to the final node
+    final_node.coords = final_node_coords;
+    final_node.coords.update_device();
+    
+    for (int i = 0; i < final_mesh.num_owned_nodes; i++) {
+        final_node.scalar_field.host(i) = static_cast<double>(rank);
+        for(int dim = 0; dim < final_mesh.num_dims; dim++){
+            final_node.vector_field.host(i, dim) = static_cast<double>(rank);
+        }
+    }
+    for (int i = final_mesh.num_owned_nodes; i < final_mesh.num_nodes; i++) {
+        final_node.scalar_field.host(i) = -100.0;
+        for(int dim = 0; dim < final_mesh.num_dims; dim++){
+            final_node.vector_field.host(i, dim) = -100;
+        }
+    }
+
+    final_node.coords.update_device();
+    final_node.scalar_field.update_device();
+    final_node.vector_field.update_device();
+    MATAR_FENCE();
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    final_node.scalar_field.communicate();
+    final_node.vector_field.communicate();
+    
+    MATAR_FENCE();
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    DCArrayKokkos <double> tmp_too(final_mesh.num_nodes);
+    for(int smooth = 0; smooth < 3; smooth++){
+        FOR_ALL(i, 0, final_mesh.num_nodes, {
+
+            double value = final_node.scalar_field(i);
+            for(int j = 0; j < final_mesh.num_nodes_in_node(i); j++){
+                value += final_node.scalar_field(final_mesh.nodes_in_node(i, j));
+            }
+            value /= final_mesh.num_nodes_in_node(i) + 1;
+            tmp_too(i) = value;
+        });
+        MATAR_FENCE();
+
+        FOR_ALL(i, 0, final_mesh.num_nodes, {
+            final_node.scalar_field(i) = tmp_too(i);
+            for(int dim = 0; dim < final_mesh.num_dims; dim++){
+                final_node.vector_field(i, dim) = tmp_too(i);
+            }
+        });
+        MATAR_FENCE();
+    }
+
+    final_node.scalar_field.update_host();
+
+    MATAR_FENCE();
 
     // write_vtk(intermediate_mesh, intermediate_node, rank);
     MPI_Barrier(MPI_COMM_WORLD);

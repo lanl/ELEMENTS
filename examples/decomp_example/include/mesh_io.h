@@ -583,7 +583,7 @@ void write_vtu(Mesh_t& mesh,
     MATAR_FENCE();
     num_elems_in_elem.update_host();
     MATAR_FENCE();
-    
+
     for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
         elem_fields(elem_gid, 0) = rank;
         elem_fields(elem_gid, 1) = num_elems_in_elem.host(elem_gid);
@@ -599,12 +599,13 @@ void write_vtu(Mesh_t& mesh,
     CArray<double> point_scalar_fields(num_nodes, num_point_scalar_vars);
 
 
-    DCArrayKokkos <double> num_elems_in_node(mesh.num_elems, "tmp_num_elems_in_node");
-    FOR_ALL(i, 0, mesh.num_elems, {
+    DCArrayKokkos <double> num_elems_in_node(mesh.num_nodes, "tmp_num_elems_in_node");
+    FOR_ALL(i, 0, mesh.num_nodes, {
         num_elems_in_node(i) = (double)mesh.num_corners_in_node(i);
     });
     MATAR_FENCE();
     num_elems_in_node.update_host();
+    MATAR_FENCE();
 
     for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
         // position, var 0

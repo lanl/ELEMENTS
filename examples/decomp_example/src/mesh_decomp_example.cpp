@@ -9,14 +9,14 @@
 
 
 // #include "mesh.h"
-// #include "state.h"
-// #include "mesh_io.h"
+#include "state.h"
+#include "mesh_io.h"
 
-#include "decomp_utils.h"
+#include "ELEMENTS.h"
 
-// Include Scotch headers
-#include "scotch.h"
-#include "ptscotch.h"
+// // Include Scotch headers
+// #include "scotch.h"
+// #include "ptscotch.h"
 
 int main(int argc, char** argv) {
 
@@ -38,11 +38,12 @@ int main(int argc, char** argv) {
 
     // Initial mesh built on rank zero
     Mesh_t initial_mesh;
-    node_t initial_node;
+    MPICArrayKokkos<double> initial_node_coords;
 
     // Mesh partitioned by pt-scotch, including ghost
     Mesh_t final_mesh;
     node_t final_node;
+    MPICArrayKokkos<double> final_node_coords;
 
     GaussPoint_t gauss_point;
 
@@ -56,7 +57,7 @@ int main(int argc, char** argv) {
         std::cout<<"Rank "<<rank<<" Building initial mesh"<<std::endl;
 
         std::cout<<"Initializing mesh"<<std::endl;
-        build_3d_box(initial_mesh,  initial_node, origin, length, num_elems_dim);
+        build_3d_box(initial_mesh,  initial_node_coords, origin, length, num_elems_dim);
 
         // Read the mesh from a file
         // read_vtk_mesh(initial_mesh, initial_node, 3, "/home/jacobmoore/Desktop/repos/MATAR/meshes/impellerOpt.vtk");
@@ -71,7 +72,13 @@ int main(int argc, char** argv) {
 //             Partition and balance the mesh
 // ********************************************************  
     double t_partition_start = MPI_Wtime();
-    partition_mesh(initial_mesh, final_mesh, initial_node, final_node, gauss_point, world_size, rank);
+    // Create communicaion plans
+    CommunicationPlan element_communication_plan;
+    element_communication_plan.initialize(MPI_COMM_WORLD);
+    CommunicationPlan node_communication_plan;
+    node_communication_plan.initialize(MPI_COMM_WORLD);
+
+    partition_mesh(initial_mesh, final_mesh, initial_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);
     double t_partition_end = MPI_Wtime();
     
     

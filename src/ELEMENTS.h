@@ -10,4 +10,8 @@
 #include "elements/ref_surf_elem.h"
 #include "elements/ref_quadrature.h"
 
+
+// --- Decomp Utilities ---
+#include "decomp_utilities/decomp_utils.h"
+
 #endif // ELEMENTS_LIBRARY_H

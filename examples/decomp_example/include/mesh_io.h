@@ -1,8 +1,7 @@
 #ifndef MESH_IO_H
 #define MESH_IO_H
 
-#include "matar.h"
-#include "mesh.h"
+#include "ELEMENTS.h"
 #include "state.h"
 
 using namespace mtr;
@@ -136,7 +135,7 @@ inline int PointIndexFromIJK(int i, int j, int k, const int* order)
 ///
 /// \param Simulation mesh that is built
 /// \param Element state data
-/// \param Node state data
+/// \param Node coordinate data
 /// \param origin The origin of the mesh
 /// \param length The length of the mesh
 /// \param num_elems The number of elements in the mesh
@@ -144,7 +143,7 @@ inline int PointIndexFromIJK(int i, int j, int k, const int* order)
 /////////////////////////////////////////////////////////////////////////////
 void build_3d_box(
     Mesh_t& mesh,
-    node_t&   node,
+    MPICArrayKokkos<double>& node_coords,
     double origin[3],
     double length[3],
     int num_elems_dim[3])
@@ -184,9 +183,9 @@ void build_3d_box(
     // initialize mesh node variables
     mesh.initialize_nodes(num_nodes);
 
-        // initialize node state variables, for now, we just need coordinates, the rest will be initialize by the respective solvers
-    std::vector<node_state> required_node_state = { node_state::coords };
-    node.initialize(num_nodes, num_dim, required_node_state);
+
+    // initialize node coordinates
+    node_coords = MPICArrayKokkos<double>(num_nodes, num_dim, "node_coordinates");
 
     // --- Build nodes ---
 
@@ -205,12 +204,12 @@ void build_3d_box(
         size_t node_gid = get_id(i, j, k, num_points_i, num_points_j);
 
         // store the point coordinates
-        node.coords(node_gid, 0) = origin_mtr(0) + (double)i * dx;
-        node.coords(node_gid, 1) = origin_mtr(1) + (double)j * dy;
-        node.coords(node_gid, 2) = origin_mtr(2) + (double)k * dz;
+        node_coords(node_gid, 0) = origin_mtr(0) + (double)i * dx;
+        node_coords(node_gid, 1) = origin_mtr(1) + (double)j * dy;
+        node_coords(node_gid, 2) = origin_mtr(2) + (double)k * dz;
     });
     // Update the host side
-    node.coords.update_host();
+    node_coords.update_host();
 
     // initialize elem variables
     mesh.initialize_elems(num_elems, num_dim);

@@ -12,9 +12,9 @@
 #include <unordered_set>
 
 
-#include "unstructured_mesh.h"
-#include "state.h"
-#include "communication_plan.h"
+#include "swage/unstructured_mesh.h"
+// #include "state.h"
+// #include "communication_plan.h"
 
 
 // Include Scotch headers
@@ -36,9 +36,9 @@
  * This function is generally used as the preliminary step before repartitioning with tools like PT-Scotch or for algorithm prototyping.
  *
  * @param initial_mesh[in]         The input mesh containing all elements/nodes on rank 0.
- * @param initial_node[in]         The nodal data for the input mesh on rank 0.
+ * @param initial_node_coords[in]         The nodal coordinates for the input mesh on rank 0.
  * @param naive_mesh[out]          The mesh on this rank after naive partitioning.
- * @param naive_node[out]          The nodal data on this rank after naive partitioning.
+ * @param naive_node_coords[out]          The nodal coordinates on this rank after naive partitioning.
  * @param elems_in_elem_on_rank[out]   Vector of element-to-element connectivity for this rank's local mesh.
  * @param num_elems_in_elem_per_rank[out] Vector of counts for element neighbors for each local element.
  * @param world_size[in]           Number of MPI ranks (world size).
@@ -47,9 +47,9 @@
 
 void naive_partition_mesh(
     Mesh_t& initial_mesh,
-    node_t& initial_node,
+    MPICArrayKokkos<double>& initial_node_coords,
     Mesh_t& naive_mesh,
-    node_t& naive_node,
+    MPICArrayKokkos<double>& naive_node_coords,
     CArrayDual<int>& elems_in_elem_on_rank,
     CArrayDual<int>& num_elems_in_elem_per_rank,
     int world_size,
@@ -262,7 +262,7 @@ void naive_partition_mesh(
             // Copy node positions for rank i to the flattened array
             for(int node_gid = 0; node_gid < nodes_to_send[i].size(); node_gid++) {
                 for(int dim = 0; dim < num_dim; dim++) {
-                    all_node_pos.push_back(initial_node.coords.host(nodes_to_send[i][node_gid], dim));
+                    all_node_pos.push_back(initial_node_coords.host(nodes_to_send[i][node_gid], dim));
                 }
             }
             displacement += nodes_to_send[i].size() * num_dim;
@@ -283,20 +283,22 @@ void naive_partition_mesh(
     node_pos_on_rank.update_device();
 
     // ****************************************************************************************** 
-    //     Initialize the node state variables
+    //     Initialize the node coordinates
     // ****************************************************************************************** 
 
-    // initialize node state variables, for now, we just need coordinates, the rest will be initialize by the respective solvers
-    std::vector<node_state> required_node_state = { node_state::coords };
-    naive_node.initialize(num_nodes_on_rank, num_dim, required_node_state);
+    // CommunicationPlan tmp_comm_plan;
+
+    naive_node_coords = MPICArrayKokkos<double>(num_nodes_on_rank, num_dim, "naive_node_coords");
+    // naive_node_coords.initialize_comm_plan(tmp_comm_plan);
+
 
     FOR_ALL(node_id, 0, num_nodes_on_rank,
             dim, 0, num_dim,{
-        naive_node.coords(node_id, dim) = node_pos_on_rank(node_id, dim);
+        naive_node_coords(node_id, dim) = node_pos_on_rank(node_id, dim);
     });
     MATAR_FENCE();
 
-    naive_node.coords.update_host();
+    naive_node_coords.update_host();
 
     // ****************************************************************************************** 
     //     Send the element-node connectivity data from the initial mesh to each rank
@@ -561,8 +563,8 @@ void naive_partition_mesh(
 ///
 /// @param[in] input_mesh The locally-owned mesh on this rank containing local elements/nodes
 /// @param[out] output_mesh The enriched mesh with ghost elements and nodes added to local mesh
-/// @param[in] input_node Node data associated with the input mesh
-/// @param[out] output_node Node data extended with ghost nodes
+/// @param[in] input_node_coords Node coordinates associated with the input mesh
+/// @param[out] output_node_coords Node coordinates extended with ghost nodes
 /// @param[in,out] element_communication_plan MPI communication plan specifying which ranks
 ///                                            exchange element data (populated by this function)
 /// @param[in] world_size Total number of MPI ranks
@@ -575,8 +577,8 @@ void naive_partition_mesh(
 void build_ghost(
     Mesh_t& input_mesh,
     Mesh_t& output_mesh,
-    node_t& input_node,
-    node_t& output_node,
+    MPICArrayKokkos<double>& input_node_coords,
+    MPICArrayKokkos<double>& output_node_coords,
     CommunicationPlan& element_communication_plan,
     CommunicationPlan& node_communication_plan,
     int world_size,
@@ -1145,17 +1147,21 @@ void build_ghost(
     // ****************************************************************************************** 
 
 
-    output_node.initialize(total_extended_nodes, num_dim, {node_state::coords}, node_communication_plan);
+    // output_node.initialize(total_extended_nodes, num_dim, {node_state::coords}, node_communication_plan);
+    output_node_coords = MPICArrayKokkos<double>(total_extended_nodes, num_dim, "output_node_coords");
+    
+    
+    
     MPI_Barrier(MPI_COMM_WORLD);
 
-    // The goal here is to populate output_node.coords using globally gathered ghost node coordinates,
+    // The goal here is to populate output_node_coords using globally gathered ghost node coordinates,
     // since input_node does not contain ghost node coordinates.
     //
     // Each rank will:
     //  1. Gather coordinates of its owned nodes (from input_node).
     //  2. Use MPI to gather all coordinates for all required (owned + ghost) global node IDs
     //     into a structure mapping global ID -> coordinate.
-    //  3. Use this map to fill output_node.coords.
+    //  3. Use this map to fill output_node_coords.
 
     // 1. Build list of all global node IDs needed on this rank (owned + ghosts)
     std::vector<size_t> all_needed_node_gids(total_extended_nodes);
@@ -1209,7 +1215,7 @@ void build_ghost(
     std::vector<double> owned_coords_send(num_dim*local_owned_count, 0.0);
     for (int i = 0; i < local_owned_count; i++) {
         for(int dim = 0; dim < num_dim; dim++){
-            owned_coords_send[num_dim*i+dim] = input_node.coords.host(i,dim);
+            owned_coords_send[num_dim*i+dim] = input_node_coords.host(i,dim);
         }
     }
     std::vector<double> all_owned_coords(num_dim * total_owned, 0.0);
@@ -1239,22 +1245,22 @@ void build_ghost(
         gid_to_coord[all_owned_gids[i]] = std::move(xyz);
     }
 
-    // 4. Finally, fill output_node.coords with correct coordinates.
+    // 4. Finally, fill output_node_coords with correct coordinates.
     for (int i = 0; i < total_extended_nodes; i++) {
         size_t gid = output_mesh.local_to_global_node_mapping.host(i);
         auto it = gid_to_coord.find(gid);
         if (it != gid_to_coord.end()) {
             for (int dim = 0; dim < num_dim; dim++) {
-                output_node.coords.host(i,dim) = it->second[dim];
+                output_node_coords.host(i,dim) = it->second[dim];
             }
         } else {
             // Could happen if there's a bug: fill with zeros for safety
             for (int dim = 0; dim < num_dim; dim++) {
-                output_node.coords.host(i,dim) = 0.0;
+                output_node_coords.host(i,dim) = 0.0;
             }
         }
     }
-    output_node.coords.update_device();
+    output_node_coords.update_device();
 
 
     // --------------------------------------------------------------------------------------
@@ -1669,9 +1675,10 @@ void build_ghost(
  *
  * @param initial_mesh[in]  The input (global) mesh, present on rank 0 or all ranks at start.
  * @param final_mesh[out]   The mesh assigned to this rank after PT-Scotch decomposition.
- * @param initial_node[in]  Nodal data for the input (global) mesh; must match initial_mesh.
- * @param final_node[out]   Nodal data for this rank after decomposition (corresponds to final_mesh).
- * @param gauss_point[out]  Gauss point data structure, filled out for this rank's mesh.
+ * @param initial_node_coords[in]  Nodal coordinates for the input (global) mesh; must match initial_mesh.
+ * @param final_node_coords[out]   Nodal coordinates for this rank after decomposition (corresponds to final_mesh).
+ * @param element_communication_plan[in,out]  MPI communication plan for element data exchange.
+ * @param node_communication_plan[in,out]  MPI communication plan for node data exchange.
  * @param world_size[in]    Number of MPI ranks in use (the total number of partitions).
  * @param rank[in]          This process's MPI rank ID.
  *
@@ -1686,9 +1693,10 @@ void build_ghost(
 void partition_mesh(
     Mesh_t& initial_mesh,
     Mesh_t& final_mesh,
-    node_t& initial_node,
-    node_t& final_node,
-    GaussPoint_t& gauss_point,
+    MPICArrayKokkos<double>& initial_node_coords,
+    MPICArrayKokkos<double>& final_node_coords,
+    CommunicationPlan& element_communication_plan,
+    CommunicationPlan& node_communication_plan,
     int world_size,
     int rank){
 
@@ -1699,11 +1707,11 @@ void partition_mesh(
     // Create mesh, gauss points, and node data structures on each rank
     // This is the initial partitioned mesh
     Mesh_t naive_mesh;
-    node_t naive_node;
+    MPICArrayKokkos<double> naive_node_coords;
 
     // Mesh partitioned by pt-scotch, not including ghost
     Mesh_t intermediate_mesh; 
-    node_t intermediate_node;
+    MPICArrayKokkos<double> intermediate_node_coords;
 
     // Helper arrays to hold element-element connectivity for naive partitioning that include what would be ghost, without having to build the full mesh
     CArrayDual<int> elems_in_elem_on_rank;
@@ -1713,7 +1721,7 @@ void partition_mesh(
     // Perform the naive partitioning of the mesh
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 0) std::cout << "Performing the naive partitioning of the mesh" << std::endl;
-    naive_partition_mesh(initial_mesh, initial_node, naive_mesh, naive_node, elems_in_elem_on_rank, num_elems_in_elem_per_rank, world_size, rank);
+    naive_partition_mesh(initial_mesh, initial_node_coords, naive_mesh, naive_node_coords, elems_in_elem_on_rank, num_elems_in_elem_per_rank, world_size, rank);
     MPI_Barrier(MPI_COMM_WORLD);
     if (rank == 0) std::cout << "Begin repartitioning using PT-Scotch" << std::endl;
 
@@ -2183,7 +2191,7 @@ void partition_mesh(
                 int node_gid = naive_mesh.local_to_global_node_mapping.host(node_lid);
 
                 for(int dim = 0; dim < num_dim; dim++) {
-                    node_coords_sendbuf.push_back(naive_node.coords.host(node_lid, dim));
+                    node_coords_sendbuf.push_back(naive_node_coords.host(node_lid, dim));
                 }
             }
         }
@@ -2276,163 +2284,30 @@ void partition_mesh(
     }
     
     // Now fill coordinates in node order
-    intermediate_node.initialize(num_new_nodes, num_dim, {node_state::coords});
+    intermediate_node_coords = MPICArrayKokkos<double>(num_new_nodes, num_dim, "intermediate_node_coords");
     for (int i = 0; i < num_new_nodes; i++) {
         int node_gid = new_node_gids[i];
         auto it = node_gid_to_coords.find(node_gid);
         if (it != node_gid_to_coords.end()) {
             for (int d = 0; d < num_dim; d++) {
-                intermediate_node.coords.host(i, d) = it->second[d];
+                intermediate_node_coords.host(i, d) = it->second[d];
             }
         }
     }
-    intermediate_node.coords.update_device();
+    intermediate_node_coords.update_device();
 
     // Connectivity rebuild
     intermediate_mesh.build_connectivity();
     MPI_Barrier(MPI_COMM_WORLD);
 
-    CommunicationPlan element_communication_plan;
-    element_communication_plan.initialize(MPI_COMM_WORLD);
-    
-    CommunicationPlan node_communication_plan;
-    node_communication_plan.initialize(MPI_COMM_WORLD);
-
     MPI_Barrier(MPI_COMM_WORLD);
     if(rank == 0) std::cout<<" Starting the ghost element and node construction"<<std::endl;
 
-    build_ghost(intermediate_mesh, final_mesh, intermediate_node, final_node, element_communication_plan, node_communication_plan, world_size, rank);
+    build_ghost(intermediate_mesh, final_mesh, intermediate_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);
     
     MPI_Barrier(MPI_COMM_WORLD);
     if(rank == 0) std::cout<<" Finished the ghost element and node construction"<<std::endl;
-    
 
-// ****************************************************************************************** 
-//     Test element communication using MPI_Neighbor_alltoallv
-// ****************************************************************************************** 
-    // Gauss points share the same communication plan as elements.
-    // This test initializes gauss point fields on owned elements and exchanges them with ghost elements.
-
-    std::vector<gauss_pt_state> gauss_pt_states = {gauss_pt_state::fields, gauss_pt_state::fields_vec};
-
-    gauss_point.initialize(final_mesh.num_elems, final_mesh.num_dims, gauss_pt_states, element_communication_plan); // , &element_communication_plan
-
-    // Initialize the gauss point fields on each rank
-    // Set owned elements to rank number, ghost elements to -1 (to verify communication)
-    for (int i = 0; i < final_mesh.num_owned_elems; i++) {
-        gauss_point.fields.host(i) = static_cast<double>(rank);
-        gauss_point.fields_vec.host(i, 0) = static_cast<double>(rank);
-        gauss_point.fields_vec.host(i, 1) = static_cast<double>(rank);
-        gauss_point.fields_vec.host(i, 2) = static_cast<double>(rank);
-    }
-    for (int i = final_mesh.num_owned_elems; i < final_mesh.num_elems; i++) {
-        gauss_point.fields.host(i) = -1.0;  // Ghost elements should be updated
-        gauss_point.fields_vec.host(i, 0) = -100.0;
-        gauss_point.fields_vec.host(i, 1) = -100.0;
-        gauss_point.fields_vec.host(i, 2) = -100.0;
-    }
-    gauss_point.fields.update_device();
-    gauss_point.fields_vec.update_device();
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    
-    gauss_point.fields.communicate();
-    gauss_point.fields_vec.communicate();
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    CArrayKokkos <double> tmp(final_mesh.num_elems);
-    
-    // Loop over all elements and average the values of elements connected to that element
-    FOR_ALL(i, 0, final_mesh.num_elems, {
-        double value = 0.0;
-        for (int j = 0; j < final_mesh.num_elems_in_elem(i); j++) {
-            value += gauss_point.fields(final_mesh.elems_in_elem(i, j));
-        }
-        value /= final_mesh.num_elems_in_elem(i);
-
-        tmp(i) = value;
-        
-
-        value = 0.0;
-        for (int j = 0; j < final_mesh.num_elems_in_elem(i); j++) {
-            value += gauss_point.fields_vec(final_mesh.elems_in_elem(i, j), 0);
-        }
-        value /= final_mesh.num_elems_in_elem(i);
-
-        gauss_point.fields_vec(i, 0) = value;
-        gauss_point.fields_vec(i, 1) = value;
-        gauss_point.fields_vec(i, 2) = value;
-    });
-    MATAR_FENCE();
-
-    FOR_ALL(i, 0, final_mesh.num_elems, {
-        gauss_point.fields(i) = tmp(i);
-    });
-    MATAR_FENCE();
-
-    gauss_point.fields.update_host();
-    gauss_point.fields_vec.update_host();
-
-
-
-    // Test node communication using MPI_Neighbor_alltoallv
-    std::vector<node_state> node_states = {node_state::coords, node_state::scalar_field, node_state::vector_field};
-    final_node.initialize(final_mesh.num_nodes, 3, node_states, node_communication_plan);
-    
-    for (int i = 0; i < final_mesh.num_owned_nodes; i++) {
-        final_node.scalar_field.host(i) = static_cast<double>(rank);
-        for(int dim = 0; dim < num_dim; dim++){
-            final_node.vector_field.host(i, dim) = static_cast<double>(rank);
-        }
-    }
-    for (int i = final_mesh.num_owned_nodes; i < final_mesh.num_nodes; i++) {
-        final_node.scalar_field.host(i) = -100.0;
-        for(int dim = 0; dim < num_dim; dim++){
-            final_node.vector_field.host(i, dim) = -100;
-        }
-    }
-
-    final_node.coords.update_device();
-    final_node.scalar_field.update_device();
-    final_node.vector_field.update_device();
-    MATAR_FENCE();
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    node_communication_plan.verify_graph_communicator();
-
-    final_node.scalar_field.communicate();
-    final_node.vector_field.communicate();
-    
-    MATAR_FENCE();
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    DCArrayKokkos <double> tmp_too(final_mesh.num_nodes);
-    for(int smooth = 0; smooth < 3; smooth++){
-        FOR_ALL(i, 0, final_mesh.num_nodes, {
-
-            double value = final_node.scalar_field(i);
-            for(int j = 0; j < final_mesh.num_nodes_in_node(i); j++){
-                value += final_node.scalar_field(final_mesh.nodes_in_node(i, j));
-            }
-            value /= final_mesh.num_nodes_in_node(i) + 1;
-            tmp_too(i) = value;
-        });
-        MATAR_FENCE();
-
-        FOR_ALL(i, 0, final_mesh.num_nodes, {
-            final_node.scalar_field(i) = tmp_too(i);
-            for(int dim = 0; dim < num_dim; dim++){
-                final_node.vector_field(i, dim) = tmp_too(i);
-            }
-        });
-        MATAR_FENCE();
-    }
-
-    final_node.scalar_field.update_host();
-
-    MATAR_FENCE();
-    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 #endif // DECOMP_UTILS_H

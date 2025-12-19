@@ -19,7 +19,9 @@ else()
 endif()
 
 # --- Check if building documentation ---
-option(ELEMENTS_BUILD_DOCS "Build documentation" ${ELEMENTS_IS_TOP_LEVEL})
+# The default is OFF, but this option can be set to ON from the terminal/cmake command line.
+option(ELEMENTS_BUILD_DOCS "Build documentation" OFF)
+# Setting -DELEMENTS_BUILD_DOCS=ON from the terminal or cmake-gui will overwrite the default.
 
 
 # Set module path

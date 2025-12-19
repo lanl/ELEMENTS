@@ -1,11 +1,8 @@
-# Build, test, and install on Windows
+# Build, test, and install on Windows: WARNING, does not work yet
 name: Windows
 
 on:
-  push:
-    branches: [master]
-  pull_request: 
-    branches: [master]
+  workflow_dispatch:
 
 jobs:
   build-test-install:

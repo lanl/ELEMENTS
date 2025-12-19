@@ -25,6 +25,7 @@ jobs:
     - name: Install Fortran
       # Installs Intel oneAPI Fortran (ifx) which is compatible with MSVC
       uses: fortran-lang/setup-fortran@v1
+      id: setup-fortran
       with:
         compiler: intel
 
@@ -48,7 +49,7 @@ jobs:
         # Adding .exe ensures Windows-native discovery
         cmake -B build-${{matrix.build_type}} \
               -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install \
-              -DCMAKE_Fortran_COMPILER="${{ steps.setup-fortran.outputs.fc }}.exe" \
+              -DCMAKE_Fortran_COMPILER="${{ steps.setup-fortran.outputs.fc }}" \
               -DELEMENTS_ENABLE_SERIAL=ON \
               -DELEMENTS_ENABLE_OPENMP=${{ matrix.build_type == 'openmp' && 'ON' || 'OFF' }} \
               -DBISON_EXECUTABLE=$(which win_bison) \

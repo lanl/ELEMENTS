@@ -44,14 +44,16 @@ jobs:
     - name: Configure CMake
       shell: bash
       run: |
-        # Explicitly point to win_bison/win_flex if find_package needs help
+        # Use the absolute path output from the setup-fortran step
+        # Adding .exe ensures Windows-native discovery
         cmake -B build-${{matrix.build_type}} \
               -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install \
-              -DCMAKE_Fortran_COMPILER=$FC \
+              -DCMAKE_Fortran_COMPILER="${{ steps.setup-fortran.outputs.fc }}.exe" \
               -DELEMENTS_ENABLE_SERIAL=ON \
               -DELEMENTS_ENABLE_OPENMP=${{ matrix.build_type == 'openmp' && 'ON' || 'OFF' }} \
               -DBISON_EXECUTABLE=$(which win_bison) \
-              -DFLEX_EXECUTABLE=$(which win_flex)
+              -DFLEX_EXECUTABLE=$(which win_flex) \
+              -DBUILD_FORTRAN=ON
 
     - name: Build
       # Windows (MSVC) is a multi-config generator, so --config is required

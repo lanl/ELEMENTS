@@ -22,6 +22,12 @@ jobs:
       with: 
         submodules: true
 
+    - name: Install Fortran
+      # Installs Intel oneAPI Fortran (ifx) which is compatible with MSVC
+      uses: fortran-lang/setup-fortran@v1
+      with:
+        compiler: intel
+
     - name: Install MPI
       # Intel MPI supports MPI-3.1+ on Windows
       uses: mpi4py/setup-mpi@v1
@@ -41,6 +47,7 @@ jobs:
         # Explicitly point to win_bison/win_flex if find_package needs help
         cmake -B build-${{matrix.build_type}} \
               -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install \
+              -DCMAKE_Fortran_COMPILER=$FC \
               -DELEMENTS_ENABLE_SERIAL=ON \
               -DELEMENTS_ENABLE_OPENMP=${{ matrix.build_type == 'openmp' && 'ON' || 'OFF' }} \
               -DBISON_EXECUTABLE=$(which win_bison) \

@@ -571,6 +571,8 @@ void naive_partition_mesh(
 /// @param[out] output_node_coords Node coordinates extended with ghost nodes
 /// @param[in,out] element_communication_plan MPI communication plan specifying which ranks
 ///                                            exchange element data (populated by this function)
+/// @param[in,out] node_communication_plan MPI communication plan specifying which ranks
+///                                            exchange node data (populated by this function)
 /// @param[in] world_size Total number of MPI ranks
 /// @param[in] rank Current MPI rank (process ID)
 ///

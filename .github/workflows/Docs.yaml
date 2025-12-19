@@ -23,6 +23,7 @@ jobs:
       run: |
         pip install -IU -r ${{github.workspace}}/docs/sphinx-dependencies.txt
         sudo apt-get install doxygen -y
+        sudo apt-get install -y libopenmpi-dev openmpi-bin
     
     - name: Configure CMake to build the docs
       run: cmake ${{env.CMAKE_CONFIG_FLAGS}} -B ${{github.workspace}}/build

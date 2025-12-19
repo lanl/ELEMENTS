@@ -33,14 +33,23 @@ jobs:
     
     - name: Install dependencies
       run: |
-        brew install openmpi libomp
+        brew install openmpi libomp gcc bison flex
+        # Add Bison and Flex to PATH dynamically
+        echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
+        echo "$(brew --prefix flex)/bin" >> $GITHUB_PATH
+        
     
     - name: Configure CMake (${{matrix.build_type}})
       run: |
+        # Explicitly hint Bison to CMake just in case
+        BISON_PATH=$(brew --prefix bison)/bin/bison
+        FLEX_PATH=$(brew --prefix flex)/bin/flex
         # Initialize flags array
         CMAKE_OPTS=(
           "-DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install"
           "-DCMAKE_BUILD_TYPE=Release"
+          "-DBISON_EXECUTABLE=$BISON_PATH"
+          "-DFLEX_EXECUTABLE=$FLEX_PATH"
         )
         
         # Specific logic for OpenMP on macOS

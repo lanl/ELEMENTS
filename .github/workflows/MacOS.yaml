@@ -28,7 +28,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        brew install openmpi libomp
+        brew install openmpi libomp gcc
     
     - name: Configure CMake (${{matrix.build_type}})
       run: |

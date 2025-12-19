@@ -46,7 +46,8 @@ jobs:
       shell: pwsh
       run: |
         # Resolve absolute paths to the tools CMake needs
-        $fortran = (Get-Command ifx | Select-Object -First 1 -ExpandProperty Source)
+        # Use forward slashes to avoid backslash escape issues in CMake
+        $fortran = (Get-Command ifx | Select-Object -First 1 -ExpandProperty Source) -replace '\\','/'
         $bison = (Get-Command win_bison | Select-Object -First 1 -ExpandProperty Source)
         $flex = (Get-Command win_flex | Select-Object -First 1 -ExpandProperty Source)
 

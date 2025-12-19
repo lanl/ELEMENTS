@@ -43,17 +43,20 @@ jobs:
         echo "C:\ProgramData\chocolatey\bin" >> $GITHUB_PATH
 
     - name: Configure CMake
-      shell: bash
+      shell: pwsh
       run: |
-        # Use the absolute path output from the setup-fortran step
-        # Adding .exe ensures Windows-native discovery
-        cmake -B build-${{matrix.build_type}} \
-              -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install \
-              -DCMAKE_Fortran_COMPILER="${{ steps.setup-fortran.outputs.fc }}" \
-              -DELEMENTS_ENABLE_SERIAL=ON \
-              -DELEMENTS_ENABLE_OPENMP=${{ matrix.build_type == 'openmp' && 'ON' || 'OFF' }} \
-              -DBISON_EXECUTABLE=$(which win_bison) \
-              -DFLEX_EXECUTABLE=$(which win_flex) \
+        # Resolve absolute paths to the tools CMake needs
+        $fortran = (Get-Command ifx | Select-Object -First 1 -ExpandProperty Source)
+        $bison = (Get-Command win_bison | Select-Object -First 1 -ExpandProperty Source)
+        $flex = (Get-Command win_flex | Select-Object -First 1 -ExpandProperty Source)
+
+        cmake -B build-${{matrix.build_type}} `
+              -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install" `
+              -DCMAKE_Fortran_COMPILER="$fortran" `
+              -DELEMENTS_ENABLE_SERIAL=ON `
+              -DELEMENTS_ENABLE_OPENMP="${{ matrix.build_type == 'openmp' && 'ON' || 'OFF' }}" `
+              -DBISON_EXECUTABLE="$bison" `
+              -DFLEX_EXECUTABLE="$flex" `
               -DBUILD_FORTRAN=ON
 
     - name: Build

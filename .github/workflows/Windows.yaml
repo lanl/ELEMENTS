@@ -23,10 +23,10 @@ jobs:
         submodules: true
 
     - name: Install MPI
-      # MS-MPI is the standard for Windows HPC
+      # Intel MPI supports MPI-3.1+ on Windows
       uses: mpi4py/setup-mpi@v1
       with:
-        mpi: msmpi
+        mpi: intelmpi
 
     - name: Install Bison and Flex
       # Scotch requires Bison 3.0+; winflexbison3 provides this on Windows

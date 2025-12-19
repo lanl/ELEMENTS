@@ -49,8 +49,10 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 # --- Find MPI (Required) ---
 find_package(MPI REQUIRED)
-if(MPI_CXX_VERSION LESS 3)
-    message(WARNING "ELEMENTS requires MPI version 3+. Found ${MPI_CXX_VERSION}.")
+if(NOT MSVC)
+    if(MPI_CXX_VERSION LESS 3)
+        message(WARNING "ELEMENTS requires MPI version 3+. Found ${MPI_CXX_VERSION}.")
+    endif()
 endif()
 
 # --- Options ---
@@ -115,6 +117,7 @@ endif()
 if(NOT TARGET ptscotch)
     set(SCOTCH_MPI ON CACHE BOOL "Enable MPI for Scotch" FORCE)
     set(SCOTCH_BUILD_TESTS OFF CACHE BOOL "Disable Scotch Tests" FORCE)
+    set(BUILD_FORTRAN OFF CACHE BOOL "Disable Scotch Fortran interface" FORCE)
 
     FetchContent_Declare(
         Scotch
@@ -127,15 +130,15 @@ if(NOT TARGET ptscotch)
     # FIX: GCC 15 Warning Suppressions (Target-Specific)
     # Even though C11 is set globally above, we still need to silence the
     # specific GCC 15 warnings for Scotch that are not fixed by C11 alone.
-    set(_scotch_targets 
-        scotch ptscotch scotcherr scotcherrexit
-        amk_ccc amk_fft2 amk_grf amk_hy amk_m2 amk_p2 
-        gbase gmap gord gout gpart gscat gtst 
-        mcv mmk_m2 mmk_m3 mord mtst
-        dggath dgmap dgord dgpart dgscat dgtst
-    )
-
     if(NOT MSVC)
+        set(_scotch_targets 
+            scotch ptscotch scotcherr scotcherrexit
+            amk_ccc amk_fft2 amk_grf amk_hy amk_m2 amk_p2 
+            gbase gmap gord gout gpart gscat gtst 
+            mcv mmk_m2 mmk_m3 mord mtst
+            dggath dgmap dgord dgpart dgscat dgtst
+        )
+
         foreach(_target ${_scotch_targets})
             if(TARGET ${_target})
                 # Silence annoying warnings for legacy C code

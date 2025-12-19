@@ -7,16 +7,18 @@ on:
   pull_request: 
     branches: [master]
 
-env:
-  # CMake configuration for basic build
-  CMAKE_CONFIG_FLAGS: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release
-
 jobs:
   build-test-install:
     strategy: 
       matrix:
         #os: [ubuntu-18.04, ubuntu-latest]
         os: [ubuntu-latest]
+        build_type: [serial, openmp]
+        include:
+          - build_type: serial
+            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF
+          - build_type: openmp
+            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=ON
     runs-on: ${{matrix.os}}
 
     steps:
@@ -29,11 +31,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libopenmpi-dev openmpi-bin
     
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build ${{env.CMAKE_CONFIG_FLAGS}}
-
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build
-
-    - name: Install
-      run: cmake --install ${{github.workspace}}/build
+    - name: Configure CMake (${{matrix.build_type}})
+      run: cmake -B ${{github.workspace}}/build-${{matrix.build_type}} ${{matrix.cmake_flags}}
+    
+    - name: Build (${{matrix.build_type}})
+      run: cmake --build ${{github.workspace}}/build-${{matrix.build_type}}
+    
+    - name: Install (${{matrix.build_type}})
+      run: cmake --install ${{github.workspace}}/build-${{matrix.build_type}}

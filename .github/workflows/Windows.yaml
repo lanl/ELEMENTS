@@ -69,8 +69,11 @@ jobs:
               -DCMAKE_C_COMPILER=cl `
               -DCMAKE_CXX_COMPILER=cl `
               -DCMAKE_Fortran_COMPILER="$fortran" `
+              -DBUILD_PTSCOTCH=ON `
               -DSCOTCH_PTHREAD=OFF `
               -DCOMMON_PTHREAD=OFF `
+              -DSCOTCH_PTHREAD_MPI=OFF `
+              -DTHREADS_PREFER_PTHREAD_FLAG=OFF `
               -DELEMENTS_ENABLE_SERIAL=ON `
               -DELEMENTS_ENABLE_OPENMP="${{ matrix.build_type == 'openmp' && 'ON' || 'OFF' }}" `
               -DBISON_EXECUTABLE="$bison" `

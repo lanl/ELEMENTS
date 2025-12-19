@@ -118,6 +118,12 @@ if(NOT TARGET ptscotch)
     set(SCOTCH_MPI ON CACHE BOOL "Enable MPI for Scotch" FORCE)
     set(SCOTCH_BUILD_TESTS OFF CACHE BOOL "Disable Scotch Tests" FORCE)
     set(BUILD_FORTRAN OFF CACHE BOOL "Disable Scotch Fortran interface" FORCE)
+    if(WIN32)
+        # Scotch does not ship pthreads on Windows; ensure all pthread toggles are off
+        set(SCOTCH_PTHREAD OFF CACHE BOOL "Disable Scotch pthread on Windows" FORCE)
+        set(SCOTCH_PTHREAD_MPI OFF CACHE BOOL "Disable Scotch pthread MPI on Windows" FORCE)
+        set(COMMON_PTHREAD OFF CACHE BOOL "Disable common pthread on Windows" FORCE)
+    endif()
 
     FetchContent_Declare(
         Scotch

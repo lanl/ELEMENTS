@@ -134,19 +134,22 @@ if(NOT TARGET ptscotch)
         mcv mmk_m2 mmk_m3 mord mtst
         dggath dgmap dgord dgpart dgscat dgtst
     )
-    foreach(_target ${_scotch_targets})
-        if(TARGET ${_target})
-            # Silence annoying warnings for legacy C code
-            target_compile_options(${_target} PRIVATE 
-                $<$<COMPILE_LANGUAGE:C>:-Wno-error=incompatible-pointer-types>
-                $<$<COMPILE_LANGUAGE:C>:-Wno-error=int-conversion>
-                $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-int>
-                $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
-                $<$<COMPILE_LANGUAGE:C>:-Wno-int-conversion>
-                $<$<COMPILE_LANGUAGE:C>:-Wno-implicit-int>
-            )
-        endif()
-    endforeach()
+
+    if(NOT MSVC)
+        foreach(_target ${_scotch_targets})
+            if(TARGET ${_target})
+                # Silence annoying warnings for legacy C code
+                target_compile_options(${_target} PRIVATE 
+                    $<$<COMPILE_LANGUAGE:C>:-Wno-error=incompatible-pointer-types>
+                    $<$<COMPILE_LANGUAGE:C>:-Wno-error=int-conversion>
+                    $<$<COMPILE_LANGUAGE:C>:-Wno-error=implicit-int>
+                    $<$<COMPILE_LANGUAGE:C>:-Wno-incompatible-pointer-types>
+                    $<$<COMPILE_LANGUAGE:C>:-Wno-int-conversion>
+                    $<$<COMPILE_LANGUAGE:C>:-Wno-implicit-int>
+                )
+            endif()
+        endforeach()
+    endif()
 endif()
 
 # --- Add ELEMENTS Source ---

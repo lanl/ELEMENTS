@@ -1,0 +1,54 @@
+# Build, test, and install on Windows
+name: Windows
+
+on:
+  push:
+    branches: [master]
+  pull_request: 
+    branches: [master]
+
+jobs:
+  build-test-install:
+    strategy: 
+      fail-fast: false
+      matrix:
+        build_type: [serial, openmp]
+        # Windows typically uses the multi-config Visual Studio generator
+        config: [Release] 
+    runs-runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with: 
+        submodules: true
+
+    - name: Install MPI
+      # MS-MPI is the standard for Windows HPC
+      uses: mpi4py/setup-mpi@v1
+      with:
+        mpi: msmpi
+
+    - name: Install Bison and Flex
+      # Scotch requires Bison 3.0+; winflexbison3 provides this on Windows
+      run: |
+        choco install winflexbison3
+        # Add to PATH so find_package(BISON) works
+        echo "C:\ProgramData\chocolatey\bin" >> $GITHUB_PATH
+
+    - name: Configure CMake
+      shell: bash
+      run: |
+        # Explicitly point to win_bison/win_flex if find_package needs help
+        cmake -B build-${{matrix.build_type}} \
+              -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install \
+              -DELEMENTS_ENABLE_SERIAL=ON \
+              -DELEMENTS_ENABLE_OPENMP=${{ matrix.build_type == 'openmp' && 'ON' || 'OFF' }} \
+              -DBISON_EXECUTABLE=$(which win_bison) \
+              -DFLEX_EXECUTABLE=$(which win_flex)
+
+    - name: Build
+      # Windows (MSVC) is a multi-config generator, so --config is required
+      run: cmake --build build-${{matrix.build_type}} --config ${{matrix.config}}
+
+    - name: Install
+      run: cmake --install build-${{matrix.build_type}} --config ${{matrix.config}}

@@ -10,18 +10,19 @@ on:
 jobs:
   build-test-install:
     strategy: 
+      fail-fast: false
       matrix:
         os: [macos-11, macos-latest]
         build_type: [serial, openmp]
         include:
           - build_type: serial
-            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF
+            extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF"
           - build_type: openmp
-            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=ON
+            extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=ON"
     runs-on: ${{matrix.os}}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4 # Updated to v4 for latest node support
       with: 
         submodules: true
     
@@ -30,10 +31,35 @@ jobs:
         brew install openmpi libomp
     
     - name: Configure CMake (${{matrix.build_type}})
-      run: cmake -B ${{github.workspace}}/build-${{matrix.build_type}} ${{matrix.cmake_flags}}
+      run: |
+        # Initialize flags array
+        CMAKE_OPTS=(
+          "-DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install"
+          "-DCMAKE_BUILD_TYPE=Release"
+        )
+        
+        # Specific logic for OpenMP on macOS
+        if [[ "${{ matrix.build_type }}" == "openmp" ]]; then
+          OMP_PREFIX=$(brew --prefix libomp)
+          
+          # These flags help CMake find the Homebrew-installed OpenMP
+          CMAKE_OPTS+=(
+            "-DOpenMP_ROOT=$OMP_PREFIX"
+            "-DOpenMP_C_FLAGS=-Xpreprocessor -fopenmp"
+            "-DOpenMP_CXX_FLAGS=-Xpreprocessor -fopenmp"
+            "-DOpenMP_C_LIB_NAMES=omp"
+            "-DOpenMP_CXX_LIB_NAMES=omp"
+            "-DOpenMP_omp_LIBRARY=$OMP_PREFIX/lib/libomp.dylib"
+          )
+        fi
+
+        # Execute configuration
+        cmake -B build-${{matrix.build_type}} \
+              ${{matrix.extra_flags}} \
+              "${CMAKE_OPTS[@]}"
     
     - name: Build (${{matrix.build_type}})
-      run: cmake --build ${{github.workspace}}/build-${{matrix.build_type}}
+      run: cmake --build build-${{matrix.build_type}}
     
     - name: Install (${{matrix.build_type}})
-      run: cmake --install ${{github.workspace}}/build-${{matrix.build_type}}
+      run: cmake --install build-${{matrix.build_type}}

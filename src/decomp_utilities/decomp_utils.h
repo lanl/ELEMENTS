@@ -21,6 +21,10 @@
 #include "scotch.h"
 #include "ptscotch.h"
 
+
+namespace elements 
+{
+
 /**
  * @brief Partitions the input mesh into a naive element-based decomposition across MPI ranks.
  *
@@ -46,9 +50,9 @@
  */
 
 void naive_partition_mesh(
-    Mesh_t& initial_mesh,
+    swage::Mesh& initial_mesh,
     MPICArrayKokkos<double>& initial_node_coords,
-    Mesh_t& naive_mesh,
+    swage::Mesh& naive_mesh,
     MPICArrayKokkos<double>& naive_node_coords,
     CArrayDual<int>& elems_in_elem_on_rank,
     CArrayDual<int>& num_elems_in_elem_per_rank,
@@ -575,8 +579,8 @@ void naive_partition_mesh(
 /// @note Performance: O(n_local_elements * n_nodes_per_element) for local operations,
 ///                    plus O(n_global_elements) for global MPI collective operations
 void build_ghost(
-    Mesh_t& input_mesh,
-    Mesh_t& output_mesh,
+    swage::Mesh& input_mesh,
+    swage::Mesh& output_mesh,
     MPICArrayKokkos<double>& input_node_coords,
     MPICArrayKokkos<double>& output_node_coords,
     CommunicationPlan& element_communication_plan,
@@ -1691,8 +1695,8 @@ void build_ghost(
  */
 
 void partition_mesh(
-    Mesh_t& initial_mesh,
-    Mesh_t& final_mesh,
+    swage::Mesh& initial_mesh,
+    swage::Mesh& final_mesh,
     MPICArrayKokkos<double>& initial_node_coords,
     MPICArrayKokkos<double>& final_node_coords,
     CommunicationPlan& element_communication_plan,
@@ -1706,11 +1710,11 @@ void partition_mesh(
 
     // Create mesh, gauss points, and node data structures on each rank
     // This is the initial partitioned mesh
-    Mesh_t naive_mesh;
+    swage::Mesh naive_mesh;
     MPICArrayKokkos<double> naive_node_coords;
 
     // Mesh partitioned by pt-scotch, not including ghost
-    Mesh_t intermediate_mesh; 
+    swage::Mesh intermediate_mesh; 
     MPICArrayKokkos<double> intermediate_node_coords;
 
     // Helper arrays to hold element-element connectivity for naive partitioning that include what would be ghost, without having to build the full mesh
@@ -2309,5 +2313,7 @@ void partition_mesh(
     if(rank == 0) std::cout<<" Finished the ghost element and node construction"<<std::endl;
 
 }
+
+} // namespace elements
 
 #endif // DECOMP_UTILS_H

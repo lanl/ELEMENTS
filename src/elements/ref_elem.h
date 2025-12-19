@@ -38,7 +38,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "matar.h"
 #include "ref_quadrature.h"
 
-#define EPSILON 1.0e-12
+namespace elements
+{
+
 using namespace mtr;
 
 // Constructs kinematic and thermodynamic basis functions in the element.
@@ -117,16 +119,18 @@ struct fe_ref_elem_t
     ///
     /// \fn init
     ///
-    /// \brief <insert brief description>
+    /// \brief Initialize the reference element with polynomial order and dimension.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// Initializes internal data members for the reference element according
+    /// to the given polynomial order and spatial dimension. Sets up the number
+    /// of points, degrees of freedom, and zones for Gauss-Legendre, Gauss-Lobatto,
+    /// and dual Gauss-Lobatto quadrature, as well as associated sizes and counts
+    /// for basis function evaluations, according to the dimension and order.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param p_order The order of polynomial approximation, i.e., the finite element order.
+    /// \param num_dim_inp The number of spatial dimensions (e.g., 1, 2, or 3).
     ///
-    /// \return <return type and definition description if not void>
+    /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
     void init(int p_order, int num_dim_inp)
@@ -545,6 +549,23 @@ struct fe_ref_elem_t
     
 
     // --- ref index access member functions ---
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \fn dof_rid
+    ///
+    /// \brief Compute the 1D array index for a degree of freedom (DOF) in an element.
+    ///
+    /// Calculates the flat row-major index corresponding to a DOF located at position (i, j, k)
+    /// in the element, for continuous fields. This is used for basis functions and data fields
+    /// that are continuous across element boundaries.
+    ///
+    /// \param i Local DOF index in the first (xi) coordinate direction.
+    /// \param j Local DOF index in the second (eta) coordinate direction.
+    /// \param k Local DOF index in the third (mu) coordinate direction.
+    ///
+    /// \return The row-major offset index for the DOF in this element.
+    ///
+    /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
     int dof_rid(int i, int j, int k) const
     {
@@ -555,16 +576,17 @@ struct fe_ref_elem_t
     ///
     /// \fn elem_dof_rid
     ///
-    /// \brief <insert brief description>
+    /// \brief Compute the 1D array index for a discontinuous Galerkin degree of freedom (DG DOF) in an element.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// Calculates the flat row-major index corresponding to a DG DOF located at position (i, j, k)
+    /// in the element, for discontinuous fields. This is used for basis functions and data fields
+    /// that are discontinuous across element boundaries.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param i Local DG DOF index in the first (xi) coordinate direction.
+    /// \param j Local DG DOF index in the second (eta) coordinate direction.
+    /// \param k Local DG DOF index in the third (mu) coordinate direction.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return The row-major offset index for the DG DOF in this element.
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
@@ -577,16 +599,18 @@ struct fe_ref_elem_t
     ///
     /// \fn lobatto_rid
     ///
-    /// \brief <insert brief description>
+    /// \brief Compute the 1D array index for a Gauss-Lobatto quadrature point in an element.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// Calculates the row-major flat index corresponding to a Gauss-Lobatto quadrature 
+    /// point at the position (i, j, k) within an element. Typically used for accessing 
+    /// basis, position, and weight arrays defined on the tensor-product grid of 
+    /// Gauss-Lobatto quadrature points in the reference element.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param i Local index in the first (xi) coordinate direction.
+    /// \param j Local index in the second (eta) coordinate direction.
+    /// \param k Local index in the third (mu) coordinate direction.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return The row-major offset index for the Gauss-Lobatto quadrature point in this element.
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
@@ -599,16 +623,18 @@ struct fe_ref_elem_t
     ///
     /// \fn dual_lobatto_rid
     ///
-    /// \brief <insert brief description>
+    /// \brief Compute the 1D array index for a dual Gauss-Lobatto quadrature point in an element.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// Calculates the row-major flat index for accessing data associated with a dual Gauss-Lobatto
+    /// quadrature point at the position (i, j, k) within the element. This is used for accessing
+    /// basis functions, positions, and weights at dual Gauss-Lobatto quadrature points, which are
+    /// ancillary points in high-order finite element or spectral methods.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param i Local dual Gauss-Lobatto index in the first (xi) coordinate direction.
+    /// \param j Local dual Gauss-Lobatto index in the second (eta) coordinate direction.
+    /// \param k Local dual Gauss-Lobatto index in the third (mu) coordinate direction.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return The row-major offset index for the dual Gauss-Lobatto quadrature point in this element.
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
@@ -621,16 +647,19 @@ struct fe_ref_elem_t
     ///
     /// \fn legendre_rid
     ///
-    /// \brief <insert brief description>
+    /// \brief Compute the 1D array index for a Gauss-Legendre quadrature point in an element.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// Calculates the row-major flat index corresponding to a Gauss-Legendre quadrature 
+    /// point at the position (i, j, k) within an element. This function is typically used 
+    /// for accessing basis functions, positions, and weights defined on the tensor-product 
+    /// grid of Gauss-Legendre quadrature points in the reference element, which is common
+    /// in high-order finite element and spectral methods.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param i Local Gauss-Legendre index in the first (xi) coordinate direction.
+    /// \param j Local Gauss-Legendre index in the second (eta) coordinate direction.
+    /// \param k Local Gauss-Legendre index in the third (mu) coordinate direction.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return The row-major offset index for the Gauss-Legendre quadrature point in this element.
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
@@ -643,16 +672,18 @@ struct fe_ref_elem_t
     ///
     /// \fn legendre_rid_2D
     ///
-    /// \brief <insert brief description>
+    /// \brief Compute the 1D array index for a Gauss-Legendre quadrature point in 2D.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// Calculates the row-major flat index corresponding to a Gauss-Legendre quadrature 
+    /// point at the position (i, j) within a two-dimensional element. This function is
+    /// typically used for accessing basis functions, positions, and weights defined on the 
+    /// tensor-product grid of Gauss-Legendre quadrature points in the reference element, 
+    /// for high-order finite element and spectral methods in 2D.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param i Local Gauss-Legendre index in the first (xi) coordinate direction.
+    /// \param j Local Gauss-Legendre index in the second (eta) coordinate direction.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return The row-major offset index for the Gauss-Legendre quadrature point in this element (2D).
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
@@ -665,16 +696,20 @@ struct fe_ref_elem_t
     ///
     /// \fn get_basis
     ///
-    /// \brief <insert brief description>
+    /// \brief Computes the tensor-product nodal basis values at an arbitrary point.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// This function evaluates the Lagrange basis functions at a specified point within
+    /// the reference element and assembles the tensor-product basis values for all degrees 
+    /// of freedom (DOFs). Basis values in each coordinate direction are computed independently 
+    /// using the 1D Lagrange basis, and then combined to form the full multi-dimensional basis.
+    /// The results are written to the provided output array.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param basis Reference to the output CArrayKokkos<double> to hold full tensor-product basis values, sized for all DOFs in the element.
+    /// \param val_1d Temporary CArrayKokkos<double> for holding 1D basis values (as workspace).
+    /// \param val_3d Temporary CArrayKokkos<double> for holding basis values for each direction; shape should be (num_dofs_1d, 3).
+    /// \param point Reference to CArrayKokkos<double> representing the coordinates (xi, eta, mu) at which the basis is evaluated (size 3).
     ///
-    /// \return <return type and definition description if not void>
+    /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_FUNCTION
@@ -738,16 +773,25 @@ struct fe_ref_elem_t
     ///
     /// \fn get_elem_basis
     ///
-    /// \brief <insert brief description>
+    /// \brief Compute tensor-product DG element basis function values at a given point.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// Calculates the tensor-product Lagrange basis functions associated with the 
+    /// discontinuous (DG) element DOFs at the specified point in reference coordinates. 
+    /// This involves evaluating the 1D basis polynomials in each coordinate direction,
+    /// then forming the full multidimensional basis by taking the product over all 
+    /// directions for each DOF. Intermediate storage is used for efficient calculation.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param basis     [out] CArrayKokkos<double>& - Output array for the computed basis values
+    ///                  for each DOF in the element.
+    /// \param val_1d    [in,out] CArrayKokkos<double>& - Temporary storage for 1D basis values 
+    ///                  per coordinate direction; this will be overwritten during the calculation.
+    /// \param val_3d    [in,out] CArrayKokkos<double>& - Temporary storage for 1D basis results
+    ///                  in all 3 coordinate directions, size [num_dg_dofs_1d, 3]; 
+    ///                  will be overwritten during calculation.
+    /// \param point     [in] const CArrayKokkos<double>& - The reference space coordinates 
+    ///                  (xi, eta, mu) at which to evaluate the basis functions.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_FUNCTION
@@ -811,16 +855,21 @@ struct fe_ref_elem_t
     ///
     /// \fn partial_xi_basis
     ///
-    /// \brief <insert brief description>
+    /// \brief Compute the partial derivative of the basis function with respect to the xi coordinate.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// This function evaluates the tensor-product Lagrange basis function derivatives in the xi direction
+    /// at a given point within the reference element. The computation is performed by first evaluating the
+    /// 1D derivatives and basis functions for each coordinate and then combining them using the chain rule
+    /// for tensor products. The result is stored in the provided array for all degrees of freedom.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param partial_xi Array to store the value of the partial derivative with respect to xi for each basis function.
+    /// \param val_1d Temporary workspace array for 1D basis evaluations.
+    /// \param val_3d Temporary workspace array for 3D basis component evaluations.
+    /// \param Dval_1d Temporary workspace array for 1D derivative evaluations.
+    /// \param Dval_3d Temporary workspace array for 3D derivative component evaluations.
+    /// \param point Input array specifying the coordinates (xi, eta, mu) at which to evaluate the derivative.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_FUNCTION
@@ -893,16 +942,22 @@ struct fe_ref_elem_t
     ///
     /// \fn partial_eta_basis
     ///
-    /// \brief <insert brief description>
+    /// \brief Computes the partial derivative of the Lagrange basis functions with respect to eta at a given point.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// This function evaluates the partial derivative of the tensor-product Lagrange basis 
+    /// functions with respect to the eta (second) coordinate at a given point in the reference element.
+    /// It builds up the 3D basis and its derivatives using repeated calls to 1D basis and derivative 
+    /// evaluations, and computes the tensor-product forms to populate the provided partial_eta array 
+    /// with the values of the partials at every reference node.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param partial_eta   Output array to store the partial derivatives with respect to eta at each basis node.
+    /// \param val_1d       Temporary array used for storing 1D basis values during calculation.
+    /// \param val_3d       Temporary 2D array used for storing intermediate 3D basis values.
+    /// \param Dval_1d      Temporary array used for storing 1D derivative values during calculation.
+    /// \param Dval_3d      Temporary 2D array used for storing intermediate 3D derivative values.
+    /// \param point        Input array representing the coordinates (xi, eta, zeta) at which to evaluate the derivative.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_FUNCTION
@@ -976,16 +1031,23 @@ struct fe_ref_elem_t
     ///
     /// \fn partial_mu_basis
     ///
-    /// \brief <insert brief description>
+    /// \brief Compute the tensor-product partial derivative of the basis functions
+    ///        with respect to the mu (z) coordinate at a given point in the reference element.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// This function calculates the partial derivatives of the high-order
+    /// tensor-product Lagrange basis functions with respect to the mu (z) coordinate
+    /// at a specified point in the reference element, using their 1D basis and derivative
+    /// representations. The result is stored in the provided array. Temporary arrays
+    /// for 1D and 3D basis/derivative values are passed in for workspace re-use.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param partial_mu Array to store the computed partial derivatives with respect to mu.
+    /// \param val_1d Workspace array for 1D Lagrange basis evaluations.
+    /// \param val_3d Workspace array for 3D tensor-product basis evaluations.
+    /// \param Dval_1d Workspace array for 1D Lagrange basis derivatives.
+    /// \param Dval_3d Workspace array for 3D tensor-product basis derivatives.
+    /// \param point Coordinates in the reference element where the basis partials are evaluated.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_FUNCTION
@@ -1111,6 +1173,23 @@ struct fe_ref_elem_t
 //           elem_val_3d(i,2) = 0.0;
 //         }
 // }
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \fn lagrange_basis_1D
+    ///
+    /// \brief Computes the Lagrange basis functions in 1D at a given point.
+    ///
+    /// This function evaluates the values of the 1D Lagrange basis functions at a specified point 
+    /// within the reference element, using the nodal positions. For each basis node, it computes 
+    /// the interpolation value (the product over all other node positions) and stores 
+    /// the result in the provided array.
+    ///
+    /// \param interp   Output array to store the value of each basis function at the specified point.
+    /// \param x_point  Point at which to evaluate the basis functions.
+    ///
+    /// \return void
+    ///
+    /////////////////////////////////////////////////////////////////////////////
 
     KOKKOS_FUNCTION
     void lagrange_basis_1D(
@@ -1144,16 +1223,17 @@ struct fe_ref_elem_t
     ///
     /// \fn lagrange_elem_basis_1D
     ///
-    /// \brief <insert brief description>
+    /// \brief Computes the values of the element-based (e.g. DG) 1D Lagrange basis functions at a given point.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// This function evaluates the values of the 1D Lagrange basis functions associated with the element's
+    /// degrees of freedom (typically for a DG basis) at a specified point within the reference element.
+    /// For each basis node, it computes the basis value as the Lagrange interpolant using the nodal positions 
+    /// specific to the DG basis, and stores the results in the provided array.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param interp   Output array to store the value of each element-based 1D basis function at the specified point.
+    /// \param x_point  Point at which to evaluate the element-based basis functions.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_FUNCTION
@@ -1188,16 +1268,17 @@ struct fe_ref_elem_t
     ///
     /// \fn lagrange_derivative_1D
     ///
-    /// \brief <insert brief description>
+    /// \brief Computes the values of the derivatives of the 1D Lagrange basis functions at a given point.
     ///
-    /// <Insert longer more detailed description which
-    /// can span multiple lines if needed>
+    /// This function evaluates the first derivatives of the 1D Lagrange basis functions associated
+    /// with the element's degrees of freedom at a specified point within the reference element.
+    /// For each basis node, it computes the derivative of the basis function using the nodal
+    /// positions and stores the results in the provided array.
     ///
-    /// \param <function parameter description>
-    /// \param <function parameter description>
-    /// \param <function parameter description>
+    /// \param derivative Output array to store the value of each 1D basis function derivative at the given point.
+    /// \param x_point    Point at which to evaluate the derivatives of the basis functions.
     ///
-    /// \return <return type and definition description if not void>
+    /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
@@ -1262,5 +1343,7 @@ struct fe_ref_elem_t
 // }
 
 }; // end struct
+
+} // end namespace elements
 
 #endif

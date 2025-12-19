@@ -142,7 +142,7 @@ inline int PointIndexFromIJK(int i, int j, int k, const int* order)
 ///
 /////////////////////////////////////////////////////////////////////////////
 void build_3d_box(
-    Mesh_t& mesh,
+    swage::Mesh& mesh,
     node_t&   node,
     double origin[3],
     double length[3],
@@ -268,7 +268,7 @@ void build_3d_box(
 /// \param rank rank
 ///
 /////////////////////////////////////////////////////////////////////////////
-    void write_vtk(Mesh_t& mesh,
+    void write_vtk(swage::Mesh& mesh,
         node_t& node,
         int rank)
     {
@@ -526,7 +526,7 @@ void build_3d_box(
 /// \param comm MPI communicator
 ///
 /////////////////////////////////////////////////////////////////////////////
-void write_vtu(Mesh_t& mesh,
+void write_vtu(swage::Mesh& mesh,
                node_t& node,
                GaussPoint_t& gauss_point,
                int rank,
@@ -843,7 +843,7 @@ void write_vtu(Mesh_t& mesh,
     /// \param Number of dimensions
     ///
     /////////////////////////////////////////////////////////////////////////////
-    void read_vtk_mesh(Mesh_t& mesh,
+    void read_vtk_mesh(swage::Mesh& mesh,
         node_t&   node,
         int num_dims,
         std::string mesh_file_)

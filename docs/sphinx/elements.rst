@@ -34,5 +34,8 @@ The reference element contains nodes that are collocated with the Lobatto quadra
 The local indexing of the quadrature points and nodes within an element follows an (i,j,k) index convention. 
 An index map is supplied to convert the Serendipity local index convention to the local (i,j,k) index convention.
 
+API Reference
+-------------
+
 .. doxygennamespace:: elements
    :members:

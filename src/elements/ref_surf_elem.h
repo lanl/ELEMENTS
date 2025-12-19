@@ -4,13 +4,15 @@
 #include <cmath>
 #include "matar.h"
 
-#define EPSILON 1.0e-12
+
+namespace elements
+{
+
 using namespace mtr;
 
 // Constructs kinematic and thermodynamic basis functions in the element.
 // Kinematic basis will be referenced as basis
 // Thermodynamic basis is referenced as elem_basis, since the thermodynamic quantities are internal to the elements
-
 
 struct fe_ref_surf_t{
 
@@ -2116,5 +2118,7 @@ double eval_bernstein (
 #endif
 
 };
+
+} // end namespace elements
 
 #endif 

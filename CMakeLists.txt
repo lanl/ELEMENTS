@@ -1,16 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
 project(ELEMENTS VERSION 1.0.0 LANGUAGES CXX C)
 
-# --- 1. Global Compiler Fixes (Scoped to this project) ---
+# --- Global Compiler Fixes (Scoped to this project) ---
 # These settings apply to ELEMENTS and all its dependencies (Scotch, etc.)
 # but DO NOT leak up to the parent project (the solver).
-
 # Force C11 Standard (Required for PT-Scotch to build with GCC 15)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
-# --- 2. Check Scope for Options ---
+# --- Check Scope for Options ---
 # We still use this check for things like "Should we build examples?"
 # because a solver user likely doesn't want to compile your examples.
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
@@ -19,13 +18,40 @@ else()
     set(ELEMENTS_IS_TOP_LEVEL OFF)
 endif()
 
-# --- 3. Find MPI (Required) ---
+# --- Check if building documentation ---
+option(ELEMENTS_BUILD_DOCS "Build documentation" ${ELEMENTS_IS_TOP_LEVEL})
+
+
+# Set module path
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+
+
+# --- Optional Doxygen and Sphinx dependencies ---
+if (ELEMENTS_BUILD_DOCS)
+  find_package(Doxygen REQUIRED)
+  find_package(Sphinx REQUIRED)
+endif()
+
+
+# --- Build documentation ---
+if (ELEMENTS_BUILD_DOCS)
+  add_subdirectory(docs)
+endif()
+
+
+# --- Set build type if not already set ---
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo)
+ # set(CMAKE_BUILD_TYPE Release)
+endif(NOT CMAKE_BUILD_TYPE)
+
+# --- Find MPI (Required) ---
 find_package(MPI REQUIRED)
 if(MPI_CXX_VERSION LESS 3)
     message(WARNING "ELEMENTS requires MPI version 3+. Found ${MPI_CXX_VERSION}.")
 endif()
 
-# --- 4. Options ---
+# --- Options ---
 option(ELEMENTS_ENABLE_SERIAL "Enable Serial support in Kokkos" ON)
 option(ELEMENTS_ENABLE_OPENMP "Enable OpenMP support in Kokkos" ON)
 option(ELEMENTS_ENABLE_PTHREADS "Enable PThreads support in Kokkos" OFF)
@@ -37,7 +63,7 @@ option(ELEMENTS_BUILD_TESTS "Build unit tests" OFF)
 
 include(FetchContent)
 
-# --- 5. Dependency: Kokkos ---
+# --- Dependency: Kokkos ---
 if(NOT TARGET Kokkos::kokkos)
     set(Kokkos_ENABLE_SERIAL   ${ELEMENTS_ENABLE_SERIAL}   CACHE BOOL "" FORCE)
     set(Kokkos_ENABLE_OPENMP   ${ELEMENTS_ENABLE_OPENMP}   CACHE BOOL "" FORCE)
@@ -53,7 +79,7 @@ if(NOT TARGET Kokkos::kokkos)
     FetchContent_MakeAvailable(Kokkos)
 endif()
 
-# --- 6. Dependency: MATAR ---
+# --- Dependency: MATAR ---
 if(NOT TARGET matar::matar)
     FetchContent_Declare(
         MATAR
@@ -83,7 +109,7 @@ if(NOT TARGET matar::matar)
     endif()
 endif()
 
-# --- 7. Dependency: Scotch / PT-Scotch ---
+# --- Dependency: Scotch / PT-Scotch ---
 if(NOT TARGET ptscotch)
     set(SCOTCH_MPI ON CACHE BOOL "Enable MPI for Scotch" FORCE)
     set(SCOTCH_BUILD_TESTS OFF CACHE BOOL "Disable Scotch Tests" FORCE)
@@ -121,13 +147,15 @@ if(NOT TARGET ptscotch)
     endforeach()
 endif()
 
-# --- 8. Add ELEMENTS Source ---
+# --- Add ELEMENTS Source ---
 add_subdirectory(src)
 
 # --- 9. Optional Parts ---
 if(ELEMENTS_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
+
+
 
 if(ELEMENTS_BUILD_TESTS)
     enable_testing()

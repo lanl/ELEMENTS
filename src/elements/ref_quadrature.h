@@ -34,6 +34,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef REF_QUADRATURE_H
 #define REF_QUADRATURE_H
 
+namespace elements
+{
+
 
 /////////////////////////////////////////////////////////////////////////////
 ///
@@ -1073,5 +1076,6 @@ static void get_legendre_weights_1D(
     } // end if
 } // end of get_legendre_weights_1D function
 
+} // end namespace elements
 
 #endif

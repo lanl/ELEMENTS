@@ -37,11 +37,11 @@ int main(int argc, char** argv) {
     int num_elems_dim[3] = {10, 10, 10};
 
     // Initial mesh built on rank zero
-    Mesh_t initial_mesh;
+    swage::Mesh initial_mesh;
     MPICArrayKokkos<double> initial_node_coords;
 
     // Mesh partitioned by pt-scotch, including ghost
-    Mesh_t final_mesh;
+    swage::Mesh final_mesh;
     node_t final_node;
     MPICArrayKokkos<double> final_node_coords;
 
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
     CommunicationPlan node_communication_plan;
     node_communication_plan.initialize(MPI_COMM_WORLD);
 
-    partition_mesh(initial_mesh, final_mesh, initial_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);
+    elements::partition_mesh(initial_mesh, final_mesh, initial_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);
     double t_partition_end = MPI_Wtime();
 
     // Verify communicaiton plans

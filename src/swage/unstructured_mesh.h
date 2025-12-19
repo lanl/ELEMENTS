@@ -108,6 +108,10 @@ void bubble_sort(size_t arr[], const size_t num)
     } // end for i
 } // end function
 
+
+namespace swage
+{
+
 struct zones_in_elem_t
 {
     private:
@@ -210,7 +214,7 @@ struct lobatto_in_elem_t
 // };
 
 // mesh sizes and connectivity data structures
-struct Mesh_t
+struct Mesh
 {
     // ******* Entity Definitions **********//
     // Element: A hexahedral volume
@@ -1497,5 +1501,7 @@ struct Mesh_t
 
     
 }; // end Mesh_t
+
+} // end namespace swage
 
 #endif

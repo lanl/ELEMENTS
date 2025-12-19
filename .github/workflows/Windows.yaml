@@ -29,6 +29,11 @@ jobs:
       with:
         compiler: intel
 
+    - name: Set up MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
     - name: Install MPI
       # Intel MPI supports MPI-3.1+ on Windows
       uses: mpi4py/setup-mpi@v1
@@ -42,6 +47,9 @@ jobs:
         # Add to PATH so find_package(BISON) works
         echo "C:\ProgramData\chocolatey\bin" >> $GITHUB_PATH
 
+    - name: Install Ninja
+      run: choco install ninja
+
     - name: Configure CMake
       shell: pwsh
       run: |
@@ -51,8 +59,15 @@ jobs:
         $bison = (Get-Command win_bison | Select-Object -First 1 -ExpandProperty Source)
         $flex = (Get-Command win_flex | Select-Object -First 1 -ExpandProperty Source)
 
-        cmake -B build-${{matrix.build_type}} `
+        $ninja = (Get-Command ninja | Select-Object -First 1 -ExpandProperty Source)
+
+        cmake -G "Ninja" `
+              -B build-${{matrix.build_type}} `
+              -DCMAKE_MAKE_PROGRAM="$ninja" `
+              -DCMAKE_BUILD_TYPE="${{ matrix.config }}" `
               -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/install" `
+              -DCMAKE_C_COMPILER=cl `
+              -DCMAKE_CXX_COMPILER=cl `
               -DCMAKE_Fortran_COMPILER="$fortran" `
               -DELEMENTS_ENABLE_SERIAL=ON `
               -DELEMENTS_ENABLE_OPENMP="${{ matrix.build_type == 'openmp' && 'ON' || 'OFF' }}" `
@@ -61,7 +76,7 @@ jobs:
               -DBUILD_FORTRAN=ON
 
     - name: Build
-      # Windows (MSVC) is a multi-config generator, so --config is required
+      # Ninja is single-config; --config is ignored but harmless
       run: cmake --build build-${{matrix.build_type}} --config ${{matrix.config}}
 
     - name: Install

@@ -361,22 +361,21 @@ struct Mesh
     }; // end method
 
     // initialization method
-    void initialize_elems_Pn(const size_t num_elems_inp,
-        const size_t num_nodes_in_elem_inp,
-        const size_t num_gauss_leg_in_elem_inp,
-        const size_t num_zones_in_elem_inp,
-        const size_t num_nodes_in_zone_inp,
-        const size_t num_surfs_in_elem_inp,
-        const size_t num_dims_inp)
+    void initialize_elems_Pn(
+        const size_t num_elems_inp,
+        const size_t num_dims_inp, 
+        const size_t Pn_order)
     {
         num_dims  = num_dims_inp;
-        num_elems = num_elems_inp;
+        num_elems = num_elems_inp;  
 
-        num_nodes_in_elem     = num_nodes_in_elem_inp;
-        num_nodes_in_zone     = num_nodes_in_zone_inp;
-        num_gauss_in_elem = num_gauss_leg_in_elem_inp;
-        num_zones_in_elem     = num_zones_in_elem_inp;
-        num_surfs_in_elem     = num_surfs_in_elem_inp;
+        Pn = Pn_order;
+
+        num_nodes_in_elem     = std::pow(Pn_order + 1, num_dims); //(Pn_order + 1)**num_dims; // (Pn +1)
+        num_nodes_in_zone     = std::pow(2, num_dims); // (4, or 8, always)
+        num_gauss_in_elem     = std::pow(2*Pn_order, num_dims); // = 2*Pn
+        num_zones_in_elem     = std::pow(Pn_order, num_dims);  // Pn
+        num_surfs_in_elem     = num_dims == 2 ? 4 : 6; // 4 or 6 (always)
 
         num_zones = num_zones_in_elem * num_elems;
 

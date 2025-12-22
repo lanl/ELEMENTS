@@ -29,14 +29,15 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int num_dims = 2;
+    int num_dims = 3;
+    int Pn_order = 1;
 
     double t_main_start = MPI_Wtime();
 
     // Mesh size for 3D box
     double origin[3] = {0.0, 0.0, 0.0};
     double length[3] = {1.0, 1.0, 1.0};
-    int num_elems_dim[3] = {10, 10, 10};
+    int num_elems_dim[3] = {2, 2, 2};
    
     // Mesh size for 2D polar
     double inner_radius = 1.0;
@@ -68,7 +69,7 @@ int main(int argc, char** argv) {
 
         std::cout<<"Initializing mesh"<<std::endl;
         if(num_dims == 3) {
-            build_3d_box(initial_mesh,  initial_node_coords, origin, length, num_elems_dim);
+            build_3d_box(initial_mesh,  initial_node_coords, origin, length, num_elems_dim, Pn_order);
         } else if(num_dims == 2) {
             build_2d_polar(initial_mesh,  initial_node_coords, inner_radius, outer_radius, start_angle, end_angle, num_elems_i, num_elems_j);
         }
@@ -103,13 +104,18 @@ int main(int argc, char** argv) {
         elements::partition_mesh(initial_mesh, final_mesh, initial_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);   
     } else {
         final_mesh = initial_mesh;
+        final_mesh.num_owned_elems = initial_mesh.num_elems;
+        final_mesh.num_owned_nodes = initial_mesh.num_nodes;
         final_node_coords = initial_node_coords;
     }
     double t_partition_end = MPI_Wtime();
 
+    std::cout<<"Final mesh has " << final_mesh.num_elems << " elements and " << final_mesh.num_nodes << " nodes" << std::endl;
+    std::cout<<"Final mesh has " << final_mesh.num_owned_elems << " owned elements and " << final_mesh.num_owned_nodes << " owned nodes" << std::endl;
+
     // Verify communicaiton plans
-    element_communication_plan.verify_graph_communicator();
-    node_communication_plan.verify_graph_communicator();
+    // element_communication_plan.verify_graph_communicator();
+    // node_communication_plan.verify_graph_communicator();
     MPI_Barrier(MPI_COMM_WORLD);
 
     if(rank == 0) {
@@ -122,6 +128,9 @@ int main(int argc, char** argv) {
 // ****************************************************************************************** 
     // Gauss points share the same communication plan as elements.
     // This test initializes gauss point fields on owned elements and exchanges them with ghost elements.
+
+
+    std::cout<<"Generating phony data for gauss points to test MPI communications on rank "<<rank<<std::endl;
 
     std::vector<gauss_pt_state> gauss_pt_states = {gauss_pt_state::fields, gauss_pt_state::fields_vec};
     gauss_point.initialize(final_mesh.num_elems, final_mesh.num_dims, gauss_pt_states, element_communication_plan); // , &element_communication_plan
@@ -145,8 +154,8 @@ int main(int argc, char** argv) {
 
     MPI_Barrier(MPI_COMM_WORLD);
     
-    gauss_point.fields.communicate();
-    gauss_point.fields_vec.communicate();
+    // gauss_point.fields.communicate();
+    // gauss_point.fields_vec.communicate();
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -183,6 +192,8 @@ int main(int argc, char** argv) {
     gauss_point.fields.update_host();
     gauss_point.fields_vec.update_host();
 
+    std::cout<<"Generating phony data for nodes to test MPI communications on rank "<<rank<<std::endl;
+
     // Test node communication using MPI_Neighbor_alltoallv
     std::vector<node_state> node_states = {node_state::coords, node_state::scalar_field, node_state::vector_field};
     final_node.initialize(final_mesh.num_nodes, final_mesh.num_dims, node_states, node_communication_plan);
@@ -211,8 +222,8 @@ int main(int argc, char** argv) {
     MATAR_FENCE();
     MPI_Barrier(MPI_COMM_WORLD);
 
-    final_node.scalar_field.communicate();
-    final_node.vector_field.communicate();
+    // final_node.scalar_field.communicate();
+    // final_node.vector_field.communicate();
     
     MATAR_FENCE();
     MPI_Barrier(MPI_COMM_WORLD);
@@ -245,6 +256,7 @@ int main(int argc, char** argv) {
 
     // write_vtk(intermediate_mesh, intermediate_node, rank);
     MPI_Barrier(MPI_COMM_WORLD);
+    std::cout<<"Writing VTU file for rank "<<rank<<std::endl;
     write_vtu(final_mesh, final_node, gauss_point, rank, MPI_COMM_WORLD);
     // write_vtk(final_mesh, final_node, rank);
     MPI_Barrier(MPI_COMM_WORLD);

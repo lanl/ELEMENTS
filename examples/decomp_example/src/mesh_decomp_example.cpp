@@ -29,12 +29,22 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+    int num_dims = 2;
+
     double t_main_start = MPI_Wtime();
 
-    // Mesh size
+    // Mesh size for 3D box
     double origin[3] = {0.0, 0.0, 0.0};
     double length[3] = {1.0, 1.0, 1.0};
     int num_elems_dim[3] = {10, 10, 10};
+   
+    // Mesh size for 2D polar
+    double inner_radius = 1.0;
+    double outer_radius = 2.0;
+    double start_angle = 0.0;
+    double end_angle = 45.0;
+    int num_elems_i = 100;
+    int num_elems_j = 100;
 
     // Initial mesh built on rank zero
     swage::Mesh initial_mesh;
@@ -57,13 +67,24 @@ int main(int argc, char** argv) {
         std::cout<<"Rank "<<rank<<" Building initial mesh"<<std::endl;
 
         std::cout<<"Initializing mesh"<<std::endl;
-        build_3d_box(initial_mesh,  initial_node_coords, origin, length, num_elems_dim);
+        if(num_dims == 3) {
+            build_3d_box(initial_mesh,  initial_node_coords, origin, length, num_elems_dim);
+        } else if(num_dims == 2) {
+            build_2d_polar(initial_mesh,  initial_node_coords, inner_radius, outer_radius, start_angle, end_angle, num_elems_i, num_elems_j);
+        }
 
         // Read the mesh from a file
         // read_vtk_mesh(initial_mesh, initial_node, 3, "/home/jacobmoore/Desktop/repos/MATAR/meshes/impellerOpt.vtk");
 
         double t_init_mesh_end = MPI_Wtime();
         std::cout << "Initial mesh build time: " << (t_init_mesh_end - t_init_mesh_start) << " seconds" << std::endl;
+        std::cout << "Initial mesh has " << initial_mesh.num_elems << " elements and " << initial_mesh.num_nodes << " nodes" << std::endl;
+        std::cout <<" Num_nodes_in_elem: " << initial_mesh.num_nodes_in_elem << std::endl;
+        std::cout <<" Num_dims: " << initial_mesh.num_dims << std::endl;
+        std::cout <<" Num_elems: " << initial_mesh.num_elems << std::endl;
+        std::cout <<" Num_nodes: " << initial_mesh.num_nodes << std::endl;
+        std::cout <<" Num_nodes_in_elem: " << initial_mesh.num_nodes_in_elem << std::endl;
+        std::cout <<" Num_nodes_in_elem: " << initial_mesh.num_nodes_in_elem << std::endl;
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -78,7 +99,12 @@ int main(int argc, char** argv) {
     CommunicationPlan node_communication_plan;
     node_communication_plan.initialize(MPI_COMM_WORLD);
 
-    elements::partition_mesh(initial_mesh, final_mesh, initial_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);
+    if(world_size != 1) {
+        elements::partition_mesh(initial_mesh, final_mesh, initial_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);   
+    } else {
+        final_mesh = initial_mesh;
+        final_node_coords = initial_node_coords;
+    }
     double t_partition_end = MPI_Wtime();
 
     // Verify communicaiton plans
@@ -104,15 +130,15 @@ int main(int argc, char** argv) {
     // Set owned elements to rank number, ghost elements to -1 (to verify communication)
     for (int i = 0; i < final_mesh.num_owned_elems; i++) {
         gauss_point.fields.host(i) = static_cast<double>(rank);
-        gauss_point.fields_vec.host(i, 0) = static_cast<double>(rank);
-        gauss_point.fields_vec.host(i, 1) = static_cast<double>(rank);
-        gauss_point.fields_vec.host(i, 2) = static_cast<double>(rank);
+        for(int dim = 0; dim < final_mesh.num_dims; dim++){
+            gauss_point.fields_vec.host(i, dim) = static_cast<double>(rank);
+        }
     }
     for (int i = final_mesh.num_owned_elems; i < final_mesh.num_elems; i++) {
         gauss_point.fields.host(i) = -1.0;  // Ghost elements should be updated
-        gauss_point.fields_vec.host(i, 0) = -100.0;
-        gauss_point.fields_vec.host(i, 1) = -100.0;
-        gauss_point.fields_vec.host(i, 2) = -100.0;
+        for(int dim = 0; dim < final_mesh.num_dims; dim++){
+            gauss_point.fields_vec.host(i, dim) = -100.0;
+        }
     }
     gauss_point.fields.update_device();
     gauss_point.fields_vec.update_device();
@@ -143,9 +169,9 @@ int main(int argc, char** argv) {
         }
         value /= final_mesh.num_elems_in_elem(i);
 
-        gauss_point.fields_vec(i, 0) = value;
-        gauss_point.fields_vec(i, 1) = value;
-        gauss_point.fields_vec(i, 2) = value;
+        for(int dim = 0; dim < final_mesh.num_dims; dim++){
+            gauss_point.fields_vec(i, dim) = value;
+        }
     });
     MATAR_FENCE();
 

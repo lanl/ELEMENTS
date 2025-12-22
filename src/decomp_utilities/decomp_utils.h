@@ -67,6 +67,9 @@ void naive_partition_mesh(
     int num_nodes_per_elem = 0;
     int num_dim = initial_mesh.num_dims;
 
+    // All ranks must agree on dimensionality before initializing per-rank meshes
+    MPI_Bcast(&num_dim, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
 
     // Compute the number of elements to send to each rank and num_nodes_per_elem
     std::vector<int> elems_per_rank(world_size); // number of elements to send to each rank size(world_size)
@@ -636,6 +639,8 @@ void build_ghost(
 
     int nodes_per_elem = input_mesh.num_nodes_in_elem;
 
+    std::cout<<"Rank "<<rank<<" has "<<input_mesh.num_elems<<" elements and "<<input_mesh.num_nodes_in_elem<<" nodes per element"<<std::endl;
+
     // MPI_Allgather: Each rank sends its element count, every rank receives
     // the count from every other rank. Result: elem_counts[r] = number of
     // elements owned by rank r.
@@ -1112,7 +1117,7 @@ void build_ghost(
 
 
     output_mesh.initialize_nodes(total_extended_nodes);
-    output_mesh.initialize_elems(total_extended_elems, 3);
+    output_mesh.initialize_elems(total_extended_elems, input_mesh.num_dims);
     output_mesh.local_to_global_node_mapping = DCArrayKokkos<size_t>(total_extended_nodes);
     output_mesh.local_to_global_elem_mapping = DCArrayKokkos<size_t>(total_extended_elems);
     for (int i = 0; i < total_extended_nodes; i++) {
@@ -1709,6 +1714,8 @@ void partition_mesh(
     bool print_info = false;
 
     int num_dim = initial_mesh.num_dims;
+    // Ensure all ranks have the same dimension metadata as rank 0
+    MPI_Bcast(&num_dim, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     // Create mesh, gauss points, and node data structures on each rank
     // This is the initial partitioned mesh
@@ -2206,7 +2213,7 @@ void partition_mesh(
     // Each node is 3 doubles; same sendcounts scaling applies
     std::vector<int> coord_sendcounts(world_size), coord_recvcounts(world_size);
     for (int r = 0; r < world_size; r++)
-        coord_sendcounts[r] = sendcounts[r] * nodes_per_elem * 3;
+        coord_sendcounts[r] = sendcounts[r] * nodes_per_elem * num_dim;
 
     MPI_Alltoall(coord_sendcounts.data(), 1, MPI_INT, coord_recvcounts.data(), 1, MPI_INT, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);

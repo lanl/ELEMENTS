@@ -7,6 +7,8 @@
 // #include <set>
 // #include <map>
 
+#include <cmath> // for sin
+
 
 // #include "mesh.h"
 #include "state.h"
@@ -30,14 +32,14 @@ int main(int argc, char** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     int num_dims = 3;
-    int Pn_order = 1;
+    int Pn_order = 3;
 
     double t_main_start = MPI_Wtime();
 
     // Mesh size for 3D box
     double origin[3] = {0.0, 0.0, 0.0};
     double length[3] = {1.0, 1.0, 1.0};
-    int num_elems_dim[3] = {2, 2, 2};
+    int num_elems_dim[3] = {20, 20, 20};
    
     // Mesh size for 2D polar
     double inner_radius = 1.0;
@@ -77,6 +79,16 @@ int main(int argc, char** argv) {
         // Read the mesh from a file
         // read_vtk_mesh(initial_mesh, initial_node, 3, "/home/jacobmoore/Desktop/repos/MATAR/meshes/impellerOpt.vtk");
 
+
+        // Morph the inital mesh to show curvature
+
+        FOR_ALL(i, 0, initial_mesh.num_nodes, {
+            initial_node_coords(i, 0) += 0.0; //0.02 * std::sin(10.0 * initial_node_coords(i, 0));
+            initial_node_coords(i, 1) += 0.03 * ( std::sin(10* initial_node_coords(i, 0)) + std::sin(16 * initial_node_coords(i, 0))); 
+            initial_node_coords(i, 2) += 0.05 * std::sin(12 * std::sqrt(initial_node_coords(i, 0)*initial_node_coords(i, 0) + initial_node_coords(i, 1)*initial_node_coords(i, 1)));
+        });
+        initial_node_coords.update_device();
+
         double t_init_mesh_end = MPI_Wtime();
         std::cout << "Initial mesh build time: " << (t_init_mesh_end - t_init_mesh_start) << " seconds" << std::endl;
         std::cout << "Initial mesh has " << initial_mesh.num_elems << " elements and " << initial_mesh.num_nodes << " nodes" << std::endl;
@@ -100,7 +112,7 @@ int main(int argc, char** argv) {
     CommunicationPlan node_communication_plan;
     node_communication_plan.initialize(MPI_COMM_WORLD);
 
-    if(world_size != 1) {
+    if(world_size != 1) { // pass through the partitioning function if not a single rank
         elements::partition_mesh(initial_mesh, final_mesh, initial_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);   
     } else {
         final_mesh = initial_mesh;
@@ -114,8 +126,8 @@ int main(int argc, char** argv) {
     std::cout<<"Final mesh has " << final_mesh.num_owned_elems << " owned elements and " << final_mesh.num_owned_nodes << " owned nodes" << std::endl;
 
     // Verify communicaiton plans
-    // element_communication_plan.verify_graph_communicator();
-    // node_communication_plan.verify_graph_communicator();
+    element_communication_plan.verify_graph_communicator();
+    node_communication_plan.verify_graph_communicator();
     MPI_Barrier(MPI_COMM_WORLD);
 
     if(rank == 0) {
@@ -154,8 +166,8 @@ int main(int argc, char** argv) {
 
     MPI_Barrier(MPI_COMM_WORLD);
     
-    // gauss_point.fields.communicate();
-    // gauss_point.fields_vec.communicate();
+    gauss_point.fields.communicate();
+    gauss_point.fields_vec.communicate();
 
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -222,8 +234,8 @@ int main(int argc, char** argv) {
     MATAR_FENCE();
     MPI_Barrier(MPI_COMM_WORLD);
 
-    // final_node.scalar_field.communicate();
-    // final_node.vector_field.communicate();
+    final_node.scalar_field.communicate();
+    final_node.vector_field.communicate();
     
     MATAR_FENCE();
     MPI_Barrier(MPI_COMM_WORLD);
@@ -254,11 +266,11 @@ int main(int argc, char** argv) {
 
     MATAR_FENCE();
 
-    // write_vtk(intermediate_mesh, intermediate_node, rank);
+
     MPI_Barrier(MPI_COMM_WORLD);
     std::cout<<"Writing VTU file for rank "<<rank<<std::endl;
     write_vtu(final_mesh, final_node, gauss_point, rank, MPI_COMM_WORLD);
-    // write_vtk(final_mesh, final_node, rank);
+    
     MPI_Barrier(MPI_COMM_WORLD);
 
     // Stop timer and get execution time

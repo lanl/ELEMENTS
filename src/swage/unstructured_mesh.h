@@ -366,6 +366,10 @@ struct Mesh
         const size_t num_dims_inp, 
         const size_t Pn_order)
     {
+
+
+        elem_kind = mesh_init::arbitrary_tensor_element;
+        
         num_dims  = num_dims_inp;
         num_elems = num_elems_inp;  
 
@@ -1463,6 +1467,7 @@ struct Mesh
     /////////////////////////////////////////////////////////////////////////////
     void build_connectivity()
     {
+        verbose = true;
         build_corner_connectivity();
         if (verbose) printf("Built corner connectivity \n");
 

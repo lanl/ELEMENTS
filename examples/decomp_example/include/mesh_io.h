@@ -82,50 +82,73 @@ size_t get_id(int i, int j, int k, int num_i, int num_j)
 /// axis of the hexahedron.
 ///
 /////////////////////////////////////////////////////////////////////////////
-inline int PointIndexFromIJK(int i, int j, int k, const int* order)
+int PointIndexFromIJK(int i, int j, int k, const int* order)
 {
     bool ibdy = (i == 0 || i == order[0]);
     bool jbdy = (j == 0 || j == order[1]);
     bool kbdy = (k == 0 || k == order[2]);
     // How many boundaries do we lie on at once?
     int nbdy = (ibdy ? 1 : 0) + (jbdy ? 1 : 0) + (kbdy ? 1 : 0);
-
-    if (nbdy == 3) { // Vertex DOF
-        // ijk is a corner node. Return the proper index (somewhere in [0,7]):
-        return (i ? (j ? 2 : 1) : (j ? 3 : 0)) + (k ? 4 : 0);
-    }
-
+  
+    if (nbdy == 3) // Vertex DOF
+      { // ijk is a corner node. Return the proper index (somewhere in [0,7]):
+      return (i ? (j ? 2 : 1) : (j ? 3 : 0)) + (k ? 4 : 0);
+      }
+  
     int offset = 8;
-    if (nbdy == 2) { // Edge DOF
-        if (!ibdy) { // On i axis
-            return (i - 1) + (j ? order[0] - 1 + order[1] - 1 : 0) + (k ? 2 * (order[0] - 1 + order[1] - 1) : 0) + offset;
+    if (nbdy == 2) // Edge DOF
+      {
+      if (!ibdy)
+        { // On i axis
+        return (i - 1) +
+          (j ? order[0] - 1 + order[1] - 1 : 0) +
+          (k ? 2 * (order[0] - 1 + order[1] - 1) : 0) +
+          offset;
         }
-        if (!jbdy) { // On j axis
-            return (j - 1) + (i ? order[0] - 1 : 2 * (order[0] - 1) + order[1] - 1) + (k ? 2 * (order[0] - 1 + order[1] - 1) : 0) + offset;
+      if (!jbdy)
+        { // On j axis
+        return (j - 1) +
+          (i ? order[0] - 1 : 2 * (order[0] - 1) + order[1] - 1) +
+          (k ? 2 * (order[0] - 1 + order[1] - 1) : 0) +
+          offset;
         }
-        // !kbdy, On k axis
-        offset += 4 * (order[0] - 1) + 4 * (order[1] - 1);
-        return (k - 1) + (order[2] - 1) * (i ? (j ? 3 : 1) : (j ? 2 : 0)) + offset;
-    }
-
+      // !kbdy, On k axis
+      offset += 4 * (order[0] - 1) + 4 * (order[1] - 1);
+      return (k - 1) + (order[2] - 1) * (i ? (j ? 3 : 1) : (j ? 2 : 0)) + offset;
+      }
+  
     offset += 4 * (order[0] - 1 + order[1] - 1 + order[2] - 1);
-    if (nbdy == 1) { // Face DOF
-        if (ibdy) { // On i-normal face
-            return (j - 1) + ((order[1] - 1) * (k - 1)) + (i ? (order[1] - 1) * (order[2] - 1) : 0) + offset;
+    if (nbdy == 1) // Face DOF
+      {
+      if (ibdy) // On i-normal face
+        {
+        return (j - 1) + ((order[1] - 1) * (k - 1)) + (i ? (order[1] - 1) * (order[2] - 1) : 0) + offset;
         }
-        offset += 2 * (order[1] - 1) * (order[2] - 1);
-        if (jbdy) { // On j-normal face
-            return (i - 1) + ((order[0] - 1) * (k - 1)) + (j ? (order[2] - 1) * (order[0] - 1) : 0) + offset;
+      offset += 2 * (order[1] - 1) * (order[2] - 1);
+      if (jbdy) // On j-normal face
+        {
+        return (i - 1) + ((order[0] - 1) * (k - 1)) + (j ? (order[2] - 1) * (order[0] - 1) : 0) + offset;
         }
-        offset += 2 * (order[2] - 1) * (order[0] - 1);
-        // kbdy, On k-normal face
-        return (i - 1) + ((order[0] - 1) * (j - 1)) + (k ? (order[0] - 1) * (order[1] - 1) : 0) + offset;
-    }
-
+      offset += 2 * (order[2] - 1) * (order[0] - 1);
+      // kbdy, On k-normal face
+      return (i - 1) + ((order[0] - 1) * (j - 1)) + (k ? (order[0] - 1) * (order[1] - 1) : 0) + offset;
+      }
+  
     // nbdy == 0: Body DOF
-    offset += 2 * ( (order[1] - 1) * (order[2] - 1) + (order[2] - 1) * (order[0] - 1) + (order[0] - 1) * (order[1] - 1));
-    return offset + (i - 1) + (order[0] - 1) * ( (j - 1) + (order[1] - 1) * ( (k - 1)));
-}
+    offset += 2 * (
+      (order[1] - 1) * (order[2] - 1) +
+      (order[2] - 1) * (order[0] - 1) +
+      (order[0] - 1) * (order[1] - 1));
+    return offset +
+      (i - 1) + (order[0] - 1) * (
+        (j - 1) + (order[1] - 1) * (
+          (k - 1)));
+  }
+  
+  
+
+
+
 
 /////////////////////////////////////////////////////////////////////////////
 ///
@@ -235,7 +258,7 @@ void build_3d_box(
         // global id for the elem
         size_t elem_gid = get_id(i, j, k, num_elems_i, num_elems_j);
 
-        size_t k_local_max = num_dim < 3 ? 0 : Pn_order;
+        // size_t k_local_max = num_dim < 3 ? 0 : Pn_order;
 
 
         // store the point IDs for this elem where the range is
@@ -245,11 +268,13 @@ void build_3d_box(
         size_t i_offset = i * Pn_order;
         size_t j_offset = j * Pn_order;
         size_t k_offset = k * Pn_order;
-        
-        for (int kcount = k; kcount <= k_local_max; kcount++) {
-            for (int jcount = j; jcount <= Pn_order; jcount++) {
-                for (int icount = i; icount <= Pn_order; icount++) {
+
+
+        for (int kcount = 0; kcount <= Pn_order; kcount++) {
+            for (int jcount = 0; jcount <= Pn_order; jcount++) {
+                for (int icount = 0; icount <= Pn_order; icount++) {
                     // global id for the points
+
                     size_t node_gid = get_id(
                         (icount + i_offset) % num_points_i, 
                         (jcount + j_offset) % num_points_j, 
@@ -270,6 +295,7 @@ void build_3d_box(
             } // end for jcount
         }  // end for kcount
     }); // end parallel for
+
 
     // Update the host side
     mesh.nodes_in_elem.update_host();
@@ -584,49 +610,75 @@ void write_vtu(swage::Mesh& mesh,
     }
     int order[3] = {Pn_order, Pn_order, Pn_order_z};
 
+    CArray<int> convert_fierro_to_vtk((Pn_order+1)*(Pn_order+1)*(Pn_order+1));
+    int this_node_lid = 0;
+    for (int k = 0; k <= Pn_order; k++) {
+        for (int j = 0; j <= Pn_order; j++) {
+            for (int i = 0; i <= Pn_order; i++) {
+                
+                // convert this_point index to the FE index convention
+                size_t vtk_index = PointIndexFromIJK(i, j, k, order);
+                
+                // store the points in this elem according the the finite
+                // element numbering convention
+                convert_fierro_to_vtk(vtk_index) = this_node_lid;
+                // increment the point counting index
+                this_node_lid ++;
+                
+            } // end for icount
+        } // end for jcount
+    }  // end for kcount
+
+
     
     // Write connectivity: all node IDs for all elements, space-separated
-    // for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
-    //     for (int k = 0; k <= Pn_order; k++) {
-    //         for (int j = 0; j <= Pn_order; j++) {
-    //             for (int i = 0; i <= Pn_order; i++) {
-    //                 size_t node_lid = PointIndexFromIJK(i, j, k, order);
-    //                 fprintf(vtu_file, " %zu", static_cast<unsigned long>(mesh.nodes_in_elem.host(elem_gid, node_lid)));
-    //             }
-    //         }
-    //     }
-    // }
-
     std::cout<<"Writing connectivity to VTU file for rank "<<rank<<std::endl;
     for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
         fprintf(vtu_file, "          ");  // adding indentation before printing nodes in element
-        if (num_dims==3 && Pn_order>=1){
-            for (int k = 0; k <= Pn_order_z; k++) {
-                for (int j = 0; j <= Pn_order; j++) {
-                    for (int i = 0; i <= Pn_order; i++) {
-                        size_t node_lid = PointIndexFromIJK(i, j, k, order);
-                        fprintf(vtu_file, "%lu ", mesh.nodes_in_elem.host(elem_gid, node_lid));
-                    }
+        
+        int this_node_lid = 0;
+        for (int k = 0; k <= Pn_order; k++) {
+            for (int j = 0; j <= Pn_order; j++) {
+                for (int i = 0; i <= Pn_order; i++) {
+                    // size_t node_lid = PointIndexFromIJK(i, j, k, order);
+                    int node_lid = convert_fierro_to_vtk(this_node_lid);
+                    fprintf(vtu_file, " %zu", static_cast<unsigned long>(mesh.nodes_in_elem.host(elem_gid, node_lid)));
+                    this_node_lid ++;
                 }
-            } // end for
+            }
         }
-        // else if (num_dims == 3 && Pn_order == 1){
-        //    // 3D linear hexahedral elements
-        //     for (int node_lid = 0; node_lid < 8; node_lid++) {
-        //         fprintf(vtu_file, "%lu ", mesh.nodes_in_elem.host(elem_gid, node_lid));
-        //     } // end for
-        // }
-        else if (num_dims == 2){
-            // 2D linear is the only supported option
-            for (int node_lid = 0; node_lid < 4; node_lid++) {
-                fprintf(vtu_file, "%lu ", mesh.nodes_in_elem.host(elem_gid, node_lid));
-            } // end for
-        }
-        else {
-            std::cout << "ERROR: outputs failed, dimensions and element types are not compatible \n";
-        } // end if
-        fprintf(vtu_file, "\n");
-    } // end for
+    }
+
+    // std::cout<<"Writing connectivity to VTU file for rank "<<rank<<std::endl;
+    // for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
+    //     fprintf(vtu_file, "          ");  // adding indentation before printing nodes in element
+    //     if (num_dims==3 && Pn_order>=1){
+    //         for (int k = 0; k <= Pn_order_z; k++) {
+    //             for (int j = 0; j <= Pn_order; j++) {
+    //                 for (int i = 0; i <= Pn_order; i++) {
+    //                     size_t node_lid = PointIndexFromIJK(i, j, k, order);
+    //                     fprintf(vtu_file, "%lu ", mesh.nodes_in_elem.host(elem_gid, node_lid));
+    //                 }
+    //             }
+    //         } // end for
+    //     }
+    //     // else if (num_dims == 3 && Pn_order == 1){
+    //     //    // 3D linear hexahedral elements
+    //     //     for (int node_lid = 0; node_lid < 8; node_lid++) {
+    //     //         fprintf(vtu_file, "%lu ", mesh.nodes_in_elem.host(elem_gid, node_lid));
+    //     //     } // end for
+    //     // }
+    //     else if (num_dims == 2){
+    //         // 2D linear is the only supported option
+    //         for (int node_lid = 0; node_lid < 4; node_lid++) {
+    //             fprintf(vtu_file, "%lu ", mesh.nodes_in_elem.host(elem_gid, node_lid));
+    //         } // end for
+    //     }
+    //     else {
+    //         std::cout << "ERROR: outputs failed, dimensions and element types are not compatible \n";
+    //     } // end if
+    //     fprintf(vtu_file, "\n");
+    // } // end for
     fprintf(vtu_file, "\n");
     fprintf(vtu_file, "        </DataArray>\n");
 

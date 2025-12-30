@@ -487,8 +487,11 @@ void naive_partition_mesh(
     //     Initialize the naive_mesh data structures for each rank
     // ****************************************************************************************** 
     naive_mesh.initialize_nodes(num_nodes_on_rank);
-    naive_mesh.initialize_elems(num_elements_on_rank, num_dim);
-
+    if (initial_mesh.Pn > 0){
+        naive_mesh.initialize_elems_Pn(num_elements_on_rank, num_dim, initial_mesh.Pn);
+    } else {
+        naive_mesh.initialize_elems(num_elements_on_rank, num_dim);
+    }
     naive_mesh.local_to_global_node_mapping = DCArrayKokkos<size_t>(num_nodes_on_rank, "naive_mesh.local_to_global_node_mapping");
     naive_mesh.local_to_global_elem_mapping = DCArrayKokkos<size_t>(num_elements_on_rank, "naive_mesh.local_to_global_elem_mapping");
 
@@ -1117,7 +1120,12 @@ void build_ghost(
 
 
     output_mesh.initialize_nodes(total_extended_nodes);
-    output_mesh.initialize_elems(total_extended_elems, input_mesh.num_dims);
+    if (input_mesh.Pn > 0){
+        output_mesh.initialize_elems_Pn(total_extended_elems, input_mesh.num_dims, input_mesh.Pn);
+    }   
+    else {
+        output_mesh.initialize_elems(total_extended_elems, input_mesh.num_dims);
+    }
     output_mesh.local_to_global_node_mapping = DCArrayKokkos<size_t>(total_extended_nodes);
     output_mesh.local_to_global_elem_mapping = DCArrayKokkos<size_t>(total_extended_elems);
     for (int i = 0; i < total_extended_nodes; i++) {
@@ -1717,6 +1725,11 @@ void partition_mesh(
     // Ensure all ranks have the same dimension metadata as rank 0
     MPI_Bcast(&num_dim, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+    // Ensure all ranks agree on polynomial order so element node counts stay consistent
+    unsigned long long Pn_order = static_cast<unsigned long long>(initial_mesh.Pn);
+    MPI_Bcast(&Pn_order, 1, MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
+    initial_mesh.Pn = static_cast<size_t>(Pn_order);
+
     // Create mesh, gauss points, and node data structures on each rank
     // This is the initial partitioned mesh
     swage::Mesh naive_mesh;
@@ -2237,7 +2250,11 @@ void partition_mesh(
 
     // -------------- Phase 6: Build the intermediate_mesh --------------
     intermediate_mesh.initialize_nodes(num_new_nodes);
-    intermediate_mesh.initialize_elems(num_new_elems, naive_mesh.num_dims);
+    if (initial_mesh.Pn > 0){
+        intermediate_mesh.initialize_elems_Pn(num_new_elems, naive_mesh.num_dims, initial_mesh.Pn);
+    } else {
+        intermediate_mesh.initialize_elems(num_new_elems, naive_mesh.num_dims);
+    }
     intermediate_mesh.local_to_global_node_mapping = DCArrayKokkos<size_t>(num_new_nodes, "intermediate_mesh.local_to_global_node_mapping");
     intermediate_mesh.local_to_global_elem_mapping = DCArrayKokkos<size_t>(num_new_elems, "intermediate_mesh.local_to_global_elem_mapping");
 

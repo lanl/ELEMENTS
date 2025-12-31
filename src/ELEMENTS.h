@@ -14,4 +14,7 @@
 // --- Decomp Utilities ---
 #include "decomp_utilities/decomp_utils.h"
 
+// --- Geometry Headers ---
+#include "geometry/geometry.h"
+
 #endif // ELEMENTS_LIBRARY_H

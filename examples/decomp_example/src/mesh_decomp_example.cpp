@@ -1,24 +1,33 @@
-// #include <iostream>
-// #include <cstdlib>
-// #include <cstring>
-// #include <vector>
-// #include <memory>
-// #include <mpi.h>
-// #include <set>
-// #include <map>
+
+//
+// Mesh Decomposition Example
+//
+// This example demonstrates how to:
+//   1. Create initial meshes (3D box or 2D polar) on MPI rank 0.
+//   2. Partition the mesh across multiple MPI ranks using parallel mesh decomposition (e.g., PT-Scotch).
+//   3. Load and distribute node coordinates and mesh connectivity to each rank.
+//   4. (Optionally) visualize or post-process partitioned mesh data.
+//
+// The goal is to show how to use Swage and associated mesh utilities for distributed memory mesh setup,
+// which is a typical workflow in scalable finite element or particle-based simulations.
+//
+// Usage: mpirun -n <num_ranks> ./mesh_decomp_example
+//
+// Dependencies:
+//   - MPI
+//   - MATAR (container library)
+//   - Swage mesh + decomposition utilities
+//   - Optionally: PT-Scotch for mesh partitioning
+//
+
 
 #include <cmath> // for sin
 
 
-// #include "mesh.h"
+#include "ELEMENTS.h"
 #include "state.h"
 #include "mesh_io.h"
 
-#include "ELEMENTS.h"
-
-// // Include Scotch headers
-// #include "scotch.h"
-// #include "ptscotch.h"
 
 int main(int argc, char** argv) {
 
@@ -77,17 +86,19 @@ int main(int argc, char** argv) {
         }
 
         // Read the mesh from a file
-        // read_vtk_mesh(initial_mesh, initial_node, 3, "/home/jacobmoore/Desktop/repos/MATAR/meshes/impellerOpt.vtk");
+        // read_vtk_mesh(initial_mesh, initial_node, 3, "/full/path/to/mesh/file.vtk");
 
 
         // Morph the inital mesh to show curvature
+        if(Pn_order > 1) {
 
-        FOR_ALL(i, 0, initial_mesh.num_nodes, {
-            initial_node_coords(i, 0) += 0.0; //0.02 * std::sin(10.0 * initial_node_coords(i, 0));
-            initial_node_coords(i, 1) += 0.03 * ( std::sin(10* initial_node_coords(i, 0)) + std::sin(16 * initial_node_coords(i, 0))); 
-            initial_node_coords(i, 2) += 0.05 * std::sin(12 * std::sqrt(initial_node_coords(i, 0)*initial_node_coords(i, 0) + initial_node_coords(i, 1)*initial_node_coords(i, 1)));
-        });
-        initial_node_coords.update_device();
+            FOR_ALL(i, 0, initial_mesh.num_nodes, {
+                initial_node_coords(i, 0) += 0.0; //0.02 * std::sin(10.0 * initial_node_coords(i, 0));
+                initial_node_coords(i, 1) += 0.03 * ( std::sin(10* initial_node_coords(i, 0)) + std::sin(16 * initial_node_coords(i, 0))); 
+                initial_node_coords(i, 2) += 0.05 * std::sin(12 * std::sqrt(initial_node_coords(i, 0)*initial_node_coords(i, 0) + initial_node_coords(i, 1)*initial_node_coords(i, 1)));
+            });
+            initial_node_coords.update_device();
+        }
 
         double t_init_mesh_end = MPI_Wtime();
         std::cout << "Initial mesh build time: " << (t_init_mesh_end - t_init_mesh_start) << " seconds" << std::endl;

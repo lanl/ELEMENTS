@@ -19,13 +19,12 @@ To build the examples locally:
 
 1. Configure into a separate build tree:
 ```
-mkdir -p build
-cmake -S . -B build -DELEMENTS_BUILD_EXAMPLES=ON
-```
-2. Build (and optionally test):
-```
-cmake --build build -j
-ctest --test-dir build    # if you also enable tests
+mkdir build
+cd build
+cmake ..
+
+2. Build in parallel using <num_cores>
+make -j<num_cores>
 ```
 
 Key CMake options (defaults in parentheses):
@@ -67,6 +66,16 @@ target_link_libraries(my_app PRIVATE ELEMENTS)
 `ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). Set the options before `FetchContent_MakeAvailable` to control which backends build.
 
 To learn more about ELEMENTS and how to get started using it, please see the [ELEMENTS documentation](https://lanl.github.io/ELEMENTS/).
+
+
+## Examples
+ELEMENTS has some small examples. Enable them at configure time (default when ELEMENTS is the top-level project) with `-DELEMENTS_BUILD_EXAMPLES=ON`, then build as shown above. Executables live in your build tree under `examples/<name>/`.
+
+### Mesh decomposition (`examples/decomp_example`)
+- Demonstrates building an arbitrary order 3D box (or 2D polar) mesh on rank 0, partitioning with PT-Scotch, and exchanging element/node data across ranks using Swage communication plans.
+- Build target: `mesh_decomp`.
+- Run (from the build directory): `mpirun -n <num_ranks> examples/decomp_example/mesh_decomp`.
+- Dependencies: MPI (required), Kokkos and MATAR (transitively provided), PT-Scotch for parallel partitioning.
 
 ## How to cite
 

@@ -15,6 +15,57 @@ The C++ **ELEMENTS** library is a collection of sub-libraries to support impleme
 
 ## Getting started
 
+To build the examples locally:
+
+1. Configure into a separate build tree:
+```
+mkdir -p build
+cmake -S . -B build -DELEMENTS_BUILD_EXAMPLES=ON
+```
+2. Build (and optionally test):
+```
+cmake --build build -j
+ctest --test-dir build    # if you also enable tests
+```
+
+Key CMake options (defaults in parentheses):
+- `CMAKE_BUILD_TYPE` (`RelWithDebInfo` if unset)
+- `ELEMENTS_BUILD_DOCS` (`OFF`)
+- `ELEMENTS_BUILD_EXAMPLES` (`ON` when ELEMENTS is the top-level project, otherwise `OFF`)
+- `ELEMENTS_BUILD_TESTS` (`OFF`)
+- `ELEMENTS_ENABLE_SERIAL` (`ON`)
+- `ELEMENTS_ENABLE_OPENMP` (`ON`)
+- `ELEMENTS_ENABLE_PTHREADS` (`OFF`)
+- `ELEMENTS_ENABLE_CUDA` (`OFF`)
+- `ELEMENTS_ENABLE_HIP` (`OFF`)
+ 
+## Using ELEMENTS from another CMake project
+
+You can add ELEMENTS to your own CMake build with `FetchContent`:
+
+```cmake
+include(FetchContent)
+
+# Configure ELEMENTS before it is fetched (optional overrides)
+set(ELEMENTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(ELEMENTS_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+set(ELEMENTS_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
+# Choose backends as needed; defaults are listed above
+# set(ELEMENTS_ENABLE_OPENMP ON  CACHE BOOL "" FORCE)
+# set(ELEMENTS_ENABLE_CUDA   ON  CACHE BOOL "" FORCE)
+
+FetchContent_Declare(ELEMENTS
+  GIT_REPOSITORY https://github.com/lanl/ELEMENTS.git
+  GIT_TAG        main            # or a release tag/commit
+)
+FetchContent_MakeAvailable(ELEMENTS)
+
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE ELEMENTS)
+```
+
+`ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). Set the options before `FetchContent_MakeAvailable` to control which backends build.
+
 To learn more about ELEMENTS and how to get started using it, please see the [ELEMENTS documentation](https://lanl.github.io/ELEMENTS/).
 
 ## How to cite

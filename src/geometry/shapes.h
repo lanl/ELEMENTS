@@ -212,9 +212,6 @@ public:
 };
 
 
-
-
-
 } // end namespace geometry
 
 

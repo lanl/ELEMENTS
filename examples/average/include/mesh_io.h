@@ -832,17 +832,17 @@ void write_vtu(swage::Mesh& mesh,
 
 
  /////////////////////////////////////////////////////////////////////////////
-    ///
-    /// \fn read_vtk_mesh
-    ///
-    /// \brief Read ASCII .vtk mesh file
-    ///
-    /// \param Simulation mesh
-    /// \param Simulation state
-    /// \param Node state struct
-    /// \param Number of dimensions
-    ///
-    /////////////////////////////////////////////////////////////////////////////
+///
+/// \fn read_vtk_mesh
+///
+/// \brief Read ASCII .vtk mesh file
+///
+/// \param Simulation mesh
+/// \param Simulation state
+/// \param Node state struct
+/// \param Number of dimensions
+///
+/////////////////////////////////////////////////////////////////////////////
     void read_vtk_mesh(swage::Mesh& mesh,
         node_t&   node,
         int num_dims,

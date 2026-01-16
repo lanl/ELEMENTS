@@ -852,6 +852,306 @@ void write_vtu(swage::Mesh& mesh,
 } // end write_vtu
 
 
+ /////////////////////////////////////////////////////////////////////////////
+///
+/// \fn read_vtk_mesh
+///
+/// \brief Read ASCII .vtk mesh file
+///
+/// \param Simulation mesh
+/// \param Simulation state
+/// \param Node state struct
+/// \param Number of dimensions
+///
+/////////////////////////////////////////////////////////////////////////////
+void read_vtk_mesh(swage::Mesh& mesh,
+    DCArrayKokkos<double>& node_coords,
+    int num_dims,
+    std::string mesh_file_)
+{
+
+std::cout<<"Reading VTK mesh"<<std::endl;
+
+int i;           // used for writing information to file
+int node_gid;    // the global id for the point
+int elem_gid;     // the global id for the elem
+
+size_t num_nodes_in_elem = 1;
+for (int dim = 0; dim < num_dims; dim++) {
+    num_nodes_in_elem *= 2;
+}
+
+
+std::string token;
+
+bool found = false;
+
+std::ifstream in;  // FILE *in;
+in.open(mesh_file_);
+
+
+// look for POINTS
+i = 0;
+while (found==false) {
+    std::string str;
+    std::string delimiter = " ";
+    std::getline(in, str);
+    std::vector<std::string> v = split (str, delimiter);
+
+    // looking for the following text:
+    //      POINTS %d float
+    if(v[0] == "POINTS"){
+        size_t num_nodes = std::stoi(v[1]);
+        printf("Number of nodes read in %zu\n", num_nodes);
+        mesh.initialize_nodes(num_nodes);
+
+        node_coords = DCArrayKokkos<double>(num_nodes, 3, "node_coordinates");
+        
+        found=true;
+    } // end if
+
+
+    if (i>1000){
+        std::cerr << "ERROR: Failed to find POINTS in file" << std::endl;
+        break;
+    } // end if
+
+    i++;
+} // end while
+
+// read the node coordinates (whitespace-separated; coordinates may be packed across lines)
+for (node_gid=0; node_gid<mesh.num_nodes; node_gid++){
+    double x=0.0, y=0.0, z=0.0;
+    if(!(in >> x >> y)){
+        throw std::invalid_argument("Failed to parse VTK POINT data at node " + std::to_string(node_gid));
+    }
+    if(num_dims==3){
+        if(!(in >> z)){
+            throw std::invalid_argument("Failed to parse VTK POINT z at node " + std::to_string(node_gid));
+        }
+    }
+
+    node_coords.host(node_gid, 0) = x;
+    node_coords.host(node_gid, 1) = y;
+    if(num_dims==3){
+        node_coords.host(node_gid, 2) = z;
+    }
+
+} // end for nodes
+
+
+// Update device nodal positions
+node_coords.update_device();
+
+
+found=false;
+
+    // look for CELLS using line scan (tolerate metadata/blank lines)
+    i = 0;
+    size_t num_elem = 0;
+    size_t total_ints_header = 0;
+    found = false;
+    {
+        std::string line;
+        while (std::getline(in, line)) {
+            size_t start = line.find_first_not_of(" \t\r\n");
+            if (start == std::string::npos) continue;
+            if (line.compare(start, 5, "CELLS") == 0) {
+                std::istringstream ls(line.substr(start));
+                std::string tag;
+                ls >> tag >> num_elem >> total_ints_header;
+                if (ls.fail()) {
+                    throw std::invalid_argument("Failed to parse CELLS header line: \"" + line + "\"");
+                }
+                printf("Number of elements read in %zu\n", num_elem);
+                mesh.initialize_elems(num_elem, num_dims);
+                found = true;
+                break;
+            }
+            if (i++ > 2000) break;
+        }
+    }
+    if (!found) {
+        throw std::invalid_argument("Failed to find VTK CELLS section after POINTS");
+    }
+
+
+// ---- CELLS section ----
+// Parse either OFFSETS/CONNECTIVITY (VTK 9) or legacy counts.
+{
+    std::string token;
+    if (!(in >> token)) {
+        throw std::invalid_argument("Unexpected EOF after VTK CELLS header");
+    }
+
+    if (token == "OFFSETS") {
+        std::string offset_type;
+        if (!(in >> offset_type)) {
+            throw std::invalid_argument("Failed to parse VTK OFFSETS type");
+        }
+        // VTK 9: OFFSETS has num_elem entries where offsets[i] = END of cell i
+        std::vector<size_t> offsets(num_elem);
+        for (size_t i = 0; i < num_elem; i++) {
+            if (!(in >> offsets[i])) {
+                throw std::invalid_argument("Failed to parse VTK OFFSETS at index " + std::to_string(i));
+            }
+        }
+        
+        printf("DEBUG: Read %zu offsets, first=%zu, last=%zu, connectivity_len will be %zu\n", 
+               num_elem, offsets[0], offsets[num_elem-1], total_ints_header);
+        fflush(stdout);
+        if (!(in >> token) || token != "CONNECTIVITY") {
+            throw std::invalid_argument("Expected CONNECTIVITY section after OFFSETS");
+        }
+        std::string connectivity_type;
+        if (!(in >> connectivity_type)) {
+            throw std::invalid_argument("Failed to parse VTK CONNECTIVITY type");
+        }
+
+        // For VTK 9, CELLS header's third value (total_ints_header) is the connectivity length.
+        size_t connectivity_len = total_ints_header;
+        
+        std::vector<size_t> connectivity(connectivity_len);
+        for (size_t i = 0; i < connectivity_len; i++) {
+            if (!(in >> connectivity[i])) {
+                throw std::invalid_argument("Failed to parse VTK CONNECTIVITY entry at index " + std::to_string(i));
+            }
+        }
+
+        // VTK 9 OFFSETS: Based on observed data (0,8,16...), offsets[i] = START of cell i
+        // But we only have num_elem offsets, so last cell uses connectivity_len as end
+        // However, if last offset equals connectivity_len, skip the last "cell"
+        size_t actual_num_cells = num_elem;
+        if (offsets[num_elem - 1] == connectivity_len) {
+            actual_num_cells = num_elem - 1;
+            printf("WARNING: Last offset equals connectivity_len, skipping last cell. Using %zu cells instead of %zu\n",
+                   actual_num_cells, num_elem);
+            fflush(stdout);
+        }
+        
+        for (size_t elem_gid = 0; elem_gid < actual_num_cells; elem_gid++) {
+            size_t start = offsets[elem_gid];
+            size_t end = offsets[elem_gid + 1];
+            
+            if (end < start || end > connectivity_len) {
+                throw std::invalid_argument("VTK connectivity offsets out of bounds at elem " + std::to_string(elem_gid) +
+                                          " (start=" + std::to_string(start) + ", end=" + std::to_string(end) + 
+                                          ", connectivity_len=" + std::to_string(connectivity_len) + ")");
+            }
+            size_t n_in_cell = end - start;
+            if (n_in_cell != mesh.num_nodes_in_elem) {
+                throw std::invalid_argument("VTK connectivity nodes-per-cell mismatch at elem " + std::to_string(elem_gid) +
+                                          " (expected " + std::to_string(mesh.num_nodes_in_elem) + 
+                                          ", got " + std::to_string(n_in_cell) + ")");
+            }
+            for (size_t node_lid = 0; node_lid < n_in_cell; node_lid++) {
+                mesh.nodes_in_elem.host(elem_gid, node_lid) = connectivity[start + node_lid];
+            }
+        }
+    } else {
+        // Legacy format: token is first count for elem 0
+        for (elem_gid = 0; elem_gid < num_elem; elem_gid++) {
+            if (elem_gid == 0) {
+                if (!(std::istringstream(token) >> num_nodes_in_elem)) {
+                    throw std::invalid_argument("Failed to parse VTK CELLS count at element 0");
+                }
+            } else if (!(in >> num_nodes_in_elem)) {
+                throw std::invalid_argument("Failed to parse VTK CELLS count at element " + std::to_string(elem_gid));
+            }
+
+            for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+                size_t nid;
+                if (!(in >> nid)) {
+                    throw std::invalid_argument("Failed to parse VTK CELLS node id at element " + std::to_string(elem_gid));
+                }
+                mesh.nodes_in_elem.host(elem_gid, node_lid) = nid;
+            }
+        }
+    }
+} // end CELLS section
+
+// Convert from ensight to IJK mesh
+size_t convert_ensight_to_ijk[8];
+convert_ensight_to_ijk[0] = 0;
+convert_ensight_to_ijk[1] = 1;
+convert_ensight_to_ijk[2] = 3;
+convert_ensight_to_ijk[3] = 2;
+convert_ensight_to_ijk[4] = 4;
+convert_ensight_to_ijk[5] = 5;
+convert_ensight_to_ijk[6] = 7;
+convert_ensight_to_ijk[7] = 6;
+
+size_t tmp_ijk_indx[8];
+
+for (size_t elem_gid = 0; elem_gid < num_elem; elem_gid++) {
+for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+    tmp_ijk_indx[node_lid] = mesh.nodes_in_elem.host(elem_gid, convert_ensight_to_ijk[node_lid]);
+}
+
+for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
+    mesh.nodes_in_elem.host(elem_gid, node_lid) = tmp_ijk_indx[node_lid];
+}
+}
+// update device side
+mesh.nodes_in_elem.update_device();
+
+
+// initialize corner variables
+size_t num_corners = num_elem * num_nodes_in_elem;
+mesh.initialize_corners(num_corners);
+
+
+// Build connectivity
+mesh.build_connectivity();
+
+
+found=false;
+
+printf("\n");
+
+
+// look for CELL_TYPE
+i = 0;
+size_t elem_type = 0;
+while (found==false) {
+std::string str;
+std::string delimiter = " ";
+std::getline(in, str);
+std::vector<std::string> v = split (str, delimiter);
+
+// looking for the following text:
+//      CELLS num_elem size
+if(v[0] == "CELL_TYPES"){
+
+    std::getline(in, str);
+    elem_type = std::stoi(str);
+    
+    found=true;
+} // end if
+
+
+if (i>1000){
+    printf("ERROR: Failed to find elem_TYPE \n");
+    break;
+} // end if
+
+i++;
+} // end while
+printf("Element type = %zu \n", elem_type);
+// elem types:
+// linear hex = 12, linear quad = 9
+found=false;
+
+
+if(num_nodes_in_elem==8 & elem_type != 12) {
+printf("Wrong element type of %zu \n", elem_type);
+std::cerr << "ERROR: incorrect element type in VTK file" << std::endl;
+}
+
+in.close();
+
+} // end of VTKread function
+
 
 
 #endif

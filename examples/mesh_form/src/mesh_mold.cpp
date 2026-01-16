@@ -1,25 +1,4 @@
 
-//
-// Mesh Decomposition Example
-//
-// This example demonstrates how to:
-//   1. Create initial meshes (3D box or 2D polar) on MPI rank 0.
-//   2. Partition the mesh across multiple MPI ranks using parallel mesh decomposition (e.g., PT-Scotch).
-//   3. Load and distribute node coordinates and mesh connectivity to each rank.
-//   4. (Optionally) visualize or post-process partitioned mesh data.
-//
-// The goal is to show how to use Swage and associated mesh utilities for distributed memory mesh setup,
-// which is a typical workflow in scalable finite element or particle-based simulations.
-//
-// Usage: mpirun -n <num_ranks> ./mesh_decomp_example
-//
-// Dependencies:
-//   - MPI
-//   - MATAR (container library)
-//   - Swage mesh + decomposition utilities
-//   - Optionally: PT-Scotch for mesh partitioning
-//
-
 
 #include <cmath> // for sin
 
@@ -62,7 +41,7 @@ int main(int argc, char** argv) {
     // Mesh size for 3D box
     double origin[3] = {0.0, 0.0, 0.0};
     double length[3] = {1.0, 1.0, 1.0};
-    int num_elems_dim[3] = {2, 2, 2};
+    int num_elems_dim[3] = {1, 1, 1};
    
     
 
@@ -323,6 +302,26 @@ int main(int argc, char** argv) {
                 }
             }
         }
+
+        // 2. Compute the Determinant of B
+        // In the reference configuration, this represents the "local" volume scaling.
+        double detB = B[0][0] * (B[1][1] * B[2][2] - B[1][2] * B[2][1]) -
+        B[0][1] * (B[1][0] * B[2][2] - B[1][2] * B[2][0]) +
+        B[0][2] * (B[1][0] * B[2][1] - B[1][1] * B[2][0]);
+
+        // 3. The Sanity Check
+        if (detB <= 1e-12) {
+            // If this triggers, your pos_nodes/neg_nodes do not match build_3d_box
+            // or the initial element is inverted/flat.
+            printf("CRITICAL ERROR: Element %ld is invalid!\n", (long)elem_gid);
+            printf("  detB: %e (Should be positive)\n", detB);
+
+            // Output B matrix columns to see which axis is flipped
+            for(int ax=0; ax<3; ax++) {
+                printf("  Axis %d: [%f, %f, %f]\n", ax, B[0][ax], B[1][ax], B[2][ax]);
+            }
+        }
+
         // Invert the B matrix (3x3) and store in inverse_reference_matrix
         // Use Gauss-Jordan elimination for 3x3
 
@@ -411,25 +410,32 @@ int main(int argc, char** argv) {
     });
 
 
+
+
+
     // --- XPBD Parameters ---
     double dt = 0.1;           
     const int num_iterations = 10;
-    const int num_steps = 10;
+    const int num_steps = 40;
 
     // Stiffness controls: Higher compliance = Softer
     float bdy_compliance = 0.01f; 
-    float vol_compliance = 0.1f; 
+    float vol_compliance = 0.0001f; 
+    float iso_compliance = 0.000001f;
     
     double alpha_tilde_bdy = bdy_compliance / (dt * dt);
     double alpha_tilde_vol = vol_compliance / (dt * dt);
 
-    DCArrayKokkos<double> element_lambda(mesh.num_elems, "element_lambda");
+    DCArrayKokkos<double> volume_lambda(mesh.num_elems, "volume_lambda");
     DCArrayKokkos<double> boundary_lambda(mesh.num_bdy_nodes, "boundary_lambda");
+    DCArrayKokkos<double> element_lambda_iso(mesh.num_elems, "element_lambda_iso");
+
 
     // Reset lambdas at the START of the relaxation
-    element_lambda.set_values(0.0);
+    volume_lambda.set_values(0.0);
     boundary_lambda.set_values(0.0);
-
+    element_lambda_iso.set_values(0.0);
+    
     std::cout << "Starting XPBD Relaxation..." << std::endl;
 
 
@@ -439,8 +445,9 @@ int main(int argc, char** argv) {
 
     for(int step = 1; step <= num_steps; step++) {
         
-        element_lambda.set_values(0.0);
+        volume_lambda.set_values(0.0);
         boundary_lambda.set_values(0.0);
+        element_lambda_iso.set_values(0.0);
         
         for(int iter = 0; iter < num_iterations; iter++) {
             
@@ -472,19 +479,114 @@ int main(int argc, char** argv) {
             });
 
             // --- 2. Element Volumetric Constraint ---
-            // FOR_ALL(elem_gid, 0, mesh.num_elems, {
-            for(int elem_gid=0; elem_gid<mesh.num_elems; elem_gid++) {
+            // // FOR_ALL(elem_gid, 0, mesh.num_elems, {
+            // for(int elem_gid=0; elem_gid<mesh.num_elems; elem_gid++) {
+            //     double x1[8][3];
+            //     for (int n = 0; n < 8; n++) {
+            //         size_t node_gid = mesh.nodes_in_elem(elem_gid, n);
+            //         for (int d = 0; d < 3; d++) x1[n][d] = node.coords(node_gid, d);
+            //     }
+            
+            //     // Shape Matrix A (using i,j,k mapping)
+            //     double A_mem[9];
+            //     ViewCArrayKokkos<double> A(A_mem, 3, 3);
+            //     A.set_values(0.0);
+
+            //     for (int axis = 0; axis < 3; axis++) {
+            //         for (int i = 0; i < 4; i++) {
+            //             for (int d = 0; d < 3; d++) {
+            //                 A(d, axis) += 0.25 * (x1[pos_nodes[axis][i]][d] - x1[neg_nodes[axis][i]][d]);
+            //             }
+            //         }
+            //     }
+            
+            //     // Deformation Gradient F = A * invB
+            //     double F_mem[9];
+            //     ViewCArrayKokkos<double> F(F_mem, 3, 3);
+            //     F.set_values(0.0);
+                
+            //     for(int i=0; i<3; i++)
+            //         for(int j=0; j<3; j++)
+            //             for(int k=0; k<3; k++)
+            //                 F(i, j) += A(i, k) * inverse_reference_matrix(elem_gid, k, j);
+            
+            //     // C = det(F) - 1
+            //     double detF = F(0,0)*(F(1,1)*F(2,2) - F(1,2)*F(2,1))
+            //                 - F(0,1)*(F(1,0)*F(2,2) - F(1,2)*F(2,0))
+            //                 + F(0,2)*(F(1,0)*F(2,1) - F(1,1)*F(2,0));
+                
+            //     double C = detF - 1.0;
+            
+            //     // Gradient of C (Cofactor matrix H)
+            //     double H_mem[9];
+            //     ViewCArrayKokkos<double> H(H_mem, 3, 3);
+            //     H(0, 0) = F(1, 1)*F(2, 2) - F(1, 2)*F(2, 1); H(0, 1) = F(1, 2)*F(2, 0) - F(1, 0)*F(2, 2); H(0, 2) = F(1, 0)*F(2, 1) - F(1, 1)*F(2, 0);
+            //     H(1, 0) = F(0, 2)*F(2, 1) - F(0, 1)*F(2, 2); H(1, 1) = F(0, 0)*F(2, 2) - F(0, 2)*F(2, 0); H(1, 2) = F(0, 1)*F(2, 0) - F(0, 0)*F(2, 1);
+            //     H(2, 0) = F(0, 1)*F(1, 2) - F(0, 2)*F(1, 1); H(2, 1) = F(0, 2)*F(1, 0) - F(0, 0)*F(1, 2); H(2, 2) = F(0, 0)*F(1, 1) - F(0, 1)*F(1, 0);
+
+            //     double grad_mem[24];
+            //     ViewCArrayKokkos<double> grad(grad_mem, 8, 3);
+            //     grad.set_values(0.0);
+            //     double sum_grad_sq = 0;
+
+            //     for (int n = 0; n < 8; n++) {
+            //         double dN_dxi[3];
+            //         get_shape_grad_at_center(n, dN_dxi); 
+            //         for (int d = 0; d < 3; d++) { 
+            //             for (int i = 0; i < 3; i++) {
+            //                 for (int j = 0; j < 3; j++) {
+            //                     // Chain rule through the reference configuration
+            //                     grad(n, d) += H(d, i) * inverse_reference_matrix(elem_gid, j, i) * dN_dxi[j];
+            //                 }
+            //             }
+            //             sum_grad_sq += grad(n, d) * grad(n, d);
+            //         }
+            //     }
+
+            //     // XPBD update logic for elements
+            //     double old_lambda = volume_lambda(elem_gid);
+            //     double delta_lambda = (-C - alpha_tilde_vol * old_lambda) / (sum_grad_sq + alpha_tilde_vol);
+            //     volume_lambda(elem_gid) += delta_lambda;
+
+            //     for (int n = 0; n < 8; n++) {
+            //         int corner_gid = mesh.corners_in_elem(elem_gid, n);
+
+            //         for (int d = 0; d < 3; d++) {
+            //             corner_delta(corner_gid, d) = (float)(delta_lambda * grad(n, d));
+            //         }
+            //     }
+
+                
+
+            // // });
+            // }
+
+            // // // --- 3. Synchronize Node Coordinates for volumetric constraint ---
+            // FOR_ALL(node_gid, 0, mesh.num_nodes, {
+            //     for (int c_lid = 0; c_lid < mesh.num_corners_in_node(node_gid); c_lid++) {
+            //         size_t c_gid = mesh.corners_in_node(node_gid, c_lid);
+            //         for (int d = 0; d < 3; d++) {
+            //             node.coords(node_gid, d) += corner_delta(c_gid, d);
+            //         }
+            //     }
+            // });
+
+            // --- 4. Strain Energy Constraint (Stable Neo-Hookean) ---
+            for(int elem_gid=0; elem_gid < mesh.num_elems; elem_gid++) {
                 double x1[8][3];
                 for (int n = 0; n < 8; n++) {
                     size_t node_gid = mesh.nodes_in_elem(elem_gid, n);
                     for (int d = 0; d < 3; d++) x1[n][d] = node.coords(node_gid, d);
                 }
-            
-                // Shape Matrix A (using i,j,k mapping)
-                double A_mem[9];
-                ViewCArrayKokkos<double> A(A_mem, 3, 3);
-                A.set_values(0.0);
 
+                double A_mem[9], F_mem[9];
+                ViewCArrayKokkos<double> A(A_mem, 3, 3);
+                ViewCArrayKokkos<double> F(F_mem, 3, 3);
+
+                // ==========================================
+                // PART A: ISOTROPIC (SHEAR) CONSTRAINT
+                // ==========================================
+                A.set_values(0.0);
                 for (int axis = 0; axis < 3; axis++) {
                     for (int i = 0; i < 4; i++) {
                         for (int d = 0; d < 3; d++) {
@@ -492,64 +594,128 @@ int main(int argc, char** argv) {
                         }
                     }
                 }
-            
-                // Deformation Gradient F = A * invB
-                double F_mem[9];
-                ViewCArrayKokkos<double> F(F_mem, 3, 3);
+
                 F.set_values(0.0);
-                
                 for(int i=0; i<3; i++)
                     for(int j=0; j<3; j++)
                         for(int k=0; k<3; k++)
                             F(i, j) += A(i, k) * inverse_reference_matrix(elem_gid, k, j);
-            
-                // C = det(F) - 1
-                double detF = F(0,0)*(F(1,1)*F(2,2) - F(1,2)*F(2,1))
-                            - F(0,1)*(F(1,0)*F(2,2) - F(1,2)*F(2,0))
-                            + F(0,2)*(F(1,0)*F(2,1) - F(1,1)*F(2,0));
+
+                double FrobeniusSq = 0;
+                for(int i=0; i<3; i++) for(int j=0; j<3; j++) FrobeniusSq += F(i,j)*F(i,j);
+                double Frobenius = sqrt(FrobeniusSq);
                 
-                double C = detF - 1.0;
-            
-                // Gradient of C (Cofactor matrix H)
+                double C_iso = Frobenius - sqrt(3.0);
+                double grad_iso_mem[24];
+                ViewCArrayKokkos<double> grad_iso(grad_iso_mem, 8, 3);
+                grad_iso.set_values(0.0);
+                double sum_grad_iso_sq = 0;
+
+                if (Frobenius > 1e-6) {
+                    for (int n = 0; n < 8; n++) {
+                        double dN_dxi[3];
+                        get_shape_grad_at_center(n, dN_dxi); 
+                        for (int d = 0; d < 3; d++) { 
+                            for (int j = 0; j < 3; j++) {     // Local axis index
+                                for (int i = 0; i < 3; i++) { // Column of F / dC_dF index
+                                    // FIXED: Using inverse_reference_matrix(i, j) - No transpose!
+                                    grad_iso(n, d) += (F(d, i) / Frobenius) * inverse_reference_matrix(elem_gid, i, j) * dN_dxi[j];
+                                }
+                            }
+                            sum_grad_iso_sq += grad_iso(n, d) * grad_iso(n, d);
+                        }
+                    }
+                }
+
+                double old_lambda_iso = element_lambda_iso(elem_gid);
+                double alpha_tilde_iso = iso_compliance / (dt * dt);
+                double d_lambda_iso = (-C_iso - alpha_tilde_iso * old_lambda_iso) / (sum_grad_iso_sq + alpha_tilde_iso);
+                element_lambda_iso(elem_gid) += d_lambda_iso;
+
+                // Apply Isotropic corrections to intermediate local x1
+                for (int n = 0; n < 8; n++) 
+                    for (int d = 0; d < 3; d++) x1[n][d] += d_lambda_iso * grad_iso(n, d);
+
+                // ==========================================
+                // PART B: VOLUMETRIC CONSTRAINT
+                // ==========================================
+                // Recompute F with current x1
+                A.set_values(0.0); F.set_values(0.0);
+                for (int axis = 0; axis < 3; axis++) 
+                    for (int i = 0; i < 4; i++) 
+                        for (int d = 0; d < 3; d++) A(d, axis) += 0.25 * (x1[pos_nodes[axis][i]][d] - x1[neg_nodes[axis][i]][d]);
+
+                for(int i=0; i<3; i++)
+                    for(int j=0; j<3; j++)
+                        for(int k=0; k<3; k++)
+                            F(i, j) += A(i, k) * inverse_reference_matrix(elem_gid, k, j);
+
+                double detF = F(0,0)*(F(1,1)*F(2,2) - F(1,2)*F(2,1)) - F(0,1)*(F(1,0)*F(2,2) - F(1,2)*F(2,0)) + F(0,2)*(F(1,0)*F(2,1) - F(1,1)*F(2,0));
+                
+                // Stable Volumetric Target: Don't let detF go negative or too small
+                double C_vol = detF - 1.0;
+
                 double H_mem[9];
                 ViewCArrayKokkos<double> H(H_mem, 3, 3);
                 H(0, 0) = F(1, 1)*F(2, 2) - F(1, 2)*F(2, 1); H(0, 1) = F(1, 2)*F(2, 0) - F(1, 0)*F(2, 2); H(0, 2) = F(1, 0)*F(2, 1) - F(1, 1)*F(2, 0);
                 H(1, 0) = F(0, 2)*F(2, 1) - F(0, 1)*F(2, 2); H(1, 1) = F(0, 0)*F(2, 2) - F(0, 2)*F(2, 0); H(1, 2) = F(0, 1)*F(2, 0) - F(0, 0)*F(2, 1);
                 H(2, 0) = F(0, 1)*F(1, 2) - F(0, 2)*F(1, 1); H(2, 1) = F(0, 2)*F(1, 0) - F(0, 0)*F(1, 2); H(2, 2) = F(0, 0)*F(1, 1) - F(0, 1)*F(1, 0);
 
-                double grad_mem[24];
-                ViewCArrayKokkos<double> grad(grad_mem, 8, 3);
-                grad.set_values(0.0);
-                double sum_grad_sq = 0;
+                double grad_vol_mem[24];
+                ViewCArrayKokkos<double> grad_vol(grad_vol_mem, 8, 3);
+                grad_vol.set_values(0.0);
+                double sum_grad_vol_sq = 0;
 
                 for (int n = 0; n < 8; n++) {
                     double dN_dxi[3];
                     get_shape_grad_at_center(n, dN_dxi); 
                     for (int d = 0; d < 3; d++) { 
-                        for (int i = 0; i < 3; i++) {
-                            for (int j = 0; j < 3; j++) {
-                                // Chain rule through the reference configuration
-                                grad(n, d) += H(d, i) * inverse_reference_matrix(elem_gid, j, i) * dN_dxi[j];
+                        for (int j = 0; j < 3; j++) {     // axis
+                            for (int i = 0; i < 3; i++) { // column of F
+                                // FIXED: Using inverse_reference_matrix(i, j)
+                                grad_vol(n, d) += H(d, i) * inverse_reference_matrix(elem_gid, i, j) * dN_dxi[j];
                             }
                         }
-                        sum_grad_sq += grad(n, d) * grad(n, d);
+                        sum_grad_vol_sq += grad_vol(n, d) * grad_vol(n, d);
                     }
                 }
 
-                // XPBD update logic for elements
-                double old_lambda = element_lambda(elem_gid);
-                double delta_lambda = (-C - alpha_tilde_vol * old_lambda) / (sum_grad_sq + alpha_tilde_vol);
-                element_lambda(elem_gid) += delta_lambda;
+                double old_lambda_vol = volume_lambda(elem_gid);
+                double alpha_tilde_vol = vol_compliance / (dt * dt);
+                double d_lambda_vol = (-C_vol - alpha_tilde_vol * old_lambda_vol) / (sum_grad_vol_sq + alpha_tilde_vol);
+                volume_lambda(elem_gid) += d_lambda_vol;
 
+                // Apply corrections to corner_delta
                 for (int n = 0; n < 8; n++) {
                     int corner_gid = mesh.corners_in_elem(elem_gid, n);
-
                     for (int d = 0; d < 3; d++) {
-                        corner_delta(corner_gid, d) = (float)(delta_lambda * grad(n, d));
+                        double total_move = d_lambda_iso * grad_iso(n, d) + d_lambda_vol * grad_vol(n, d);
+                        
+                        // OPTIONAL STEP LIMITER: Prevents inversion by capping displacement 
+                        // per iteration to 20% of the grid spacing.
+                        double cap = 0.2 *min_distance_calc; 
+                        if (total_move > cap) total_move = cap;
+                        if (total_move < -cap) total_move = -cap;
+
+                        corner_delta(corner_gid, d) = (float)total_move;
                     }
                 }
+            }
 
-                // Compute the volume of the element
+            // // --- 3. Synchronize Node Coordinates for strain energy constraint ---
+            FOR_ALL(node_gid, 0, mesh.num_nodes, {
+                for (int c_lid = 0; c_lid < mesh.num_corners_in_node(node_gid); c_lid++) {
+                    size_t c_gid = mesh.corners_in_node(node_gid, c_lid);
+                    for (int d = 0; d < 3; d++) {
+                        node.coords(node_gid, d) += corner_delta(c_gid, d);
+                    }
+                }
+            });
+
+
+            // Compute the volume of the element
+            FOR_ALL(elem_gid, 0, mesh.num_elems, {
+
                 const size_t num_nodes = 8;
 
                 double x_array[8];
@@ -585,27 +751,145 @@ int main(int argc, char** argv) {
                     twelth;
 
                 gauss_point.fields(elem_gid) = static_cast<float>(volume);
-
-            // });
-            }
-
-            // // --- 3. Synchronize Node Coordinates ---
-            FOR_ALL(node_gid, 0, mesh.num_nodes, {
-                for (int c_lid = 0; c_lid < mesh.num_corners_in_node(node_gid); c_lid++) {
-                    size_t c_gid = mesh.corners_in_node(node_gid, c_lid);
-                    for (int d = 0; d < 3; d++) {
-                        node.coords(node_gid, d) += corner_delta(c_gid, d);
-                    }
-                }
             });
 
-            std::cout<<"Writing VTU file for step "<<step<<std::endl;
-            int rank = 0;
-            double time_value = static_cast<double>(step) * dt;
-            write_vtu(mesh, node, gauss_point, rank, MPI_COMM_WORLD, step, time_value);
-
-            Kokkos::fence();
+        
         }
+
+        std::cout<<"Writing VTU file for step "<<step<<std::endl;
+        int rank = 0;
+        double time_value = static_cast<double>(step) * dt;
+        write_vtu(mesh, node, gauss_point, rank, MPI_COMM_WORLD, step, time_value);
+
+
+            FOR_ALL(elem_gid, 0, mesh.num_elems, {
+        
+        // Compute the B matrix
+        double B[3][3];
+        for(int i=0; i<3; i++) {
+            for(int j=0; j<3; j++) {
+                B[i][j] = 0.0;
+            }
+        }
+
+        for (int axis = 0; axis < 3; axis++) {
+            for (int i = 0; i < 4; i++) {
+                int p_idx = pos_nodes[axis][i];
+                int p_node_gid = mesh.nodes_in_elem(elem_gid, p_idx);
+                int n_idx = neg_nodes[axis][i];
+                int n_node_gid = mesh.nodes_in_elem(elem_gid, n_idx);
+                for (int d = 0; d < 3; d++) {
+                    // The 0.25 weight averages the 4 edges along the specific axis
+                    B[d][axis] += 0.25 * (node.coords(p_node_gid, d) - node.coords(n_node_gid, d));
+                }
+            }
+        }
+
+        // 2. Compute the Determinant of B
+        // In the reference configuration, this represents the "local" volume scaling.
+        double detB = B[0][0] * (B[1][1] * B[2][2] - B[1][2] * B[2][1]) -
+        B[0][1] * (B[1][0] * B[2][2] - B[1][2] * B[2][0]) +
+        B[0][2] * (B[1][0] * B[2][1] - B[1][1] * B[2][0]);
+
+        // 3. The Sanity Check
+        if (detB <= 1e-12) {
+            // If this triggers, your pos_nodes/neg_nodes do not match build_3d_box
+            // or the initial element is inverted/flat.
+            printf("CRITICAL ERROR: Element %ld is invalid!\n", (long)elem_gid);
+            printf("  detB: %e (Should be positive)\n", detB);
+
+            // Output B matrix columns to see which axis is flipped
+            for(int ax=0; ax<3; ax++) {
+                printf("  Axis %d: [%f, %f, %f]\n", ax, B[0][ax], B[1][ax], B[2][ax]);
+            }
+        }
+
+        // Invert the B matrix (3x3) and store in inverse_reference_matrix
+        // Use Gauss-Jordan elimination for 3x3
+
+        double inv[3][3];
+        double temp[3][3];
+
+        // Copy B to temp
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                temp[i][j] = B[i][j];
+
+        // Initialize inv as identity
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                inv[i][j] = (i == j) ? 1.0 : 0.0;
+
+        // Gauss-Jordan elimination
+        for (int i = 0; i < 3; i++) {
+            // Pivot
+            double pivot = temp[i][i];
+            if (fabs(pivot) < 1e-12) {
+                // Handle singular matrix: fill with zeros
+                for (int r = 0; r < 3; r++)
+                    for (int c = 0; c < 3; c++)
+                        inv[r][c] = 0.0;
+                break;
+            }
+            for (int j = 0; j < 3; j++) {
+                temp[i][j] /= pivot;
+                inv[i][j] /= pivot;
+            }
+            // Eliminate other rows
+            for (int row = 0; row < 3; row++) {
+                if (row == i) continue;
+                double factor = temp[row][i];
+                for (int col = 0; col < 3; col++) {
+                    temp[row][col] -= factor * temp[i][col];
+                    inv[row][col]  -= factor * inv[i][col];
+                }
+            }
+        }
+
+        // Store result into inverse_reference_matrix
+        for (int i = 0; i < 3; ++i){
+            for (int j = 0; j < 3; ++j){
+                inverse_reference_matrix(elem_gid, i, j) = static_cast<float>(inv[i][j]);
+            }
+        }
+
+        // Compute the volume of the element
+        const size_t num_nodes = 8;
+
+        double x_array[8];
+        double y_array[8];
+        double z_array[8];
+
+        // x, y, z coordinates of elem vertices
+        auto x = ViewCArrayKokkos<double>(x_array, num_nodes);
+        auto y = ViewCArrayKokkos<double>(y_array, num_nodes);
+        auto z = ViewCArrayKokkos<double>(z_array, num_nodes);
+
+        // get the coordinates of the nodes(rk,elem,node) in this element
+        for (int node_lid = 0; node_lid < num_nodes; node_lid++) {
+            size_t node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+            x(node_lid) = node_coords(node_gid, 0);
+            y(node_lid) = node_coords(node_gid, 1);
+            z(node_lid) = node_coords(node_gid, 2);
+        }     // end for
+
+        double twelth = 1. / 12.;
+
+        // element volume
+        double volume =
+            (x(1) * (y(2) * (-z(0) + z(3)) + y(4) * (z(0) - z(5)) + y(0) * (z(3) + z(2) - z(4) - z(5)) + y(7) * (-z(3) + z(5)) + y(5) * (z(0) - z(3) + z(4) - z(7)) + y(3) * (-z(0) - z(2) + z(5) + z(7))) +
+            x(6) * (y(0) * (-z(2) + z(4)) + y(7) * (z(3) + z(2) - z(4) - z(5)) + y(3) * (z(2) - z(7)) + y(2) * (z(0) - z(3) + z(4) - z(7)) + y(5) * (-z(4) + z(7)) + y(4) * (-z(0) - z(2) + z(5) + z(7))) +
+            x(2) * (y(1) * (z(0) - z(3)) + y(6) * (-z(0) + z(3) - z(4) + z(7)) + y(7) * (z(3) - z(6)) + y(3) * (z(0) + z(1) - z(7) - z(6)) + y(4) * (-z(0) + z(6)) + y(0) * (-z(1) - z(3) + z(4) + z(6))) +
+            x(5) * (y(0) * (z(1) - z(4)) + y(6) * (z(4) - z(7)) + y(3) * (-z(1) + z(7)) + y(1) * (-z(0) + z(3) - z(4) + z(7)) + y(4) * (z(0) + z(1) - z(7) - z(6)) + y(7) * (-z(1) - z(3) + z(4) + z(6))) +
+            x(7) * (y(1) * (z(3) - z(5)) + y(6) * (-z(3) - z(2) + z(4) + z(5)) + y(5) * (z(1) + z(3) - z(4) - z(6)) + y(4) * (z(5) - z(6)) + y(2) * (-z(3) + z(6)) + y(3) * (-z(1) + z(2) - z(5) + z(6))) +
+            x(0) * (y(3) * (z(1) - z(2)) + y(6) * (z(2) - z(4)) + y(5) * (-z(1) + z(4)) + y(1) * (-z(3) - z(2) + z(4) + z(5)) + y(2) * (z(1) + z(3) - z(4) - z(6)) + y(4) * (-z(1) + z(2) - z(5) + z(6))) +
+            x(3) * (y(0) * (-z(1) + z(2)) + y(5) * (z(1) - z(7)) + y(1) * (z(0) + z(2) - z(5) - z(7)) + y(6) * (-z(2) + z(7)) + y(7) * (z(1) - z(2) + z(5) - z(6)) + y(2) * (-z(0) - z(1) + z(7) + z(6))) +
+            x(4) *
+            (y(1) * (-z(0) + z(5)) + y(6) * (z(0) + z(2) - z(5) - z(7)) + y(2) * (z(0) - z(6)) + y(0) * (z(1) - z(2) + z(5) - z(6)) + y(7) * (-z(5) + z(6)) + y(5) * (-z(0) - z(1) + z(7) + z(6)))) *
+            twelth;
+
+        reference_volume(elem_gid) = static_cast<float>(volume);
+    });
 
     } // end for loop
 

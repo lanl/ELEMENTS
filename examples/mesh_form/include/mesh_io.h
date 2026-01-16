@@ -539,7 +539,7 @@ void write_vtu(swage::Mesh& mesh,
     CArray<double> vec_fields(num_nodes, num_point_vec_vars, num_dims);
     CArray<double> point_scalar_fields(num_nodes, num_point_scalar_vars);
 
-    std::cout<<"Populating node fields for rank "<<rank<<std::endl;
+
     DCArrayKokkos <double> num_elems_in_node(mesh.num_nodes, "tmp_num_elems_in_node");
     FOR_ALL(i, 0, mesh.num_nodes, {
         num_elems_in_node(i) = (double)mesh.num_corners_in_node(i);
@@ -547,7 +547,6 @@ void write_vtu(swage::Mesh& mesh,
     MATAR_FENCE();
     num_elems_in_node.update_host();
     MATAR_FENCE();
-    std::cout<<"Populating node fields 2 for rank "<<rank<<std::endl;
     for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
         // position, var 0
         for (int dim = 0; dim < num_dims; dim++) {
@@ -601,7 +600,6 @@ void write_vtu(swage::Mesh& mesh,
     fprintf(vtu_file, "      </FieldData>\n");
 
 
-    std::cout<<"Writing points to VTU file for rank "<<rank<<std::endl;
     // Write Points (coordinates) — VTK expects 3 components; pad z for 2D
     fprintf(vtu_file, "      <Points>\n");
     fprintf(vtu_file, "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n");
@@ -615,7 +613,6 @@ void write_vtu(swage::Mesh& mesh,
     fprintf(vtu_file, "      </Points>\n");
 
     // Write Cells (connectivity)
-    std::cout<<"Writing cells to VTU file for rank "<<rank<<std::endl;
     fprintf(vtu_file, "      <Cells>\n");
     
     // Connectivity array - all node indices for all cells, space-separated
@@ -650,7 +647,6 @@ void write_vtu(swage::Mesh& mesh,
 
     
     // Write connectivity: all node IDs for all elements, space-separated
-    std::cout<<"Writing connectivity to VTU file for rank "<<rank<<std::endl;
     for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
         fprintf(vtu_file, "          ");  // adding indentation before printing nodes in element
         

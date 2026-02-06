@@ -15,7 +15,67 @@ The C++ **ELEMENTS** library is a collection of sub-libraries to support impleme
 
 ## Getting started
 
+To build the examples locally:
+
+1. Configure into a separate build tree:
+```
+mkdir build
+cd build
+cmake ..
+
+2. Build in parallel using <num_cores>
+make -j<num_cores>
+```
+
+Key CMake options (defaults in parentheses):
+- `CMAKE_BUILD_TYPE` (`RelWithDebInfo` if unset)
+- `ELEMENTS_BUILD_DOCS` (`OFF`)
+- `ELEMENTS_BUILD_EXAMPLES` (`ON` when ELEMENTS is the top-level project, otherwise `OFF`)
+- `ELEMENTS_BUILD_TESTS` (`OFF`)
+- `ELEMENTS_ENABLE_SERIAL` (`ON`)
+- `ELEMENTS_ENABLE_OPENMP` (`ON`)
+- `ELEMENTS_ENABLE_PTHREADS` (`OFF`)
+- `ELEMENTS_ENABLE_CUDA` (`OFF`)
+- `ELEMENTS_ENABLE_HIP` (`OFF`)
+ 
+## Using ELEMENTS from another CMake project
+
+You can add ELEMENTS to your own CMake build with `FetchContent`:
+
+```cmake
+include(FetchContent)
+
+# Configure ELEMENTS before it is fetched (optional overrides)
+set(ELEMENTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(ELEMENTS_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+set(ELEMENTS_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
+# Choose backends as needed; defaults are listed above
+# set(ELEMENTS_ENABLE_OPENMP ON  CACHE BOOL "" FORCE)
+# set(ELEMENTS_ENABLE_CUDA   ON  CACHE BOOL "" FORCE)
+
+FetchContent_Declare(ELEMENTS
+  GIT_REPOSITORY https://github.com/lanl/ELEMENTS.git
+  GIT_TAG        main            # or a release tag/commit
+)
+FetchContent_MakeAvailable(ELEMENTS)
+
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE ELEMENTS)
+```
+
+`ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). Set the options before `FetchContent_MakeAvailable` to control which backends build.
+
 To learn more about ELEMENTS and how to get started using it, please see the [ELEMENTS documentation](https://lanl.github.io/ELEMENTS/).
+
+
+## Examples
+ELEMENTS has some small examples. Enable them at configure time (default when ELEMENTS is the top-level project) with `-DELEMENTS_BUILD_EXAMPLES=ON`, then build as shown above. Executables live in your build tree under `examples/<name>/`.
+
+### Mesh decomposition (`examples/decomp_example`)
+- Demonstrates building an arbitrary order 3D box (or 2D polar) mesh on rank 0, partitioning with PT-Scotch, and exchanging element/node data across ranks using Swage communication plans.
+- Build target: `mesh_decomp`.
+- Run (from the build directory): `mpirun -n <num_ranks> examples/decomp_example/mesh_decomp`.
+- Dependencies: MPI (required), Kokkos and MATAR (transitively provided), PT-Scotch for parallel partitioning.
 
 ## How to cite
 

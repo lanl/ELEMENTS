@@ -22,13 +22,13 @@
 # Doxygen
 ################################################################################
 # List the header files to be included in the documentation
-file(GLOB_RECURSE DOC_HEADERS ../include/*.h)
+file(GLOB_RECURSE DOC_HEADERS ${PROJECT_SOURCE_DIR}/src/*.h)
 
 # Set up variables for Doxygen template configuration file, configuration file,
 # and output html file
 set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/doxygen/Doxyfile.in)
 set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/doxygen/Doxyfile) 
-set(DOXYGEN_INPUT_DIR "${PROJECT_SOURCE_DIR}/common ${PROJECT_SOURCE_DIR}/elements ${PROJECT_SOURCE_DIR}/geometry ${PROJECT_SOURCE_DIR}/slam ${PROJECT_SOURCE_DIR}/swage")
+set(DOXYGEN_INPUT_DIR "${PROJECT_SOURCE_DIR}/src/decomp_utilities ${PROJECT_SOURCE_DIR}/src/elements ${PROJECT_SOURCE_DIR}/src/swage")
 set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/doxygen)
 set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
 
@@ -93,6 +93,11 @@ add_custom_command(
 
 # Add target that ensures the rule above is applied (command is executed)
 add_custom_target(Sphinx ALL DEPENDS ${SPHINX_INDEX_FILE})
+
+# local docs directory for testing
+if(NOT DEFINED CMAKE_INSTALL_DOCDIR)
+  set(CMAKE_INSTALL_DOCDIR ${CMAKE_CURRENT_BINARY_DIR}/docs)
+endif()
 
 # Install the Sphinx documentation where specified by configuration
 install(DIRECTORY ${SPHINX_BUILD}/ DESTINATION ${CMAKE_INSTALL_DOCDIR})

@@ -49,7 +49,7 @@ namespace elements
  * @param rank[in]                 This MPI rank's id.
  */
 
-void naive_partition_mesh(
+inline void naive_partition_mesh(
     swage::Mesh& initial_mesh,
     MPICArrayKokkos<double>& initial_node_coords,
     swage::Mesh& naive_mesh,
@@ -586,7 +586,7 @@ void naive_partition_mesh(
 /// @note Uses data-oriented programming patterns with device-accessible arrays (MATAR containers)
 /// @note Performance: O(n_local_elements * n_nodes_per_element) for local operations,
 ///                    plus O(n_global_elements) for global MPI collective operations
-void build_ghost(
+inline void build_ghost(
     swage::Mesh& input_mesh,
     swage::Mesh& output_mesh,
     MPICArrayKokkos<double>& input_node_coords,
@@ -1709,7 +1709,7 @@ void build_ghost(
  * - MPI routines synchronize and exchange the relevant mesh and nodal data following the computed partition.
  */
 
-void partition_mesh(
+inline void partition_mesh(
     swage::Mesh& initial_mesh,
     swage::Mesh& final_mesh,
     MPICArrayKokkos<double>& initial_node_coords,

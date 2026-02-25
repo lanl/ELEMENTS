@@ -24,8 +24,8 @@ public:
 
     Plane(const ViewCArrayKokkos<double>& position_inp, const ViewCArrayKokkos<double>& normal_inp){
 
-        assert(position_inp.order() = 1 && "Plane constructor requires a 1D ViewCArrayKokkos<double> for position");
-        assert(normal_inp.order() = 1 && "Plane constructor requires a 1D ViewCArrayKokkos<double> for normal");
+        assert(position_inp.order() == 1 && "Plane constructor requires a 1D ViewCArrayKokkos<double> for position");
+        assert(normal_inp.order() == 1 && "Plane constructor requires a 1D ViewCArrayKokkos<double> for normal");
         assert(position_inp.extent() == normal_inp.extent() && "Plane constructor requires the position and normal vectors to have the same number of dimensions");
         assert(position_inp.extent() >= 2 && "Plane constructor requires at least 2 dimensions");
         

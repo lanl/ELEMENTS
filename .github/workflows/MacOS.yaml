@@ -13,12 +13,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-11, macos-latest]
-        build_type: [serial, openmp]
+        build_type: [serial, openmp, debug]
         include:
           - build_type: serial
             extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF"
           - build_type: openmp
             extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=ON"
+          - build_type: debug
+            extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF"
     runs-on: ${{matrix.os}}
 
     steps:

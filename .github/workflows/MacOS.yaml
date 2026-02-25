@@ -46,10 +46,16 @@ jobs:
         # Explicitly hint Bison to CMake just in case
         BISON_PATH=$(brew --prefix bison)/bin/bison
         FLEX_PATH=$(brew --prefix flex)/bin/flex
+        # Determine build type
+        BUILD_TYPE="Release"
+        if [[ "${{ matrix.build_type }}" == "debug" ]]; then
+          BUILD_TYPE="Debug"
+        fi
+
         # Initialize flags array
         CMAKE_OPTS=(
           "-DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install"
-          "-DCMAKE_BUILD_TYPE=Release"
+          "-DCMAKE_BUILD_TYPE=$BUILD_TYPE"
           "-DBISON_EXECUTABLE=$BISON_PATH"
           "-DFLEX_EXECUTABLE=$FLEX_PATH"
         )

@@ -84,7 +84,7 @@ public:
     Circle(const ViewCArrayKokkos<double>& position_inp, const ViewCArrayKokkos<double>& normal_inp, const double radius_inp){
 
         assert(position_inp.order() == 1 && "Circle constructor requires a 1D ViewCArrayKokkos<double> for position");
-        assert(normal_inp.order() = 1 && "Circle constructor requires a 1D ViewCArrayKokkos<double> for normal");
+        assert(normal_inp.order() == 1 && "Circle constructor requires a 1D ViewCArrayKokkos<double> for normal");
         assert(position_inp.extent() == normal_inp.extent() && "Circle constructor requires the position and normal vectors to have the same number of dimensions");
         assert(radius_inp > 0.0 && "Circle constructor requires a positive radius");
         assert(position_inp.extent() >= 2 && "Circle constructor requires at least 2 dimensions");
@@ -152,7 +152,7 @@ public:
 
     Sphere(const ViewCArrayKokkos<double>& position_inp, const double radius_inp){
 
-        assert(position_inp.order() = 1 && "Sphere constructor requires a 1D ViewCArrayKokkos<double> for position");
+        assert(position_inp.order() == 1 && "Sphere constructor requires a 1D ViewCArrayKokkos<double> for position");
         assert(radius_inp > 0.0 && "Sphere constructor requires a positive radius");
         assert(position_inp.extent() == 3 && "Sphere constructor requires a 3D ViewCArrayKokkos<double> for position");
             

@@ -13,12 +13,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-11, macos-latest]
-        build_type: [serial, openmp]
+        build_type: [serial, openmp, debug]
         include:
           - build_type: serial
             extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF"
           - build_type: openmp
             extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=ON"
+          - build_type: debug
+            extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF"
     runs-on: ${{matrix.os}}
 
     steps:
@@ -44,10 +46,16 @@ jobs:
         # Explicitly hint Bison to CMake just in case
         BISON_PATH=$(brew --prefix bison)/bin/bison
         FLEX_PATH=$(brew --prefix flex)/bin/flex
+        # Determine build type
+        BUILD_TYPE="Release"
+        if [[ "${{ matrix.build_type }}" == "debug" ]]; then
+          BUILD_TYPE="Debug"
+        fi
+
         # Initialize flags array
         CMAKE_OPTS=(
           "-DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install"
-          "-DCMAKE_BUILD_TYPE=Release"
+          "-DCMAKE_BUILD_TYPE=$BUILD_TYPE"
           "-DBISON_EXECUTABLE=$BISON_PATH"
           "-DFLEX_EXECUTABLE=$FLEX_PATH"
         )

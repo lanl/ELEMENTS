@@ -270,6 +270,13 @@ int main(int argc, char** argv) {
                 final_node.vector_field(i, dim) = tmp_too(i);
             }
         });
+
+        FOR_ALL(i, 0, final_mesh.num_nodes,
+                j, 0, 3,{
+
+                final_node.vector_field(i, j) = tmp_too(i);
+            
+        });
         MATAR_FENCE();
     }
 

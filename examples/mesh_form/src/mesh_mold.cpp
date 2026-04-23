@@ -257,20 +257,20 @@ int main(int argc, char** argv) {
     // Mesh size for 3D box
     double origin[3] = {0.0, 0.0, 0.0};
     double length[3] = {1.0, 1.0, 1.0};
-    int num_elems_dim[3] = {10, 10, 10};
+    int num_elems_dim[3] = {1, 1, 1};
 
 
     // --- XPBD Parameters ---
     double dt = 0.01;           
     const int num_iterations = 30;
     int repeats = 2;
-    const int num_steps = 25*repeats;
+    const int num_steps = 50*repeats;
 
     // Stiffness controls: Higher compliance = Softer
     // Note, these are starting value, they will be updates inthe relaxation loop
     float boundary_compliance = 0.0000001f; 
     float volume_compliance = 0.001f; 
-    float edge_compliance = 0.0001f;
+    float edge_compliance = 0.00001f;
    
     
 
@@ -288,10 +288,10 @@ int main(int argc, char** argv) {
 
     std::cout<<"Initializing mesh"<<std::endl;
     std::cout<<"Pn order: "<<Pn_order<<std::endl;
-    // build_3d_box(mesh,  node_coords, origin, length, num_elems_dim, Pn_order);
+    build_3d_box(mesh,  node_coords, origin, length, num_elems_dim, Pn_order);
     
     // Read the mesh from a file
-    read_vtk_mesh(mesh, node_coords, 3, "/home/jacobmoore/Desktop/repos/ELEMENTS/examples/mesh_form/stl_files/lattice3.vtk");
+   //  read_vtk_mesh(mesh, node_coords, 3, "/home/jacobmoore/Desktop/repos/ELEMENTS/examples/mesh_form/stl_files/lattice3.vtk");
 
     std::cout << "Initial mesh has " << mesh.num_elems << " elements and " << mesh.num_nodes << " nodes" << std::endl;
     std::cout <<" Num_nodes_in_elem: " << mesh.num_nodes_in_elem << std::endl;
@@ -316,7 +316,7 @@ int main(int argc, char** argv) {
 
     // Read the STL file
     stl_data stl_data;
-    binary_stl_reader("/home/jacobmoore/Desktop/repos/ELEMENTS/examples/mesh_form/stl_files/test.stl", stl_data);
+    binary_stl_reader("/home/jacobmoore/Desktop/repos/ELEMENTS/examples/mesh_form/stl_files/Sphere_medium.stl", stl_data);
 
     std::cout << "Number of facets: " << stl_data.num_facets << std::endl;
     
@@ -674,7 +674,7 @@ int main(int argc, char** argv) {
     write_vtu(mesh, node, gauss_point, rank, MPI_COMM_WORLD, step, 0.0);
 
 
-    // return 0;
+    return 0;
 
     for(step = 1; step < num_steps/repeats; step++) {
 

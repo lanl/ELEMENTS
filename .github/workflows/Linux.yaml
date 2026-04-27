@@ -3,9 +3,10 @@ name: Linux
 
 on:
   push:
-    branches: [master]
-  pull_request: 
-    branches: [master]
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-test-install:

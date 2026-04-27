@@ -3,16 +3,17 @@ name: MacOS
 
 on:
   push:
-    branches: [master]
-  pull_request: 
-    branches: [master]
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-test-install:
     strategy: 
       fail-fast: false
       matrix:
-        os: [macos-11, macos-latest]
+        os: [macos-latest]
         build_type: [serial, openmp, debug]
         include:
           - build_type: serial

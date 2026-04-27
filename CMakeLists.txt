@@ -129,6 +129,7 @@ if(NOT TARGET ptscotch)
         Scotch
         GIT_REPOSITORY https://gitlab.inria.fr/scotch/scotch.git
         GIT_TAG        v7.0.4
+        GIT_SHALLOW    TRUE
         PATCH_COMMAND  ${CMAKE_COMMAND} -DFileToPatch=CMakeLists.txt -P "${PROJECT_SOURCE_DIR}/cmake/PatchScotch.cmake"
     )
     FetchContent_MakeAvailable(Scotch)

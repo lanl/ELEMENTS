@@ -4,8 +4,9 @@ name: MacOS
 on:
   push:
     branches: [main]
-  pull_request: 
+  pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-test-install:

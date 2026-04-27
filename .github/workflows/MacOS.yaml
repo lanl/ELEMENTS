@@ -13,7 +13,7 @@ jobs:
     strategy: 
       fail-fast: false
       matrix:
-        os: [macos-11, macos-latest]
+        os: [macos-latest]
         build_type: [serial, openmp, debug]
         include:
           - build_type: serial

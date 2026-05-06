@@ -382,7 +382,7 @@ inline void naive_partition_mesh(
                 0, MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == 0) std::cout<< " Finished scatter" <<std::endl;
+    if (rank == 0 && print_info) std::cout<< " Finished scatter" <<std::endl;
 
     elems_in_elem_on_rank = CArrayDual<int>(total_elem_elem_entries, "elems_in_elem_on_rank");
 
@@ -404,13 +404,13 @@ inline void naive_partition_mesh(
         for(int i = 0; i < world_size; i++) {
             displs_ee[i] = displacement;
 
-            std::cout<< "Rank = "<< i <<std::endl;
+            if (print_info) std::cout<< "Rank = "<< i <<std::endl;
 
             for(int k = 0; k < elements_to_send[i].size(); k++) {
                 all_num_elems_in_elem.push_back(tmp_num_elems_in_elem.host(elements_to_send[i][k]));
             }
 
-            std::cout<< " Finished all_num_elem_elem" <<std::endl;
+            if (print_info) std::cout<< " Finished all_num_elem_elem" <<std::endl;
             displacement += elements_to_send[i].size();
         }
         
@@ -427,7 +427,7 @@ inline void naive_partition_mesh(
 
     if (rank == 0){
 
-        std::cout<<"Sending connectivity"<<std::endl;
+        if (print_info) std::cout<<"Sending connectivity"<<std::endl;
         // Prepare the element-element connectivity data for each rank
         std::vector<int> all_elems_in_elem;
         std::vector<int> sendcounts(world_size);
@@ -642,7 +642,7 @@ inline void build_ghost(
 
     int nodes_per_elem = input_mesh.num_nodes_in_elem;
 
-    std::cout<<"Rank "<<rank<<" has "<<input_mesh.num_elems<<" elements and "<<input_mesh.num_nodes_in_elem<<" nodes per element"<<std::endl;
+    if (print_info) std::cout<<"Rank "<<rank<<" has "<<input_mesh.num_elems<<" elements and "<<input_mesh.num_nodes_in_elem<<" nodes per element"<<std::endl;
 
     // MPI_Allgather: Each rank sends its element count, every rank receives
     // the count from every other rank. Result: elem_counts[r] = number of
@@ -915,7 +915,7 @@ inline void build_ghost(
     // the extended mesh with ghost elements included.
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout << " Starting to build extended mesh with ghost elements" << std::endl;
+    if(rank == 0 && print_info) std::cout << " Starting to build extended mesh with ghost elements" << std::endl;
 
     // Build a map: ghost_elem_gid -> vector of node_gids
     // We pre-allocate the vector size to avoid repeated reallocations
@@ -1158,7 +1158,7 @@ inline void build_ghost(
     output_mesh.build_connectivity();
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout << " Finished building final mesh structure" << std::endl;
+    if(rank == 0 && print_info) std::cout << " Finished building final mesh structure" << std::endl;
 
 
     // ****************************************************************************************** 
@@ -1241,7 +1241,7 @@ inline void build_ghost(
 
     // Create coordinate-specific counts and displacements (in units of doubles, not nodes)
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout << " Getting coord_counts" << std::endl;
+    if(rank == 0 && print_info) std::cout << " Getting coord_counts" << std::endl;
 
     std::vector<int> coord_counts(world_size);
     std::vector<int> coord_displs(world_size);
@@ -1344,7 +1344,7 @@ inline void build_ghost(
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout<<"After boundary_elem_targets"<<std::endl;
+    if(rank == 0 && print_info) std::cout<<"After boundary_elem_targets"<<std::endl;
 
     // Add a vector to store boundary element local_ids (those who have ghost destinations across ranks)
     std::vector<int> boundary_elem_local_ids;
@@ -1493,7 +1493,7 @@ inline void build_ghost(
     // Initialize the graph communicator for node communication
     node_communication_plan.initialize_graph_communicator(node_outdegree, node_destinations, node_indegree, node_sources);
     MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == 0) std::cout<<"After node graph communicator"<<std::endl;
+    if (rank == 0 && print_info) std::cout<<"After node graph communicator"<<std::endl;
 
     // ****************************************************************************************** 
     //     Build send counts and displacements for element communication
@@ -1746,10 +1746,10 @@ inline void partition_mesh(
 
     // Perform the naive partitioning of the mesh
     MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == 0) std::cout << "Performing the naive partitioning of the mesh" << std::endl;
+    if (rank == 0 && print_info) std::cout << "Performing the naive partitioning of the mesh" << std::endl;
     naive_partition_mesh(initial_mesh, initial_node_coords, naive_mesh, naive_node_coords, elems_in_elem_on_rank, num_elems_in_elem_per_rank, world_size, rank);
     MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == 0) std::cout << "Begin repartitioning using PT-Scotch" << std::endl;
+    if (rank == 0) std::cout << "Partitioning mesh using PT-Scotch" << std::endl;
 
     /**********************************************************************************
      * Build PT-Scotch distributed graph representation of the mesh for repartitioning *
@@ -1956,7 +1956,7 @@ inline void partition_mesh(
     MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout<<" Finished building the distributed graph using PT-Scotch"<<std::endl;
+    if(rank == 0 && print_info) std::cout<<" Finished building the distributed graph using PT-Scotch"<<std::endl;
 
     /********************************************************
      * Step 5: Validate the graph using SCOTCH_dgraphCheck
@@ -2072,7 +2072,6 @@ inline void partition_mesh(
      * - Each local element's local index lid and global ID (gid) are listed with the
      *   part to which PT-Scotch has assigned them.
      ***************************************************************************/
-    print_info = false;
     for(int rank_id = 0; rank_id < world_size; rank_id++) {
         if(rank_id == rank && print_info) {
             for (size_t lid = 0; lid < naive_mesh.num_elems; lid++) {
@@ -2084,7 +2083,6 @@ inline void partition_mesh(
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
-    print_info = false;
 
 // ****************************************************************************************** 
 //     Build the intermediate mesh (without ghost nodes and elements) from the repartition
@@ -2093,7 +2091,7 @@ inline void partition_mesh(
 
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == 0) std::cout << "\n=== Starting Mesh Redistribution Phase ===\n";
+    if (rank == 0 && print_info) std::cout << "\n=== Starting Mesh Redistribution Phase ===\n";
     MPI_Barrier(MPI_COMM_WORLD);
 
     // -------------- Phase 1: Determine elements to send to each rank --------------
@@ -2172,7 +2170,7 @@ inline void partition_mesh(
 
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout<<" Finished exchanging element–node connectivity counts"<<std::endl;
+    if(rank == 0 && print_info) std::cout<<" Finished exchanging element–node connectivity counts"<<std::endl;
 
     std::vector<int> conn_sdispls(world_size), conn_rdispls(world_size);
     int conn_send_total = 0, conn_recv_total = 0;
@@ -2188,7 +2186,7 @@ inline void partition_mesh(
                 conn_recvbuf.data(), conn_recvcounts.data(), conn_rdispls.data(), MPI_INT, MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout<<" Finished exchanging element–node connectivity"<<std::endl;
+    if(rank == 0 && print_info) std::cout<<" Finished exchanging element–node connectivity"<<std::endl;
 
     // -------------- Phase 4: Build new node list (unique GIDs) --------------
     std::set<int> node_gid_set(conn_recvbuf.begin(), conn_recvbuf.end());
@@ -2200,8 +2198,7 @@ inline void partition_mesh(
     for (int i = 0; i < num_new_nodes; i++)
         node_gid_to_lid[new_node_gids[i]] = i;
 
-    if (print_info)
-        std::cout << "[rank " << rank << "] owns " << num_new_nodes << " unique nodes\n";
+    if (print_info) std::cout << "[rank " << rank << "] owns " << num_new_nodes << " unique nodes\n";
 
 
     // -------------- Phase 5: Request node coordinates --------------
@@ -2230,7 +2227,7 @@ inline void partition_mesh(
 
     MPI_Alltoall(coord_sendcounts.data(), 1, MPI_INT, coord_recvcounts.data(), 1, MPI_INT, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout<<" Finished exchanging node coordinates counts"<<std::endl;
+    if(rank == 0 && print_info) std::cout<<" Finished exchanging node coordinates counts"<<std::endl;
 
     std::vector<int> coord_sdispls(world_size), coord_rdispls(world_size);
     int coord_send_total = 0, coord_recv_total = 0;
@@ -2246,7 +2243,7 @@ inline void partition_mesh(
                 coord_recvbuf.data(), coord_recvcounts.data(), coord_rdispls.data(), MPI_DOUBLE, MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout<<" Finished exchanging node coordinates"<<std::endl;
+    if(rank == 0 && print_info) std::cout<<" Finished exchanging node coordinates"<<std::endl;
 
     // -------------- Phase 6: Build the intermediate_mesh --------------
     intermediate_mesh.initialize_nodes(num_new_nodes);
@@ -2331,12 +2328,12 @@ inline void partition_mesh(
     MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout<<" Starting the ghost element and node construction"<<std::endl;
+    if(rank == 0 && print_info) std::cout<<" Starting the ghost element and node construction"<<std::endl;
 
     build_ghost(intermediate_mesh, final_mesh, intermediate_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);
     
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0) std::cout<<" Finished the ghost element and node construction"<<std::endl;
+    if(rank == 0 && print_info) std::cout<<" Finished the ghost element and node construction"<<std::endl;
 
 }
 

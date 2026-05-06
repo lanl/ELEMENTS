@@ -41,14 +41,14 @@ int main(int argc, char** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     int num_dims = 3;
-    int Pn_order = 3;
+    int Pn_order = 2;
 
     double t_main_start = MPI_Wtime();
 
     // Mesh size for 3D box
     double origin[3] = {0.0, 0.0, 0.0};
     double length[3] = {1.0, 1.0, 1.0};
-    int num_elems_dim[3] = {20, 20, 20};
+    int num_elems_dim[3] = {2, 2, 2};
    
     // Mesh size for 2D polar
     double inner_radius = 1.0;
@@ -90,7 +90,8 @@ int main(int argc, char** argv) {
 
 
         // Morph the inital mesh to show curvature
-        if(Pn_order > 1) {
+        bool morph_mesh = false;
+        if(morph_mesh && Pn_order > 1) {
 
             FOR_ALL(i, 0, initial_mesh.num_nodes, {
                 initial_node_coords(i, 0) += 0.0; //0.02 * std::sin(10.0 * initial_node_coords(i, 0));
@@ -137,8 +138,9 @@ int main(int argc, char** argv) {
     std::cout<<"Final mesh has " << final_mesh.num_owned_elems << " owned elements and " << final_mesh.num_owned_nodes << " owned nodes" << std::endl;
 
     // Verify communicaiton plans
-    element_communication_plan.verify_graph_communicator();
-    node_communication_plan.verify_graph_communicator();
+    if(world_size != 1) element_communication_plan.verify_graph_communicator();
+    if(world_size != 1) node_communication_plan.verify_graph_communicator();
+   
     MPI_Barrier(MPI_COMM_WORLD);
 
     if(rank == 0) {

@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
     // Mesh size for 3D box
     double origin[3] = {0.0, 0.0, 0.0};
     double length[3] = {1.0, 1.0, 1.0};
-    int num_elems_dim[3] = {2, 2, 2};
+    int num_elems_dim[3] = {20, 20, 20};
    
     // Mesh size for 2D polar
     double inner_radius = 1.0;

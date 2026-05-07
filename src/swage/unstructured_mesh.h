@@ -325,10 +325,6 @@ struct Mesh
     DCArrayKokkos<size_t> boundary_node_local_ids; ///< Local IDs of boundary nodes on this rank (send data to neighboring MPI ranks)
     size_t num_ghost_nodes; ///< Number of ghost nodes on this rank (receive data from neighboring MPI ranks)
     
-
-
-
-
     // initialization methods
     void initialize_nodes(const size_t num_nodes_inp)
     {
@@ -674,7 +670,7 @@ struct Mesh
         else if (elem_kind == mesh_init::arbitrary_tensor_element) {
             size_t temp_node_lids[num_nodes_in_patch * num_patches_in_surf * num_surfs_in_elem];
 
-            printf("arbitrary order tensor element \n");
+            if (verbose) printf("arbitrary order tensor element \n");
 
             // arbitrary-order node ordering in patches of an element
             if (num_dims == 3) {
@@ -734,7 +730,7 @@ struct Mesh
                 i_patch = num_1D - 1;
                 // printf("num_1D = %zu \n", num_1D);
                 // printf("i_patch = %d \n", i_patch);
-                printf("num_nodes_in_elem %zu \n", num_nodes_in_elem);
+                if (verbose) printf("num_nodes_in_elem %zu \n", num_nodes_in_elem);
                 for (int k = 0; k < num_1D - 1; k++) {
                     for (int j = 0; j < num_1D - 1; j++) {
                         // node_lid 0 in patch
@@ -1467,7 +1463,6 @@ struct Mesh
     /////////////////////////////////////////////////////////////////////////////
     void build_connectivity()
     {
-        verbose = true;
         build_corner_connectivity();
         if (verbose) printf("Built corner connectivity \n");
 

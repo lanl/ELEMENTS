@@ -1143,6 +1143,23 @@ inline void build_ghost(
     output_mesh.num_owned_elems = input_mesh.num_elems;
     output_mesh.num_owned_nodes = input_mesh.num_nodes;
 
+    // Per global node, exactly one rank contributes domain-wide tallies: min MPI rank among ranks
+    // that carry this node on an owned element (read-only use of local_node_gid_to_ghosting_ranks).
+    output_mesh.shared_tally_owned_nodes =
+        DCArrayKokkos<bool>(output_mesh.num_owned_nodes, "shared_tally_owned_nodes");
+    for (int local_lid = 0; local_lid < static_cast<int>(output_mesh.num_owned_nodes); local_lid++) {
+        size_t gid = output_mesh.local_to_global_node_mapping.host(local_lid);
+        std::set<int> tally_ranks;
+        tally_ranks.insert(rank);
+        auto gr_it = local_node_gid_to_ghosting_ranks.find(gid);
+        if (gr_it != local_node_gid_to_ghosting_ranks.end()) {
+            tally_ranks.insert(gr_it->second.begin(), gr_it->second.end());
+        }
+        const int min_participant_rank = *tally_ranks.begin();
+        output_mesh.shared_tally_owned_nodes.host(local_lid) = (rank == min_participant_rank);
+    }
+    output_mesh.shared_tally_owned_nodes.update_device();
+
     MPI_Barrier(MPI_COMM_WORLD);
     // rebuild the local element-node connectivity using the local node ids
     // extended_nodes_in_elem already contains extended local node IDs, so we can use them directly

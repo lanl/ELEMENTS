@@ -233,14 +233,14 @@ struct Mesh
     size_t num_dims = 3; ///< Number of spatial dimension
 
     // ---- Element Data Definitions ---- //
-    size_t num_elems;   ///< Number of elements in the mesh
-    size_t num_nodes_in_elem;   ///< Number of nodes in an element
-    size_t num_patches_in_elem; ///< Number of patches in an element
-    size_t num_surfs_in_elem;   ///< Number of surfaces in an element
-    size_t num_zones_in_elem;   ///< Number of zones in an element
+    size_t num_elems = 0;   ///< Number of elements in the mesh
+    size_t num_nodes_in_elem = 0;   ///< Number of nodes in an element
+    size_t num_patches_in_elem = 0; ///< Number of patches in an element
+    size_t num_surfs_in_elem = 0;   ///< Number of surfaces in an element
+    size_t num_zones_in_elem = 0;   ///< Number of zones in an element
 
-    size_t num_gauss_in_elem; ///< Number of Gauss points in an element
-    size_t num_lobatto_in_elem; ///< Number of Gauss Lobatto points in an element
+    size_t num_gauss_in_elem = 0; ///< Number of Gauss points in an element
+    size_t num_lobatto_in_elem = 0; ///< Number of Gauss Lobatto points in an element
 
     DCArrayKokkos<size_t> nodes_in_elem; ///< Nodes in an element
     CArrayKokkos<size_t> corners_in_elem; ///< Corners in an element -- this can just be a functor
@@ -257,7 +257,7 @@ struct Mesh
     gauss_in_elem_t gauss_in_elem; ///< Gauss points in an element
 
     // ---- Node Data Definitions ---- //
-    size_t num_nodes; ///< Number of nodes in the mesh
+    size_t num_nodes = 0; ///< Number of nodes in the mesh
 
     RaggedRightArrayKokkos<size_t> corners_in_node; ///< Corners connected to a node
     CArrayKokkos<size_t> num_corners_in_node;       ///< Number of corners connected to a node
@@ -266,17 +266,17 @@ struct Mesh
     CArrayKokkos<size_t> num_nodes_in_node; ///< Number of nodes connected to a node along an edge
 
     // ---- Surface Data Definitions ---- //
-    size_t num_surfs;   ///< Number of surfaces in the mesh
-    size_t num_nodes_in_surf;   ///< Number of nodes in a surface
-    size_t num_patches_in_surf; ///< Number of patches in a surface
+    size_t num_surfs = 0;   ///< Number of surfaces in the mesh
+    size_t num_nodes_in_surf = 0;   ///< Number of nodes in a surface
+    size_t num_patches_in_surf = 0; ///< Number of patches in a surface
 
     CArrayKokkos<size_t> patches_in_surf; ///< Patches in a surface
     CArrayKokkos<size_t> nodes_in_surf; ///< Nodes connected to a surface
     CArrayKokkos<size_t> elems_in_surf; ///< Elements connected to a surface
 
     // ---- Patch Data Definitions ---- //
-    size_t num_patches; ///< Number of patches in the mesh
-    size_t num_nodes_in_patch;  ///< Number of nodes in a patch
+    size_t num_patches = 0; ///< Number of patches in the mesh
+    size_t num_nodes_in_patch = 0;  ///< Number of nodes in a patch
     // size_t num_lobatto_in_patch; ///< Number of Gauss Lobatto nodes in a patch
     // size_t num_gauss_in_patch; ///< Number of Gauss nodes in a patch
 
@@ -285,19 +285,19 @@ struct Mesh
     CArrayKokkos<size_t> surf_in_patch; ///< Surfaces connected to a patch (co-planar)
 
     // ---- Corner Data Definitions ---- //
-    size_t num_corners; ///< Number of corners (define) in the mesh
+    size_t num_corners = 0; ///< Number of corners (define) in the mesh
 
     // ---- Zone Data Definitions ---- //
-    size_t num_zones;   ///< Number of zones in the mesh
-    size_t num_nodes_in_zone; ///< Number of nodes in a zone
+    size_t num_zones = 0;   ///< Number of zones in the mesh
+    size_t num_nodes_in_zone = 0; ///< Number of nodes in a zone
 
     CArrayKokkos<size_t> nodes_in_zone; ///< Nodes defining a zone
     // nodes_in_zone_t nodes_in_zone;
 
     // ---- Boundary Data Definitions ---- //
-    size_t num_bdy_sets;    ///< Number of boundary sets
-    size_t num_bdy_nodes;   ///< Number of boundary nodes
-    size_t num_bdy_patches; ///< Number of boundary patches
+    size_t num_bdy_sets = 0;    ///< Number of boundary sets
+    size_t num_bdy_nodes = 0;   ///< Number of boundary nodes
+    size_t num_bdy_patches = 0; ///< Number of boundary patches
 
     CArrayKokkos<size_t> bdy_patches; ///< Boundary patches
     CArrayKokkos<size_t> bdy_nodes;   ///< Boundary nodes
@@ -314,16 +314,17 @@ struct Mesh
     DCArrayKokkos<size_t> local_to_global_elem_mapping; ///< Local to global element mapping
 
     // Element communicaiton data definitions
-    size_t num_owned_elems; ///< Number of owned elements on this rank
-    size_t num_boundary_elems; ///< Number of boundary elements on this rank (send data to neighboring MPI ranks)
+    size_t num_owned_elems = 0; ///< Number of owned elements on this rank
+    size_t num_boundary_elems = 0; ///< Number of boundary elements on this rank (send data to neighboring MPI ranks)
     DCArrayKokkos<size_t> boundary_elem_local_ids; ///< Local IDs of boundary elements on this rank (send data to neighboring MPI ranks)
-    size_t num_ghost_elems; ///< Number of ghost elements on this rank (receive data from neighboring MPI ranks)
+    size_t num_ghost_elems = 0; ///< Number of ghost elements on this rank (receive data from neighboring MPI ranks)
     
     // Node communicaiton data definitions
-    size_t num_owned_nodes; ///< Number of owned nodes on this rank
-    size_t num_boundary_nodes; ///< Number of boundary nodes on this rank (send data to neighboring MPI ranks)
-    DCArrayKokkos<size_t> boundary_node_local_ids; ///< Local IDs of boundary nodes on this rank (send data to neighboring MPI ranks)
-    size_t num_ghost_nodes; ///< Number of ghost nodes on this rank (receive data from neighboring MPI ranks)
+    size_t num_owned_nodes = 0; ///< Number of owned nodes on this rank
+    size_t num_boundary_nodes = 0; ///< Number of boundary nodes on this rank (send data to neighboring MPI ranks)
+    DCArrayKokkos<bool> shared_tally_owned_nodes; ///< Owned-node mask: true where this rank is the min MPI rank among ranks that own the global node (domain tally contributor); length num_owned_nodes
+    // DCArrayKokkos<size_t> boundary_node_local_ids; ///< Local IDs of boundary nodes on this rank (send data to neighboring MPI ranks)
+    size_t num_ghost_nodes = 0; ///< Number of ghost nodes on this rank (receive data from neighboring MPI ranks)
     
     // initialization methods
     void initialize_nodes(const size_t num_nodes_inp)
@@ -362,8 +363,6 @@ struct Mesh
         const size_t num_dims_inp, 
         const size_t Pn_order)
     {
-
-
         elem_kind = mesh_init::arbitrary_tensor_element;
         
         num_dims  = num_dims_inp;

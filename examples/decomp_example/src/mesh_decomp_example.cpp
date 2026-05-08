@@ -154,6 +154,31 @@ int main(int argc, char** argv) {
     // Gauss points share the same communication plan as elements.
     // This test initializes gauss point fields on owned elements and exchanges them with ghost elements.
 
+    if(world_size != 1) {
+        // Test that the shared_tally_owned_nodes mask works correctly by counting all nodes across all ranks and verifying that the number of unique nodes is equal to the number of owned nodes.
+        int total_num_nodes = 0;
+        int total_local_nodes = 0;
+        int total_global_nodes = 0;
+
+    
+        FOR_REDUCE_SUM(node_gid, 0, final_mesh.num_owned_nodes, total_local_nodes, {
+
+            if(final_mesh.shared_tally_owned_nodes(node_gid)){
+                total_local_nodes++;
+            }   
+
+        }, total_num_nodes);
+        MATAR_FENCE();
+    
+        MPI_Allreduce(&total_num_nodes, &total_global_nodes, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+        if(rank == 0){
+            std::cout<<"Total number of nodes: "<<total_global_nodes<<std::endl;
+            std::cout<<"Error in node count = "<<total_global_nodes - initial_mesh.num_nodes<<std::endl;
+        }
+    }
+
+
 
     std::cout<<"Generating phony data for gauss points to test MPI communications on rank "<<rank<<std::endl;
 

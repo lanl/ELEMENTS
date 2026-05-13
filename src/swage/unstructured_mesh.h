@@ -308,6 +308,12 @@ struct Mesh
     RaggedRightArrayKokkos<size_t> bdy_nodes_in_set; ///< Boundary nodes in a boundary set
     DCArrayKokkos<size_t> num_bdy_nodes_in_set; ///< Number of boundary nodes in a set
 
+    // ---- Internal Condition Data Definitions ---- //
+    size_t num_internal_sets = 0;    ///< Number of boundary sets
+
+    RaggedRightArrayKokkos<size_t> internal_nodes_in_set; ///< Boundary nodes in a boundary set
+    DCArrayKokkos<size_t> num_internal_nodes_in_set; ///< Number of boundary nodes in a set
+
 
     // MPI Decomposition Data Definitions ---- //
     DCArrayKokkos<size_t> local_to_global_node_mapping; ///< Local to global node mapping

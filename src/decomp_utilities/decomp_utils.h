@@ -1754,10 +1754,14 @@ inline void partition_mesh(
     unsigned long long Pn_order = static_cast<unsigned long long>(initial_mesh.Pn);
     MPI_Bcast(&Pn_order, 1, MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
     initial_mesh.Pn = static_cast<size_t>(Pn_order);
+    final_mesh.num_dims = initial_mesh.num_dims;
+    final_mesh.Pn = initial_mesh.Pn;
 
     // Create mesh, gauss points, and node data structures on each rank
     // This is the initial partitioned mesh
     swage::Mesh naive_mesh;
+    naive_mesh.num_dims = initial_mesh.num_dims;
+    naive_mesh.Pn = initial_mesh.Pn;
     MPICArrayKokkos<double> naive_node_coords;
 
     // Mesh partitioned by pt-scotch, not including ghost

@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int num_dims = 3;
+    int num_dims = 2;
     int Pn_order = 1;
 
     double t_main_start = MPI_Wtime();
@@ -79,6 +79,9 @@ int main(int argc, char** argv) {
         std::cout<<"Rank "<<rank<<" Building initial mesh"<<std::endl;
 
         std::cout<<"Initializing mesh"<<std::endl;
+        initial_mesh.num_dims = num_dims;
+        initial_mesh.Pn = Pn_order;
+        
         if(num_dims == 3) {
             build_3d_box(initial_mesh,  initial_node_coords, origin, length, num_elems_dim, Pn_order);
         } else if(num_dims == 2) {
@@ -135,6 +138,8 @@ int main(int argc, char** argv) {
         final_mesh.num_owned_elems = initial_mesh.num_elems;
         final_mesh.num_owned_nodes = initial_mesh.num_nodes;
         final_node_coords = initial_node_coords;
+        final_mesh.num_dims = num_dims;
+        final_mesh.Pn = Pn_order;
     }
     double t_partition_end = MPI_Wtime();
 

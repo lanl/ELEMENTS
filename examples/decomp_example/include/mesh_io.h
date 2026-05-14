@@ -501,6 +501,7 @@ void write_vtu(swage::Mesh& mesh,
     const size_t num_nodes = mesh.num_owned_nodes;
     const size_t num_elems = mesh.num_owned_elems;
     const size_t num_dims  = mesh.num_dims;
+    printf("num_dims = %d\n", num_dims);
 
     // save the cell state to an array for exporting to graphics files
     auto elem_fields = CArray<double>(num_elems, num_cell_scalar_vars);
@@ -612,7 +613,7 @@ void write_vtu(swage::Mesh& mesh,
 
     CArray<int> convert_fierro_to_vtk((Pn_order+1)*(Pn_order+1)*(Pn_order+1));
     int this_node_lid = 0;
-    for (int k = 0; k <= Pn_order; k++) {
+    for (int k = 0; k <= Pn_order_z; k++) {
         for (int j = 0; j <= Pn_order; j++) {
             for (int i = 0; i <= Pn_order; i++) {
                 
@@ -637,11 +638,12 @@ void write_vtu(swage::Mesh& mesh,
         fprintf(vtu_file, "          ");  // adding indentation before printing nodes in element
         
         int this_node_lid = 0;
-        for (int k = 0; k <= Pn_order; k++) {
+        for (int k = 0; k <= Pn_order_z; k++) {
             for (int j = 0; j <= Pn_order; j++) {
                 for (int i = 0; i <= Pn_order; i++) {
-                    // size_t node_lid = PointIndexFromIJK(i, j, k, order);
+                    //  size_t node_lid = PointIndexFromIJK(i, j, k, order);
                     int node_lid = convert_fierro_to_vtk(this_node_lid);
+                    if (num_dims == 2) node_lid = this_node_lid;
                     fprintf(vtu_file, " %zu", static_cast<unsigned long>(mesh.nodes_in_elem.host(elem_gid, node_lid)));
                     this_node_lid ++;
                 }

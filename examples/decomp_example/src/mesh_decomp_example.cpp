@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     int num_dims = 3;
-    int Pn_order = 2;
+    int Pn_order = 1;
 
     double t_main_start = MPI_Wtime();
 
@@ -55,8 +55,8 @@ int main(int argc, char** argv) {
     double outer_radius = 2.0;
     double start_angle = 0.0;
     double end_angle = 45.0;
-    int num_elems_i = 100;
-    int num_elems_j = 100;
+    int num_elems_i = 40;
+    int num_elems_j = 40;
 
     // Initial mesh built on rank zero
     swage::Mesh initial_mesh;
@@ -126,6 +126,10 @@ int main(int argc, char** argv) {
 
     if(world_size != 1) { // pass through the partitioning function if not a single rank
         elements::partition_mesh(initial_mesh, final_mesh, initial_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);   
+    
+        MPI_Barrier(MPI_COMM_WORLD);
+        if(rank == 0) printf("After partitioning\n");
+    
     } else {
         final_mesh = initial_mesh;
         final_mesh.num_owned_elems = initial_mesh.num_elems;
@@ -136,6 +140,8 @@ int main(int argc, char** argv) {
 
     std::cout<<"Final mesh has " << final_mesh.num_elems << " elements and " << final_mesh.num_nodes << " nodes" << std::endl;
     std::cout<<"Final mesh has " << final_mesh.num_owned_elems << " owned elements and " << final_mesh.num_owned_nodes << " owned nodes" << std::endl;
+    std::cout<<"Final mesh num_dims = " << final_mesh.num_dims << std::endl;
+    MPI_Barrier(MPI_COMM_WORLD);
 
     // Verify communicaiton plans
     if(world_size != 1) element_communication_plan.verify_graph_communicator();

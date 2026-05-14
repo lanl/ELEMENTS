@@ -2276,10 +2276,10 @@ inline void partition_mesh(
 
     // -------------- Phase 6: Build the intermediate_mesh --------------
     if(rank == 0 && print_info) printf("Building the intermediate_mesh\n");
-    if(rank == 0 && print_info) printf("naive mesh num_dims = %d\n", naive_mesh.num_dims);
+    if(rank == 0 && print_info) printf("naive mesh num_dims = %zu\n", naive_mesh.num_dims);
     
     intermediate_mesh.num_dims = naive_mesh.num_dims;
-    if(rank == 0 && print_info) printf("intermediate mesh num_dims = %d\n", intermediate_mesh.num_dims);
+    if(rank == 0 && print_info) printf("intermediate mesh num_dims = %zu\n", intermediate_mesh.num_dims);
 
     intermediate_mesh.initialize_nodes(num_new_nodes);
     // Use the high-order (Pn) initialization only for Pn > 1; for the linear case

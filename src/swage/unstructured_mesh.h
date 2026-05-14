@@ -328,7 +328,10 @@ struct Mesh
     
     // initialization methods
     void initialize_nodes(const size_t num_nodes_inp)
-    {
+    { 
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at initialize_nodes().");
+        }
         num_nodes = num_nodes_inp;
         return;
     }; // end method
@@ -336,6 +339,9 @@ struct Mesh
     // initialization methods
     void initialize_elems(const size_t num_elems_inp, const size_t num_dims_inp)
     {
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at initialize_elems().");
+        }
         num_dims = num_dims_inp;
         num_nodes_in_elem = 1;
         
@@ -363,6 +369,9 @@ struct Mesh
         const size_t num_dims_inp, 
         const size_t Pn_order)
     {
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at initialize_elems_Pn().");
+        }
         elem_kind = mesh_init::arbitrary_tensor_element;
         
         num_dims  = num_dims_inp;
@@ -391,6 +400,9 @@ struct Mesh
     // initialization methods
     void initialize_corners(const size_t num_corners_inp)
     {
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at initialize_corners().");
+        }
         num_corners = num_corners_inp;
 
         return;
@@ -399,6 +411,9 @@ struct Mesh
     // build the corner mesh connectivity arrays
     void build_corner_connectivity()
     {
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at build_corner_connectivity().");
+        }
         num_corners_in_node = CArrayKokkos<size_t>(num_nodes, "mesh.num_corners_in_node"); // stride sizes
 
         // initializing the number of corners (node-cell pair) to be zero
@@ -459,6 +474,10 @@ struct Mesh
     // build elem connectivity arrays
     void build_elem_elem_connectivity()
     {
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at build_elem_elem_connectivity().");
+        }
+   
         // find the max number of elems around a node
         size_t max_num_elems_in_node;
         size_t max_num_lcl;
@@ -539,6 +558,9 @@ struct Mesh
     // build the patches
     void build_patch_connectivity()
     {
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at build_patch_connectivity().");
+        }
         // WARNING WARNING
         // the mesh element kind should be in the input file and set when reading mesh
         // mesh_elem_kind = mesh_init::linear_tensor_element; // MUST BE SET
@@ -1331,6 +1353,9 @@ struct Mesh
     // build the patches
     void build_node_node_connectivity()
     {
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at build_node_node_connectivity().");
+        }
         // find the max number of elems around a node
         size_t max_num_elems_in_node;
         size_t max_num_lcl;
@@ -1462,6 +1487,9 @@ struct Mesh
     /////////////////////////////////////////////////////////////////////////////
     void build_connectivity()
     {
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at build_connectivity().");
+        }
         build_corner_connectivity();
         if (verbose) printf("Built corner connectivity \n");
 
@@ -1484,6 +1512,9 @@ struct Mesh
     /////////////////////////////////////////////////////////////////////////////
     void init_bdy_sets(size_t num_bcs)
     {
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at init_bdy_sets().");
+        }
         // if (num_bcs == 0) {
         //     printf("ERROR: number of boundary sets = 0, set it = 1");
         //     num_bcs = 1;

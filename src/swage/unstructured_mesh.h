@@ -230,7 +230,7 @@ struct Mesh
     mesh_init::elem_name_tag elem_kind = mesh_init::linear_tensor_element; ///< The type of elements used in the mesh
 
     size_t Pn = 1; ///< Polynomial order of kinematic space
-    size_t num_dims = 3; ///< Number of spatial dimension
+    size_t num_dims = 0; ///< Number of spatial dimension
 
     // ---- Element Data Definitions ---- //
     size_t num_elems = 0;   ///< Number of elements in the mesh

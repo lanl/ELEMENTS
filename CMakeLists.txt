@@ -57,7 +57,7 @@ endif()
 
 # --- Options ---
 option(ELEMENTS_ENABLE_SERIAL "Enable Serial support in Kokkos" ON)
-option(ELEMENTS_ENABLE_OPENMP "Enable OpenMP support in Kokkos" ON)
+option(ELEMENTS_ENABLE_OPENMP "Enable OpenMP support in Kokkos" OFF)
 option(ELEMENTS_ENABLE_PTHREADS "Enable PThreads support in Kokkos" OFF)
 option(ELEMENTS_ENABLE_CUDA "Enable CUDA support in Kokkos" OFF)
 option(ELEMENTS_ENABLE_HIP "Enable HIP support in Kokkos" OFF)

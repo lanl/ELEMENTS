@@ -70,6 +70,8 @@ inline void naive_partition_mesh(
     // All ranks must agree on dimensionality before initializing per-rank meshes
     MPI_Bcast(&num_dim, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+    if (rank == 0 && print_info) printf("Num dim: %d\n", num_dim);
+
 
     // Compute the number of elements to send to each rank and num_nodes_per_elem
     std::vector<int> elems_per_rank(world_size); // number of elements to send to each rank size(world_size)
@@ -487,7 +489,7 @@ inline void naive_partition_mesh(
     //     Initialize the naive_mesh data structures for each rank
     // ****************************************************************************************** 
     naive_mesh.initialize_nodes(num_nodes_on_rank);
-    if (initial_mesh.Pn > 0){
+    if (initial_mesh.Pn > 1){
         naive_mesh.initialize_elems_Pn(num_elements_on_rank, num_dim, initial_mesh.Pn);
     } else {
         naive_mesh.initialize_elems(num_elements_on_rank, num_dim);
@@ -1120,7 +1122,10 @@ inline void build_ghost(
 
 
     output_mesh.initialize_nodes(total_extended_nodes);
-    if (input_mesh.Pn > 0){
+    // Use the high-order (Pn) initialization only for Pn > 1; for the linear case
+    // (Pn == 1) use initialize_elems to keep the element kind/layout consistent
+    // with naive_mesh and intermediate_mesh.
+    if (input_mesh.Pn > 1){
         output_mesh.initialize_elems_Pn(total_extended_elems, input_mesh.num_dims, input_mesh.Pn);
     }   
     else {
@@ -1361,7 +1366,7 @@ inline void build_ghost(
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if(rank == 0 && print_info) std::cout<<"After boundary_elem_targets"<<std::endl;
+    if(rank == 0 && print_info) printf("After boundary_elem_targets\n");
 
     // Add a vector to store boundary element local_ids (those who have ghost destinations across ranks)
     std::vector<int> boundary_elem_local_ids;
@@ -1401,14 +1406,14 @@ inline void build_ghost(
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    if(rank == 0 && print_info) printf("After ghost_comm_ranks\n");
+
     output_mesh.num_boundary_elems = boundary_elem_local_ids.size();
     output_mesh.boundary_elem_local_ids = DCArrayKokkos<size_t>(output_mesh.num_boundary_elems, "boundary_elem_local_ids");
     for (int i = 0; i < output_mesh.num_boundary_elems; i++) {
         output_mesh.boundary_elem_local_ids.host(i) = boundary_elem_local_ids[i];
     }
     output_mesh.boundary_elem_local_ids.update_device();
-
-    print_info = false;
 
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -1438,6 +1443,7 @@ inline void build_ghost(
     }
     
     MPI_Barrier(MPI_COMM_WORLD);
+    if(rank == 0 && print_info) printf("After node_set_to_send_by_rank\n");
 
     std::map<int, std::vector<int>> nodes_to_send_by_rank;  // rank -> list of global node indices
 
@@ -1483,6 +1489,7 @@ inline void build_ghost(
     // Initialize the graph communicator for element communication
     element_communication_plan.initialize_graph_communicator(outdegree, ghost_comm_ranks_vec.data(), elem_indegree, ghost_elem_receive_ranks_vec.data());
     MPI_Barrier(MPI_COMM_WORLD);
+    if(rank == 0 && print_info) printf("After element graph communicator\n");
     
     // Optional: Verify the graph communicator was created successfully
     // if(print_info) element_communication_plan.verify_graph_communicator();
@@ -1585,9 +1592,9 @@ inline void build_ghost(
     elems_to_recv_by_rank_rr.update_device();
     MATAR_FENCE();
     element_communication_plan.setup_send_recv(elems_to_send_by_rank_rr, elems_to_recv_by_rank_rr);
-
+    
     MPI_Barrier(MPI_COMM_WORLD);
-
+    if(rank == 0 && print_info) printf("After element communication plan setup\n");
     // --------------------------------------------------------------------------------------
     // Build the send pattern for nodes
     // --------------------------------------------------------------------------------------
@@ -1654,7 +1661,7 @@ inline void build_ghost(
         size_t node_gid = output_mesh.local_to_global_node_mapping.host(i);
         node_gid_to_ghost_lid[node_gid] = i;
     }
-    
+    if(rank == 0 && print_info) printf("After node_gid_to_ghost_lid\n");
     // Now convert the GID sets to local index vectors
     for (const auto& pair : node_set_to_recv_by_rank) {
         int source_rank = pair.first;
@@ -1687,7 +1694,7 @@ inline void build_ghost(
         }
     }
     nodes_to_recv_by_rank_rr.update_device();
-
+    if(rank == 0 && print_info) printf("After nodes_to_recv_by_rank_rr\n");
     MPI_Barrier(MPI_COMM_WORLD);
 
     node_communication_plan.setup_send_recv(nodes_to_send_by_rank_rr, nodes_to_recv_by_rank_rr);
@@ -1734,7 +1741,8 @@ inline void partition_mesh(
     CommunicationPlan& element_communication_plan,
     CommunicationPlan& node_communication_plan,
     int world_size,
-    int rank){
+    int rank)
+{
 
     bool print_info = false;
 
@@ -1746,10 +1754,14 @@ inline void partition_mesh(
     unsigned long long Pn_order = static_cast<unsigned long long>(initial_mesh.Pn);
     MPI_Bcast(&Pn_order, 1, MPI_UNSIGNED_LONG_LONG, 0, MPI_COMM_WORLD);
     initial_mesh.Pn = static_cast<size_t>(Pn_order);
+    final_mesh.num_dims = initial_mesh.num_dims;
+    final_mesh.Pn = initial_mesh.Pn;
 
     // Create mesh, gauss points, and node data structures on each rank
     // This is the initial partitioned mesh
     swage::Mesh naive_mesh;
+    naive_mesh.num_dims = initial_mesh.num_dims;
+    naive_mesh.Pn = initial_mesh.Pn;
     MPICArrayKokkos<double> naive_node_coords;
 
     // Mesh partitioned by pt-scotch, not including ghost
@@ -2101,9 +2113,9 @@ inline void partition_mesh(
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
-// ****************************************************************************************** 
-//     Build the intermediate mesh (without ghost nodes and elements) from the repartition
-// ****************************************************************************************** 
+    // ****************************************************************************************** 
+    //     Build the intermediate mesh (without ghost nodes and elements) from the repartition
+    // ****************************************************************************************** 
 
 
 
@@ -2263,8 +2275,18 @@ inline void partition_mesh(
     if(rank == 0 && print_info) std::cout<<" Finished exchanging node coordinates"<<std::endl;
 
     // -------------- Phase 6: Build the intermediate_mesh --------------
+    if(rank == 0 && print_info) printf("Building the intermediate_mesh\n");
+    if(rank == 0 && print_info) printf("naive mesh num_dims = %zu\n", naive_mesh.num_dims);
+    
+    intermediate_mesh.num_dims = naive_mesh.num_dims;
+    if(rank == 0 && print_info) printf("intermediate mesh num_dims = %zu\n", intermediate_mesh.num_dims);
+
     intermediate_mesh.initialize_nodes(num_new_nodes);
-    if (initial_mesh.Pn > 0){
+    // Use the high-order (Pn) initialization only for Pn > 1; for the linear case
+    // (Pn == 1) use initialize_elems to match naive_mesh and avoid creating an
+    // arbitrary_tensor_element layout whose connectivity-build path writes
+    // 8 nodes-per-zone unconditionally and would corrupt the heap in 2D.
+    if (initial_mesh.Pn > 1){
         intermediate_mesh.initialize_elems_Pn(num_new_elems, naive_mesh.num_dims, initial_mesh.Pn);
     } else {
         intermediate_mesh.initialize_elems(num_new_elems, naive_mesh.num_dims);
@@ -2351,7 +2373,7 @@ inline void partition_mesh(
     
     MPI_Barrier(MPI_COMM_WORLD);
     if(rank == 0 && print_info) std::cout<<" Finished the ghost element and node construction"<<std::endl;
-
+    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 } // namespace elements

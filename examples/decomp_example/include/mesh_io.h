@@ -501,6 +501,7 @@ void write_vtu(swage::Mesh& mesh,
     const size_t num_nodes = mesh.num_owned_nodes;
     const size_t num_elems = mesh.num_owned_elems;
     const size_t num_dims  = mesh.num_dims;
+    printf("num_dims = %zu\n", num_dims);
 
     // save the cell state to an array for exporting to graphics files
     auto elem_fields = CArray<double>(num_elems, num_cell_scalar_vars);
@@ -612,7 +613,7 @@ void write_vtu(swage::Mesh& mesh,
 
     CArray<int> convert_fierro_to_vtk((Pn_order+1)*(Pn_order+1)*(Pn_order+1));
     int this_node_lid = 0;
-    for (int k = 0; k <= Pn_order; k++) {
+    for (int k = 0; k <= Pn_order_z; k++) {
         for (int j = 0; j <= Pn_order; j++) {
             for (int i = 0; i <= Pn_order; i++) {
                 
@@ -637,11 +638,12 @@ void write_vtu(swage::Mesh& mesh,
         fprintf(vtu_file, "          ");  // adding indentation before printing nodes in element
         
         int this_node_lid = 0;
-        for (int k = 0; k <= Pn_order; k++) {
+        for (int k = 0; k <= Pn_order_z; k++) {
             for (int j = 0; j <= Pn_order; j++) {
                 for (int i = 0; i <= Pn_order; i++) {
-                    // size_t node_lid = PointIndexFromIJK(i, j, k, order);
+                    //  size_t node_lid = PointIndexFromIJK(i, j, k, order);
                     int node_lid = convert_fierro_to_vtk(this_node_lid);
+                    if (num_dims == 2) node_lid = this_node_lid;
                     fprintf(vtu_file, " %zu", static_cast<unsigned long>(mesh.nodes_in_elem.host(elem_gid, node_lid)));
                     this_node_lid ++;
                 }
@@ -711,9 +713,9 @@ void write_vtu(swage::Mesh& mesh,
     // Point vector variables
     for (int var = 0; var < num_point_vec_vars; var++) {
         fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"ascii\">\n", 
-                point_vec_var_names[var], num_dims);
+                point_vec_var_names[var], static_cast<int>(num_dims));
         for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
-            for (int dim = 0; dim < num_dims; dim++) {
+            for (int dim = 0; dim < static_cast<int>(num_dims); dim++) {
                 fprintf(vtu_file, "          %f\n", vec_fields(node_gid, var, dim));
             }
         }
@@ -737,10 +739,10 @@ void write_vtu(swage::Mesh& mesh,
     // Cell vector variables
     for (int var = 0; var < num_cell_vec_vars; var++) {
         fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"ascii\">\n", 
-                cell_vec_var_names[var], num_dims);
+                cell_vec_var_names[var], static_cast<int>(num_dims));
         for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
             // TODO: Populate cell vector field data from appropriate source
-            for (int dim = 0; dim < num_dims; dim++) {
+            for (int dim = 0; dim < static_cast<int>(num_dims); dim++) {
                 fprintf(vtu_file, "          %f\n", 
                     gauss_point.fields_vec.host(elem_gid, dim));
             }
@@ -799,7 +801,7 @@ void write_vtu(swage::Mesh& mesh,
         fprintf(pvtu_file, "    <PPointData>\n");
         for (int var = 0; var < num_point_vec_vars; var++) {
             fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%d\"/>\n",
-                    point_vec_var_names[var], num_dims);
+                    point_vec_var_names[var], static_cast<int>(num_dims));
         }
         for (int var = 0; var < num_point_scalar_vars; var++) {
             fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"%s\"/>\n",
@@ -811,7 +813,7 @@ void write_vtu(swage::Mesh& mesh,
         fprintf(pvtu_file, "    <PCellData>\n");
         for (int var = 0; var < num_cell_vec_vars; var++) {
             fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%d\"/>\n",
-                    cell_vec_var_names[var], num_dims);
+                    cell_vec_var_names[var], static_cast<int>(num_dims));
         }
         for (int var = 0; var < num_cell_scalar_vars; var++) {
             fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"%s\"/>\n",

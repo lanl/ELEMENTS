@@ -459,13 +459,13 @@ void write_vtu(swage::Mesh& mesh,
                node_t& node,
                GaussPoint_t& gauss_point,
                int rank,
-               MPI_Comm comm)
+               MPI_Comm comm,
+               int graphics_id = 0)
 {
     int world_size;
     MPI_Comm_size(comm, &world_size);
 
     CArray<double> graphics_times(1);
-    int graphics_id = 0;
     graphics_times(0) = 0.0;
 
     // ---- Update host data ----

@@ -1,132 +1,182 @@
-#include <cmath> // for sin
-
+#include <cmath>
+#include <cstdlib>
+#include <iostream>
 
 #include "ELEMENTS.h"
-#include "state.h"
 #include "mesh_io.h"
+#include "state.h"
+#include "xpbd_solver.h"
 
-
-int main(int argc, char** argv) {
-
+int main(int argc, char** argv)
+{
     MPI_Init(&argc, &argv);
     MATAR_INITIALIZE(argc, argv);
-    { // MATAR scope
+    {
+        int world_size = 0;
+        int rank = 0;
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int world_size;
-    int rank;
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    int num_dims = 2;
-    int Pn_order = 1;
-
-    double t_main_start = MPI_Wtime();
-
-    // Mesh size for 3D box
-    double origin[3] = {0.0, 0.0, 0.0};
-    double length[3] = {1.0, 1.0, 1.0};
-    int num_elems_dim[3] = {20, 20, 20};
-
-    // Initial mesh built on rank zero
-    swage::Mesh initial_mesh;
-    MPICArrayKokkos<double> initial_node_coords;
-
-    // Mesh partitioned by pt-scotch, including ghost
-    swage::Mesh final_mesh;
-    node_t final_node;
-    MPICArrayKokkos<double> final_node_coords;
-
-    // ********************************************************  
-    //              Build the initial mesh
-    // ********************************************************  
-
-    double t_init_mesh_start = MPI_Wtime();
-    if (rank == 0) {
-        std::cout<<"World size: "<<world_size<<std::endl;
-        std::cout<<"Rank "<<rank<<" Building initial mesh"<<std::endl;
-
-        std::cout<<"Initializing mesh"<<std::endl;
-        initial_mesh.num_dims = num_dims;
-        initial_mesh.Pn = Pn_order;
-        
-        if(num_dims == 3) {
-            build_3d_box(initial_mesh,  initial_node_coords, origin, length, num_elems_dim, Pn_order);
-        } else if(num_dims == 2) {
-            build_2d_polar(initial_mesh,  initial_node_coords, inner_radius, outer_radius, start_angle, end_angle, num_elems_i, num_elems_j);
+        const int num_dims = 3;
+        int poly_order = 1;
+        int num_outputs = 10;
+        if (argc > 1) {
+            poly_order = std::max(1, std::atoi(argv[1]));
+        }
+        if (argc > 2) {
+            num_outputs = std::max(0, std::atoi(argv[2]));
         }
 
-        // Read the mesh from a file
-        // read_vtk_mesh(initial_mesh, initial_node, 3, "/full/path/to/mesh/file.vtk");
+        const double main_start_time = MPI_Wtime();
 
-        double t_init_mesh_end = MPI_Wtime();
-        std::cout << "Initial mesh build time: " << (t_init_mesh_end - t_init_mesh_start) << " seconds" << std::endl;
-        std::cout << "Initial mesh has " << initial_mesh.num_elems << " elements and " << initial_mesh.num_nodes << " nodes" << std::endl;
-        std::cout <<" Num_nodes_in_elem: " << initial_mesh.num_nodes_in_elem << std::endl;
-        std::cout <<" Num_dims: " << initial_mesh.num_dims << std::endl;
-        std::cout <<" Num_elems: " << initial_mesh.num_elems << std::endl;
-        std::cout <<" Num_nodes: " << initial_mesh.num_nodes << std::endl;
-        std::cout <<" Num_nodes_in_elem: " << initial_mesh.num_nodes_in_elem << std::endl;
-        std::cout <<" Num_nodes_in_elem: " << initial_mesh.num_nodes_in_elem << std::endl;
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+        double origin[3] = {0.0, 0.0, 0.0};
+        double length[3] = {1.0, 1.0, 1.0};
+        int num_elems_dim[3] = {4, 4, 8};
 
+        swage::Mesh initial_mesh;
+        MPICArrayKokkos<double> initial_node_coords;
 
-    // ********************************************************  
-    //             Partition and balance the mesh
-    // ********************************************************  
-    double t_partition_start = MPI_Wtime();
-    // Create communicaion plans
-    CommunicationPlan element_communication_plan;
-    element_communication_plan.initialize(MPI_COMM_WORLD);
-    CommunicationPlan node_communication_plan;
-    node_communication_plan.initialize(MPI_COMM_WORLD);
+        swage::Mesh final_mesh;
+        MPICArrayKokkos<double> final_node_coords;
 
-    if(world_size != 1) { // pass through the partitioning function if not a single rank
-        elements::partition_mesh(initial_mesh, final_mesh, initial_node_coords, final_node_coords, element_communication_plan, node_communication_plan, world_size, rank);   
+        CommunicationPlan element_communication_plan;
+        element_communication_plan.initialize(MPI_COMM_WORLD);
+        CommunicationPlan node_communication_plan;
+        node_communication_plan.initialize(MPI_COMM_WORLD);
+
+        if (rank == 0) {
+            std::cout << "World size: " << world_size << std::endl;
+            std::cout << "Building initial 3D box mesh with poly_order = " << poly_order << std::endl;
+
+            initial_mesh.num_dims = num_dims;
+            initial_mesh.Pn = poly_order;
+            build_3d_box(
+                initial_mesh,
+                initial_node_coords,
+                origin,
+                length,
+                num_elems_dim,
+                poly_order);
+
+            std::cout << "Initial mesh: " << initial_mesh.num_elems << " elements, "
+                      << initial_mesh.num_nodes << " nodes" << std::endl;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        if (world_size != 1) {
+            elements::partition_mesh(
+                initial_mesh,
+                final_mesh,
+                initial_node_coords,
+                final_node_coords,
+                element_communication_plan,
+                node_communication_plan,
+                world_size,
+                rank);
+        } else {
+            final_mesh = initial_mesh;
+            final_mesh.num_owned_elems = initial_mesh.num_elems;
+            final_mesh.num_owned_nodes = initial_mesh.num_nodes;
+            final_node_coords = initial_node_coords;
+            final_mesh.num_dims = num_dims;
+            final_mesh.Pn = poly_order;
+        }
+
+        if (world_size != 1) {
+            element_communication_plan.verify_graph_communicator();
+            node_communication_plan.verify_graph_communicator();
+        }
+
+        if (rank == 0) {
+            std::cout << "Final mesh: " << final_mesh.num_elems << " elements, "
+                      << final_mesh.num_nodes << " nodes" << std::endl;
+        }
+
+        XpbdSolverConfig solver_config;
+        solver_config.poly_order = poly_order;
+        solver_config.num_timesteps = 200;
+        solver_config.num_solver_iterations = 10;
+        solver_config.num_force_ramp_steps = 10;
+        solver_config.num_outputs = num_outputs;
+        solver_config.timestep_dt = 5.0e-4;
+        solver_config.velocity_damping_factor = 0.05;
+        solver_config.dirichlet_plane_origin[0] = origin[0];
+        solver_config.dirichlet_plane_origin[1] = origin[1];
+        solver_config.dirichlet_plane_origin[2] = origin[2];
+        solver_config.dirichlet_plane_normal[0] = 0.0;
+        solver_config.dirichlet_plane_normal[1] = 0.0;
+        solver_config.dirichlet_plane_normal[2] = 1.0;
+        solver_config.surface_traction_plane_normal[0] = 0.0;
+        solver_config.surface_traction_plane_normal[1] = 0.0;
+        solver_config.surface_traction_plane_normal[2] = 1.0;
+        solver_config.gravity_vector[0] = 0.0;
+        solver_config.gravity_vector[1] = 1.0;
+        solver_config.gravity_vector[2] = -9.81;
+        solver_config.material.density = 1000.0;
+        solver_config.material.youngs_modulus = 1.0e4;
+        solver_config.material.poissons_ratio = 0.3;
+        solver_config.material.compliance = 1.0 / solver_config.material.youngs_modulus;
+
+        XpbdSolverState solver_state;
+        initialize_xpbd_solver(
+            final_mesh,
+            final_node_coords,
+            node_communication_plan,
+            element_communication_plan,
+            solver_state,
+            solver_config);
+
+        print_inverse_lumped_mass_stats(solver_state, final_mesh, rank);
+
+        write_xpbd_state(
+            final_mesh,
+            solver_state,
+            rank,
+            MPI_COMM_WORLD,
+            0,
+            true);
+
+        const double simulation_start_time = MPI_Wtime();
+        run_xpbd_simulation(final_mesh, solver_state, rank, MPI_COMM_WORLD);
+        const double simulation_end_time = MPI_Wtime();
+
+        if (rank == 0) {
+            std::cout << "XPBD simulation time: "
+                      << (simulation_end_time - simulation_start_time) << " seconds"
+                      << std::endl;
+        }
+
+        double max_displacement = 0.0;
+        double local_max_displacement = 0.0;
+        solver_state.node_positions.update_host();
+        solver_state.reference_node_positions.update_host();
+        for (size_t node_gid = 0; node_gid < final_mesh.num_owned_nodes; ++node_gid) {
+            for (int spatial_dim = 0; spatial_dim < 3; ++spatial_dim) {
+                const double displacement = solver_state.node_positions.host(node_gid, spatial_dim)
+                    - solver_state.reference_node_positions.host(node_gid, spatial_dim);
+                local_max_displacement = std::max(local_max_displacement, std::fabs(displacement));
+            }
+        }
+        MPI_Allreduce(
+            &local_max_displacement,
+            &max_displacement,
+            1,
+            MPI_DOUBLE,
+            MPI_MAX,
+            MPI_COMM_WORLD);
+
+        if (rank == 0) {
+            std::cout << "Maximum nodal displacement magnitude: " << max_displacement << std::endl;
+        }
 
         MPI_Barrier(MPI_COMM_WORLD);
-        if(rank == 0) printf("After partitioning\n");
 
-    } else {
-        final_mesh = initial_mesh;
-        final_mesh.num_owned_elems = initial_mesh.num_elems;
-        final_mesh.num_owned_nodes = initial_mesh.num_nodes;
-        final_node_coords = initial_node_coords;
-        final_mesh.num_dims = num_dims;
-        final_mesh.Pn = Pn_order;
+        const double main_end_time = MPI_Wtime();
+        if (rank == 0) {
+            std::cout << "Total execution time: " << (main_end_time - main_start_time)
+                      << " seconds" << std::endl;
+        }
     }
-    double t_partition_end = MPI_Wtime();
-
-    std::cout<<"Final mesh has " << final_mesh.num_elems << " elements and " << final_mesh.num_nodes << " nodes" << std::endl;
-    std::cout<<"Final mesh has " << final_mesh.num_owned_elems << " owned elements and " << final_mesh.num_owned_nodes << " owned nodes" << std::endl;
-    std::cout<<"Final mesh num_dims = " << final_mesh.num_dims << std::endl;
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    // Verify communicaiton plans
-    if(world_size != 1) element_communication_plan.verify_graph_communicator();
-    if(world_size != 1) node_communication_plan.verify_graph_communicator();
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    if(rank == 0) {
-        printf("Mesh partitioning time: %.2f seconds\n", t_partition_end - t_partition_start);
-    }
-
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    std::cout<<"Writing VTU file for rank "<<rank<<std::endl;
-    write_vtu(final_mesh, final_node, gauss_point, rank, MPI_COMM_WORLD);
-    
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    // Stop timer and get execution time
-    double t_main_end = MPI_Wtime();
-    
-    if(rank == 0) {
-        printf("Total execution time: %.2f seconds\n", t_main_end - t_main_start);
-    }
-
-    } // end MATAR scope
     MATAR_FINALIZE();
     MPI_Finalize();
 

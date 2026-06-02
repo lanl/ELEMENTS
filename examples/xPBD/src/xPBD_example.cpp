@@ -92,6 +92,8 @@ int main(int argc, char** argv)
                       << final_mesh.num_nodes << " nodes" << std::endl;
         }
 
+        // Mesh initialized, now implement the xPBD solver. 
+
         XpbdSolverConfig solver_config;
         solver_config.poly_order = poly_order;
         solver_config.num_timesteps = 200;

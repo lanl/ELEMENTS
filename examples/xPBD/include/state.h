@@ -44,8 +44,10 @@ using namespace mtr;
 enum class node_state
 {
     coords,
-    scalar_field,
-    vector_field
+    coords_predicted,
+    velocity,
+    inv_mass,
+    force_external
 };
 
 
@@ -56,15 +58,15 @@ enum class node_state
 /// \brief Stores state information associated with a node
 ///
 /////////////////////////////////////////////////////////////////////////////
-struct node_t
+struct Node_t
 {
 
     // Replace with MPIDCArrayKokkos
     MPICArrayKokkos<double> coords;     ///< Nodal coordinates
-    MPICArrayKokkos<double> coords_n0;  ///< Nodal coordinates at tn=0 of time integration
-    
-    MPICArrayKokkos<double> scalar_field; ///< Scalar field on a node
-    MPICArrayKokkos<double> vector_field; ///< Vector field on a node
+    MPICArrayKokkos<double> coords_predicted;  ///< Predicted nodal coordinates
+    MPICArrayKokkos<double> velocity; ///< Nodal velocity
+    MPICArrayKokkos<double> force_external; ///< Nodal force external
+    MPICArrayKokkos<double> inv_mass; ///< inv_mass on a node
 
 
     // initialization method (num_nodes, num_dims, state to allocate)
@@ -80,18 +82,22 @@ struct node_t
                         this->coords = MPICArrayKokkos<double>(num_nodes, num_dims, "node_coordinates");
                         this->coords.initialize_comm_plan(comm_plan);
                     }
-                    if (coords_n0.size() == 0){
-                        this->coords_n0 = MPICArrayKokkos<double>(num_nodes, num_dims, "node_coordinates_n0");
-                        this->coords_n0.initialize_comm_plan(comm_plan);
+                    if (coords_predicted.size() == 0){
+                        this->coords_predicted = MPICArrayKokkos<double>(num_nodes, num_dims, "node_coordinates_predicted");
+                        this->coords_predicted.initialize_comm_plan(comm_plan);
                     }
                     break;
-                case node_state::scalar_field:
-                    if (scalar_field.size() == 0) this->scalar_field = MPICArrayKokkos<double>(num_nodes, "node_scalar_field");
-                    this->scalar_field.initialize_comm_plan(comm_plan);
+                case node_state::velocity:
+                    if (velocity.size() == 0) this->velocity = MPICArrayKokkos<double>(num_nodes, num_dims, "node_velocity");
+                    this->velocity.initialize_comm_plan(comm_plan);
                     break;
-                case node_state::vector_field:
-                    if (vector_field.size() == 0) this->vector_field = MPICArrayKokkos<double>(num_nodes, num_dims, "node_vector_field");
-                    this->vector_field.initialize_comm_plan(comm_plan);
+                case node_state::force_external:
+                    if (force_external.size() == 0) this->force_external = MPICArrayKokkos<double>(num_nodes, num_dims, "node_force_external");
+                    this->force_external.initialize_comm_plan(comm_plan);
+                    break;
+                case node_state::inv_mass:
+                    if (inv_mass.size() == 0) this->inv_mass = MPICArrayKokkos<double>(num_nodes, "node_inv_mass");
+                    this->inv_mass.initialize_comm_plan(comm_plan);
                     break;
                 default:
                     std::cout<<"Desired node state not understood in node_t initialize"<<std::endl;
@@ -110,18 +116,22 @@ struct node_t
                         this->coords = MPICArrayKokkos<double>(num_nodes, num_dims, "node_coordinates");
                         this->coords.initialize_comm_plan(comm_plan);
                     }
-                    if (coords_n0.size() == 0){
-                        this->coords_n0 = MPICArrayKokkos<double>(num_nodes, num_dims, "node_coordinates_n0");
-                        this->coords_n0.initialize_comm_plan(comm_plan);
+                    if (coords_predicted.size() == 0){
+                        this->coords_predicted = MPICArrayKokkos<double>(num_nodes, num_dims, "node_coordinates_predicted");
+                        this->coords_predicted.initialize_comm_plan(comm_plan);
                     }
                     break;
-                case node_state::scalar_field:
-                    if (scalar_field.size() == 0) this->scalar_field = MPICArrayKokkos<double>(num_nodes, "node_scalar_field");
-                    this->scalar_field.initialize_comm_plan(comm_plan);
+                case node_state::velocity:
+                    if (velocity.size() == 0) this->velocity = MPICArrayKokkos<double>(num_nodes, num_dims, "node_velocity");
+                    this->velocity.initialize_comm_plan(comm_plan);
                     break;
-                case node_state::vector_field:
-                    if (vector_field.size() == 0) this->vector_field = MPICArrayKokkos<double>(num_nodes, num_dims, "node_vector_field");
-                    this->vector_field.initialize_comm_plan(comm_plan);
+                case node_state::force_external:
+                    if (force_external.size() == 0) this->force_external = MPICArrayKokkos<double>(num_nodes, num_dims, "node_force_external");
+                    this->force_external.initialize_comm_plan(comm_plan);
+                    break;
+                case node_state::inv_mass:
+                    if (inv_mass.size() == 0) this->inv_mass = MPICArrayKokkos<double>(num_nodes, "node_inv_mass");
+                    this->inv_mass.initialize_comm_plan(comm_plan);
                     break;
                 default:
                     std::cout<<"Desired node state not understood in node_t initialize"<<std::endl;
@@ -136,8 +146,7 @@ struct node_t
 // Possible gauss point states, used to initialize GaussPoint_t
 enum class gauss_pt_state
 {
-    fields,
-    fields_vec
+    strain_energy,
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -150,8 +159,8 @@ enum class gauss_pt_state
 struct GaussPoint_t
 {
 
-    MPICArrayKokkos<double> fields;
-    MPICArrayKokkos<double> fields_vec;
+    MPICArrayKokkos<double> strain_energy;
+
 
     // initialization method (num_cells, num_dims)
     void initialize(size_t num_gauss_pnts, size_t num_dims, std::vector<gauss_pt_state> gauss_pt_states, CommunicationPlan& comm_plan)
@@ -159,17 +168,11 @@ struct GaussPoint_t
 
         for (auto field : gauss_pt_states){
             switch(field){
-                case gauss_pt_state::fields:
+                case gauss_pt_state::strain_energy:
                     //if (fields.size() == 0) this->fields = DCArrayKokkos<double>(num_gauss_pnts, "gauss_point_fields");
-                    if (fields.size() == 0){
-                        this->fields = MPICArrayKokkos<double>(num_gauss_pnts, "gauss_point_fields");
-                        this->fields.initialize_comm_plan(comm_plan);
-                    } 
-                    break;
-                case gauss_pt_state::fields_vec:
-                    if (fields_vec.size() == 0){
-                        this->fields_vec = MPICArrayKokkos<double>(num_gauss_pnts, num_dims, "gauss_point_fields_vec");
-                        this->fields_vec.initialize_comm_plan(comm_plan);
+                    if (strain_energy.size() == 0){
+                        this->strain_energy = MPICArrayKokkos<double>(num_gauss_pnts, "gauss_point_strain_energy");
+                        this->strain_energy.initialize_comm_plan(comm_plan);
                     } 
                     break;
                 default:
@@ -180,7 +183,28 @@ struct GaussPoint_t
     }; // end method
 };  // end GaussPoint_t
 
+// Possible Element states, used to initialize Element_t
+enum class element_state
+{
+    strain_energy,
+};
 
+struct Element_t
+{
+    MPICArrayKokkos<double> lambda; // Lagrange multiplier
+
+    void initialize(size_t num_elements, std::vector<element_state> element_states, CommunicationPlan& comm_plan)
+    {
+        for (auto field : element_states){
+            switch(field){
+                case element_state::lambda:
+                    if (lambda.size() == 0) this->lambda = MPICArrayKokkos<double>(num_elements, "element_lambda");
+                    this->lambda.initialize_comm_plan(comm_plan);
+                    break;
+            }
+        }
+    }; // end method
+}; // end Element_t 
 
 /////////////////////////////////////////////////////////////////////////////
 ///
@@ -194,8 +218,9 @@ struct State_t
     // ---------------------------------------------------------------------
     //    state data on mesh declarations
     // ---------------------------------------------------------------------
-    node_t node;              ///< access as node.coords(node_gid,dim)
+    Node_t node;              ///< access as node.coords(node_gid,dim)
     GaussPoint_t GaussPoints; ///< access as GaussPoints.vol(gauss_pt_gid)
+    Element_t Element; ///< access as Element.lambda(element_gid)
     
 }; // end state_t
 

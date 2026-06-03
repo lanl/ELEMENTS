@@ -103,6 +103,7 @@ if(NOT TARGET matar::matar)
         if(NOT "${MATAR_SOURCE_DIR}/src/include" IN_LIST _matar_includes)
             target_include_directories(matar INTERFACE 
                 $<BUILD_INTERFACE:${MATAR_SOURCE_DIR}/src/include>
+                $<BUILD_INTERFACE:${MATAR_SOURCE_DIR}/solvers>
             )
         endif()
         

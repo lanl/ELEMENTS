@@ -25,18 +25,18 @@ int main(int argc, char** argv)
         
         double origin[3] = {0.0, 0.0, 0.0};
         double length[3] = {2.0, 2.0, 2.0};
-        int num_elems_dim[3] = {1, 1, 1};
+        int num_elems_dim[3] = {2, 2, 2};
 
         int num_outputs = 10;
 
         double density = 1.0;
 
-        if (argc > 1) {
-            poly_order = std::max(1, std::atoi(argv[1]));
-        }
-        if (argc > 2) {
-            num_outputs = std::max(0, std::atoi(argv[2]));
-        }
+        int iterations = 10;   
+        double final_time = 10.0;
+        double time_step = 0.01;
+
+        int write_id = 0;
+        
 
         const double main_start_time = MPI_Wtime();
 
@@ -367,15 +367,109 @@ int main(int argc, char** argv)
                 std::cout << "Node " << node_gid << ": " << node.inv_mass(node_gid) << std::endl;
             }
         }
+
+        // Set the inverse mass to zero for the x=0 nodes
+        FOR_ALL(node_gid, 0, mesh.num_nodes, {
+            if (std::fabs(node.coords(node_gid, 0)) < 1E-14) {
+                node.inv_mass(node_gid) = 0.0;
+            }
+        });
+        node.inv_mass.update_host();
    
-
-
-
-
-
         // Write out the current state of the mesh to a VTU file. 
         std::cout << "Writing out the current state of the mesh to a VTU file:" << std::endl;
-        write_vtu(mesh, node, gauss_point, element, ref_elem.num_gauss_in_elem, rank, MPI_COMM_WORLD);
+        write_vtu(mesh, node, gauss_point, element, ref_elem.num_gauss_in_elem, rank, MPI_COMM_WORLD, write_id);
+
+
+        // Begin the xPBD solver
+        std::cout << "Beginning the xPBD solver:" << std::endl;
+
+
+
+
+        double t = 0.0;
+        while (t < final_time) {
+            // 1. Explicit Euler Prediction
+            FOR_ALL(node_gid, 0, mesh.num_nodes, {
+                for(int dim = 0; dim < num_dims; dim++){
+                    // v = v + dt * f_ext * m^-1
+                    node.velocity(node_gid, dim) += time_step * node.force_external(node_gid, dim) * node.inv_mass(node_gid);
+                    
+                    // x_pred = x + dt * v
+                    node.coords_predicted(node_gid, dim) = node.coords(node_gid, dim) + time_step * node.velocity(node_gid, dim);
+                }
+            });
+
+            // Reset Lagrange multipliers for the new time step
+            element.lambda.set_values(0.0);
+
+
+            // 2. Solver Iterations
+    double alpha = 1e-4; // Material compliance (inverse stiffness)
+    double alpha_tilde = alpha / (time_step * time_step); // Time-step scaled compliance
+
+    for (int iter = 0; iter < iterations; iter++) {
+        
+        FOR_ALL(elem_gid, 0, mesh.num_elems, {
+            double C = 0.0;
+            // You will need a local array to accumulate gradients for each node in the element
+            double grad_C[27][3] = {0.0}; // Assuming max nodes per element is 27 (poly_order=2) or allocate dynamically
+
+            // A. Loop over Gauss points to accumulate C and grad_C
+            for(int g_lid = 0; g_lid < mesh.num_gauss_in_elem; g_lid++){
+                int gauss_gid = mesh.gauss_in_elem(elem_gid, g_lid);
+                
+                // 1. Compute current Deformation Gradient F = J(x_pred) * J(X)^-1
+                // 2. Evaluate strain energy density (e.g., Neo-Hookean)
+                // 3. Evaluate first Piola-Kirchhoff stress tensor
+                // 4. Accumulate into C
+                // 5. Accumulate into local grad_C array using shape function derivatives
+            }
+            
+            // B. Apply square root to finalize C (as per the paper's iso-parametric formulation)
+            // C = sqrt(C);
+            // Scale gradients by 1 / (2 * C)
+
+            // C. Compute denominator: sum of (inv_mass * |grad_C|^2) for all nodes in the element
+            double denom = 0.0;
+            for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                double w_i = node.inv_mass(node_gid);
+                
+                double grad_sq = 0.0;
+                for(int dim = 0; dim < num_dims; dim++){
+                    grad_sq += grad_C[node_lid][dim] * grad_C[node_lid][dim];
+                }
+                denom += w_i * grad_sq;
+            }
+
+            // D. Compute Delta Lambda
+            double current_lambda = element.lambda(elem_gid);
+            double delta_lambda = (-C - alpha_tilde * current_lambda) / (denom + alpha_tilde);
+            
+            // Update Lagrange multiplier
+            element.lambda(elem_gid) += delta_lambda;
+
+            // E. Scatter position corrections safely using Atomic Adds
+            for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                double w_i = node.inv_mass(node_gid);
+                
+                if (w_i > 0.0) { // Skip fixed boundaries
+                    for(int dim = 0; dim < num_dims; dim++){
+                        double delta_x = w_i * grad_C[node_lid][dim] * delta_lambda;
+                        Kokkos::atomic_add(&node.coords_predicted(node_gid, dim), delta_x);
+                    }
+                }
+            }
+        });
+        
+        // If running across MPI ranks, you must synchronize coords_predicted at partition boundaries here
+        // node_communication_plan.exchange(node.coords_predicted);
+    }
+
+
+        
 
 
 

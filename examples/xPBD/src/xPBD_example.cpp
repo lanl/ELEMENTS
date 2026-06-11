@@ -5,21 +5,32 @@
 #include "ELEMENTS.h"
 #include "mesh_io.h"
 #include "state.h"
-#include "xpbd_solver.h"
+// #include "xpbd_solver.h"
 
 int main(int argc, char** argv)
 {
     MPI_Init(&argc, &argv);
     MATAR_INITIALIZE(argc, argv);
     {
+        bool verbose = false;
+        int print_elem_gid = 0;
+
         int world_size = 0;
         int rank = 0;
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
         const int num_dims = 3;
-        int poly_order = 1;
+        int poly_order = 4;
+        
+        double origin[3] = {0.0, 0.0, 0.0};
+        double length[3] = {2.0, 2.0, 2.0};
+        int num_elems_dim[3] = {1, 1, 1};
+
         int num_outputs = 10;
+
+        double density = 1.0;
+
         if (argc > 1) {
             poly_order = std::max(1, std::atoi(argv[1]));
         }
@@ -29,14 +40,10 @@ int main(int argc, char** argv)
 
         const double main_start_time = MPI_Wtime();
 
-        double origin[3] = {0.0, 0.0, 0.0};
-        double length[3] = {1.0, 1.0, 1.0};
-        int num_elems_dim[3] = {4, 4, 8};
-
         swage::Mesh initial_mesh;
         MPICArrayKokkos<double> initial_node_coords;
 
-        swage::Mesh final_mesh;
+        swage::Mesh mesh;
         MPICArrayKokkos<double> final_node_coords;
 
         CommunicationPlan element_communication_plan;
@@ -66,7 +73,7 @@ int main(int argc, char** argv)
         if (world_size != 1) {
             elements::partition_mesh(
                 initial_mesh,
-                final_mesh,
+                mesh,
                 initial_node_coords,
                 final_node_coords,
                 element_communication_plan,
@@ -74,12 +81,12 @@ int main(int argc, char** argv)
                 world_size,
                 rank);
         } else {
-            final_mesh = initial_mesh;
-            final_mesh.num_owned_elems = initial_mesh.num_elems;
-            final_mesh.num_owned_nodes = initial_mesh.num_nodes;
+            mesh = initial_mesh;
+            mesh.num_owned_elems = initial_mesh.num_elems;
+            mesh.num_owned_nodes = initial_mesh.num_nodes;
             final_node_coords = initial_node_coords;
-            final_mesh.num_dims = num_dims;
-            final_mesh.Pn = poly_order;
+            mesh.num_dims = num_dims;
+            mesh.Pn = poly_order;
         }
 
         if (world_size != 1) {
@@ -88,45 +95,289 @@ int main(int argc, char** argv)
         }
 
         if (rank == 0) {
-            std::cout << "Final mesh: " << final_mesh.num_elems << " elements, "
-                      << final_mesh.num_nodes << " nodes" << std::endl;
+            std::cout << "Final mesh: " << mesh.num_elems << " elements, "
+                      << mesh.num_nodes << " nodes" << std::endl;
         }
 
-        // Mesh initialized, now implement the xPBD solver. 
+        // Build the reference element
+        elements::fe_ref_elem_t ref_elem;
+        ref_elem.init(mesh.Pn, mesh.num_dims);
 
-        XpbdSolverConfig solver_config;
-        solver_config.num_timesteps = 200;
-        solver_config.num_solver_iterations = 10;
-        solver_config.num_force_ramp_steps = 10;
-        solver_config.num_outputs = num_outputs;
-        solver_config.timestep_dt = 5.0e-4;
-        solver_config.velocity_damping_factor = 0.05;
-        solver_config.material.density = 1000.0;
-        solver_config.material.youngs_modulus = 1.0e4;
-        solver_config.material.poissons_ratio = 0.3;
-        solver_config.material.compliance = 1.0 / solver_config.material.youngs_modulus;
+        std::cout << "Reference element: " << ref_elem.num_gauss_in_elem << " quadrature points" << std::endl;
+        std::cout << "Reference element: " << ref_elem.num_dofs_in_elem << " DOFs" << std::endl;
+        std::cout << "Reference element: " << ref_elem.num_dg_dofs_in_elem << " DG DOFs" << std::endl;
+        std::cout << "Reference element: " << ref_elem.num_zones_in_elem << " zones" << std::endl;
+        std::cout << "Reference element: " << ref_elem.num_basis << " basis functions" << std::endl;
+        std::cout << "Reference element: " << ref_elem.num_dg_basis << " DG basis functions" << std::endl;
+        std::cout << "Reference element: " << ref_elem.num_lobotto_in_elem << " Lobatto points" << std::endl;
+        std::cout << "Reference element: " << ref_elem.num_dual_lobotto_in_elem << " Dual Lobatto points" << std::endl;
 
-    
+        // Create the state required for the xPBD solver. 
 
-        print_inverse_lumped_mass_stats(solver_state, final_mesh, rank);
+        // Node State
+        std::vector<node_state> node_states = 
+            {   node_state::coords, 
+                node_state::coords_reference, 
+                node_state::coords_predicted, 
+                node_state::velocity, 
+                node_state::inv_mass, 
+                node_state::force_external};
+        Node_t node;
+        node.initialize(mesh.num_nodes, num_dims, node_states);
 
-        write_xpbd_state(
-            final_mesh,
-            solver_state,
-            rank,
-            MPI_COMM_WORLD,
-            0,
-            true);
 
-        const double simulation_start_time = MPI_Wtime();
-        run_xpbd_simulation(final_mesh, solver_state, rank, MPI_COMM_WORLD);
-        const double simulation_end_time = MPI_Wtime();
+        FOR_ALL(i, 0, mesh.num_nodes, {
 
-        if (rank == 0) {
-            std::cout << "XPBD simulation time: "
-                      << (simulation_end_time - simulation_start_time) << " seconds"
-                      << std::endl;
+            for(int dim = 0; dim < num_dims; dim++){
+                node.coords(i, dim) = final_node_coords(i, dim);
+                node.coords_reference(i, dim) = initial_node_coords(i, dim);
+                node.coords_predicted(i, dim) = final_node_coords(i, dim);
+                node.velocity(i, dim) = 0.0;
+                node.inv_mass(i) = 1.0;
+                node.force_external(i, dim) = 0.0;
+            }
+        });
+
+
+        // Gauss Point State
+        std::vector<gauss_pt_state> gauss_pt_states = 
+            {   gauss_pt_state::J_inv_initial,
+                gauss_pt_state::jacobian_determinant,
+                gauss_pt_state::volume};
+        GaussPoint_t gauss_point;
+        size_t num_gauss_points = mesh.num_gauss_in_elem * mesh.num_elems;
+        gauss_point.initialize(num_gauss_points, num_dims, gauss_pt_states, element_communication_plan);
+
+        // Element State
+        std::vector<element_state> element_states = 
+            {   element_state::lambda};
+        Element_t element;
+        element.initialize(mesh.num_elems, element_states, element_communication_plan);
+
+
+
+        // Compute the Jacobian matrix at each gauss point
+        DCArrayKokkos<double> jacobian_matrix(num_gauss_points, mesh.num_dims, mesh.num_dims);
+        jacobian_matrix.set_values(0.0);
+        FOR_ALL(elem_gid, 0, mesh.num_elems, {
+           
+            for(int g_lid = 0; g_lid < mesh.num_gauss_in_elem; g_lid++){
+
+                int gauss_gid = mesh.gauss_in_elem(elem_gid, g_lid);
+
+                for(int dim_i = 0; dim_i < mesh.num_dims; dim_i++){
+                    for(int dim_j = 0; dim_j < mesh.num_dims; dim_j++){
+                        
+                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                            int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                            jacobian_matrix( gauss_gid, dim_i, dim_j) +=
+                                node.coords(node_gid, dim_i) 
+                                *ref_elem.gauss_point_grad_basis(g_lid, node_lid, dim_j);
+                                
+                        } // end loop over nodes
+                    } // end loop over dimensions
+                } // end loop over dimensions
+
+
+                // Compute the determinant and inverse of the jacobian matrix here
+
+                // Copy the jacobian into a fixed-size array for inversion and determinant
+                double jac[3][3] = {0.0};
+                for(int i = 0; i < mesh.num_dims; i++) {
+                    for(int j = 0; j < mesh.num_dims; j++) {
+                        jac[i][j] = jacobian_matrix(gauss_gid, i, j);
+                    }
+                }
+
+                double det_jacobian = 0.0;
+                double inv_jacobian[3][3] = {0.0};
+
+                // Compute determinant and inverse for 2D or 3D only
+                if (mesh.num_dims == 2) {
+                    det_jacobian = jac[0][0]*jac[1][1] - jac[0][1]*jac[1][0];
+                    double inv_det = 1.0 / det_jacobian;
+                    inv_jacobian[0][0] =  jac[1][1] * inv_det;
+                    inv_jacobian[0][1] = -jac[0][1] * inv_det;
+                    inv_jacobian[1][0] = -jac[1][0] * inv_det;
+                    inv_jacobian[1][1] =  jac[0][0] * inv_det;
+                } else if (mesh.num_dims == 3) {
+                    det_jacobian =
+                        jac[0][0]*(jac[1][1]*jac[2][2] - jac[1][2]*jac[2][1]) -
+                        jac[0][1]*(jac[1][0]*jac[2][2] - jac[1][2]*jac[2][0]) +
+                        jac[0][2]*(jac[1][0]*jac[2][1] - jac[1][1]*jac[2][0]);
+                    double inv_det = 1.0 / det_jacobian;
+
+                    inv_jacobian[0][0] =  (jac[1][1]*jac[2][2] - jac[1][2]*jac[2][1]) * inv_det;
+                    inv_jacobian[0][1] = -(jac[0][1]*jac[2][2] - jac[0][2]*jac[2][1]) * inv_det;
+                    inv_jacobian[0][2] =  (jac[0][1]*jac[1][2] - jac[0][2]*jac[1][1]) * inv_det;
+                    inv_jacobian[1][0] = -(jac[1][0]*jac[2][2] - jac[1][2]*jac[2][0]) * inv_det;
+                    inv_jacobian[1][1] =  (jac[0][0]*jac[2][2] - jac[0][2]*jac[2][0]) * inv_det;
+                    inv_jacobian[1][2] = -(jac[0][0]*jac[1][2] - jac[0][2]*jac[1][0]) * inv_det;
+                    inv_jacobian[2][0] =  (jac[1][0]*jac[2][1] - jac[1][1]*jac[2][0]) * inv_det;
+                    inv_jacobian[2][1] = -(jac[0][0]*jac[2][1] - jac[0][1]*jac[2][0]) * inv_det;
+                    inv_jacobian[2][2] =  (jac[0][0]*jac[1][1] - jac[0][1]*jac[1][0]) * inv_det;
+                } else if (mesh.num_dims == 1) {
+                    det_jacobian = jac[0][0];
+                    inv_jacobian[0][0] = 1.0 / jac[0][0];
+                } else {
+                    // Dimensions not supported
+                    det_jacobian = 0.0;
+                }
+
+                // Save the initial J_inverse
+                for(int dim_i = 0; dim_i < mesh.num_dims; dim_i++){
+                    for(int dim_j = 0; dim_j < mesh.num_dims; dim_j++){
+                        gauss_point.J_inv_initial(gauss_gid, dim_i, dim_j) = inv_jacobian[dim_i][dim_j];
+                    }
+                }
+                // Store the determinant in gauss_point state
+                gauss_point.jacobian_determinant(gauss_gid) = det_jacobian;
+
+            } // end loop over gauss points
+        }); // end loop over elements
+        jacobian_matrix.update_host();
+
+
+        if (verbose) {  
+            // Print out the jacobian matrix for all gauss points in element 0
+            
+            for(int g_lid = 0; g_lid < mesh.num_gauss_in_elem; g_lid++){
+                int gauss_gid = mesh.gauss_in_elem(print_elem_gid, g_lid);
+                
+                std::cout << "Gauss point det_j = " <<  gauss_point.jacobian_determinant(gauss_gid) <<std::endl;
+                
+                std::cout << "Gauss point " << gauss_gid << " Jacobian matrix: " << std::endl;
+                for(int dim_i = 0; dim_i < mesh.num_dims; dim_i++){
+                    for(int dim_j = 0; dim_j < mesh.num_dims; dim_j++){
+                        double value = jacobian_matrix(gauss_gid, dim_i, dim_j);
+                        if (std::fabs(value) < 1E-14)
+                            std::cout << 0.0 << " ";
+                        else
+                            std::cout << value << " ";
+                    }
+                    std::cout<<std::endl;
+                }
+                std::cout<<std::endl;
+            }
         }
+
+
+        // Compute the mass matrix
+        DCArrayKokkos<double> mass_matrix(mesh.num_elems, mesh.num_nodes_in_elem, mesh.num_nodes_in_elem);
+        mass_matrix.set_values(0.0);
+        
+        FOR_ALL(elem_gid, 0, mesh.num_elems, {
+            
+            for(int basis_m = 0; basis_m < ref_elem.num_basis; basis_m++){
+                for(int basis_n = 0; basis_n < ref_elem.num_basis; basis_n++){
+                    
+                    // Integrate by looping over the quadrature points
+                    for(int g_lid = 0; g_lid < ref_elem.num_gauss_in_elem; g_lid++){
+
+                        int gauss_gid = mesh.gauss_in_elem(elem_gid, g_lid);
+                        double det_j = gauss_point.jacobian_determinant(gauss_gid);
+                        
+
+                        mass_matrix(elem_gid, basis_m, basis_n) += 
+                            1.0 //density
+                            * ref_elem.gauss_point_basis(g_lid, basis_m)
+                            * ref_elem.gauss_point_basis(g_lid, basis_n)
+                            * det_j
+                            * ref_elem.gauss_point_weights(g_lid);
+                    } // end loop over gauss points
+                } // end loop over basis functions
+            } // end loop over basis function
+        }); // end loop over elements
+
+        // Print out the mass matrix for element zero
+
+        // Print out the mass matrix for element zero
+        if (verbose) {
+            std::cout << "Mass matrix for element 0:" << std::endl;
+            for(int m = 0; m < mesh.num_nodes_in_elem; m++) {
+                for(int n = 0; n < mesh.num_nodes_in_elem; n++) {
+                    double value = mass_matrix(print_elem_gid, m, n);
+                    // print in a readable way, optionally thresholding tiny values
+                    if (std::fabs(value) < 1E-14)
+                        std::cout << 0.0 << " ";
+                    else
+                        std::cout << value << " ";
+                }
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
+
+        // Compute the row sums of the mass matrix for element 0 and print them
+        if (verbose) {
+            std::cout << "Row sum (lumped mass) for each node in element 0:" << std::endl;
+            for(int m = 0; m < mesh.num_nodes_in_elem; m++) {
+                double row_sum = 0.0;
+                for(int n = 0; n < mesh.num_nodes_in_elem; n++) {
+                    row_sum += mass_matrix(print_elem_gid, m, n);
+                }
+                std::cout << "Node " << m << ": " << row_sum;
+                if (row_sum < 0.0) {
+                    std::cout << "  <--- WARNING: Negative lumped mass!";
+                }
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
+        // Compute the mass at each corner
+        std::cout << "Computing the corners masses via row tally:" << std::endl;
+        DCArrayKokkos<double> corner_mass(mesh.num_corners);
+
+        FOR_ALL(elem_gid, 0, mesh.num_elems, {
+            for(int corner_lid = 0; corner_lid < mesh.num_nodes_in_elem; corner_lid++){
+                int corner_gid = mesh.corners_in_elem(elem_gid, corner_lid);
+                
+                double mass_tally = 0.0;
+                for(int n = 0; n < mesh.num_nodes_in_elem; n++) {
+                    mass_tally += mass_matrix(elem_gid, corner_lid, n);
+                }
+                
+                corner_mass(corner_gid) = mass_tally;
+            } // end loop over corners
+        }); // end loop over elements
+
+        // Tally the corner masses to the node
+        std::cout << "Tallying the corner masses to the nodes:" << std::endl;
+        DCArrayKokkos<double> node_mass(mesh.num_nodes);
+        node_mass.set_values(0.0);
+        FOR_ALL(node_gid, 0, mesh.num_nodes, {
+            for(int corner_lid = 0; corner_lid < mesh.num_corners_in_node(node_gid); corner_lid++){
+                int corner_gid = mesh.corners_in_node(node_gid, corner_lid);
+                node_mass(node_gid) += corner_mass(corner_gid);
+            } // end loop over corners
+        });
+
+        // Compute the inverse mass at the nodes
+        std::cout << "Computing the inverse mass at the nodes:" << std::endl;
+        FOR_ALL(node_gid, 0, mesh.num_nodes, {
+            node.inv_mass(node_gid) = 1.0 / node_mass(node_gid);
+        });
+        node.inv_mass.update_host();
+
+        verbose = true;
+        if (verbose) {
+            std::cout << "Inverse mass for all nodes in element 0:" << std::endl;
+            for (int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++) {
+                int node_gid = mesh.nodes_in_elem(print_elem_gid, node_lid);
+                std::cout << "Node " << node_gid << ": " << node.inv_mass(node_gid) << std::endl;
+            }
+        }
+   
+
+
+
+
+
+        // Write out the current state of the mesh to a VTU file. 
+        std::cout << "Writing out the current state of the mesh to a VTU file:" << std::endl;
+        write_vtu(mesh, node, gauss_point, element, ref_elem.num_gauss_in_elem, rank, MPI_COMM_WORLD);
+
+
 
 
         MPI_Barrier(MPI_COMM_WORLD);

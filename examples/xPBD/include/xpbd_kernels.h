@@ -6,9 +6,7 @@
 using namespace mtr;
 
 namespace xpbd {
-
-constexpr size_t XPBD_MAX_NODES_PER_ELEMENT = 512;
-constexpr size_t XPBD_MAX_NODE_BUFFER = XPBD_MAX_NODES_PER_ELEMENT * 3;
+\
 
 KOKKOS_INLINE_FUNCTION
 void invert_3x3_matrix(

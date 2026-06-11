@@ -302,6 +302,8 @@ void build_3d_box(
 
     Kokkos::fence();
 
+    mesh.initialize_corners(num_elems * mesh.num_nodes_in_elem);
+
     // Build connectivity
     mesh.build_connectivity();
 } // end build_3d_box
@@ -449,15 +451,29 @@ void build_2d_polar(
 /// \brief Writes a VTU (XML VTK) output file per MPI rank and a PVTU file
 ///        for parallel visualization in ParaView
 ///
+/// Node PointData (when allocated): coords, coords_reference, coords_predicted,
+/// velocity, force_external, inv_mass
+///
+/// Gauss point CellData (element-averaged when allocated): jacobian_determinant,
+/// volume
+///
+/// Element CellData (when allocated): lambda
+///
 /// \param mesh mesh
-/// \param node node data
+/// \param node node state data
+/// \param gauss_point gauss point state data
+/// \param element element state data
+/// \param num_quadrature_points_per_elem number of gauss points per element
 /// \param rank MPI rank
 /// \param comm MPI communicator
+/// \param graphics_id output frame index
 ///
 /////////////////////////////////////////////////////////////////////////////
 void write_vtu(swage::Mesh& mesh,
-               node_t& node,
+               Node_t& node,
                GaussPoint_t& gauss_point,
+               Element_t& element,
+               size_t num_quadrature_points_per_elem,
                int rank,
                MPI_Comm comm,
                int graphics_id = 0)
@@ -465,96 +481,89 @@ void write_vtu(swage::Mesh& mesh,
     int world_size;
     MPI_Comm_size(comm, &world_size);
 
-    CArray<double> graphics_times(1);
-    graphics_times(0) = 0.0;
-
     // ---- Update host data ----
     node.coords.update_host();
+    if (node.coords_reference.size() > 0) {
+        node.coords_reference.update_host();
+    }
+    if (node.coords_predicted.size() > 0) {
+        node.coords_predicted.update_host();
+    }
+    if (node.velocity.size() > 0) {
+        node.velocity.update_host();
+    }
+    if (node.force_external.size() > 0) {
+        node.force_external.update_host();
+    }
+    if (node.inv_mass.size() > 0) {
+        node.inv_mass.update_host();
+    }
+    if (gauss_point.jacobian_determinant.size() > 0) {
+        gauss_point.jacobian_determinant.update_host();
+    }
+    if (gauss_point.volume.size() > 0) {
+        gauss_point.volume.update_host();
+    }
+    if (element.lambda.size() > 0) {
+        element.lambda.update_host();
+    }
     Kokkos::fence();
 
-
-    const int num_cell_scalar_vars = 4;
-    const int num_cell_vec_vars    = 1;
-    const int num_cell_tensor_vars = 0;
-
-    const int num_point_scalar_vars = 4;
-    const int num_point_vec_vars = 2;
-
-    // Scalar values associated with a cell
-    const char cell_scalar_var_names[num_cell_scalar_vars][30] = {
-        "rank_id", "elems_in_elem_owned", "global_elem_id", "field_value"
-    };
-
-    const char cell_vec_var_names[num_cell_vec_vars][15] = {
-        "field_vec"
-    };
-
-    const char point_scalar_var_names[num_point_scalar_vars][15] = {
-        "rank_id", "elems_in_node", "global_node_id", "scalar_field"
-    };
-
-    const char point_vec_var_names[num_point_vec_vars][15] = {
-        "pos", "vector_field"
-    };
+    const bool has_coords_reference = node.coords_reference.size() > 0;
+    const bool has_coords_predicted = node.coords_predicted.size() > 0;
+    const bool has_velocity = node.velocity.size() > 0;
+    const bool has_force_external = node.force_external.size() > 0;
+    const bool has_inv_mass = node.inv_mass.size() > 0;
+    const bool has_jacobian_determinant = gauss_point.jacobian_determinant.size() > 0;
+    const bool has_volume = gauss_point.volume.size() > 0;
+    const bool has_lambda = element.lambda.size() > 0;
 
     // short hand (write owned only)
     const size_t num_nodes = mesh.num_owned_nodes;
     const size_t num_elems = mesh.num_owned_elems;
     const size_t num_dims  = mesh.num_dims;
-    printf("num_dims = %zu\n", num_dims);
 
-    // save the cell state to an array for exporting to graphics files
-    auto elem_fields = CArray<double>(num_elems, num_cell_scalar_vars);
-    auto elem_vec_fields = CArray<double>(num_elems, num_cell_vec_vars, num_dims);
-
-    DCArrayKokkos <double> num_elems_in_elem(mesh.num_elems, "tmp_num_elem_in_elem");
-    FOR_ALL(i, 0, mesh.num_elems, {
-        num_elems_in_elem(i) = (double)mesh.num_elems_in_elem(i);
-    });
-    MATAR_FENCE();
-    num_elems_in_elem.update_host();
-    MATAR_FENCE();
-
-    std::cout<<"Populating cell fields for rank "<<rank<<std::endl;
-    for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
-        elem_fields(elem_gid, 0) = rank;
-        elem_fields(elem_gid, 1) = num_elems_in_elem.host(elem_gid);
-        elem_fields(elem_gid, 2) = elem_gid; //mesh.local_to_global_elem_mapping.host(elem_gid);
-        elem_fields(elem_gid, 3) = gauss_point.fields.host(elem_gid);
-
-        for (int dim = 0; dim < num_dims; dim++) {
-            elem_vec_fields(elem_gid, 0, dim) = gauss_point.fields_vec.host(elem_gid, dim);
+    size_t num_qp = num_quadrature_points_per_elem;
+    if (num_qp == 0 && mesh.num_elems > 0) {
+        if (has_jacobian_determinant) {
+            num_qp = gauss_point.jacobian_determinant.size() / mesh.num_elems;
+        } else if (has_volume) {
+            num_qp = gauss_point.volume.size() / mesh.num_elems;
         }
     }
 
-    // save the vertex vector fields to an array for exporting to graphics files
-    CArray<double> vec_fields(num_nodes, num_point_vec_vars, num_dims);
-    CArray<double> point_scalar_fields(num_nodes, num_point_scalar_vars);
-
-    std::cout<<"Populating node fields for rank "<<rank<<std::endl;
-    DCArrayKokkos <double> num_elems_in_node(mesh.num_nodes, "tmp_num_elems_in_node");
-    FOR_ALL(i, 0, mesh.num_nodes, {
-        num_elems_in_node(i) = (double)mesh.num_corners_in_node(i);
-    });
-    MATAR_FENCE();
-    num_elems_in_node.update_host();
-    MATAR_FENCE();
-    std::cout<<"Populating node fields 2 for rank "<<rank<<std::endl;
-    for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
-        // position, var 0
-        for (int dim = 0; dim < num_dims; dim++) {
-            vec_fields(node_gid, 0, dim) = node.coords.host(node_gid, dim);
+    CArray<double> avg_jacobian_determinant;
+    if (has_jacobian_determinant && num_qp > 0) {
+        avg_jacobian_determinant = CArray<double>(num_elems);
+        for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
+            double sum = 0.0;
+            for (size_t quadrature_point_lid = 0; quadrature_point_lid < num_qp; ++quadrature_point_lid) {
+                const size_t gauss_gid = elem_gid * num_qp + quadrature_point_lid;
+                sum += gauss_point.jacobian_determinant.host(gauss_gid);
+            }
+            avg_jacobian_determinant(elem_gid) = sum / static_cast<double>(num_qp);
         }
+    }
 
-        // vector field, var 1
-        for (int dim = 0; dim < num_dims; dim++) {
-            vec_fields(node_gid, 1, dim) = node.vector_field.host(node_gid, dim);
+    CArray<double> avg_volume;
+    if (has_volume && num_qp > 0) {
+        avg_volume = CArray<double>(num_elems);
+        for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
+            double sum = 0.0;
+            for (size_t quadrature_point_lid = 0; quadrature_point_lid < num_qp; ++quadrature_point_lid) {
+                const size_t gauss_gid = elem_gid * num_qp + quadrature_point_lid;
+                sum += gauss_point.volume.host(gauss_gid);
+            }
+            avg_volume(elem_gid) = sum / static_cast<double>(num_qp);
         }
+    }
 
-        point_scalar_fields(node_gid, 0) = rank;
-        point_scalar_fields(node_gid, 1) = num_elems_in_node.host(node_gid);
-        point_scalar_fields(node_gid, 2) = node_gid; // (double)mesh.local_to_global_node_mapping.host(node_gid);
-        point_scalar_fields(node_gid, 3) = node.scalar_field.host(node_gid);
+    CArray<double> elem_lambda;
+    if (has_lambda) {
+        elem_lambda = CArray<double>(num_elems);
+        for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
+            elem_lambda(elem_gid) = element.lambda.host(elem_gid);
+        }
     }
 
     // File management
@@ -651,36 +660,7 @@ void write_vtu(swage::Mesh& mesh,
         }
     }
 
-    // std::cout<<"Writing connectivity to VTU file for rank "<<rank<<std::endl;
-    // for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
-    //     fprintf(vtu_file, "          ");  // adding indentation before printing nodes in element
-    //     if (num_dims==3 && Pn_order>=1){
-    //         for (int k = 0; k <= Pn_order_z; k++) {
-    //             for (int j = 0; j <= Pn_order; j++) {
-    //                 for (int i = 0; i <= Pn_order; i++) {
-    //                     size_t node_lid = PointIndexFromIJK(i, j, k, order);
-    //                     fprintf(vtu_file, "%lu ", mesh.nodes_in_elem.host(elem_gid, node_lid));
-    //                 }
-    //             }
-    //         } // end for
-    //     }
-    //     // else if (num_dims == 3 && Pn_order == 1){
-    //     //    // 3D linear hexahedral elements
-    //     //     for (int node_lid = 0; node_lid < 8; node_lid++) {
-    //     //         fprintf(vtu_file, "%lu ", mesh.nodes_in_elem.host(elem_gid, node_lid));
-    //     //     } // end for
-    //     // }
-    //     else if (num_dims == 2){
-    //         // 2D linear is the only supported option
-    //         for (int node_lid = 0; node_lid < 4; node_lid++) {
-    //             fprintf(vtu_file, "%lu ", mesh.nodes_in_elem.host(elem_gid, node_lid));
-    //         } // end for
-    //     }
-    //     else {
-    //         std::cout << "ERROR: outputs failed, dimensions and element types are not compatible \n";
-    //     } // end if
-    //     fprintf(vtu_file, "\n");
-    // } // end for
+
     fprintf(vtu_file, "\n");
     fprintf(vtu_file, "        </DataArray>\n");
 
@@ -709,56 +689,96 @@ void write_vtu(swage::Mesh& mesh,
 
     // Write PointData (node fields)
     fprintf(vtu_file, "      <PointData>\n");
-    
-    // Point vector variables
-    for (int var = 0; var < num_point_vec_vars; var++) {
-        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"ascii\">\n", 
-                point_vec_var_names[var], static_cast<int>(num_dims));
+
+    fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"coords\" NumberOfComponents=\"%d\" format=\"ascii\">\n",
+            static_cast<int>(num_dims));
+    for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
+        for (int dim = 0; dim < static_cast<int>(num_dims); dim++) {
+            fprintf(vtu_file, "          %f\n", node.coords.host(node_gid, dim));
+        }
+    }
+    fprintf(vtu_file, "        </DataArray>\n");
+
+    if (has_coords_reference) {
+        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"coords_reference\" NumberOfComponents=\"%d\" format=\"ascii\">\n",
+                static_cast<int>(num_dims));
         for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
             for (int dim = 0; dim < static_cast<int>(num_dims); dim++) {
-                fprintf(vtu_file, "          %f\n", vec_fields(node_gid, var, dim));
+                fprintf(vtu_file, "          %f\n", node.coords_reference.host(node_gid, dim));
             }
         }
         fprintf(vtu_file, "        </DataArray>\n");
     }
 
-    // Point scalar variables
-    for (int var = 0; var < num_point_scalar_vars; var++) {
-        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"%s\" format=\"ascii\">\n", 
-                point_scalar_var_names[var]);
+    if (has_coords_predicted) {
+        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"coords_predicted\" NumberOfComponents=\"%d\" format=\"ascii\">\n",
+                static_cast<int>(num_dims));
         for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
-            fprintf(vtu_file, "          %f\n", point_scalar_fields(node_gid, var));
+            for (int dim = 0; dim < static_cast<int>(num_dims); dim++) {
+                fprintf(vtu_file, "          %f\n", node.coords_predicted.host(node_gid, dim));
+            }
+        }
+        fprintf(vtu_file, "        </DataArray>\n");
+    }
+
+    if (has_velocity) {
+        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"velocity\" NumberOfComponents=\"%d\" format=\"ascii\">\n",
+                static_cast<int>(num_dims));
+        for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
+            for (int dim = 0; dim < static_cast<int>(num_dims); dim++) {
+                fprintf(vtu_file, "          %f\n", node.velocity.host(node_gid, dim));
+            }
+        }
+        fprintf(vtu_file, "        </DataArray>\n");
+    }
+
+    if (has_force_external) {
+        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"force_external\" NumberOfComponents=\"%d\" format=\"ascii\">\n",
+                static_cast<int>(num_dims));
+        for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
+            for (int dim = 0; dim < static_cast<int>(num_dims); dim++) {
+                fprintf(vtu_file, "          %f\n", node.force_external.host(node_gid, dim));
+            }
+        }
+        fprintf(vtu_file, "        </DataArray>\n");
+    }
+
+    if (has_inv_mass) {
+        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"inv_mass\" format=\"ascii\">\n");
+        for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
+            fprintf(vtu_file, "          %f\n", node.inv_mass.host(node_gid));
         }
         fprintf(vtu_file, "        </DataArray>\n");
     }
     fprintf(vtu_file, "      </PointData>\n");
 
-    // Write CellData (element fields)
+    // Write CellData (element and averaged gauss point fields)
     fprintf(vtu_file, "      <CellData>\n");
-    
-    // Cell vector variables
-    for (int var = 0; var < num_cell_vec_vars; var++) {
-        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%d\" format=\"ascii\">\n", 
-                cell_vec_var_names[var], static_cast<int>(num_dims));
+
+    if (has_lambda) {
+        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"lambda\" format=\"ascii\">\n");
         for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
-            // TODO: Populate cell vector field data from appropriate source
-            for (int dim = 0; dim < static_cast<int>(num_dims); dim++) {
-                fprintf(vtu_file, "          %f\n", 
-                    gauss_point.fields_vec.host(elem_gid, dim));
-            }
+            fprintf(vtu_file, "          %f\n", elem_lambda(elem_gid));
         }
         fprintf(vtu_file, "        </DataArray>\n");
     }
-    
-    // Cell scalar variables
-    for (int var = 0; var < num_cell_scalar_vars; var++) {
-        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"%s\" format=\"ascii\">\n", 
-                cell_scalar_var_names[var]);
+
+    if (has_jacobian_determinant && num_qp > 0) {
+        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"jacobian_determinant\" format=\"ascii\">\n");
         for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
-            fprintf(vtu_file, "          %f\n", elem_fields(elem_gid, var));
+            fprintf(vtu_file, "          %f\n", avg_jacobian_determinant(elem_gid));
         }
         fprintf(vtu_file, "        </DataArray>\n");
     }
+
+    if (has_volume && num_qp > 0) {
+        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"volume\" format=\"ascii\">\n");
+        for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
+            fprintf(vtu_file, "          %f\n", avg_volume(elem_gid));
+        }
+        fprintf(vtu_file, "        </DataArray>\n");
+    }
+
     fprintf(vtu_file, "      </CellData>\n");
 
     // Close VTU file
@@ -799,25 +819,39 @@ void write_vtu(swage::Mesh& mesh,
 
         // Write PPointData
         fprintf(pvtu_file, "    <PPointData>\n");
-        for (int var = 0; var < num_point_vec_vars; var++) {
-            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%d\"/>\n",
-                    point_vec_var_names[var], static_cast<int>(num_dims));
+        fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"coords\" NumberOfComponents=\"%d\"/>\n",
+                static_cast<int>(num_dims));
+        if (has_coords_reference) {
+            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"coords_reference\" NumberOfComponents=\"%d\"/>\n",
+                    static_cast<int>(num_dims));
         }
-        for (int var = 0; var < num_point_scalar_vars; var++) {
-            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"%s\"/>\n",
-                    point_scalar_var_names[var]);
+        if (has_coords_predicted) {
+            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"coords_predicted\" NumberOfComponents=\"%d\"/>\n",
+                    static_cast<int>(num_dims));
+        }
+        if (has_velocity) {
+            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"velocity\" NumberOfComponents=\"%d\"/>\n",
+                    static_cast<int>(num_dims));
+        }
+        if (has_force_external) {
+            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"force_external\" NumberOfComponents=\"%d\"/>\n",
+                    static_cast<int>(num_dims));
+        }
+        if (has_inv_mass) {
+            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"inv_mass\"/>\n");
         }
         fprintf(pvtu_file, "    </PPointData>\n");
 
         // Write PCellData
         fprintf(pvtu_file, "    <PCellData>\n");
-        for (int var = 0; var < num_cell_vec_vars; var++) {
-            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"%s\" NumberOfComponents=\"%d\"/>\n",
-                    cell_vec_var_names[var], static_cast<int>(num_dims));
+        if (has_lambda) {
+            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"lambda\"/>\n");
         }
-        for (int var = 0; var < num_cell_scalar_vars; var++) {
-            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"%s\"/>\n",
-                    cell_scalar_var_names[var]);
+        if (has_jacobian_determinant && num_qp > 0) {
+            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"jacobian_determinant\"/>\n");
+        }
+        if (has_volume && num_qp > 0) {
+            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"volume\"/>\n");
         }
         fprintf(pvtu_file, "    </PCellData>\n");
 

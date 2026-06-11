@@ -474,6 +474,8 @@ struct Mesh
             });  // end FOR_ALL over nodes in element
         } // end for elem_gid
 
+        num_corners = num_elems * num_nodes_in_elem;
+
         return;
     } // end of build_corner_connectivity
 
@@ -1377,7 +1379,8 @@ struct Mesh
 
         // each elem corner will contribute 3 edges to the node. Those edges will likely be the same
         // ones from an adjacent element so it is a safe estimate to multiply by 3
-        DynamicRaggedRightArrayKokkos<size_t> temp_nodes_in_nodes(num_nodes, max_num_elems_in_node * 3, "temp_nodes_in_nodes");
+        DynamicRaggedRightArrayKokkos<size_t> temp_nodes_in_nodes(num_nodes, (max_num_elems_in_node * 3) + 4, "temp_nodes_in_nodes");
+        // Note: adding 4 for the case where there is a single high order element, could get away with adding 1, but 4 is safer. 
 
         num_nodes_in_node = CArrayKokkos<size_t>(num_nodes, "mesh.num_nodes_in_node");
 

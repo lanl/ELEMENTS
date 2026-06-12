@@ -504,8 +504,11 @@ void write_vtu(swage::Mesh& mesh,
     if (gauss_point.volume.size() > 0) {
         gauss_point.volume.update_host();
     }
-    if (element.lambda.size() > 0) {
-        element.lambda.update_host();
+    if (element.lambda_deviatoric.size() > 0) {
+        element.lambda_deviatoric.update_host();
+    }
+    if (element.lambda_volumetric.size() > 0) {
+        element.lambda_volumetric.update_host();
     }
     Kokkos::fence();
 
@@ -516,7 +519,8 @@ void write_vtu(swage::Mesh& mesh,
     const bool has_inv_mass = node.inv_mass.size() > 0;
     const bool has_jacobian_determinant = gauss_point.jacobian_determinant.size() > 0;
     const bool has_volume = gauss_point.volume.size() > 0;
-    const bool has_lambda = element.lambda.size() > 0;
+    const bool has_lambda_deviatoric = element.lambda_deviatoric.size() > 0;
+    const bool has_lambda_volumetric = element.lambda_volumetric.size() > 0;
 
     // short hand (write owned only)
     const size_t num_nodes = mesh.num_owned_nodes;
@@ -558,11 +562,18 @@ void write_vtu(swage::Mesh& mesh,
         }
     }
 
-    CArray<double> elem_lambda;
-    if (has_lambda) {
-        elem_lambda = CArray<double>(num_elems);
+    CArray<double> elem_lambda_deviatoric   ;
+    if (has_lambda_deviatoric) {
+        elem_lambda_deviatoric = CArray<double>(num_elems);
         for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
-            elem_lambda(elem_gid) = element.lambda.host(elem_gid);
+            elem_lambda_deviatoric(elem_gid) = element.lambda_deviatoric.host(elem_gid);
+        }
+    }
+    CArray<double> elem_lambda_volumetric;
+    if (has_lambda_volumetric) {
+        elem_lambda_volumetric = CArray<double>(num_elems);
+        for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
+            elem_lambda_volumetric(elem_gid) = element.lambda_volumetric.host(elem_gid);
         }
     }
 
@@ -755,10 +766,18 @@ void write_vtu(swage::Mesh& mesh,
     // Write CellData (element and averaged gauss point fields)
     fprintf(vtu_file, "      <CellData>\n");
 
-    if (has_lambda) {
-        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"lambda\" format=\"ascii\">\n");
+    if (has_lambda_deviatoric) {
+        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"lambda_deviatoric\" format=\"ascii\">\n");
         for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
-            fprintf(vtu_file, "          %f\n", elem_lambda(elem_gid));
+            fprintf(vtu_file, "          %f\n", elem_lambda_deviatoric(elem_gid));
+        }
+        fprintf(vtu_file, "        </DataArray>\n");
+    }
+
+    if (has_lambda_volumetric) {
+        fprintf(vtu_file, "        <DataArray type=\"Float32\" Name=\"lambda_volumetric\" format=\"ascii\">\n");
+        for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
+            fprintf(vtu_file, "          %f\n", elem_lambda_volumetric(elem_gid));
         }
         fprintf(vtu_file, "        </DataArray>\n");
     }
@@ -844,8 +863,11 @@ void write_vtu(swage::Mesh& mesh,
 
         // Write PCellData
         fprintf(pvtu_file, "    <PCellData>\n");
-        if (has_lambda) {
-            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"lambda\"/>\n");
+        if (has_lambda_deviatoric) {
+            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"lambda_deviatoric\"/>\n");
+        }
+        if (has_lambda_volumetric) {
+            fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"lambda_volumetric\"/>\n");
         }
         if (has_jacobian_determinant && num_qp > 0) {
             fprintf(pvtu_file, "      <PDataArray type=\"Float32\" Name=\"jacobian_determinant\"/>\n");

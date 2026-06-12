@@ -214,21 +214,27 @@ struct GaussPoint_t
 // Possible Element states, used to initialize Element_t
 enum class element_state
 {
-    lambda, // lagrange multiplier
+    lambda_deviatoric, // lagrange multiplier deviatorix
+    lambda_volumetric, // lagrange multiplier volumetric
 
 };
 
 struct Element_t
 {
-    MPICArrayKokkos<REAL_T> lambda; // Lagrange multiplier
+    MPICArrayKokkos<REAL_T> lambda_deviatoric; // Lagrange multiplier deviatoric
+    MPICArrayKokkos<REAL_T> lambda_volumetric; // Lagrange multiplier volumetric
 
     void initialize(size_t num_elements, std::vector<element_state> element_states, CommunicationPlan& comm_plan)
     {
         for (auto field : element_states){
             switch(field){
-                case element_state::lambda:
-                    if (lambda.size() == 0) this->lambda = MPICArrayKokkos<REAL_T>(num_elements, "element_lambda");
-                    this->lambda.initialize_comm_plan(comm_plan);
+                case element_state::lambda_deviatoric:
+                    if (lambda_deviatoric.size() == 0) this->lambda_deviatoric = MPICArrayKokkos<REAL_T>(num_elements, "element_lambda_deviatoric");
+                    this->lambda_deviatoric.initialize_comm_plan(comm_plan);
+                    break;
+                case element_state::lambda_volumetric:
+                    if (lambda_volumetric.size() == 0) this->lambda_volumetric = MPICArrayKokkos<REAL_T>(num_elements, "element_lambda_volumetric");
+                    this->lambda_volumetric.initialize_comm_plan(comm_plan);
                     break;
             }
         }

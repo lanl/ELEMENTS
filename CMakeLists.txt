@@ -43,7 +43,7 @@ endif()
 
 # --- Set build type if not already set ---
 if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE RelWithDebInfo)
+  set(CMAKE_BUILD_TYPE Debug)
  # set(CMAKE_BUILD_TYPE Release)
 endif(NOT CMAKE_BUILD_TYPE)
 

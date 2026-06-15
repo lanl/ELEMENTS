@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int num_dims = 2;
+    int num_dims = 3;
     int Pn_order = 1;
 
     double t_main_start = MPI_Wtime();
@@ -60,10 +60,12 @@ int main(int argc, char** argv) {
 
     // Initial mesh built on rank zero
     swage::Mesh initial_mesh;
+    initial_mesh.num_dims = num_dims;
     MPICArrayKokkos<double> initial_node_coords;
 
     // Mesh partitioned by pt-scotch, including ghost
     swage::Mesh final_mesh;
+    final_mesh.num_dims = num_dims;
     node_t final_node;
     MPICArrayKokkos<double> final_node_coords;
 
@@ -83,10 +85,13 @@ int main(int argc, char** argv) {
         initial_mesh.Pn = Pn_order;
         
         if(num_dims == 3) {
+
             build_3d_box(initial_mesh,  initial_node_coords, origin, length, num_elems_dim, Pn_order);
         } else if(num_dims == 2) {
             build_2d_polar(initial_mesh,  initial_node_coords, inner_radius, outer_radius, start_angle, end_angle, num_elems_i, num_elems_j);
         }
+
+        
 
         // Read the mesh from a file
         // read_vtk_mesh(initial_mesh, initial_node, 3, "/full/path/to/mesh/file.vtk");

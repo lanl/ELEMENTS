@@ -24,6 +24,7 @@ void compute_jacobian(
     
     for(int dim_i = 0; dim_i < num_dims; dim_i++){
         for(int dim_j = 0; dim_j < num_dims; dim_j++){
+            jacobian_matrix(gauss_pt_gid, dim_i, dim_j) = 0.0;
             
             for(int node_lid = 0; node_lid < num_nodes_in_element; node_lid++){
                 int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
@@ -88,181 +89,89 @@ void compute_determinant_and_inverse(
 
 }
 
-// KOKKOS_INLINE_FUNCTION
-// void invert_3x3_matrix(
-//     const double* input_matrix,
-//     double* inverse_matrix,
-//     double& matrix_determinant)
-// {
-//     const double a00 = input_matrix[0];
-//     const double a01 = input_matrix[1];
-//     const double a02 = input_matrix[2];
-//     const double a10 = input_matrix[3];
-//     const double a11 = input_matrix[4];
-//     const double a12 = input_matrix[5];
-//     const double a20 = input_matrix[6];
-//     const double a21 = input_matrix[7];
-//     const double a22 = input_matrix[8];
+KOKKOS_INLINE_FUNCTION
+void compute_F(
+    const swage::Mesh& mesh,
+    const MPICArrayKokkos<double>& coords_predicted,
+    const MPICArrayKokkos<double>& J_inv_initial,
+    const elements::fe_ref_elem_t& ref_elem,
+    const DCArrayKokkos<double>& jacobian_matrix,
+    const ViewCArrayDevice<double>& F,
+    const int num_dims,
+    const int elem_gid,
+    const int gauss_gid,
+    const int gauss_lid )
+{
 
-//     const double cofactor_00 = a11 * a22 - a12 * a21;
-//     const double cofactor_01 = a12 * a20 - a10 * a22;
-//     const double cofactor_02 = a10 * a21 - a11 * a20;
-//     const double cofactor_10 = a02 * a21 - a01 * a22;
-//     const double cofactor_11 = a00 * a22 - a02 * a20;
-//     const double cofactor_12 = a01 * a20 - a00 * a21;
-//     const double cofactor_20 = a01 * a12 - a02 * a11;
-//     const double cofactor_21 = a02 * a10 - a00 * a12;
-//     const double cofactor_22 = a00 * a11 - a01 * a10;
+    for(int i = 0; i < num_dims; i++){
+        for(int j = 0; j < num_dims; j++){
+            F(i, j) = 0.0;
+            for(int k = 0; k < num_dims; k++){
+                F(i, j) += jacobian_matrix(gauss_gid, i, k) * J_inv_initial(gauss_gid, k, j);
+            }
+        }
+    }
+}
 
-//     matrix_determinant = a00 * cofactor_00 + a01 * cofactor_10 + a02 * cofactor_20;
+KOKKOS_INLINE_FUNCTION
+void compute_cofactor_and_invariants(
+    const ViewCArrayDevice<double>& F,
+    const ViewCArrayDevice<double>& cofactor_F,
+    const int num_dims,
+    double& I2,
+    double& I3) 
+{
+    for(int i=0; i<3; i++) for(int j=0; j<3; j++) cofactor_F(i, j) = 0.0;
+    
+    if (num_dims == 3) {
+        cofactor_F(0, 0) = F(1, 1)*F(2, 2) - F(1, 2)*F(2, 1);
+        cofactor_F(0, 1) = F(1, 2)*F(2, 0) - F(1, 0)*F(2, 2);
+        cofactor_F(0, 2) = F(1, 0)*F(2, 1) - F(1, 1)*F(2, 0);
+        cofactor_F(1, 0) = F(0, 2)*F(2, 1) - F(0, 1)*F(2, 2);
+        cofactor_F(1, 1) = F(0, 0)*F(2, 2) - F(0, 2)*F(2, 0);
+        cofactor_F(1, 2) = F(0, 1)*F(2, 0) - F(0, 0)*F(2, 1);
+        cofactor_F(2, 0) = F(0, 1)*F(1, 2) - F(0, 2)*F(1, 1);
+        cofactor_F(2, 1) = F(0, 2)*F(1, 0) - F(0, 0)*F(1, 2);
+        cofactor_F(2, 2) = F(0, 0)*F(1, 1) - F(0, 1)*F(1, 0);
+        
+        I3 = F(0, 0)*cofactor_F(0, 0) + F(0, 1)*cofactor_F(1, 0) + F(0, 2)*cofactor_F(2, 0);
+    } else if (num_dims == 2) {
+        cofactor_F(0, 0) =  F(1, 1);
+        cofactor_F(0, 1) = -F(1, 0);
+        cofactor_F(1, 0) = -F(0, 1);
+        cofactor_F(1, 1) =  F(0, 0);
+        
+        I3 = F(0, 0)*F(1, 1) - F(0, 1)*F(1, 0);
+    } else {
+        I3 = F(0, 0);
+        cofactor_F(0, 0) = 1.0;
+    }
 
-//     if (std::fabs(matrix_determinant) < 1.0e-14) {
-//         matrix_determinant = 0.0;
-//         for (int index = 0; index < 9; ++index) {
-//             inverse_matrix[index] = 0.0;
-//         }
-//         return;
-//     }
+    I2 = 0.0;
+    for(int i=0; i<num_dims; i++) {
+        for(int j=0; j<num_dims; j++) {
+            I2 += F(i, j)*F(i, j);
+        }
+    }
+}
 
-//     const double inverse_det = 1.0 / matrix_determinant;
-//     inverse_matrix[0] = cofactor_00 * inverse_det;
-//     inverse_matrix[1] = cofactor_10 * inverse_det;
-//     inverse_matrix[2] = cofactor_20 * inverse_det;
-//     inverse_matrix[3] = cofactor_01 * inverse_det;
-//     inverse_matrix[4] = cofactor_11 * inverse_det;
-//     inverse_matrix[5] = cofactor_21 * inverse_det;
-//     inverse_matrix[6] = cofactor_02 * inverse_det;
-//     inverse_matrix[7] = cofactor_12 * inverse_det;
-//     inverse_matrix[8] = cofactor_22 * inverse_det;
-// }
-
-
-
-
-
-
-// KOKKOS_INLINE_FUNCTION
-// void compute_deformation_gradient(
-//     const double* element_node_positions,
-//     const double* element_reference_positions,
-//     const size_t num_nodes_in_element,
-//     const double* physical_basis_gradient,
-//     double* deformation_gradient)
-// {
-//     for (int row = 0; row < 9; ++row) {
-//         deformation_gradient[row] = 0.0;
-//     }
-
-//     deformation_gradient[0] = 1.0;
-//     deformation_gradient[4] = 1.0;
-//     deformation_gradient[8] = 1.0;
-
-//     for (size_t node_lid = 0; node_lid < num_nodes_in_element; ++node_lid) {
-//         for (int spatial_dim = 0; spatial_dim < 3; ++spatial_dim) {
-//             const double displacement = element_node_positions[3 * node_lid + spatial_dim]
-//                 - element_reference_positions[3 * node_lid + spatial_dim];
-//             for (int reference_dim = 0; reference_dim < 3; ++reference_dim) {
-//                 deformation_gradient[3 * spatial_dim + reference_dim] +=
-//                     displacement * physical_basis_gradient[3 * node_lid + reference_dim];
-//             }
-//         }
-//     }
-// }
-
-// KOKKOS_INLINE_FUNCTION
-// void compute_stvk_strain_energy_density(
-//     const double* deformation_gradient,
-//     const double lame_lambda,
-//     const double lame_mu,
-//     double& strain_energy_density)
-// {
-//     const double f00 = deformation_gradient[0];
-//     const double f01 = deformation_gradient[1];
-//     const double f02 = deformation_gradient[2];
-//     const double f10 = deformation_gradient[3];
-//     const double f11 = deformation_gradient[4];
-//     const double f12 = deformation_gradient[5];
-//     const double f20 = deformation_gradient[6];
-//     const double f21 = deformation_gradient[7];
-//     const double f22 = deformation_gradient[8];
-
-//     const double c00 = f00 * f00 + f10 * f10 + f20 * f20;
-//     const double c11 = f01 * f01 + f11 * f11 + f21 * f21;
-//     const double c22 = f02 * f02 + f12 * f12 + f22 * f22;
-//     const double c01 = f00 * f01 + f10 * f11 + f20 * f21;
-//     const double c02 = f00 * f02 + f10 * f12 + f20 * f22;
-//     const double c12 = f01 * f02 + f11 * f12 + f21 * f22;
-
-//     const double e00 = 0.5 * (c00 - 1.0);
-//     const double e11 = 0.5 * (c11 - 1.0);
-//     const double e22 = 0.5 * (c22 - 1.0);
-//     const double e01 = 0.5 * c01;
-//     const double e02 = 0.5 * c02;
-//     const double e12 = 0.5 * c12;
-
-//     const double trace_strain = e00 + e11 + e22;
-//     const double trace_strain_squared = trace_strain * trace_strain;
-//     const double strain_double_contraction =
-//         e00 * e00 + e11 * e11 + e22 * e22 + 2.0 * (e01 * e01 + e02 * e02 + e12 * e12);
-
-//     strain_energy_density =
-//         lame_mu * trace_strain_squared
-//         + lame_lambda * trace_strain_squared
-//         + lame_mu * strain_double_contraction;
-// }
-
-// KOKKOS_INLINE_FUNCTION
-// void compute_stvk_first_piola_stress(
-//     const double* deformation_gradient,
-//     const double lame_lambda,
-//     const double lame_mu,
-//     double* first_piola_kirchhoff_stress)
-// {
-//     const double f00 = deformation_gradient[0];
-//     const double f01 = deformation_gradient[1];
-//     const double f02 = deformation_gradient[2];
-//     const double f10 = deformation_gradient[3];
-//     const double f11 = deformation_gradient[4];
-//     const double f12 = deformation_gradient[5];
-//     const double f20 = deformation_gradient[6];
-//     const double f21 = deformation_gradient[7];
-//     const double f22 = deformation_gradient[8];
-
-//     const double c00 = f00 * f00 + f10 * f10 + f20 * f20;
-//     const double c11 = f01 * f01 + f11 * f11 + f21 * f21;
-//     const double c22 = f02 * f02 + f12 * f12 + f22 * f22;
-//     const double c01 = f00 * f01 + f10 * f11 + f20 * f21;
-//     const double c02 = f00 * f02 + f10 * f12 + f20 * f22;
-//     const double c12 = f01 * f02 + f11 * f12 + f21 * f22;
-
-//     const double e00 = 0.5 * (c00 - 1.0);
-//     const double e11 = 0.5 * (c11 - 1.0);
-//     const double e22 = 0.5 * (c22 - 1.0);
-//     const double e01 = 0.5 * c01;
-//     const double e02 = 0.5 * c02;
-//     const double e12 = 0.5 * c12;
-//     const double trace_strain = e00 + e11 + e22;
-
-//     const double s00 = lame_lambda * trace_strain + 2.0 * lame_mu * e00;
-//     const double s11 = lame_lambda * trace_strain + 2.0 * lame_mu * e11;
-//     const double s22 = lame_lambda * trace_strain + 2.0 * lame_mu * e22;
-//     const double s01 = 2.0 * lame_mu * e01;
-//     const double s02 = 2.0 * lame_mu * e02;
-//     const double s12 = 2.0 * lame_mu * e12;
-
-//     first_piola_kirchhoff_stress[0] = f00 * s00 + f01 * s01 + f02 * s02;
-//     first_piola_kirchhoff_stress[1] = f00 * s01 + f01 * s11 + f02 * s12;
-//     first_piola_kirchhoff_stress[2] = f00 * s02 + f01 * s12 + f02 * s22;
-//     first_piola_kirchhoff_stress[3] = f10 * s00 + f11 * s01 + f12 * s02;
-//     first_piola_kirchhoff_stress[4] = f10 * s01 + f11 * s11 + f12 * s12;
-//     first_piola_kirchhoff_stress[5] = f10 * s02 + f11 * s12 + f12 * s22;
-//     first_piola_kirchhoff_stress[6] = f20 * s00 + f21 * s01 + f22 * s02;
-//     first_piola_kirchhoff_stress[7] = f20 * s01 + f21 * s11 + f22 * s12;
-//     first_piola_kirchhoff_stress[8] = f20 * s02 + f21 * s12 + f22 * s22;
-// }
-
-
-
+KOKKOS_INLINE_FUNCTION
+void compute_dN_dX(
+    const MPICArrayKokkos<double>& J_inv_initial,
+    const elements::fe_ref_elem_t& ref_elem,
+    const int num_dims,
+    const int gauss_gid,
+    const int gauss_lid,
+    const int node_lid,
+    double dN_dX[3]) 
+{
+    for(int i = 0; i < num_dims; i++){
+        dN_dX[i] = 0.0;
+        for(int j = 0; j < num_dims; j++){
+            dN_dX[i] += ref_elem.gauss_point_grad_basis(gauss_lid, node_lid, j) * J_inv_initial(gauss_gid, j, i);
+        }
+    }
+}
 
 } // namespace xpbd
 

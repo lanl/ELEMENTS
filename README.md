@@ -13,6 +13,18 @@ The C++ **ELEMENTS** library is a collection of sub-libraries to support impleme
 <p align="center"><img src="https://github.com/lanl/ELEMENTS/blob/develop-msu/docs/images/TaylorGreenVortex-t0.png" width="400"><img src="https://github.com/lanl/ELEMENTS/blob/develop-msu/docs/images/TaylorGreenVortex-tEnd.png" width="400">
 <p align="center">Fig. A high-order 3D mesh deforming in the Taylor-Green vortex
 
+
+# Cloning the code
+If the user has set up ssh keys with GitHub, type
+```
+git clone --recursive ssh://git@github.com/lanl/ELEMENTS.git
+```
+The code can also be cloned using
+```
+git clone --recursive https://github.com/lanl/ELEMENTS.git
+```
+
+
 ## Getting started
 
 To build the examples locally:
@@ -93,5 +105,20 @@ If you use the ELEMENTS library in your work, please cite the following in any p
   url = {https://www.sciencedirect.com/science/article/pii/S235271101930113X},
   author = {Jacob L. Moore and Nathaniel R. Morgan and Mark F. Horstemeyer},
   keywords = {Element Library, C++, High-order elements, Spectral elements, Serendipity elements}
+}
+```
+
+```
+@proceedings{10.1115/DETC2022-89562,
+    title = {SWAGE: A 3D Arbitrary-Order Element Mesh Library to Support Diverse Numerical Methods},
+    volume = {Volume 2: 42nd Computers and Information in Engineering Conference (CIE)},
+    series = {International Design Engineering Technical Conferences and Computers and Information in Engineering Conference},
+    pages = {V002T02A029},
+    year = {2022},
+    month = {08},
+    doi = {10.1115/DETC2022-89562},
+    url = {https://doi.org/10.1115/DETC2022-89562},
+    author = {Morgan, Nathaniel R. and Moore, Jacob and Kiviaho, Jan and Diaz, Adrian},
+    eprint = {https://asmedigitalcollection.asme.org/IDETC-CIE/proceedings-pdf/IDETC-CIE2022/86212/V002T02A029/6942954/v002t02a029-detc2022-89562.pdf},
 }
 ```

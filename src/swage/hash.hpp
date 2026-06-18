@@ -31,8 +31,8 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **********************************************************************************************/
-#ifndef SEARCH_UTILS_H
-#define SEARCH_UTILS_H
+#ifndef HASH_UTILS_H
+#define HASH_UTILS_H
 
 #include <cmath>
 #include "matar.h"
@@ -44,170 +44,46 @@ using namespace mtr;
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 
+/////////////////////////////////////////////////////////////////////////////
+///
+/// \struct bin_keys_t
+///
+/// \brief Stores hash keys i,j,k
+///
+/////////////////////////////////////////////////////////////////////////////
 struct bin_keys_t{
     size_t i,j,k;
 };
 
 
-// This function is for seriallizing the integation locations in the reference element
+/////////////////////////////////////////////////////////////////////////////
+///
+/// \fn get_id_of_ijk
+///
+/// \brief This function is for seriallizing locations in a reference 
+///        element or a structured mesh
+///
+/// \param i is the x direction index
+/// \param j is the y direction index
+/// \param k is the z direction index
+/// \param num_x is the number of locations in the x direction
+/// \param num_y is the number of locations in the y direction
+///
+/////////////////////////////////////////////////////////////////////////////
 KOKKOS_INLINE_FUNCTION
 size_t get_id_of_ijk(size_t i, size_t j, size_t k, size_t num_x, size_t num_y){
     return i + (j + k*num_y)*num_x;
 }
 
 
-KOKKOS_INLINE_FUNCTION
-bin_keys_t get_bin_keys(const double x_pt, 
-                        const double y_pt, 
-                        const double z_pt){
-            
-
-    double i_dbl = fmax(0, round((x_pt - X0 - bin_dx*0.5)/bin_dx - 1.0e-10)); // x = ih + X0 + dx_bin*0.5
-    double j_dbl = fmax(0, round((y_pt - Y0 - bin_dy*0.5)/bin_dy - 1.0e-10));
-    double k_dbl = fmax(0, round((z_pt - Z0 - bin_dz*0.5)/bin_dz - 1.0e-10));
-
-    bin_keys_t bin_keys; // save i,j,k to the bin keys
-
-    // get the integer for the bins
-    bin_keys.i = (size_t)i_dbl;
-    bin_keys.j = (size_t)j_dbl;
-    bin_keys.k = (size_t)k_dbl;
-
-    return bin_keys;
-
-} // end function
-
-
-KOKKOS_INLINE_FUNCTION
-size_t get_bin_gid(const double x_pt, 
-                   const double y_pt, 
-                   const double z_pt, 
-                   const double xmin,
-                   const double ymin,
-                   const double zmin,
-                   const double bin_dx,
-                   const double bin_dy,
-                   const double bin_dz,
-                   const size_t num_bins_x,
-                   const size_t num_bins_y,
-                   const size_t num_bins_z){
-            
-
-    double i_dbl = fmin(num_bins_x-1, fmax(0.0, round((x_pt - xmin)/bin_dx - 1.0e-8))); // x = ih + Xmin
-    double j_dbl = fmin(num_bins_y-1, fmax(0.0, round((y_pt - ymin)/bin_dy - 1.0e-8)));
-    double k_dbl = fmin(num_bins_z-1, fmax(0.0, round((z_pt - zmin)/bin_dz - 1.0e-8)));
-
-    // get the integers for the bins
-    size_t i = (size_t)i_dbl;
-    size_t j = (size_t)j_dbl;
-    size_t k = (size_t)k_dbl;
-    
-    // get the 1D index for this bin                               
-    return get_id_of_ijk(i, j, k, num_bins_x, num_bins_y);
-
-} // end function
-
-
-
-
-// 
-//
-//
-void get_bounds_STL(double &xmin, double &ymin, double &zmin,
-                    double &xmax, double &ymax, double &zmax,
-                    const DViewCArrayKokkos <double> &v0X,
-                    const DViewCArrayKokkos <double> &v0Y,
-                    const DViewCArrayKokkos <double> &v0Z,
-                    const DViewCArrayKokkos <double> &v1X,
-                    const DViewCArrayKokkos <double> &v1Y,
-                    const DViewCArrayKokkos <double> &v1Z,
-                    const DViewCArrayKokkos <double> &v2X,
-                    const DViewCArrayKokkos <double> &v2Y,
-                    const DViewCArrayKokkos <double> &v2Z){
-
-    // ----
-    // find (xmin, ymin, zmin) and (xmax, ymax, zmax) for building bin mesh
-    double xmin_lcl, ymin_lcl, zmin_lcl;
-    double xmin, ymin, zmin;
-
-    // no MATAR reductions for multiple values yet, thus hard coding the kokkos loop
-    Kokkos::parallel_reduce(
-        "stl_min_domain_extents",
-        num_inp_triangles,
-    
-        // this is the for loop coding
-        KOKKOS_LAMBDA(const int tri,         
-                      double& xmin_lcl,
-                      double& ymin_lcl,
-                      double& zmin_lcl) 
-        {
-            // x
-            xmin_lcl = fmin(v2X(tri),
-                       fmin(v1X(tri),
-                       fmin(v0X(tri), xmin_lcl)));
-
-            // y
-            ymin_lcl = fmin(v2Y(tri),
-                       fmin(v1Y(tri),
-                       fmin(v0Y(tri), ymin_lcl)));
-
-            // z
-            zmin_lcl = fmin(v2Z(tri),
-                       fmin(v1Z(tri),
-                       fmin(v0Z(tri), zmin_lcl)));
-        },
-    Kokkos::Min<double>(xmin), Kokkos::Min<double>(ymin), Kokkos::Min<double>(zmin)); 
-    // end parallel reduction over all STL triangles
-
-    xmin -= 1.e-6; // decrease by a small fraction
-    ymin -= 1.e-6; // decrease by a small fraction
-    zmin -= 1.e-6; // decrease by a small fraction
-
-
-    double xmax_lcl, ymax_lcl, zmax_lcl;
-    double xmax, ymax, zmax;
-
-     // no MATAR reductions for multiple values yet, thus hard coding the kokkos loop
-    Kokkos::parallel_reduce(
-        "stl_max_domain_extents",
-        num_inp_triangles,
-    
-        // this is the for loop coding
-        KOKKOS_LAMBDA(const int tri,         
-                      double& xmax_lcl,
-                      double& ymax_lcl,
-                      double& zmax_lcl) 
-        {
-            // x                
-            xmax_lcl = fmax(v2X(tri),
-                       fmax(v1X(tri),
-                       fmax(v0X(tri), xmax_lcl)));
-
-            // y               
-            ymax_lcl = fmax(v2Y(tri),
-                       fmax(v1Y(tri),
-                       fmax(v0Y(tri), ymax_lcl)));
-                    
-            // z                
-            zmax_lcl = fmax(v2Z(tri),
-                       fmax(v1Z(tri),
-                       fmax(v0Z(tri), zmax_lcl)));
-  
-        },
-    Kokkos::Max<double>(xmax), Kokkos::Max<double>(ymax), Kokkos::Max<double>(zmax)); 
-    // end parallel reduction over all STL triangles
-
-    xmax += 1.e-6; // increase by a small fraction
-    ymax += 1.e-6; // increase by a small fraction
-    zmax += 1.e-6; // increase by a small fraction
-
-    return;
-
-} // end function
-
-
-
-
+/////////////////////////////////////////////////////////////////////////////
+///
+/// \struct Hash_t
+///
+/// \brief Stores hash information and has member functions to calculate
+///        connectivity between e.g., overlapping points, point clouds, etc.
+///
+/////////////////////////////////////////////////////////////////////////////
 struct Hash_t{
 
     // bin mesh memory
@@ -215,6 +91,10 @@ struct Hash_t{
     size_t num_bins_y;
     size_t num_bins_z;
     size_t num_bins;
+
+    double bin_dx;
+    double bin_dy;
+    double bin_dz;
 
     double xmin;
     double ymin;
@@ -224,8 +104,9 @@ struct Hash_t{
     double ymax;
     double zmax;
 
-    // 
+    // variables used with arbitrary point cloud connectivity
     double search_radius;
+    size_t min_num_points_fit;
 
     // bins and their connectivity to each other and points
     DCArrayKokkos <bin_keys_t> keys_in_bin;
@@ -235,14 +116,45 @@ struct Hash_t{
     // connectivity from points to bins
     DCArrayKokkos <size_t> points_bin_gid;
     CArrayKokkos <size_t>  points_bin_lid_storage;  // only used to create storage
-    DCArrayKokkos <int> points_bin_stencil;   // how imin,imax,jmin,jmax,kmin,kmax range for bins in stencil
+    DCArrayKokkos <int>    points_bin_stencil;   // how imin,imax,jmin,jmax,kmin,kmax range for bins in stencil
     DCArrayKokkos <size_t> points_num_neighbors;
 
 
-    // connectivity between tri corners to continious nodal mesh
 
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \struct initialize_point_cloud
+    ///
+    /// \brief sets variables unique to building connectivity between points
+    ///        in a point cloud
+    ///
+    /// \param search_radius is the search radius for building connectivity
+    /// \param min_num_points_fit is the minimum number of points to fit
+    /////////////////////////////////////////////////////////////////////////////
+    initialize_point_cloud(const double search_radius_in,
+                           const size_t min_num_points_fit_in){
 
-    // make a bin mesh to find pairs or build connectivity
+        search_radius = search_radius_in;
+        min_num_points_fit = min_num_points_fit_in;
+    } // end function
+
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \struct build_bin_mesh
+    ///
+    /// \brief builds a structured mesh were the cells of this mesh are called
+    ///        bins that store points for building connectivity or maps
+    ///
+    /// \param x_min is the minimum x coordinate, the start location of bin mesh
+    /// \param y_min is the minimum y coordinate, the start location of bin mesh
+    /// \param z_min is the minimum z coordinate, the start location of bin mesh
+    /// \param x_max is the maximum x coordinate, the end of the bin mesh
+    /// \param y_max is the maximum y coordinate, the end of the bin mesh
+    /// \param z_max is the maximum z coordinate, the end of the bin mesh
+    /// \param num_bins_x_in is number of bins in the x coordinate direction
+    /// \param num_bins_y_in is number of bins in the y coordinate direction
+    /// \param num_bins_z_in is number of bins in the z coordinate direction
+    /////////////////////////////////////////////////////////////////////////////
     void build_bin_mesh(const double xmin, const double ymin, const double zmin,
                         const double xmax, const double ymax, const double zmax,
                         const size_t num_bins_x_in,
@@ -250,14 +162,15 @@ struct Hash_t{
                         const size_t num_bins_z_in){
 
 
-        this->num_bins_x = num_bins_x_in;   
-        this->num_bins_y = num_bins_y_in;   
-        this->num_bins_z = num_bins_z_in;   
-        this->num_bins = num_bins_x_in*num_bins_y_in*num_bins_z_in;
+        // set the private variables
+        num_bins_x = num_bins_x_in;   
+        num_bins_y = num_bins_y_in;   
+        num_bins_z = num_bins_z_in;   
+        num_bins = num_bins_x_in*num_bins_y_in*num_bins_z_in;
 
-        this->bin_dx = (xmax - xmin)/(num_bins_x_in - 1.0);
-        this->bin_dy = (ymax - ymin)/(num_bins_y_in - 1.0);
-        this->bin_dz = (zmax - zmin)/(num_bins_z_in - 1.0);
+        bin_dx = fmax(1.e-13, (xmax - xmin)/((double)num_bins_x_in));
+        bin_dy = fmax(1.e-13, (ymax - ymin)/((double)num_bins_y_in));
+        bin_dz = fmax(1.e-13, (zmax - zmin)/((double)num_bins_z_in));
 
         // allocate bin key memory
         keys_in_bin = DCArrayKokkos <bin_keys_t> (num_bins, "keys_in_bin"); // mapping from gid to (i,j,k)
@@ -265,9 +178,9 @@ struct Hash_t{
         num_points_in_bin.set_values(0);
 
         // build reverse mapping between gid and i,j,k
-        FOR_ALL(i, 0, num_bins_x,
-                j, 0, num_bins_y,
-                k, 0, num_bins_z, {
+        FOR_ALL_CLASS(i, 0, num_bins_x,
+                      j, 0, num_bins_y,
+                      k, 0, num_bins_z, {
             
 
             // get bin gid for this i,j,k
@@ -289,10 +202,209 @@ struct Hash_t{
     } // end function build bin mesh
 
 
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \struct get_bin_keys
+    ///
+    /// \brief returns the i,j,k indices for the bin cell center given the (x,y,z)
+    ///        coordinates of a point
+    ///
+    /// \param x_pt is the x coordinate
+    /// \param y_pt is the y coordinate
+    /// \param z_pt is the z coordinate
+    /////////////////////////////////////////////////////////////////////////////
+    KOKKOS_INLINE_FUNCTION
+    bin_keys_t get_bin_keys(const double x_pt, 
+                            const double y_pt, 
+                            const double z_pt){
+                
+        // get the (i,j,k) values as doubles, a shift is included to get cell center
+        //double i_dbl = fmin((double)num_bins_x-1, fmax(0, round((x_pt - xmin - bin_dx*0.5)/bin_dx - 1.0e-10))); // x = ih + X0 + dx_bin*0.5
+        //double j_dbl = fmin((double)num_bins_y-1, fmax(0, round((y_pt - ymin - bin_dy*0.5)/bin_dy - 1.0e-10)));
+        //double k_dbl = fmin((double)num_bins_z-1, fmax(0, round((z_pt - zmin - bin_dz*0.5)/bin_dz - 1.0e-10)));
+
+        double i_dbl = fmin((double)num_bins_x-1, fmax(0.0, round((x_pt - xmin)/bin_dx - 1.0e-10))); // x = idx + xmin
+        double j_dbl = fmin((double)num_bins_y-1, fmax(0.0, round((y_pt - ymin)/bin_dy - 1.0e-10))); // y = jdy + ymin
+        double k_dbl = fmin((double)num_bins_z-1, fmax(0.0, round((z_pt - zmin)/bin_dz - 1.0e-10))); // z = kdz + zmin
+
+        bin_keys_t bin_keys; // save i,j,k to the bin keys
+
+        // get the integer for the bins
+        bin_keys.i = (size_t)i_dbl;
+        bin_keys.j = (size_t)j_dbl;
+        bin_keys.k = (size_t)k_dbl;
+
+        return bin_keys;
+
+    } // end function
 
 
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \struct get_bin_gid
+    ///
+    /// \brief returns the 1D global index for the bin mesh given the (x,y,z)
+    ///        coordinates of a point
+    ///
+    /// \param x_pt is the x coordinate
+    /// \param y_pt is the y coordinate
+    /// \param z_pt is the z coordinate
+    /////////////////////////////////////////////////////////////////////////////
+    KOKKOS_INLINE_FUNCTION
+    size_t get_bin_gid(const double x_pt, 
+                       const double y_pt, 
+                       const double z_pt){
+                
+
+        double i_dbl = fmin((double)num_bins_x-1, fmax(0.0, round((x_pt - xmin)/bin_dx - 1.0e-10))); // x = idx + xmin
+        double j_dbl = fmin((double)num_bins_y-1, fmax(0.0, round((y_pt - ymin)/bin_dy - 1.0e-10))); // y = jdy + ymin
+        double k_dbl = fmin((double)num_bins_z-1, fmax(0.0, round((z_pt - zmin)/bin_dz - 1.0e-10))); // z = kdz + zmin
+
+        // get the integers for the bins
+        size_t i = (size_t)i_dbl;
+        size_t j = (size_t)j_dbl;
+        size_t k = (size_t)k_dbl;
+        
+        // get the 1D index for this bin                               
+        return get_id_of_ijk(i, j, k, num_bins_x, num_bins_y);
+
+    } // end function
+
+
+
+
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \struct get_bounds_STL
+    ///
+    /// \brief Calculates the spatial bounds of an STL file
+    ///
+    /// \param x_min is the minimum x coordinate, the start location of bin mesh
+    /// \param y_min is the minimum y coordinate, the start location of bin mesh
+    /// \param z_min is the minimum z coordinate, the start location of bin mesh
+    /// \param x_max is the maximum x coordinate, the end of the bin mesh
+    /// \param y_max is the maximum y coordinate, the end of the bin mesh
+    /// \param z_max is the maximum z coordinate, the end of the bin mesh
+    /// \param v0X is the x coordinate of the first vertex on the triangle 
+    /// \param v0Y is the y coordinate of the first vertex on the triangle 
+    /// \param v0Z is the z coordinate of the first vertex on the triangle 
+    /// \param v1X is the x coordinate of the second vertex on the triangle 
+    /// \param v1Y is the y coordinate of the second vertex on the triangle 
+    /// \param v1Z is the z coordinate of the second vertex on the triangle 
+    /// \param v2X is the x coordinate of the third vertex on the triangle 
+    /// \param v2Y is the y coordinate of the third vertex on the triangle 
+    /// \param v2Z is the z coordinate of the third vertex on the triangle 
+    /////////////////////////////////////////////////////////////////////////////
+    void get_bounds_STL(double &xmin, double &ymin, double &zmin,
+                        double &xmax, double &ymax, double &zmax,
+                        const DViewCArrayKokkos <double> &v0X,
+                        const DViewCArrayKokkos <double> &v0Y,
+                        const DViewCArrayKokkos <double> &v0Z,
+                        const DViewCArrayKokkos <double> &v1X,
+                        const DViewCArrayKokkos <double> &v1Y,
+                        const DViewCArrayKokkos <double> &v1Z,
+                        const DViewCArrayKokkos <double> &v2X,
+                        const DViewCArrayKokkos <double> &v2Y,
+                        const DViewCArrayKokkos <double> &v2Z){
+
+        // ----
+        // find (xmin, ymin, zmin) and (xmax, ymax, zmax) for building bin mesh
+        double xmin_lcl, ymin_lcl, zmin_lcl;
+        double xmin, ymin, zmin;
+
+        // no MATAR reductions for multiple values yet, thus hard coding the kokkos loop
+        Kokkos::parallel_reduce(
+            "stl_min_domain_extents",
+            num_inp_triangles,
+        
+            // this is the for loop coding
+            KOKKOS_LAMBDA(const int tri,         
+                        double& xmin_lcl,
+                        double& ymin_lcl,
+                        double& zmin_lcl) 
+            {
+                // x
+                xmin_lcl = fmin(v2X(tri),
+                        fmin(v1X(tri),
+                        fmin(v0X(tri), xmin_lcl)));
+
+                // y
+                ymin_lcl = fmin(v2Y(tri),
+                        fmin(v1Y(tri),
+                        fmin(v0Y(tri), ymin_lcl)));
+
+                // z
+                zmin_lcl = fmin(v2Z(tri),
+                        fmin(v1Z(tri),
+                        fmin(v0Z(tri), zmin_lcl)));
+            },
+        Kokkos::Min<double>(xmin), Kokkos::Min<double>(ymin), Kokkos::Min<double>(zmin)); 
+        // end parallel reduction over all STL triangles
+
+        xmin -= 1.e-6; // decrease by a small fraction
+        ymin -= 1.e-6; // decrease by a small fraction
+        zmin -= 1.e-6; // decrease by a small fraction
+
+
+        double xmax_lcl, ymax_lcl, zmax_lcl;
+        double xmax, ymax, zmax;
+
+        // no MATAR reductions for multiple values yet, thus hard coding the kokkos loop
+        Kokkos::parallel_reduce(
+            "stl_max_domain_extents",
+            num_inp_triangles,
+        
+            // this is the for loop coding
+            KOKKOS_LAMBDA(const int tri,         
+                        double& xmax_lcl,
+                        double& ymax_lcl,
+                        double& zmax_lcl) 
+            {
+                // x                
+                xmax_lcl = fmax(v2X(tri),
+                           fmax(v1X(tri),
+                           fmax(v0X(tri), xmax_lcl)));
+
+                // y               
+                ymax_lcl = fmax(v2Y(tri),
+                           fmax(v1Y(tri),
+                           fmax(v0Y(tri), ymax_lcl)));
+                        
+                // z                
+                zmax_lcl = fmax(v2Z(tri),
+                           fmax(v1Z(tri),
+                           fmax(v0Z(tri), zmax_lcl)));
+    
+            },
+        Kokkos::Max<double>(xmax), Kokkos::Max<double>(ymax), Kokkos::Max<double>(zmax)); 
+        // end parallel reduction over all STL triangles
+
+        xmax += 1.e-6; // increase by a small fraction
+        ymax += 1.e-6; // increase by a small fraction
+        zmax += 1.e-6; // increase by a small fraction
+
+        return;
+
+    } // end function
+
+
+
+    
+
+
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \struct build_multi_node_connectivity
+    ///
+    /// \brief Calculates a unique node index space for each set of overlapping 
+    ///        points.
+    ///
+    /// \param corner_point_positions are the (x,y,z) coordinates of every point 
+    /// \param node_in_corner_point is node on top of a point
+    /// \param num_nodes is the number of overlapping points
+    /////////////////////////////////////////////////////////////////////////////
     void build_multi_node_connectivity(const CArrayKokkos <double>  &corner_point_positions,
-                                       const DCArrayKokkos <size_t> node_in_corner_point,
+                                       DCArrayKokkos <size_t> &node_in_corner_point,
                                        size_t &num_nodes){
 
         const size_t num_points = corner_point_positions.dims[0];
@@ -313,10 +425,7 @@ struct Hash_t{
             // get the 1D index for this bin
             size_t bin_gid = get_bin_gid(corner_point_positions(point_gid,0), 
                                          corner_point_positions(point_gid,1), 
-                                         corner_point_positions(point_gid,2),
-                                         num_bins_x, 
-                                         num_bins_y,
-                                         num_bins_z);
+                                         corner_point_positions(point_gid,2));
 
             size_t storage_lid = Kokkos::atomic_fetch_add(&num_points_in_bin(bin_gid), 1);
             points_bin_gid(point_gid) = bin_gid; // the id of the bin
@@ -453,12 +562,22 @@ struct Hash_t{
 
 
 
-
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \struct build_point_cloud_connectivity
+    ///
+    /// \brief Calculates connectivity structures between points in a point cloud 
+    ///
+    /// \param point_positions are the (x,y,z) coordinates of every point 
+    /// \param points_in_point gives the neighboring point indicies
+    /// \param points_num_neighbors is the number of neighboring points
+    /// \param reverse_neighbor_lid is the local index to access the point
+    /////////////////////////////////////////////////////////////////////////////
     void build_point_cloud_connectivity(const DCArrayKokkos <double> &point_positions,
                                         DRaggedRightArrayKokkos <size_t> &points_in_point,
                                         DCArrayKokkos <size_t> &points_num_neighbors,
-                                        DRaggedRightArrayKokkos <size_t> &reverse_neighbor_lid
-                                    ){
+                                        DRaggedRightArrayKokkos <size_t> &reverse_neighbor_lid)
+        {
 
         const size_t num_points = corner_point_positions.dims[0];
 
@@ -481,10 +600,7 @@ struct Hash_t{
             // get the 1D index for this bin
             size_t bin_gid = get_bin_gid(point_positions(point_gid,0), 
                                          point_positions(point_gid,1), 
-                                         point_positions(point_gid,2),
-                                         num_bins_x, 
-                                         num_bins_y,
-                                         num_bins_z);
+                                         point_positions(point_gid,2));
 
             size_t storage_lid = Kokkos::atomic_fetch_add(&num_points_in_bin(bin_gid), 1);
             points_bin_gid(point_gid) = bin_gid; // the id of the bin
@@ -560,7 +676,7 @@ struct Hash_t{
                 } // end for icount
 
                 // the min number of points required to solve the system is num_poly_basis+1, was 2*num_poly_basis
-                if (num_points_found >= num_points_fit  || num_points_found==num_points){
+                if (num_points_found >= min_num_points_fit  || num_points_found==num_points){
 
                     const double x_pt_middle = bin_dx*((double)i) + X0; 
                     const double y_pt_middle = bin_dy*((double)j) + Y0; 
@@ -582,11 +698,9 @@ struct Hash_t{
                                                    (y_pt_plus - y_pt_middle)*(y_pt_plus - y_pt_middle) +
                                                    (z_pt_plus - z_pt_middle)*(z_pt_plus - z_pt_middle) );
 
-                    //printf("h = %f, dist_m = %f, dist_p = %f, num_points=%zu, imin = %d, imax = %d, jmin = %d,  jmax = %d, kmin = %d,  kmax = %d, \n", 
-                    //         h_kernel, dist_minus, dist_plus, num_points_found, imin, imax, jmin, jmax, kmin, kmax);
 
-                    // only exit when we exceed kernel distance
-                    if (dist_minus >= h_kernel || dist_plus >= h_kernel || num_points_found==num_points){
+                    // only exit when we exceed kernel distance, which is the search radius
+                    if (dist_minus >= search_radius || dist_plus >= search_radius || num_points_found==num_points){
 
                         //printf("exiting \n\n");
 

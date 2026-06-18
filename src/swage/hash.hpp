@@ -43,6 +43,8 @@ using namespace mtr;
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
+namespace swage
+{
 
 /////////////////////////////////////////////////////////////////////////////
 ///
@@ -52,7 +54,7 @@ using namespace mtr;
 ///
 /////////////////////////////////////////////////////////////////////////////
 struct bin_keys_t{
-    size_t i,j,k;
+    int i,j,k;
 };
 
 
@@ -131,11 +133,14 @@ struct Hash_t{
     /// \param search_radius is the search radius for building connectivity
     /// \param min_num_points_fit is the minimum number of points to fit
     /////////////////////////////////////////////////////////////////////////////
-    initialize_point_cloud(const double search_radius_in,
-                           const size_t min_num_points_fit_in){
+    void initialize_point_cloud(const double search_radius_in,
+                                const size_t min_num_points_fit_in){
 
         search_radius = search_radius_in;
         min_num_points_fit = min_num_points_fit_in;
+
+        return;
+
     } // end function
 
     /////////////////////////////////////////////////////////////////////////////
@@ -155,22 +160,28 @@ struct Hash_t{
     /// \param num_bins_y_in is number of bins in the y coordinate direction
     /// \param num_bins_z_in is number of bins in the z coordinate direction
     /////////////////////////////////////////////////////////////////////////////
-    void build_bin_mesh(const double xmin, const double ymin, const double zmin,
-                        const double xmax, const double ymax, const double zmax,
+    void build_bin_mesh(const double xmin_in, const double ymin_in, const double zmin_on,
+                        const double xmax_in, const double ymax_in, const double zmax_on,
                         const size_t num_bins_x_in,
                         const size_t num_bins_y_in,
                         const size_t num_bins_z_in){
 
+        // set the member variables
+        xmin = xmin_in;
+        ymin = ymin_in;
+        zmin = zmin_in;
+        xmax = xmax_in;
+        ymax = ymax_in;
+        zmax = zmax_in;
 
-        // set the private variables
         num_bins_x = num_bins_x_in;   
         num_bins_y = num_bins_y_in;   
         num_bins_z = num_bins_z_in;   
         num_bins = num_bins_x_in*num_bins_y_in*num_bins_z_in;
 
-        bin_dx = fmax(1.e-13, (xmax - xmin)/((double)num_bins_x_in));
-        bin_dy = fmax(1.e-13, (ymax - ymin)/((double)num_bins_y_in));
-        bin_dz = fmax(1.e-13, (zmax - zmin)/((double)num_bins_z_in));
+        bin_dx = fmax(1.e-13, (xmax - xmin)/((double)num_bins_x));
+        bin_dy = fmax(1.e-13, (ymax - ymin)/((double)num_bins_y));
+        bin_dz = fmax(1.e-13, (zmax - zmin)/((double)num_bins_z));
 
         // allocate bin key memory
         keys_in_bin = DCArrayKokkos <bin_keys_t> (num_bins, "keys_in_bin"); // mapping from gid to (i,j,k)
@@ -184,7 +195,7 @@ struct Hash_t{
             
 
             // get bin gid for this i,j,k
-            size_t bin_gid = get_gid(i, j, k, num_bins_x, num_bins_y);
+            size_t bin_gid = get_id_of_ijk(i, j, k, num_bins_x, num_bins_y);
 
             // the i,j,k for this bin
             bin_keys_t bin_keys;
@@ -230,9 +241,9 @@ struct Hash_t{
         bin_keys_t bin_keys; // save i,j,k to the bin keys
 
         // get the integer for the bins
-        bin_keys.i = (size_t)i_dbl;
-        bin_keys.j = (size_t)j_dbl;
-        bin_keys.k = (size_t)k_dbl;
+        bin_keys.i = (int)i_dbl;
+        bin_keys.j = (int)j_dbl;
+        bin_keys.k = (int)k_dbl;
 
         return bin_keys;
 
@@ -307,36 +318,22 @@ struct Hash_t{
                         const DViewCArrayKokkos <double> &v2Y,
                         const DViewCArrayKokkos <double> &v2Z){
 
-        // ----
-        // find (xmin, ymin, zmin) and (xmax, ymax, zmax) for building bin mesh
-        double xmin_lcl, ymin_lcl, zmin_lcl;
-        double xmin, ymin, zmin;
+        
+        const size_t num_inp_triangles = v0X.dims[0];
 
-        // no MATAR reductions for multiple values yet, thus hard coding the kokkos loop
+        // find (xmin, ymin, zmin) for building bin mesh
+        // Write directly into the output reference parameters; no local shadowing variables.
         Kokkos::parallel_reduce(
             "stl_min_domain_extents",
             num_inp_triangles,
-        
-            // this is the for loop coding
             KOKKOS_LAMBDA(const int tri,         
                         double& xmin_lcl,
                         double& ymin_lcl,
                         double& zmin_lcl) 
             {
-                // x
-                xmin_lcl = fmin(v2X(tri),
-                        fmin(v1X(tri),
-                        fmin(v0X(tri), xmin_lcl)));
-
-                // y
-                ymin_lcl = fmin(v2Y(tri),
-                        fmin(v1Y(tri),
-                        fmin(v0Y(tri), ymin_lcl)));
-
-                // z
-                zmin_lcl = fmin(v2Z(tri),
-                        fmin(v1Z(tri),
-                        fmin(v0Z(tri), zmin_lcl)));
+                xmin_lcl = fmin(v2X(tri),fmin(v1X(tri),fmin(v0X(tri), xmin_lcl)));
+                ymin_lcl = fmin(v2Y(tri),fmin(v1Y(tri),fmin(v0Y(tri), ymin_lcl)));
+                zmin_lcl = fmin(v2Z(tri),fmin(v1Z(tri),fmin(v0Z(tri), zmin_lcl)));
             },
         Kokkos::Min<double>(xmin), Kokkos::Min<double>(ymin), Kokkos::Min<double>(zmin)); 
         // end parallel reduction over all STL triangles
@@ -346,35 +343,20 @@ struct Hash_t{
         zmin -= 1.e-6; // decrease by a small fraction
 
 
-        double xmax_lcl, ymax_lcl, zmax_lcl;
-        double xmax, ymax, zmax;
-
-        // no MATAR reductions for multiple values yet, thus hard coding the kokkos loop
+        // find (xmax, ymax, zmax) for building bin mesh
+        // Write directly into the output reference parameters; no local shadowing variables.
         Kokkos::parallel_reduce(
             "stl_max_domain_extents",
             num_inp_triangles,
-        
             // this is the for loop coding
             KOKKOS_LAMBDA(const int tri,         
                         double& xmax_lcl,
                         double& ymax_lcl,
                         double& zmax_lcl) 
             {
-                // x                
-                xmax_lcl = fmax(v2X(tri),
-                           fmax(v1X(tri),
-                           fmax(v0X(tri), xmax_lcl)));
-
-                // y               
-                ymax_lcl = fmax(v2Y(tri),
-                           fmax(v1Y(tri),
-                           fmax(v0Y(tri), ymax_lcl)));
-                        
-                // z                
-                zmax_lcl = fmax(v2Z(tri),
-                           fmax(v1Z(tri),
-                           fmax(v0Z(tri), zmax_lcl)));
-    
+                xmax_lcl = fmax(v2X(tri), fmax(v1X(tri), fmax(v0X(tri), xmax_lcl)));
+                ymax_lcl = fmax(v2Y(tri), fmax(v1Y(tri), fmax(v0Y(tri), ymax_lcl)));
+                zmax_lcl = fmax(v2Z(tri), fmax(v1Z(tri), fmax(v0Z(tri), zmax_lcl)));
             },
         Kokkos::Max<double>(xmax), Kokkos::Max<double>(ymax), Kokkos::Max<double>(zmax)); 
         // end parallel reduction over all STL triangles
@@ -453,12 +435,12 @@ struct Hash_t{
             points_in_bin(bin_gid, storage_lid) = point_gid;
 
         }); // end for all
-
+        Kokkos::fence();
 
 
         // build the map from corners to node
         node_in_corner_point = CArrayKokkos <size_t> (num_points);     // saves the node_id to point
-        smallest_point_id_in_set = CArrayKokkos <size_t> (num_points); // saves the smallest point id in the point-point set
+        CArrayKokkos <size_t> smallest_point_id_in_set (num_points); // saves the smallest point id in the point-point set
 
         // ---------------------------------------------------------
         // step 1: get smallest point index in the point-point set
@@ -480,7 +462,7 @@ struct Hash_t{
                     for(int k=kmin; k<=kmax; k++){
                         
                         // get this bin gid for (i,j,k)
-                        size_t a_bin_gid = get_gid(i, j, k, num_bins_x, num_bins_y);
+                        size_t a_bin_gid = get_id_of_ijk(i, j, k, num_bins_x, num_bins_y);
 
                         // loop over the corner points in this bin
                         for(size_t storage_lid=0; storage_lid<num_points_in_bin(a_bin_gid); storage_lid++){
@@ -515,8 +497,8 @@ struct Hash_t{
         }); // end parallel loop over points
         Kokkos::fence();
 
-        // ----------------------------------------------------------------------
-        // step 2: count the number of point-point set using smallest point save
+        // ------------------------------------------------------------------------------
+        // step 2: count the number of unique point-point sets using smallest point flag
 
         // array holding node_gid on the device and host side
         DCArrayKokkos <size_t> node_gid_counter(1);
@@ -543,9 +525,10 @@ struct Hash_t{
         
 
         // ---------------------------------------------------------------------------
-        // step 3: save the node_gid to the rest of the points in the point-point set
+        // step 3: propagate the node_gid to all other points in the same set.
+        //         Safe because step 2 fully completed (fence above) before this kernel
+        //         reads node_in_corner_point(smallest_point_gid).
 
-        // save the node_gid to all points in the point-point set
         FOR_ALL(point_gid, 0, num_points, {
 
             // if not the smallest, then save the node_gid saved to the smallest point
@@ -556,7 +539,7 @@ struct Hash_t{
             } // end if
 
         }); // end for all
-
+        Kokkos::fence();
 
     }// end function
 
@@ -579,7 +562,7 @@ struct Hash_t{
                                         DRaggedRightArrayKokkos <size_t> &reverse_neighbor_lid)
         {
 
-        const size_t num_points = corner_point_positions.dims[0];
+        const size_t num_points = point_positions.dims[0];
 
         // allocate arrays for connectivity from points to bins
         points_bin_gid         = DCArrayKokkos <size_t> (num_points, "points_in_gid");
@@ -628,7 +611,7 @@ struct Hash_t{
             points_in_bin(bin_gid, storage_lid) = point_gid;
 
         }); // end for all
-
+        Kokkos::fence();
 
         // ------------------------------------------------
         // Find the neighbors around each point using bins
@@ -654,41 +637,41 @@ struct Hash_t{
                 const int j = bin_keys.j;
                 const int k = bin_keys.k;
 
-                const int imin = MAX(0, i-stencil);
-                const int imax = MIN(num_bins_x-1, i+stencil);
+                const int iminus = MAX(0, i-stencil);
+                const int iplus  = MIN(num_bins_x-1, i+stencil);
 
-                const int jmin = MAX(0, j-stencil);
-                const int jmax = MIN(num_bins_y-1, j+stencil);
+                const int jminus = MAX(0, j-stencil);
+                const int jplus  = MIN(num_bins_y-1, j+stencil);
 
-                const int kmin = MAX(0, k-stencil);
-                const int kmax = MIN(num_bins_z-1, k+stencil);
+                const int kminus = MAX(0, k-stencil);
+                const int kplus  = MIN(num_bins_z-1, k+stencil);
                     
-                for (int kcount=kmin; kcount<=kmax; kcount++){
-                    for (int jcount=jmin; jcount<=jmax; jcount++) {
-                        for (int icount=imin; icount<=imax; icount++){
+                for (int kcount=kminus; kcount<=kplus; kcount++){
+                    for (int jcount=jminus; jcount<=jplus; jcount++) {
+                        for (int icount=iminus; icount<=iplus; icount++){
 
                             // get bin neighbor gid 
-                            size_t neighbor_bin_gid = get_gid(icount, jcount, kcount, num_bins_x, num_bins_y);
+                            size_t neighbor_bin_gid = get_id_of_ijk(icount, jcount, kcount, num_bins_x, num_bins_y);
                             num_points_found += num_points_in_bin(neighbor_bin_gid);
 
                         } // end for kcount
                     } // end for jcount
                 } // end for icount
 
-                // the min number of points required to solve the system is num_poly_basis+1, was 2*num_poly_basis
+
                 if (num_points_found >= min_num_points_fit  || num_points_found==num_points){
 
-                    const double x_pt_middle = bin_dx*((double)i) + X0; 
-                    const double y_pt_middle = bin_dy*((double)j) + Y0; 
-                    const double z_pt_middle = bin_dz*((double)k) + Z0; 
+                    const double x_pt_middle = bin_dx*((double)i) + xmin; 
+                    const double y_pt_middle = bin_dy*((double)j) + ymin; 
+                    const double z_pt_middle = bin_dz*((double)k) + zmin; 
 
-                    const double x_pt_minus = bin_dx*((double)imin) + X0; 
-                    const double y_pt_minus = bin_dy*((double)jmin) + Y0; 
-                    const double z_pt_minus = bin_dz*((double)kmin) + Z0; 
+                    const double x_pt_minus = bin_dx*((double)iminus) + xmin; 
+                    const double y_pt_minus = bin_dy*((double)jminus) + ymin; 
+                    const double z_pt_minus = bin_dz*((double)kminus) + zmin; 
                     
-                    const double x_pt_plus = bin_dx*((double)imax) + X0; 
-                    const double y_pt_plus = bin_dy*((double)jmax) + Y0; 
-                    const double z_pt_plus = bin_dz*((double)kmax) + Z0; 
+                    const double x_pt_plus = bin_dx*((double)iplus) + xmin; 
+                    const double y_pt_plus = bin_dy*((double)jplus) + ymin; 
+                    const double z_pt_plus = bin_dz*((double)kplus) + zmin; 
 
                     const double dist_minus = sqrt( (x_pt_minus - x_pt_middle)*(x_pt_minus - x_pt_middle) +
                                                     (y_pt_minus - y_pt_middle)*(y_pt_minus - y_pt_middle) +
@@ -704,14 +687,14 @@ struct Hash_t{
 
                         //printf("exiting \n\n");
 
-                        points_bin_stencil(point_gid,0) = imin;
-                        points_bin_stencil(point_gid,1) = imax;
-                        points_bin_stencil(point_gid,2) = jmin;
-                        points_bin_stencil(point_gid,3) = jmax;
-                        points_bin_stencil(point_gid,4) = kmin;
-                        points_bin_stencil(point_gid,5) = kmax;
+                        points_bin_stencil(point_gid,0) = iminus;
+                        points_bin_stencil(point_gid,1) = iplus;
+                        points_bin_stencil(point_gid,2) = jminus;
+                        points_bin_stencil(point_gid,3) = jplus;
+                        points_bin_stencil(point_gid,4) = kminus;
+                        points_bin_stencil(point_gid,5) = kplus;
 
-                        points_num_neighbors(point_gid) = num_points_found; // including node_i in the list of neighbors
+                        //points_num_neighbors(point_gid) = num_points_found; // including node_i in the list of neighbors
                         points_num_neighbors(point_gid) = num_points_found - 1; // the -1 is because we counted point i as a neighbor
 
                         break;
@@ -744,20 +727,20 @@ struct Hash_t{
             const int k = bin_keys.k;
 
             // walk over the stencil to get neighbors of this bin
-            const int imin = points_bin_stencil(point_gid,0);
-            const int imax = points_bin_stencil(point_gid,1);
-            const int jmin = points_bin_stencil(point_gid,2);
-            const int jmax = points_bin_stencil(point_gid,3);
-            const int kmin = points_bin_stencil(point_gid,4);
-            const int kmax = points_bin_stencil(point_gid,5);
+            const int iminus = points_bin_stencil(point_gid,0);
+            const int iplus = points_bin_stencil(point_gid,1);
+            const int jminus = points_bin_stencil(point_gid,2);
+            const int jplus = points_bin_stencil(point_gid,3);
+            const int kminus = points_bin_stencil(point_gid,4);
+            const int kplus = points_bin_stencil(point_gid,5);
 
             // loop over my bin stencil
-            for (int kcount=kmin; kcount<=kmax; kcount++){
-                for (int jcount=jmin; jcount<=jmax; jcount++) {
-                    for (int icount=imin; icount<=imax; icount++){
+            for (int kcount=kminus; kcount<=kplus; kcount++){
+                for (int jcount=jminus; jcount<=jplus; jcount++) {
+                    for (int icount=iminus; icount<=iplus; icount++){
 
                         // get bin neighbor gid 
-                        size_t neighbor_bin_gid = get_gid(icount, jcount, kcount, num_bins_x, num_bins_y);
+                        size_t neighbor_bin_gid = get_id_of_ijk(icount, jcount, kcount, num_bins_x, num_bins_y);
 
                         // save the points in this bin
                         for(size_t neighbor_pt_lid=0; neighbor_pt_lid<num_points_in_bin(neighbor_bin_gid); neighbor_pt_lid++){
@@ -765,18 +748,18 @@ struct Hash_t{
                             size_t neighbor_point_gid = points_in_bin(neighbor_bin_gid, neighbor_pt_lid);
 
                             // check if the point-point pairs have identical, overlapping stencils, if not, increment the number of neighbors
-                            const int neighbor_imin = points_bin_stencil(neighbor_point_gid,0);
-                            const int neighbor_imax = points_bin_stencil(neighbor_point_gid,1);
-                            const int neighbor_jmin = points_bin_stencil(neighbor_point_gid,2);
-                            const int neighbor_jmax = points_bin_stencil(neighbor_point_gid,3);
-                            const int neighbor_kmin = points_bin_stencil(neighbor_point_gid,4);
-                            const int neighbor_kmax = points_bin_stencil(neighbor_point_gid,5);
+                            const int neighbor_iminus = points_bin_stencil(neighbor_point_gid,0);
+                            const int neighbor_iplus = points_bin_stencil(neighbor_point_gid,1);
+                            const int neighbor_jminus = points_bin_stencil(neighbor_point_gid,2);
+                            const int neighbor_jplus = points_bin_stencil(neighbor_point_gid,3);
+                            const int neighbor_kminus = points_bin_stencil(neighbor_point_gid,4);
+                            const int neighbor_kplus = points_bin_stencil(neighbor_point_gid,5);
                             
                             // i,j,k is the bin where point_gid lives
                             bool inside =
-                                (i >= neighbor_imin && i <= neighbor_imax) &&
-                                (j >= neighbor_jmin && j <= neighbor_jmax) &&
-                                (k >= neighbor_kmin && k <= neighbor_kmax);
+                                (i >= neighbor_iminus && i <= neighbor_iplus) &&
+                                (j >= neighbor_jminus && j <= neighbor_jplus) &&
+                                (k >= neighbor_kminus && k <= neighbor_kplus);
 
                             if(!inside){
                                 Kokkos::atomic_increment(&points_num_neighbors(neighbor_point_gid)); 
@@ -794,9 +777,9 @@ struct Hash_t{
         points_num_neighbors.update_host();
 
 
-        for(size_t point_gid=0; point_gid<num_points; point_gid++){
-            printf("point_gid = %zu, num_neighbors = %zu, num_points = %zu \n", point_gid, points_num_neighbors.host(point_gid), num_points);
-        }
+        //for(size_t point_gid=0; point_gid<num_points; point_gid++){
+        //    printf("point_gid = %zu, num_neighbors = %zu, num_points = %zu \n", point_gid, points_num_neighbors.host(point_gid), num_points);
+        //}
         
         // allocate memory for points in point
         points_in_point = DRaggedRightArrayKokkos <size_t> (points_num_neighbors, "points_in_point");
@@ -822,20 +805,20 @@ struct Hash_t{
             const int k = bin_keys.k;
 
             // walk over the stencil to get neighbors
-            int imin = points_bin_stencil(point_gid,0);
-            int imax = points_bin_stencil(point_gid,1);
-            int jmin = points_bin_stencil(point_gid,2);
-            int jmax = points_bin_stencil(point_gid,3);
-            int kmin = points_bin_stencil(point_gid,4);
-            int kmax = points_bin_stencil(point_gid,5);
+            int iminus = points_bin_stencil(point_gid,0);
+            int iplus = points_bin_stencil(point_gid,1);
+            int jminus = points_bin_stencil(point_gid,2);
+            int jplus = points_bin_stencil(point_gid,3);
+            int kminus = points_bin_stencil(point_gid,4);
+            int kplus = points_bin_stencil(point_gid,5);
 
 
-            for (int kcount=kmin; kcount<=kmax; kcount++){
-                for (int jcount=jmin; jcount<=jmax; jcount++) {
-                    for (int icount=imin; icount<=imax; icount++){
+            for (int kcount=kminus; kcount<=kplus; kcount++){
+                for (int jcount=jminus; jcount<=jplus; jcount++) {
+                    for (int icount=iminus; icount<=iplus; icount++){
 
                         // get bin neighbor gid 
-                        size_t neighbor_bin_gid = get_gid(icount, jcount, kcount, num_bins_x, num_bins_y);
+                        size_t neighbor_bin_gid = get_id_of_ijk(icount, jcount, kcount, num_bins_x, num_bins_y);
 
                         // save the points in this bin
                         for(size_t neighbor_pt_lid=0; neighbor_pt_lid<num_points_in_bin(neighbor_bin_gid); neighbor_pt_lid++){
@@ -845,24 +828,24 @@ struct Hash_t{
                             // make sure its a neighbor
                             if(neighbor_point_gid != point_gid){
 
-                                // save the neighbor
+                                // save the neighbor, remember points_num_neighbors is counter now
                                 size_t num_saved = Kokkos::atomic_fetch_add(&points_num_neighbors(point_gid), 1);
                                 points_in_point(point_gid, num_saved) = neighbor_point_gid;
                                 
                                 
                                 // if point j's stencil did not see point i, then save i to j's list
-                                const int neighbor_imin = points_bin_stencil(neighbor_point_gid,0);
-                                const int neighbor_imax = points_bin_stencil(neighbor_point_gid,1);
-                                const int neighbor_jmin = points_bin_stencil(neighbor_point_gid,2);
-                                const int neighbor_jmax = points_bin_stencil(neighbor_point_gid,3);
-                                const int neighbor_kmin = points_bin_stencil(neighbor_point_gid,4);
-                                const int neighbor_kmax = points_bin_stencil(neighbor_point_gid,5);
+                                const int neighbor_iminus = points_bin_stencil(neighbor_point_gid,0);
+                                const int neighbor_iplus = points_bin_stencil(neighbor_point_gid,1);
+                                const int neighbor_jminus = points_bin_stencil(neighbor_point_gid,2);
+                                const int neighbor_jplus = points_bin_stencil(neighbor_point_gid,3);
+                                const int neighbor_kminus = points_bin_stencil(neighbor_point_gid,4);
+                                const int neighbor_kplus = points_bin_stencil(neighbor_point_gid,5);
 
                                 // i,j,k is the bin where point_gid lives
                                 bool inside =
-                                    (i >= neighbor_imin && i <= neighbor_imax) &&
-                                    (j >= neighbor_jmin && j <= neighbor_jmax) &&
-                                    (k >= neighbor_kmin && k <= neighbor_kmax);
+                                    (i >= neighbor_iminus && i <= neighbor_iplus) &&
+                                    (j >= neighbor_jminus && j <= neighbor_jplus) &&
+                                    (k >= neighbor_kminus && k <= neighbor_kplus);
 
                                 if(!inside){
 
@@ -890,78 +873,38 @@ struct Hash_t{
 
         FOR_ALL(point_gid, 0, num_points, {
                 
-            for(int neighbor_point_lid = 0; neighbor_point_lid<points_num_neighbors(point_gid); neighbor_point_lid++){
+            for(size_t neighbor_point_lid = 0; neighbor_point_lid<points_num_neighbors(point_gid); neighbor_point_lid++){
                 
                 // get the point gid for this neighbor
-                int neighbor_point_gid = points_in_point(point_gid, neighbor_point_lid);
+                size_t neighbor_point_gid = points_in_point(point_gid, neighbor_point_lid);
                 
                 // loop over the neighbors of my neighbor
                 size_t found = 0;
-                for(int j_lid = 0; j_lid<points_num_neighbors(neighbor_point_gid); j_lid++){
+                for(size_t j_lid = 0; j_lid<points_num_neighbors(neighbor_point_gid); j_lid++){
 
                     // get the neighboring point gid of my neighbor
-                    int j_point_gid = points_in_point(neighbor_point_gid, j_lid);
+                    size_t j_point_gid = points_in_point(neighbor_point_gid, j_lid);
                     if (point_gid == j_point_gid){
                         reverse_neighbor_lid(point_gid, neighbor_point_lid) = j_lid;
                         found = 1;
-                        //printf("found \n");
                         break;
                     }
                 } // end loop over j's neighboring points
-                if(found==0)printf("reverse map for i=%d and j=%d pair not found \n", point_gid, neighbor_point_gid);
+                
+                // uncomment to debug missing reverse pairs:
+                //if(found==0) printf("reverse map for i=%zu and j=%zu pair not found\n", point_gid, neighbor_point_gid);
+
             } // end loop over i's neighboring points
                 
         });
+        Kokkos::fence();
 
 
     } // end function build point connectivity
 
 
-
-
-
 } // Hash_t
 
-
-void build_bin_mesh(){
-
-    // the number of nodes in the bin mesh
-    const double num_avg_inp_triangles_1D = pow((double)num_inp_triangles, 0.33333333);
-
-    const size_t num_bins_x = (size_t)num_avg_inp_triangles_1D;   
-    const size_t num_bins_y = (size_t)num_avg_inp_triangles_1D;   
-    const size_t num_bins_z = (size_t)num_avg_inp_triangles_1D;   
-
-    const double bin_dx = (xmax - xmin)/(num_avg_inp_triangles_1D - 1.0);
-    const double bin_dy = (ymax - ymin)/(num_avg_inp_triangles_1D - 1.0);
-    const double bin_dz = (zmax - zmin)/(num_avg_inp_triangles_1D - 1.0);
-
-    const size_t num_bins = num_bins_x*num_bins_y*num_bins_z; // for ease of use
-    DCArrayKokkos <size_t> num_tris_in_bin(num_bins);
-    num_tris_in_bin.set_values(0.0);
-
-    
-    FOR_ALL(tri_gid, 0, num_inp_triangles, {
-
-        // get the 1D index for this bin
-        size_t bin_gid = get_bin_gid(tri_coords(tri_gid,0), 
-                                     tri_coords(tri_gid,1), 
-                                     tri_coords(tri_gid,2),
-                                     xmin,
-                                     ymin,
-                                     zmin,
-                                     bin_dx,
-                                     bin_dy,
-                                     bin_dz,
-                                     num_bins_x, 
-                                     num_bins_y,
-                                     num_bins_z);
-
-    });
-
-
-}
-
-
+} // end swage namespace
 
 #endif

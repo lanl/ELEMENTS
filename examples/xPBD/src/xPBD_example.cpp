@@ -24,34 +24,29 @@ int main(int argc, char** argv)
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
         const int num_dims = 3;
-        int poly_order = 1;
+        int poly_order = 2;
         
         double origin[3] = {0.0, 0.0, 0.0};
         double length[3] = {8.0, 1.0, 1.0};
-        int num_elems_dim[3] = {16, 4, 4};
+        int num_elems_dim[3] = {4, 2, 2};
 
         int num_outputs = 10;
 
         double density = 8960.0; // copper density kg/m^3
 
-        int iterations = 1;        // nit: paper uses 1 Gauss-Seidel pass per substep
-        int nsubsteps = 300;       // small steps per macro timestep (Saillant et al. Algorithm 1)
-        double final_time = 1.0;   // run longer to approach static equilibrium under gravity
-        double time_step = 0.05;    // macro timestep between VTK outputs
+        int iterations = 2;        // nit: paper uses 1 Gauss-Seidel pass per substep
+        int nsubsteps = 50;       // small steps per macro timestep (Saillant et al. Algorithm 1)
+        double final_time = 10.0;   // run longer to approach static equilibrium under gravity
+        double time_step = 0.1;    // macro timestep between VTK outputs
 
         int write_id = 0;
 
         double youngs_modulus = 110.0e9; // copper younds modulus in Pa
         double poissons_ratio = 0.34; // copper poissons ratio
-        
-        
-        
+              
         double shear_modulus = youngs_modulus / (2.0 * (1.0 + poissons_ratio)); // copper shear modulus in Pa
         double lame_lambda = (youngs_modulus * poissons_ratio) / ((1.0 + poissons_ratio) * (1.0 - 2.0 * poissons_ratio)); // copper lame lambda in Pa
   
-
-        
-
         const double main_start_time = MPI_Wtime();
 
         swage::Mesh initial_mesh;
@@ -390,210 +385,234 @@ int main(int argc, char** argv)
 
                 for (int iter = 0; iter < iterations; iter++) {
                 
-                // ====================================================================
-                // CONSTRAINT 1: DEVIATORIC 
-                // ====================================================================
-                FOR_ALL(elem_gid, 0, mesh.num_elems, {
-                    
-                    double C_dev = 0.0;
-                    
-                    double grad_C_[mesh.num_nodes_in_elem*num_dims];
-                    ViewCArrayDevice<double> grad_C(&grad_C_[0], mesh.num_nodes_in_elem, num_dims);
-                    
-                    for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                        for(int dim = 0; dim < num_dims; dim++){
-                            grad_C(node_lid, dim) = 0.0;
-                        }
-                    }
-
-                    for(int g_lid = 0; g_lid < mesh.num_gauss_in_elem; g_lid++){
-                        int gauss_gid = mesh.gauss_in_elem(elem_gid, g_lid);
+                    // ====================================================================
+                    // CONSTRAINT 1: DEVIATORIC 
+                    // ====================================================================
+                    FOR_ALL(elem_gid, 0, mesh.num_elems, {
                         
-                        // Volume uses absolute determinant to remain stable under inversion
-                        double V_i = fabs(gauss_point.jacobian_determinant(gauss_gid)) * ref_elem.gauss_point_weights(g_lid);
-
-                        xpbd::compute_jacobian(mesh, jacobian_matrix, node.coords_predicted, ref_elem, num_dims, mesh.num_nodes_in_elem, elem_gid, gauss_gid, g_lid);
-
-                        double F_[9] = {0.0};
-                        ViewCArrayDevice<double> F(&F_[0], 3, 3);
-
-                        xpbd::compute_F(mesh, node.coords_predicted, gauss_point.J_inv_initial, ref_elem, jacobian_matrix, F, num_dims, elem_gid, gauss_gid, g_lid);
+                        double C_dev = 0.0;
                         
-                        double cofactor_F_[9] = {0.0};
-                        ViewCArrayDevice<double> cofactor_F(&cofactor_F_[0], 3, 3);
-                        double I2 = 0.0;
-                        double I3 = 0.0;
-
-                        xpbd::compute_cofactor_and_invariants(F, cofactor_F, num_dims, I2, I3);
-                        
-                        // Psi_A = I2 - 2 I3 - 1
-                        double psi_A = I2 - 2.0 * I3 - 1.0;
-                        if (psi_A < 0.0) psi_A = 0.0;
-                        C_dev += psi_A * V_i;
+                        // NOTE: the original used a variable-length array (VLA) here:
+                        //   double grad_C_[mesh.num_nodes_in_elem*num_dims];
+                        // VLAs are a GCC/Clang extension, not standard C++, and do NOT compile for
+                        // CUDA/HIP device code. Use a fixed-size stack buffer sized for the element
+                        // order instead. kMaxDofsPerElem must be >= num_nodes_in_elem*num_dims.
+                        // 216 nodes covers tensor elements up to P5 hex ((5+1)^3); raise if you go higher.
+                        constexpr int kMaxDofsPerElem = 216 * 3;
+                        double grad_C_[kMaxDofsPerElem];
+                        ViewCArrayDevice<double> grad_C(&grad_C_[0], mesh.num_nodes_in_elem, num_dims);
                         
                         for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                            double dN_dX[3];
-                            xpbd::compute_dN_dX(gauss_point.J_inv_initial, ref_elem, num_dims, gauss_gid, g_lid, node_lid, dN_dX);
-                            
-                            for(int i = 0; i < num_dims; i++){
-                                double P_A_i = 0.0;
-                                for(int j = 0; j < num_dims; j++){
-                                    double P_A_ij = 2.0 * (F(i, j) - cofactor_F(i, j));
-                                    P_A_i += P_A_ij * dN_dX[j];
-                                }
-                                grad_C(node_lid, i) += P_A_i * V_i;
-                            }
-                        }
-                    }
-                    
-                    if (C_dev > 1e-12) {
-                        C_dev = std::sqrt(C_dev);
-                        double inv_2C = 1.0 / (2.0 * C_dev);
-                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                            for(int i = 0; i < num_dims; i++){
-                                grad_C(node_lid, i) *= inv_2C;
-                            }
-                        }
-                    } else {
-                        C_dev = 0.0;
-                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                            for(int i = 0; i < num_dims; i++){
-                                grad_C(node_lid, i) = 0.0;
-                            }
-                        }
-                    }
-
-                    double denom_dev = 0.0;
-                    for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                        int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
-                        double w_i = node.inv_mass(node_gid);
-                        
-                        double grad_sq = 0.0;
-                        for(int dim = 0; dim < num_dims; dim++){
-                            grad_sq += grad_C(node_lid, dim) * grad_C(node_lid, dim);
-                        }
-                        denom_dev += w_i * grad_sq;
-                    }
-
-                    double current_lambda = element.lambda_deviatoric(elem_gid);
-                    double delta_lambda = (-C_dev - alpha_tilde_dev * current_lambda) / (denom_dev + alpha_tilde_dev);
-                    element.lambda_deviatoric(elem_gid) += delta_lambda;
-
-                    for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                        int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
-                        double w_i = node.inv_mass(node_gid);
-                        
-                        if (w_i > 0.0) { 
                             for(int dim = 0; dim < num_dims; dim++){
-                                double delta_x = w_i * grad_C(node_lid, dim) * delta_lambda;
-                                Kokkos::atomic_add(&node.coords_predicted(node_gid, dim), delta_x);
+                                grad_C(node_lid, dim) = 0.0;
                             }
                         }
-                    }
-                });
 
-                MATAR_FENCE();
-
-                // ====================================================================
-                // CONSTRAINT 2: VOLUMETRIC 
-                // ====================================================================
-                FOR_ALL(elem_gid, 0, mesh.num_elems, {
-                    double C_vol = 0.0;
-                    double grad_C_vol_[mesh.num_nodes_in_elem*num_dims];
-                    ViewCArrayDevice<double> grad_C_vol(&grad_C_vol_[0], mesh.num_nodes_in_elem, num_dims);
-                    for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                        for(int dim = 0; dim < num_dims; dim++){
-                            grad_C_vol(node_lid, dim) = 0.0;
-                        }
-                    }
-
-                    for(int g_lid = 0; g_lid < mesh.num_gauss_in_elem; g_lid++){
-                        
-                        int gauss_gid = mesh.gauss_in_elem(elem_gid, g_lid);
-                        
-                        double V_i = fabs(gauss_point.jacobian_determinant(gauss_gid)) * ref_elem.gauss_point_weights(g_lid);
-
-                        xpbd::compute_jacobian(mesh, jacobian_matrix, node.coords_predicted, ref_elem, num_dims, mesh.num_nodes_in_elem, elem_gid, gauss_gid, g_lid);
-
-                        double F_[9] = {0.0};
-                        ViewCArrayDevice<double> F(&F_[0], 3, 3);
-
-                        xpbd::compute_F(mesh, node.coords_predicted, gauss_point.J_inv_initial, ref_elem, jacobian_matrix, F, num_dims, elem_gid, gauss_gid, g_lid);
-                        
-                        double cofactor_F_[9] = {0.0};
-                        ViewCArrayDevice<double> cofactor_F(&cofactor_F_[0], 3, 3);
-                        double I2 = 0.0;
-                        double I3 = 0.0;
-
-                        xpbd::compute_cofactor_and_invariants(F, cofactor_F, num_dims, I2, I3);
-                        
-                        // Psi_B = (I3 - 1)^2
-                        double psi_B = (I3 - 1.0) * (I3 - 1.0);
-                        C_vol += psi_B * V_i;
-                        
-                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                            double dN_dX[3];
-                            xpbd::compute_dN_dX(gauss_point.J_inv_initial, ref_elem, num_dims, gauss_gid, g_lid, node_lid, dN_dX);
+                        for(int g_lid = 0; g_lid < mesh.num_gauss_in_elem; g_lid++){
+                            int gauss_gid = mesh.gauss_in_elem(elem_gid, g_lid);
                             
-                            for(int i = 0; i < num_dims; i++){
-                                double P_B_i = 0.0;
-                                for(int j = 0; j < num_dims; j++){
-                                    double P_B_ij = 2.0 * (I3 - 1.0) * cofactor_F(i, j);
-                                    P_B_i += P_B_ij * dN_dX[j];
+                            // Volume uses absolute determinant to remain stable under inversion
+                            double V_i = fabs(gauss_point.jacobian_determinant(gauss_gid)) * ref_elem.gauss_point_weights(g_lid);
+
+                            xpbd::compute_jacobian(mesh, jacobian_matrix, node.coords_predicted, ref_elem, num_dims, mesh.num_nodes_in_elem, elem_gid, gauss_gid, g_lid);
+
+                            double F_[9] = {0.0};
+                            ViewCArrayDevice<double> F(&F_[0], 3, 3);
+
+                            xpbd::compute_F(mesh, node.coords_predicted, gauss_point.J_inv_initial, ref_elem, jacobian_matrix, F, num_dims, elem_gid, gauss_gid, g_lid);
+                            
+                            double cofactor_F_[9] = {0.0};
+                            ViewCArrayDevice<double> cofactor_F(&cofactor_F_[0], 3, 3);
+                            double I2 = 0.0;
+                            double I3 = 0.0;
+
+                            xpbd::compute_cofactor_and_invariants(F, cofactor_F, num_dims, I2, I3);
+                            
+                            // Psi_A = I2 - 2 I3 - 1
+                            double psi_A = I2 - 2.0 * I3 - 1.0;
+                            if (psi_A < 0.0) psi_A = 0.0;
+                            C_dev += psi_A * V_i;
+                            
+                            for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                                double dN_dX[3];
+                                xpbd::compute_dN_dX(gauss_point.J_inv_initial, ref_elem, num_dims, gauss_gid, g_lid, node_lid, dN_dX);
+                                
+                                for(int i = 0; i < num_dims; i++){
+                                    double P_A_i = 0.0;
+                                    for(int j = 0; j < num_dims; j++){
+                                        double P_A_ij = 2.0 * (F(i, j) - cofactor_F(i, j));
+                                        P_A_i += P_A_ij * dN_dX[j];
+                                    }
+                                    grad_C(node_lid, i) += P_A_i * V_i;
                                 }
-                                grad_C_vol(node_lid, i) += P_B_i * V_i;
                             }
                         }
-                    }
-                    
-                    if (C_vol > 1e-12) {
-                        C_vol = std::sqrt(C_vol);
-                        double inv_2C = 1.0 / (2.0 * C_vol);
-                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                            for(int i = 0; i < num_dims; i++){
-                                grad_C_vol(node_lid, i) *= inv_2C;
-                            }
-                        }
-                    } else {
-                        C_vol = 0.0;
-                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                            for(int i = 0; i < num_dims; i++){
-                                grad_C_vol(node_lid, i) = 0.0;
-                            }
-                        }
-                    }
-
-                    double denom_vol = 0.0;
-                    for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                        int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
-                        double w_i = node.inv_mass(node_gid);
                         
-                        double grad_sq = 0.0;
-                        for(int dim = 0; dim < num_dims; dim++){
-                            grad_sq += grad_C_vol(node_lid, dim) * grad_C_vol(node_lid, dim);
+                        if (C_dev > 1e-14) {
+                            C_dev = std::sqrt(C_dev);
+                            double inv_2C = 1.0 / (2.0 * C_dev);
+                            for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                                for(int i = 0; i < num_dims; i++){
+                                    grad_C(node_lid, i) *= inv_2C;
+                                }
+                            }
+                        } else {
+                            C_dev = 0.0;
+                            for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                                for(int i = 0; i < num_dims; i++){
+                                    grad_C(node_lid, i) = 0.0;
+                                }
+                            }
                         }
-                        denom_vol += w_i * grad_sq;
-                    }
 
-                    double current_lambda = element.lambda_volumetric(elem_gid);
-                    double delta_lambda = (-C_vol - alpha_tilde_vol * current_lambda) / (denom_vol + alpha_tilde_vol);
-                    element.lambda_volumetric(elem_gid) += delta_lambda;
-
-                    for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
-                        int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
-                        double w_i = node.inv_mass(node_gid);
-                        
-                        if (w_i > 0.0) { 
+                        double denom_dev = 0.0;
+                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                            int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                            double w_i = node.inv_mass(node_gid);
+                            
+                            double grad_sq = 0.0;
                             for(int dim = 0; dim < num_dims; dim++){
-                                double delta_x = w_i * grad_C_vol(node_lid, dim) * delta_lambda;
-                                Kokkos::atomic_add(&node.coords_predicted(node_gid, dim), delta_x);
+                                grad_sq += grad_C(node_lid, dim) * grad_C(node_lid, dim);
+                            }
+                            denom_dev += w_i * grad_sq;
+                        }
+
+                        double current_lambda = element.lambda_deviatoric(elem_gid);
+                        double delta_lambda = (-C_dev - alpha_tilde_dev * current_lambda) / (denom_dev + alpha_tilde_dev);
+                        element.lambda_deviatoric(elem_gid) += delta_lambda;
+
+                        // ---- position scatter ----
+                        // RACE CONDITION (parallel only): elements that share a node both read
+                        // coords_predicted (to build F / grad_C above) and write it here. The atomic_add
+                        // makes each write safe, but neighbouring elements still race on the
+                        // read-modify-write as a whole, so this is a Jacobi/Gauss-Seidel hybrid whose
+                        // result depends on thread scheduling. In SERIAL the FOR_ALL runs sequentially,
+                        // giving a deterministic Gauss-Seidel sweep (each element sees the previous
+                        // element's correction) -- which is correct. For a parallel run this loop needs
+                        // graph colouring of the elements, or a Jacobi scheme that accumulates
+                        // corrections into a separate buffer and applies them after a fence.
+                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                            int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                            double w_i = node.inv_mass(node_gid);
+                            
+                            if (w_i > 0.0) { 
+                                for(int dim = 0; dim < num_dims; dim++){
+                                    double delta_x = 0.99 * w_i * grad_C(node_lid, dim) * delta_lambda;
+                                    Kokkos::atomic_add(&node.coords_predicted(node_gid, dim), delta_x);
+                                }
                             }
                         }
-                    }
-                }); // end 
+                    });
+
+                    // Deviatoric pass writes coords_predicted; the volumetric pass below reads it.
+                    // This fence is required for correctness (device dependency boundary).
+                    MATAR_FENCE();
+
+                    // ====================================================================
+                    // CONSTRAINT 2: VOLUMETRIC 
+                    // ====================================================================
+                    FOR_ALL(elem_gid, 0, mesh.num_elems, {
+                        double C_vol = 0.0;
+                        // See note in the deviatoric block: avoid VLA, use a fixed-size buffer.
+                        constexpr int kMaxDofsPerElem = 216 * 3;
+                        double grad_C_vol_[kMaxDofsPerElem];
+                        ViewCArrayDevice<double> grad_C_vol(&grad_C_vol_[0], mesh.num_nodes_in_elem, num_dims);
+                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                            for(int dim = 0; dim < num_dims; dim++){
+                                grad_C_vol(node_lid, dim) = 0.0;
+                            }
+                        }
+
+                        for(int g_lid = 0; g_lid < mesh.num_gauss_in_elem; g_lid++){
+                            
+                            int gauss_gid = mesh.gauss_in_elem(elem_gid, g_lid);
+                            
+                            double V_i = fabs(gauss_point.jacobian_determinant(gauss_gid)) * ref_elem.gauss_point_weights(g_lid);
+
+                            xpbd::compute_jacobian(mesh, jacobian_matrix, node.coords_predicted, ref_elem, num_dims, mesh.num_nodes_in_elem, elem_gid, gauss_gid, g_lid);
+
+                            double F_[9] = {0.0};
+                            ViewCArrayDevice<double> F(&F_[0], 3, 3);
+
+                            xpbd::compute_F(mesh, node.coords_predicted, gauss_point.J_inv_initial, ref_elem, jacobian_matrix, F, num_dims, elem_gid, gauss_gid, g_lid);
+                            
+                            double cofactor_F_[9] = {0.0};
+                            ViewCArrayDevice<double> cofactor_F(&cofactor_F_[0], 3, 3);
+                            double I2 = 0.0;
+                            double I3 = 0.0;
+
+                            xpbd::compute_cofactor_and_invariants(F, cofactor_F, num_dims, I2, I3);
+                            
+                            // Psi_B = (I3 - 1)^2
+                            double psi_B = (I3 - 1.0) * (I3 - 1.0);
+                            C_vol += psi_B * V_i;
+                            
+                            for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                                double dN_dX[3];
+                                xpbd::compute_dN_dX(gauss_point.J_inv_initial, ref_elem, num_dims, gauss_gid, g_lid, node_lid, dN_dX);
+                                
+                                for(int i = 0; i < num_dims; i++){
+                                    double P_B_i = 0.0;
+                                    for(int j = 0; j < num_dims; j++){
+                                        double P_B_ij = 2.0 * (I3 - 1.0) * cofactor_F(i, j);
+                                        P_B_i += P_B_ij * dN_dX[j];
+                                    }
+                                    grad_C_vol(node_lid, i) += P_B_i * V_i;
+                                }
+                            }
+                        }
+                        
+                        if (C_vol > 1e-12) {
+                            C_vol = std::sqrt(C_vol);
+                            double inv_2C = 1.0 / (2.0 * C_vol);
+                            for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                                for(int i = 0; i < num_dims; i++){
+                                    grad_C_vol(node_lid, i) *= inv_2C;
+                                }
+                            }
+                        } else {
+                            C_vol = 0.0;
+                            for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                                for(int i = 0; i < num_dims; i++){
+                                    grad_C_vol(node_lid, i) = 0.0;
+                                }
+                            }
+                        }
+
+                        double denom_vol = 0.0;
+                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                            int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                            double w_i = node.inv_mass(node_gid);
+                            
+                            double grad_sq = 0.0;
+                            for(int dim = 0; dim < num_dims; dim++){
+                                grad_sq += grad_C_vol(node_lid, dim) * grad_C_vol(node_lid, dim);
+                            }
+                            denom_vol += w_i * grad_sq;
+                        }
+
+                        double current_lambda = element.lambda_volumetric(elem_gid);
+                        double delta_lambda = (-C_vol - alpha_tilde_vol * current_lambda) / (denom_vol + alpha_tilde_vol);
+                        element.lambda_volumetric(elem_gid) += delta_lambda;
+
+                        // ---- position scatter ----
+                        // RACE CONDITION (parallel only): same hazard as the deviatoric scatter above
+                        // (shared nodes read+written across elements). Correct in serial; needs element
+                        // colouring or a Jacobi accumulate-then-apply scheme to be correct in parallel.
+                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_elem; node_lid++){
+                            int node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                            double w_i = node.inv_mass(node_gid);
+                            
+                            if (w_i > 0.0) { 
+                                for(int dim = 0; dim < num_dims; dim++){
+                                    double delta_x = 0.99 * w_i * grad_C_vol(node_lid, dim) * delta_lambda;
+                                    Kokkos::atomic_add(&node.coords_predicted(node_gid, dim), delta_x);
+                                }
+                            }
+                        }
+                    }); // end 
         
                 // If running across MPI ranks, you must synchronize coords_predicted at partition boundaries here
-                // node_communication_plan.exchange(node.coords_predicted);
                 } // end loop over iterations
 
                 // 3. Kinematic update per substep (Algorithm 1, line 14)
@@ -606,27 +625,27 @@ int main(int argc, char** argv)
 
             } // end loop over substeps
 
-            node.velocity.update_host();
-            node.coords.update_host();
+            // node.velocity.update_host();
+            // node.coords.update_host();
 
-            if (rank == 0) {
-                node.coords.update_host();
-                initial_node_coords.update_host();
-                double tip_z_disp = 0.0;
-                double max_tip_z = 0.0;
-                int tip_count = 0;
-                for (size_t node_gid = 0; node_gid < mesh.num_nodes; node_gid++) {
-                    if (node.coords.host(node_gid, 0) > length[0] - 1e-6) {
-                        double dz = node.coords.host(node_gid, 2) - initial_node_coords.host(node_gid, 2);
-                        tip_z_disp += dz;
-                        max_tip_z = std::max(max_tip_z, std::fabs(dz));
-                        tip_count++;
-                    }
-                }
-                const double tip_avg = tip_count > 0 ? tip_z_disp / tip_count : 0.0;
-                std::cout << "t=" << t << " tip avg z-disp=" << tip_avg
-                          << " max |z-disp|=" << max_tip_z << std::endl;
-            }
+            // if (rank == 0) {
+            //     node.coords.update_host();
+            //     initial_node_coords.update_host();
+            //     double tip_z_disp = 0.0;
+            //     double max_tip_z = 0.0;
+            //     int tip_count = 0;
+            //     for (size_t node_gid = 0; node_gid < mesh.num_nodes; node_gid++) {
+            //         if (node.coords.host(node_gid, 0) > length[0] - 1e-6) {
+            //             double dz = node.coords.host(node_gid, 2) - initial_node_coords.host(node_gid, 2);
+            //             tip_z_disp += dz;
+            //             max_tip_z = std::max(max_tip_z, std::fabs(dz));
+            //             tip_count++;
+            //         }
+            //     }
+            //     const double tip_avg = tip_count > 0 ? tip_z_disp / tip_count : 0.0;
+            //     std::cout << "t=" << t << " tip avg z-disp=" << tip_avg
+            //               << " max |z-disp|=" << max_tip_z << std::endl;
+            // }
 
             // Write out the current state of the mesh to a VTU file. 
             std::cout << "Writing out the current state of the mesh to a VTU file:" << std::endl;

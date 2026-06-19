@@ -134,7 +134,12 @@ void compute_cofactor_and_invariants(
         cofactor_F(2, 1) = F(0, 2)*F(1, 0) - F(0, 0)*F(1, 2);
         cofactor_F(2, 2) = F(0, 0)*F(1, 1) - F(0, 1)*F(1, 0);
         
-        I3 = F(0, 0)*cofactor_F(0, 0) + F(0, 1)*cofactor_F(1, 0) + F(0, 2)*cofactor_F(2, 0);
+        // det(F) via the column-0 cofactor expansion: det = f0 . (f1 x f2) = sum_i F(i,0)*com(F)(i,0).
+        // (The previous version mixed row-0 entries of F with column-0 cofactors, i.e. it computed
+        //  [F * com(F)]_00, which only equals det(F) when F is symmetric. For any non-symmetric F
+        //  -- i.e. every bend/shear/torsion/rotation -- it returned the wrong determinant, corrupting
+        //  I3 and hence both constraints. See note below.)
+        I3 = F(0, 0)*cofactor_F(0, 0) + F(1, 0)*cofactor_F(1, 0) + F(2, 0)*cofactor_F(2, 0);
     } else if (num_dims == 2) {
         cofactor_F(0, 0) =  F(1, 1);
         cofactor_F(0, 1) = -F(1, 0);

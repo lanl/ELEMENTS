@@ -117,12 +117,12 @@ struct SpatialConnectivity_t{
     DCArrayKokkos <size_t>     num_points_in_bin;  // number of points per bin
     DRaggedRightArrayKokkos <size_t> points_in_bin; // points stored in each bin
 
-    // --- point-to-bin connectivity (working arrays) ---
+    // --- point-to-bin connectivity (arrays) ---
     DCArrayKokkos <size_t> points_bin_gid;          // bin gid for each point
     CArrayKokkos  <size_t> points_bin_lid_storage;  // storage slot within bin
     DCArrayKokkos <int>    points_bin_stencil;      // stencil bounds: imin,imax,jmin,jmax,kmin,kmax
 
-    // --- point cloud connectivity (working arrays) ---
+    // --- point cloud connectivity (arrays) ---
     DRaggedRightArrayKokkos <size_t> points_in_point;      // point connectivity array
     DCArrayKokkos <size_t> points_num_neighbors;           // neighbor count per point
     DRaggedRightArrayKokkos <size_t> reverse_neighbor_lid; // accessing neighbors connectivity array
@@ -370,7 +370,7 @@ struct SpatialConnectivity_t{
         const size_t num_points = corner_point_positions.dims(0);
         
         // -----------------------------------------------------------------------
-        // Allocate per-point and per-bin working arrays
+        // Allocate per-point and per-bin arrays
         // -----------------------------------------------------------------------
         points_bin_gid         = DCArrayKokkos <size_t> (num_points, "points_in_gid");
         points_bin_lid_storage = CArrayKokkos  <size_t> (num_points, "bin_lid_storage");  
@@ -493,7 +493,7 @@ struct SpatialConnectivity_t{
             if (smallest_point_id_in_set(point_gid) != point_gid){
 
                 const size_t smallest_point_gid = smallest_point_id_in_set(point_gid);
-                node_in_corner_point(point_gid) = node_in_corner_point( smallest_point_gid);
+                node_in_corner_point(point_gid) = node_in_corner_point(smallest_point_gid);
             } // end if
 
         }); // end for all
@@ -520,7 +520,7 @@ struct SpatialConnectivity_t{
         const size_t num_points = point_positions.dims(0);
 
         // -----------------------------------------------------------------------
-        // Allocate per-point and per-bin working arrays
+        // Allocate per-point and per-bin arrays
         // -----------------------------------------------------------------------
         points_bin_gid         = DCArrayKokkos <size_t> (num_points, "points_bin_gid");
         points_bin_lid_storage = CArrayKokkos  <size_t> (num_points, "bin_lid_storage");
@@ -681,9 +681,9 @@ struct SpatialConnectivity_t{
 
                 size_t nbr_bin = get_id_of_ijk(ic, jc, kc, num_bins_x, num_bins_y);
 
-                for (size_t sl = 0; sl < num_points_in_bin(nbr_bin); sl++){
+                for (size_t storage_lid = 0; storage_lid < num_points_in_bin(nbr_bin); storage_lid++){
 
-                    size_t nbr_gid = points_in_bin(nbr_bin, sl);
+                    size_t nbr_gid = points_in_bin(nbr_bin, storage_lid);
                     if (nbr_gid == point_gid) continue; // skip self
 
                     // does nbr's stencil cover point_gid's bin (i,j,k)?
@@ -699,7 +699,7 @@ struct SpatialConnectivity_t{
                         Kokkos::atomic_increment(&points_num_neighbors(nbr_gid));
                     }
 
-                } // end for sl
+                } // end for storage_lid
 
             } // end stencil triple-loop
 
@@ -757,9 +757,9 @@ struct SpatialConnectivity_t{
 
                 size_t nbr_bin = get_id_of_ijk(ic, jc, kc, num_bins_x, num_bins_y);
 
-                for (size_t sl = 0; sl < num_points_in_bin(nbr_bin); sl++){
+                for (size_t storage_lid = 0; storage_lid < num_points_in_bin(nbr_bin); storage_lid++){
 
-                    size_t nbr_gid = points_in_bin(nbr_bin, sl);
+                    size_t nbr_gid = points_in_bin(nbr_bin, storage_lid);
                     if (nbr_gid == point_gid) continue; // skip self
 
                     // save nbr into point_gid's list (stencil always covers nbr's bin)
@@ -778,7 +778,7 @@ struct SpatialConnectivity_t{
                         points_in_point(nbr_gid, nbr_idx) = point_gid;
                     }
 
-                } // end for sl
+                } // end for storage_lid
 
             } // end stencil triple-loop
 

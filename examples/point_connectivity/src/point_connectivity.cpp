@@ -92,10 +92,23 @@ MATAR_INITIALIZE(argc, argv);
 
 
     // --------------------------------------------
-    // create the bin mesh to build connectivities
+    // create bin mesh for building connectivity
+    // --------------------------------------------
+    const size_t num_bins_x_in = 10;
+    const size_t num_bins_y_in = 10;
+    const size_t num_bins_z_in = 10;
+    SpatialConnectivity.build_bin_mesh(X0, Y0, Z0,
+                                       LX+X0, LY+Y0, LZ+Z0,
+                                       num_bins_x_in,
+                                       num_bins_y_in,
+                                       num_bins_z_in);
+
+
+    // --------------------------------------------
+    // Test 1: 
     // --------------------------------------------
 
-    std::cout<<"Test 1: connectivity in a point-cloud \n";
+    std::cout<<"Test 1: build connectivity in a point-cloud \n";
 
 
     // fitting radius of the cloud
@@ -103,11 +116,14 @@ MATAR_INITIALIZE(argc, argv);
     const double cutoff_coeff = 2.0; // coeff*h_kernel
 
     // min number of points to fit in the cloud
-    const double num_points_fit = 9; 
+    const double min_num_points_fit = 9; 
 
-    
+    // set the data structure variables
+    SpatialConnectivity.initialize_point_cloud_vars(
+                                    h_kernel*cutoff_coeff,
+                                    min_num_points_fit);
 
-    // build the connectivity
+    // build the point cloud connectivity
     SpatialConnectivity.build_point_cloud_connectivity(point_positions);
 
 

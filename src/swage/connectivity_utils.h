@@ -80,15 +80,17 @@ size_t get_id_of_ijk(size_t i, size_t j, size_t k, size_t num_x, size_t num_y){
 
 /////////////////////////////////////////////////////////////////////////////
 ///
-/// \struct SpatialHash_t
+/// \struct SpatialConnectivity_t
 ///
-/// \brief Stores spatial hash information and has member functions to calculate
-///        connectivity between e.g., overlapping points, point clouds, etc.
+/// \brief Builds and stores spatial connectivity for arbitrary point clouds.
+///        Provides overlapping node detection and point-to-point neighbor
+///        lists for meshfree methods such as SPH and RKPM.  A structured
+///        bin mesh is used internally to accelerate all proximity queries.
 ///
 /////////////////////////////////////////////////////////////////////////////
 struct SpatialConnectivity_t{
 
-    // bin mesh memory
+    // --- bin mesh ---
     size_t num_bins_x;
     size_t num_bins_y;
     size_t num_bins_z;
@@ -106,63 +108,64 @@ struct SpatialConnectivity_t{
     double ymax;
     double zmax;
 
-    // variables used with arbitrary point cloud connectivity
-    double search_radius;
-    size_t min_num_points_fit;
+    // --- point cloud parameters ---
+    double search_radius;       // kernel support radius
+    size_t min_num_points_fit;  // minimum neighbors required for basis fit
 
-    // bins and their connectivity to each other and points
-    DCArrayKokkos <bin_keys_t> keys_in_bin;
-    DCArrayKokkos <size_t> num_points_in_bin;
-    DRaggedRightArrayKokkos <size_t> points_in_bin;
+    // --- bin mesh connectivity ---
+    DCArrayKokkos <bin_keys_t> keys_in_bin;        // bin gid -> (i,j,k)
+    DCArrayKokkos <size_t>     num_points_in_bin;  // number of points per bin
+    DRaggedRightArrayKokkos <size_t> points_in_bin; // points stored in each bin
 
-    // connectivity from points to bins
-    DCArrayKokkos <size_t> points_bin_gid;
-    CArrayKokkos <size_t>  points_bin_lid_storage;  // only used to create storage
-    DCArrayKokkos <int>    points_bin_stencil;   // how imin,imax,jmin,jmax,kmin,kmax range for bins in stencil
+    // --- point-to-bin connectivity (working arrays) ---
+    DCArrayKokkos <size_t> points_bin_gid;          // bin gid for each point
+    CArrayKokkos  <size_t> points_bin_lid_storage;  // storage slot within bin
+    DCArrayKokkos <int>    points_bin_stencil;      // stencil bounds: imin,imax,jmin,jmax,kmin,kmax
 
-
-    // arrays to hold point cloud connectivity
-    DRaggedRightArrayKokkos <size_t> points_in_point;
-    DCArrayKokkos <size_t> points_num_neighbors;
-    DRaggedRightArrayKokkos <size_t> reverse_neighbor_lid;
+    // --- point cloud connectivity (working arrays) ---
+    DRaggedRightArrayKokkos <size_t> points_in_point;      // point connectivity array
+    DCArrayKokkos <size_t> points_num_neighbors;           // neighbor count per point
+    DRaggedRightArrayKokkos <size_t> reverse_neighbor_lid; // accessing neighbors connectivity array
 
 
     /////////////////////////////////////////////////////////////////////////////
     ///
-    /// \struct initialize_point_cloud
+    /// \fn initialize_point_cloud_vars
     ///
-    /// \brief sets variables unique to building connectivity between points
-    ///        in a point cloud
+    /// \brief Sets parameters for point cloud neighbor search
     ///
-    /// \param search_radius is the search radius for building connectivity
-    /// \param min_num_points_fit is the minimum number of points to fit
+    /// \param search_radius_in      kernel support radius
+    /// \param min_num_points_fit_in minimum neighbors required for basis fit
+    ///
     /////////////////////////////////////////////////////////////////////////////
-    void initialize_point_cloud(const double search_radius_in,
-                                const size_t min_num_points_fit_in){
+    void initialize_point_cloud_vars(const double search_radius_in,
+                                     const size_t min_num_points_fit_in){
 
         search_radius = search_radius_in;
         min_num_points_fit = min_num_points_fit_in;
 
         return;
 
-    } // end function
+    } // end initialize_point_cloud_vars
+
 
     /////////////////////////////////////////////////////////////////////////////
     ///
-    /// \struct build_bin_mesh
+    /// \fn build_bin_mesh
     ///
-    /// \brief builds a structured mesh were the cells of this mesh are called
-    ///        bins that store points for building connectivity or maps
+    /// \brief Builds the structured bin mesh used for all spatial queries.
+    ///        Must be called before any connectivity function.
     ///
-    /// \param x_min is the minimum x coordinate, the start location of bin mesh
-    /// \param y_min is the minimum y coordinate, the start location of bin mesh
-    /// \param z_min is the minimum z coordinate, the start location of bin mesh
-    /// \param x_max is the maximum x coordinate, the end of the bin mesh
-    /// \param y_max is the maximum y coordinate, the end of the bin mesh
-    /// \param z_max is the maximum z coordinate, the end of the bin mesh
-    /// \param num_bins_x_in is number of bins in the x coordinate direction
-    /// \param num_bins_y_in is number of bins in the y coordinate direction
-    /// \param num_bins_z_in is number of bins in the z coordinate direction
+    /// \param xmin_in       minimum x coordinate of the bin mesh domain
+    /// \param ymin_in       minimum y coordinate of the bin mesh domain
+    /// \param zmin_in       minimum z coordinate of the bin mesh domain
+    /// \param xmax_in       maximum x coordinate of the bin mesh domain
+    /// \param ymax_in       maximum y coordinate of the bin mesh domain
+    /// \param zmax_in       maximum z coordinate of the bin mesh domain
+    /// \param num_bins_x_in number of bins in the x direction
+    /// \param num_bins_y_in number of bins in the y direction
+    /// \param num_bins_z_in number of bins in the z direction
+    ///
     /////////////////////////////////////////////////////////////////////////////
     void build_bin_mesh(const double xmin_in, const double ymin_in, const double zmin_in,
                         const double xmax_in, const double ymax_in, const double zmax_in,
@@ -170,26 +173,20 @@ struct SpatialConnectivity_t{
                         const size_t num_bins_y_in,
                         const size_t num_bins_z_in){
 
-        // set the member variables
-        xmin = xmin_in;
-        ymin = ymin_in;
-        zmin = zmin_in;
-        xmax = xmax_in;
-        ymax = ymax_in;
-        zmax = zmax_in;
+        xmin = xmin_in;  ymin = ymin_in;  zmin = zmin_in;
+        xmax = xmax_in;  ymax = ymax_in;  zmax = zmax_in;
 
-        num_bins_x = num_bins_x_in;   
-        num_bins_y = num_bins_y_in;   
-        num_bins_z = num_bins_z_in;   
-        num_bins = num_bins_x_in*num_bins_y_in*num_bins_z_in;
+        num_bins_x = num_bins_x_in;
+        num_bins_y = num_bins_y_in;
+        num_bins_z = num_bins_z_in;
+        num_bins   = num_bins_x * num_bins_y * num_bins_z;
 
-        bin_dx = fmax(1.e-13, (xmax - xmin)/((double)num_bins_x));
-        bin_dy = fmax(1.e-13, (ymax - ymin)/((double)num_bins_y));
-        bin_dz = fmax(1.e-13, (zmax - zmin)/((double)num_bins_z));
+        bin_dx = fmax(1.e-13, (xmax - xmin) / (double)num_bins_x);
+        bin_dy = fmax(1.e-13, (ymax - ymin) / (double)num_bins_y);
+        bin_dz = fmax(1.e-13, (zmax - zmin) / (double)num_bins_z);
 
-        // allocate bin key memory
-        keys_in_bin = DCArrayKokkos <bin_keys_t> (num_bins, "keys_in_bin"); // mapping from gid to (i,j,k)
-        num_points_in_bin = DCArrayKokkos <size_t> (num_bins, "num_bins");
+        keys_in_bin       = DCArrayKokkos <bin_keys_t> (num_bins, "keys_in_bin");
+        num_points_in_bin = DCArrayKokkos <size_t>     (num_bins, "num_points_in_bin");
         num_points_in_bin.set_values(0);
 
         // build reverse mapping between gid and i,j,k
@@ -197,18 +194,15 @@ struct SpatialConnectivity_t{
                       j, 0, num_bins_y,
                       k, 0, num_bins_z, {
             
-
-            // get bin gid for this i,j,k
             size_t bin_gid = get_id_of_ijk(i, j, k, num_bins_x, num_bins_y);
 
-            // the i,j,k for this bin
-            bin_keys_t bin_keys;
-            bin_keys.i = i;
-            bin_keys.j = j;
-            bin_keys.k = k;
+            bin_keys_t bk;
+            bk.i = i;
+            bk.j = j;
+            bk.k = k;
 
-            // save mapping from bin_gid to bin_keys i,j,k
-            keys_in_bin(bin_gid) = bin_keys;
+            // save mapping from bin_gid to ben keys i,j,k
+            keys_in_bin(bin_gid) = bk;
 
         });
         Kokkos::fence();
@@ -232,26 +226,15 @@ struct SpatialConnectivity_t{
     bin_keys_t get_bin_keys(const double x_pt, 
                             const double y_pt, 
                             const double z_pt){
-                
-        // get the (i,j,k) values as doubles, a shift is included to get cell center
-        //double i_dbl = fmin((double)num_bins_x-1, fmax(0, round((x_pt - xmin - bin_dx*0.5)/bin_dx - 1.0e-10))); // x = ih + X0 + dx_bin*0.5
-        //double j_dbl = fmin((double)num_bins_y-1, fmax(0, round((y_pt - ymin - bin_dy*0.5)/bin_dy - 1.0e-10)));
-        //double k_dbl = fmin((double)num_bins_z-1, fmax(0, round((z_pt - zmin - bin_dz*0.5)/bin_dz - 1.0e-10)));
 
-        double i_dbl = fmin((double)num_bins_x-1, fmax(0.0, round((x_pt - xmin)/bin_dx - 1.0e-10))); // x = idx + xmin
-        double j_dbl = fmin((double)num_bins_y-1, fmax(0.0, round((y_pt - ymin)/bin_dy - 1.0e-10))); // y = jdy + ymin
-        double k_dbl = fmin((double)num_bins_z-1, fmax(0.0, round((z_pt - zmin)/bin_dz - 1.0e-10))); // z = kdz + zmin
+        bin_keys_t bk;
+        bk.i = (int)fmin((double)num_bins_x-1., fmax(0., round((x_pt - xmin)/bin_dx - 1.0e-10)));
+        bk.j = (int)fmin((double)num_bins_y-1., fmax(0., round((y_pt - ymin)/bin_dy - 1.0e-10)));
+        bk.k = (int)fmin((double)num_bins_z-1., fmax(0., round((z_pt - zmin)/bin_dz - 1.0e-10)));
 
-        bin_keys_t bin_keys; // save i,j,k to the bin keys
+        return bk;
 
-        // get the integer for the bins
-        bin_keys.i = (int)i_dbl;
-        bin_keys.j = (int)j_dbl;
-        bin_keys.k = (int)k_dbl;
-
-        return bin_keys;
-
-    } // end function
+    } // end get_bin_keys
 
 
     /////////////////////////////////////////////////////////////////////////////
@@ -269,30 +252,23 @@ struct SpatialConnectivity_t{
     size_t get_bin_gid(const double x_pt, 
                        const double y_pt, 
                        const double z_pt){
-                
 
-        double i_dbl = fmin((double)num_bins_x-1, fmax(0.0, round((x_pt - xmin)/bin_dx - 1.0e-10))); // x = idx + xmin
-        double j_dbl = fmin((double)num_bins_y-1, fmax(0.0, round((y_pt - ymin)/bin_dy - 1.0e-10))); // y = jdy + ymin
-        double k_dbl = fmin((double)num_bins_z-1, fmax(0.0, round((z_pt - zmin)/bin_dz - 1.0e-10))); // z = kdz + zmin
+        size_t i = (size_t)fmin((double)num_bins_x-1., fmax(0., round((x_pt - xmin)/bin_dx - 1.0e-10)));
+        size_t j = (size_t)fmin((double)num_bins_y-1., fmax(0., round((y_pt - ymin)/bin_dy - 1.0e-10)));
+        size_t k = (size_t)fmin((double)num_bins_z-1., fmax(0., round((z_pt - zmin)/bin_dz - 1.0e-10)));
 
-        // get the integers for the bins
-        size_t i = (size_t)i_dbl;
-        size_t j = (size_t)j_dbl;
-        size_t k = (size_t)k_dbl;
-        
-        // get the 1D index for this bin                               
         return get_id_of_ijk(i, j, k, num_bins_x, num_bins_y);
 
-    } // end function
-
-
+    } // end get_bin_gid
 
 
     /////////////////////////////////////////////////////////////////////////////
     ///
     /// \struct get_bounds_STL
     ///
-    /// \brief Calculates the spatial bounds of an STL file
+    /// \brief Computes the axis-aligned bounding box of an STL triangle mesh
+    ///        using parallel reductions.  Results are padded by 1e-6 on each
+    ///        side so the bin mesh strictly contains all geometry.
     ///
     /// \param x_min is the minimum x coordinate, the start location of bin mesh
     /// \param y_min is the minimum y coordinate, the start location of bin mesh
@@ -326,7 +302,6 @@ struct SpatialConnectivity_t{
         const size_t num_inp_triangles = v0X.dims(0);
 
         // find (xmin, ymin, zmin) for building bin mesh
-        // Write directly into the output reference parameters; no local shadowing variables.
         Kokkos::parallel_reduce(
             "stl_min_domain_extents",
             num_inp_triangles,
@@ -339,16 +314,16 @@ struct SpatialConnectivity_t{
                 ymin_lcl = fmin(v2Y(tri),fmin(v1Y(tri),fmin(v0Y(tri), ymin_lcl)));
                 zmin_lcl = fmin(v2Z(tri),fmin(v1Z(tri),fmin(v0Z(tri), zmin_lcl)));
             },
-        Kokkos::Min<double>(xmin), Kokkos::Min<double>(ymin), Kokkos::Min<double>(zmin)); 
-        // end parallel reduction over all STL triangles
+            Kokkos::Min<double>(xmin), 
+            Kokkos::Min<double>(ymin), 
+            Kokkos::Min<double>(zmin)); 
+            // end parallel reduction over all STL triangles
 
         xmin -= 1.e-6; // decrease by a small fraction
         ymin -= 1.e-6; // decrease by a small fraction
         zmin -= 1.e-6; // decrease by a small fraction
 
-
         // find (xmax, ymax, zmax) for building bin mesh
-        // Write directly into the output reference parameters; no local shadowing variables.
         Kokkos::parallel_reduce(
             "stl_max_domain_extents",
             num_inp_triangles,
@@ -362,8 +337,10 @@ struct SpatialConnectivity_t{
                 ymax_lcl = fmax(v2Y(tri), fmax(v1Y(tri), fmax(v0Y(tri), ymax_lcl)));
                 zmax_lcl = fmax(v2Z(tri), fmax(v1Z(tri), fmax(v0Z(tri), zmax_lcl)));
             },
-        Kokkos::Max<double>(xmax), Kokkos::Max<double>(ymax), Kokkos::Max<double>(zmax)); 
-        // end parallel reduction over all STL triangles
+            Kokkos::Max<double>(xmax), 
+            Kokkos::Max<double>(ymax), 
+            Kokkos::Max<double>(zmax)); 
+            // end parallel reduction over all STL triangles
 
         xmax += 1.e-6; // increase by a small fraction
         ymax += 1.e-6; // increase by a small fraction
@@ -371,23 +348,20 @@ struct SpatialConnectivity_t{
 
         return;
 
-    } // end function
-
-
-
-    
+    } // end get_bounds_STL
 
 
     /////////////////////////////////////////////////////////////////////////////
     ///
     /// \struct build_multi_node_connectivity
     ///
-    /// \brief Calculates a unique node index space for each set of overlapping 
-    ///        points.
+    /// \brief Assigns a unique node gid to each set of geometrically coincident
+    ///        points (distance^2 < 1e-25).  Used to build the shared-node
+    ///        connectivity of a multi-element mesh from its corner points.
     ///
-    /// \param corner_point_positions are the (x,y,z) coordinates of every point 
-    /// \param node_in_corner_point is node on top of a point
-    /// \param num_nodes is the number of overlapping points
+    /// \param corner_point_positions (x,y,z) coordinates of every corner point 
+    /// \param node_in_corner_point   output: node gid for each corner point
+    /// \param num_nodes              output: total number of unique nodes
     /////////////////////////////////////////////////////////////////////////////
     void build_multi_node_connectivity(const CArrayKokkos <double>  &corner_point_positions,
                                        CArrayKokkos <size_t> &node_in_corner_point,
@@ -395,27 +369,26 @@ struct SpatialConnectivity_t{
 
         const size_t num_points = corner_point_positions.dims(0);
         
-        // allocate arrays for connectivity from points to bins
+        // -----------------------------------------------------------------------
+        // Allocate per-point and per-bin working arrays
+        // -----------------------------------------------------------------------
         points_bin_gid         = DCArrayKokkos <size_t> (num_points, "points_in_gid");
-        points_bin_lid_storage = CArrayKokkos  <size_t> (num_points, "bin_lid_storage");  // only used to create storage
+        points_bin_lid_storage = CArrayKokkos  <size_t> (num_points, "bin_lid_storage");  
+        
+        num_points_in_bin.set_values(0); 
 
-        // bins and their connectivity to each other and points
-        // Member variable: keys_in_bin(num_bins, "keys_in_bin") is for mapping from gid to (i,j,k) --> now a member var
-        // Member variable: num_points_in_bin(num_bins, "num_bins")
-        // Member variable: points_in_bin;
-        num_points_in_bin.set_values(0); // initializing the member variable to 0
-
-        // save bin id to points
+        // -----------------------------------------------------------------------
+        // Pass 1a: assign every point to a bin and record its storage slot
+        // -----------------------------------------------------------------------
         FOR_ALL(point_gid, 0, num_points, {
 
-            // get the 1D index for this bin
             size_t bin_gid = get_bin_gid(corner_point_positions(point_gid,0), 
                                          corner_point_positions(point_gid,1), 
                                          corner_point_positions(point_gid,2));
 
             size_t storage_lid = Kokkos::atomic_fetch_add(&num_points_in_bin(bin_gid), 1);
-            points_bin_gid(point_gid) = bin_gid; // the id of the bin
-            points_bin_lid_storage(point_gid) = storage_lid; // the storage place in the bin
+            points_bin_gid(point_gid)         = bin_gid; 
+            points_bin_lid_storage(point_gid) = storage_lid; 
 
         }); // end for all
         Kokkos::fence();
@@ -423,88 +396,71 @@ struct SpatialConnectivity_t{
         num_points_in_bin.update_host();
 
 
-        // allocate points in bin connectivity
+        // -----------------------------------------------------------------------
+        // Pass 1b: build the ragged bin->points map
+        // -----------------------------------------------------------------------
         points_in_bin = DRaggedRightArrayKokkos <size_t> (num_points_in_bin, "num_points_in_bin");
 
-        // save points in bin
         FOR_ALL(point_gid, 0, num_points, {
 
-            // get bin gid
-            size_t bin_gid = points_bin_gid(point_gid);
-
-            // get it's storage location in the ragged right compressed storage
+            size_t bin_gid     = points_bin_gid(point_gid);
             size_t storage_lid = points_bin_lid_storage(point_gid);
-
-            // save the point to this bin
             points_in_bin(bin_gid, storage_lid) = point_gid;
 
         }); // end for all
         Kokkos::fence();
 
+        // -----------------------------------------------------------------------
+        // step 2: get smallest point index in the point-point set
+        // -----------------------------------------------------------------------
 
-        // build the map from corners to node
-        node_in_corner_point = CArrayKokkos <size_t> (num_points);     // saves the node_id to point
+        node_in_corner_point = CArrayKokkos <size_t> (num_points);   // saves the node_id to point
         CArrayKokkos <size_t> smallest_point_id_in_set (num_points); // saves the smallest point id in the point-point set
 
-        // ---------------------------------------------------------
-        // step 1: get smallest point index in the point-point set
         FOR_ALL(point_gid, 0, num_points, {
            
-            size_t bin_gid = points_bin_gid(point_gid);
-            bin_keys_t keys = keys_in_bin(bin_gid); // get i,j,k for this bin
+            bin_keys_t bk  = keys_in_bin(points_bin_gid(point_gid));
 
             // loop over (i-1:i+1), (j-1:j+1), (k-1:k+1) if node point falls on a bin mesh edge
-            const int imin = MAX(0, keys.i-1); const int imax = MIN(num_bins_x-1, keys.i+1);
-            const int jmin = MAX(0, keys.j-1); const int jmax = MIN(num_bins_y-1, keys.j+1);
-            const int kmin = MAX(0, keys.k-1); const int kmax = MIN(num_bins_z-1, keys.k+1);
+            const int imin = MAX(0, bk.i-1); const int imax = MIN(num_bins_x-1, bk.i+1);
+            const int jmin = MAX(0, bk.j-1); const int jmax = MIN(num_bins_y-1, bk.j+1);
+            const int kmin = MAX(0, bk.k-1); const int kmax = MIN(num_bins_z-1, bk.k+1);
 
-            size_t smallest_point_id = point_gid;
+            size_t smallest_id = point_gid;
 
-            // serial loop over all bins around me, tagging all overlapping points
-            for(int i=imin; i<=imax; i++){
-                for(int j=jmin; j<=jmax; j++){
-                    for(int k=kmin; k<=kmax; k++){
+            for (int i = imin; i <= imax; i++)
+            for (int j = jmin; j <= jmax; j++)
+            for (int k = kmin; k <= kmax; k++) {
                         
-                        // get this bin gid for (i,j,k)
-                        size_t a_bin_gid = get_id_of_ijk(i, j, k, num_bins_x, num_bins_y);
+                size_t a_bin_gid = get_id_of_ijk(i, j, k, num_bins_x, num_bins_y);
 
-                        // loop over the corner points in this bin
-                        for(size_t storage_lid=0; storage_lid<num_points_in_bin(a_bin_gid); storage_lid++){
-                            
-                            // get the nieghboring point gid 
-                            size_t neighbor_point_gid = points_in_bin(a_bin_gid, storage_lid);
+                for(size_t storage_lid=0; storage_lid<num_points_in_bin(a_bin_gid); storage_lid++){
+                    
+                    // get the nieghboring point gid 
+                    size_t nbr_gid = points_in_bin(a_bin_gid, storage_lid);
 
-                            if(neighbor_point_gid >= smallest_point_id) continue; // only look at lower id's
+                    if (nbr_gid >= smallest_id) continue; // only look at lower id's
 
-                            const double pnt_dx = (corner_point_positions(point_gid,0)-corner_point_positions(neighbor_point_gid,0));
-                            const double pnt_dy = (corner_point_positions(point_gid,1)-corner_point_positions(neighbor_point_gid,1));
-                            const double pnt_dz = (corner_point_positions(point_gid,2)-corner_point_positions(neighbor_point_gid,2));
+                    const double pnt_dx = (corner_point_positions(point_gid,0)-corner_point_positions(nbr_gid,0));
+                    const double pnt_dy = (corner_point_positions(point_gid,1)-corner_point_positions(nbr_gid,1));
+                    const double pnt_dz = (corner_point_positions(point_gid,2)-corner_point_positions(nbr_gid,2));
 
-                            const double distance_sqrd = pnt_dx*pnt_dx + pnt_dy*pnt_dy + pnt_dz*pnt_dz;
+                    if(pnt_dx*pnt_dx + pnt_dy*pnt_dy + pnt_dz*pnt_dz < 1.e-25) smallest_id = nbr_gid;
 
-                            if(distance_sqrd < 1.e-25)
-                            {
-                                // this is a matching node
-                                if(neighbor_point_gid < smallest_point_id){
-                                    smallest_point_id = neighbor_point_gid;
-                                } // end if smallest point_id
-                            } // end if
+                } // end for over stored points in bin
 
-                        } // end for over stored points in bin
+            } // end for 
 
-                    } // end for k
-                } // end for j
-            } // end for i
-
-            smallest_point_id_in_set(point_gid) = smallest_point_id; // write once, no atomics needed
+            smallest_point_id_in_set(point_gid) = smallest_id; // write once, no atomics needed
 
         }); // end parallel loop over points
         Kokkos::fence();
 
-        // ------------------------------------------------------------------------------
-        // step 2: count the number of unique point-point sets using smallest point flag
+        // -----------------------------------------------------------------------
+        // step 3: count the number of unique point-point sets using smallest 
+        //         point flag, assign the unique node gid to each set representive
+        // -----------------------------------------------------------------------
 
-        // array holding node_gid on the device and host side
         DCArrayKokkos <size_t> node_gid_counter(1);
         RUN({
             node_gid_counter(0) = 0; // initializing on device to be = 0
@@ -524,15 +480,13 @@ struct SpatialConnectivity_t{
         Kokkos::fence();
         node_gid_counter.update_host();
 
-        // save the number of nodes, these overlap the unique point-point sets
         num_nodes = node_gid_counter.host(0);
         
-
-        // ---------------------------------------------------------------------------
-        // step 3: propagate the node_gid to all other points in the same set.
-        //         Safe because step 2 fully completed (fence above) before this kernel
-        //         reads node_in_corner_point(smallest_point_gid).
-
+        // -----------------------------------------------------------------------
+        // step 4: propagate the node_gid to all other points in the same set.
+        //         Safe because step 2 fully completed (fence above) before this 
+        //         kernel reads node_in_corner_point(smallest_point_gid).
+        // -----------------------------------------------------------------------
         FOR_ALL(point_gid, 0, num_points, {
 
             // if not the smallest, then save the node_gid saved to the smallest point
@@ -545,7 +499,7 @@ struct SpatialConnectivity_t{
         }); // end for all
         Kokkos::fence();
 
-    }// end function
+    } // end build_multi_node_connectivity
 
 
 
@@ -565,340 +519,310 @@ struct SpatialConnectivity_t{
 
         const size_t num_points = point_positions.dims(0);
 
-        // allocate arrays for connectivity from points to bins
-        points_bin_gid         = DCArrayKokkos <size_t> (num_points, "points_in_gid");
-        points_bin_lid_storage = CArrayKokkos  <size_t> (num_points, "bin_lid_storage");  // only used to create storage
-        points_bin_stencil     = DCArrayKokkos <int>    (num_points, 6, "bin_stencil");   // how imin,imax,jmin,jmax,kmin,kmax range for bins in stencil
+        // -----------------------------------------------------------------------
+        // Allocate per-point and per-bin working arrays
+        // -----------------------------------------------------------------------
+        points_bin_gid         = DCArrayKokkos <size_t> (num_points, "points_bin_gid");
+        points_bin_lid_storage = CArrayKokkos  <size_t> (num_points, "bin_lid_storage");
+        points_bin_stencil     = DCArrayKokkos <int>    (num_points, 6, "bin_stencil");
         points_num_neighbors   = DCArrayKokkos <size_t> (num_points, "num_neighbors");
 
-        // bins and their connectivity to each other and points
-        // Member variable: keys_in_bin(num_bins, "keys_in_bin") is for mapping from gid to (i,j,k)
-        // Member variable: num_points_in_bin(num_bins, "num_bins")
-        // Member variable: points_in_bin;
-        num_points_in_bin.set_values(0); // initializing the member variable to 0
-        
+        num_points_in_bin.set_values(0);
 
-        // save bin id to points
+        // -----------------------------------------------------------------------
+        // Pass 1a: assign every point to a bin and record its storage slot
+        // -----------------------------------------------------------------------
         FOR_ALL(point_gid, 0, num_points, {
 
-            // get the 1D index for this bin
-            size_t bin_gid = get_bin_gid(point_positions(point_gid,0), 
-                                         point_positions(point_gid,1), 
-                                         point_positions(point_gid,2));
+            size_t bin_gid = get_bin_gid(point_positions(point_gid, 0),
+                                         point_positions(point_gid, 1),
+                                         point_positions(point_gid, 2));
 
             size_t storage_lid = Kokkos::atomic_fetch_add(&num_points_in_bin(bin_gid), 1);
-            points_bin_gid(point_gid) = bin_gid; // the id of the bin
-            points_bin_lid_storage(point_gid) = storage_lid; // the storage place in the bin
+            points_bin_gid(point_gid)         = bin_gid;
+            points_bin_lid_storage(point_gid) = storage_lid;
 
         }); // end for all
         Kokkos::fence();
         points_bin_gid.update_host();
         num_points_in_bin.update_host();
 
+        // -----------------------------------------------------------------------
+        // Pass 1b: build the ragged bin->points map
+        // -----------------------------------------------------------------------
+        points_in_bin = DRaggedRightArrayKokkos <size_t> (num_points_in_bin, "points_in_bin");
 
-        // allocate points in bin connectivity
-        points_in_bin = DRaggedRightArrayKokkos <size_t> (num_points_in_bin, "num_points_in_bin");
-
-        // save points in bin
         FOR_ALL(point_gid, 0, num_points, {
 
-            // get bin gid
-            size_t bin_gid = points_bin_gid(point_gid);
-
-            // get it's storage location in the ragged right compressed storage
+            size_t bin_gid     = points_bin_gid(point_gid);
             size_t storage_lid = points_bin_lid_storage(point_gid);
-
-            // save the point to this bin
             points_in_bin(bin_gid, storage_lid) = point_gid;
 
         }); // end for all
         Kokkos::fence();
 
-        // ------------------------------------------------
-        // Find the neighbors around each point using bins
-        // ------------------------------------------------
-        
+        // -----------------------------------------------------------------------
+        // Pass 2: determine each point's stencil and initial neighbor count.
+        //
+        //   Grow a cubic shell of bins outward from point_gid's bin until:
+        //     (a) the stencil contains at least min_num_points_fit points, AND
+        //     (b) the stencil radius meets or exceeds search_radius,
+        //   OR until all points are enclosed.
+        //
+        //   Each thread writes only to its own row of points_bin_stencil and its
+        //   own entry of points_num_neighbors, so no atomics are needed here.
+        //   The initial count is (points in stencil - 1) to exclude self.
+        // -----------------------------------------------------------------------
         FOR_ALL(point_gid, 0, num_points, {
 
-            // get bin gid
             size_t bin_gid = points_bin_gid(point_gid);
-            
-            // get i,j,k for this bin
-            bin_keys_t bin_keys = keys_in_bin(bin_gid);
+            bin_keys_t bk  = keys_in_bin(bin_gid);
 
-            // loop over neighboring bins
-            size_t num_points_found;
+            const int i = bk.i;
+            const int j = bk.j;
+            const int k = bk.k;
 
-            // establish the stencil size to get enough particles
-            for(int stencil=1; stencil<100000; stencil++){
+            for (int stencil = 1; stencil < 100000; stencil++){
 
-                num_points_found = 0;
+                const int iminus = MAX(0,                  i - stencil);
+                const int iplus  = MIN((int)num_bins_x-1,  i + stencil);
+                const int jminus = MAX(0,                  j - stencil);
+                const int jplus  = MIN((int)num_bins_y-1,  j + stencil);
+                const int kminus = MAX(0,                  k - stencil);
+                const int kplus  = MIN((int)num_bins_z-1,  k + stencil);
 
-                const int i = bin_keys.i;
-                const int j = bin_keys.j;
-                const int k = bin_keys.k;
+                // count all points in the candidate stencil
+                size_t num_found = 0;
+                for (int kc = kminus; kc <= kplus; kc++)
+                for (int jc = jminus; jc <= jplus; jc++)
+                for (int ic = iminus; ic <= iplus; ic++){
+                    num_found += num_points_in_bin(get_id_of_ijk(ic, jc, kc, num_bins_x, num_bins_y));
+                }
 
-                const int iminus = MAX(0, i-stencil);
-                const int iplus  = MIN(num_bins_x-1, i+stencil);
+                // skip distance check until minimum point count is reached
+                if (num_found < min_num_points_fit && num_found < num_points) continue;
 
-                const int jminus = MAX(0, j-stencil);
-                const int jplus  = MIN(num_bins_y-1, j+stencil);
+                // distance from the bin center to the near and far faces of the stencil
+                const double x_mid   = bin_dx*(double)i + xmin;
+                const double y_mid   = bin_dy*(double)j + ymin;
+                const double z_mid   = bin_dz*(double)k + zmin;
 
-                const int kminus = MAX(0, k-stencil);
-                const int kplus  = MIN(num_bins_z-1, k+stencil);
-                    
-                for (int kcount=kminus; kcount<=kplus; kcount++){
-                    for (int jcount=jminus; jcount<=jplus; jcount++) {
-                        for (int icount=iminus; icount<=iplus; icount++){
+                const double dist_minus = sqrt(
+                    (bin_dx*(double)iminus + xmin - x_mid)*(bin_dx*(double)iminus + xmin - x_mid) +
+                    (bin_dy*(double)jminus + ymin - y_mid)*(bin_dy*(double)jminus + ymin - y_mid) +
+                    (bin_dz*(double)kminus + zmin - z_mid)*(bin_dz*(double)kminus + zmin - z_mid) );
 
-                            // get bin neighbor gid 
-                            size_t neighbor_bin_gid = get_id_of_ijk(icount, jcount, kcount, num_bins_x, num_bins_y);
-                            num_points_found += num_points_in_bin(neighbor_bin_gid);
+                const double dist_plus = sqrt(
+                    (bin_dx*(double)iplus  + xmin - x_mid)*(bin_dx*(double)iplus  + xmin - x_mid) +
+                    (bin_dy*(double)jplus  + ymin - y_mid)*(bin_dy*(double)jplus  + ymin - y_mid) +
+                    (bin_dz*(double)kplus  + zmin - z_mid)*(bin_dz*(double)kplus  + zmin - z_mid) );
 
-                        } // end for kcount
-                    } // end for jcount
-                } // end for icount
+                // accept stencil when it spans the search radius, or all points fit
+                if (dist_minus >= search_radius || dist_plus >= search_radius ||
+                    num_found == num_points){
 
-                // keep increasing the stencil until a minimum number of points is found, then confirm
-                // the stencil is of sufficient size radially 
-                if (num_points_found >= min_num_points_fit  || num_points_found==num_points){
+                    points_bin_stencil(point_gid, 0) = iminus;
+                    points_bin_stencil(point_gid, 1) = iplus;
+                    points_bin_stencil(point_gid, 2) = jminus;
+                    points_bin_stencil(point_gid, 3) = jplus;
+                    points_bin_stencil(point_gid, 4) = kminus;
+                    points_bin_stencil(point_gid, 5) = kplus;
 
-                    const double x_pt_middle = bin_dx*((double)i) + xmin; 
-                    const double y_pt_middle = bin_dy*((double)j) + ymin; 
-                    const double z_pt_middle = bin_dz*((double)k) + zmin; 
+                    points_num_neighbors(point_gid) = num_found - 1; // exclude self
+                    break;
+                }
 
-                    const double x_pt_minus = bin_dx*((double)iminus) + xmin; 
-                    const double y_pt_minus = bin_dy*((double)jminus) + ymin; 
-                    const double z_pt_minus = bin_dz*((double)kminus) + zmin; 
-                    
-                    const double x_pt_plus = bin_dx*((double)iplus) + xmin; 
-                    const double y_pt_plus = bin_dy*((double)jplus) + ymin; 
-                    const double z_pt_plus = bin_dz*((double)kplus) + zmin; 
-
-                    const double dist_minus = sqrt( (x_pt_minus - x_pt_middle)*(x_pt_minus - x_pt_middle) +
-                                                    (y_pt_minus - y_pt_middle)*(y_pt_minus - y_pt_middle) +
-                                                    (z_pt_minus - z_pt_middle)*(z_pt_minus - z_pt_middle) );
-
-                    const double dist_plus = sqrt( (x_pt_plus - x_pt_middle)*(x_pt_plus - x_pt_middle) +
-                                                   (y_pt_plus - y_pt_middle)*(y_pt_plus - y_pt_middle) +
-                                                   (z_pt_plus - z_pt_middle)*(z_pt_plus - z_pt_middle) );
-
-
-                    // only exit when we exceed kernel distance, which is the search radius
-                    if (dist_minus >= search_radius || dist_plus >= search_radius || num_points_found==num_points){
-
-                        //printf("exiting \n\n");
-
-                        points_bin_stencil(point_gid,0) = iminus;
-                        points_bin_stencil(point_gid,1) = iplus;
-                        points_bin_stencil(point_gid,2) = jminus;
-                        points_bin_stencil(point_gid,3) = jplus;
-                        points_bin_stencil(point_gid,4) = kminus;
-                        points_bin_stencil(point_gid,5) = kplus;
-
-                        //points_num_neighbors(point_gid) = num_points_found; // including node_i in the list of neighbors
-                        points_num_neighbors(point_gid) = num_points_found - 1; // the -1 is because we counted point i as a neighbor
-
-                        break;
-                    }
-                    // else increase stencil size
-
-
-                } // end of check
-                
             } // end for stencil
-
 
         }); // end for all
         Kokkos::fence();
         points_bin_stencil.update_host();
 
-
-
-        // account for stencels not overlapping, fixing assymetry in points connectivity
+        // -----------------------------------------------------------------------
+        // Pass 3 (count only): fix asymmetric stencil neighbor counts.
+        //
+        //   When point i's stencil covers point j's bin but j's stencil does NOT
+        //   cover i's bin, j would never naturally count i as a neighbor during
+        //   its own stencil walk.  Thread i detects this and atomically increments
+        //   j's neighbor count to reserve the extra slot.
+        //
+        //   Correctness of atomic_increment here:
+        //     - Each thread only increments counts for neighbors that MISSED it.
+        //     - Only one thread (thread i) can discover that j missed i, because
+        //       the miss condition (!nbr_sees_me) is evaluated from i's perspective.
+        //     - Therefore no two threads ever atomically increment the same
+        //       (point_gid, nbr_gid) pair for the same reason, eliminating
+        //       double-counting.
+        //     - atomic_increment ensures the counter update is indivisible,
+        //       preventing lost updates when multiple threads increment different
+        //       missed-neighbor slots of the same point concurrently.
+        //
+        //   No neighbor gids are written here — counts only.
+        // -----------------------------------------------------------------------
         FOR_ALL(point_gid, 0, num_points, {
 
-            // get bin gid for this point
             size_t bin_gid = points_bin_gid(point_gid);
-                    
-            // get i,j,k for this bin
-            bin_keys_t bin_keys = keys_in_bin(bin_gid);
+            bin_keys_t bk  = keys_in_bin(bin_gid);
 
-            const int i = bin_keys.i;
-            const int j = bin_keys.j;
-            const int k = bin_keys.k;
+            const int i = bk.i;
+            const int j = bk.j;
+            const int k = bk.k;
 
-            // walk over the stencil to get neighbors of this bin
-            const int iminus = points_bin_stencil(point_gid,0);
-            const int iplus  = points_bin_stencil(point_gid,1);
-            const int jminus = points_bin_stencil(point_gid,2);
-            const int jplus  = points_bin_stencil(point_gid,3);
-            const int kminus = points_bin_stencil(point_gid,4);
-            const int kplus  = points_bin_stencil(point_gid,5);
+            const int iminus = points_bin_stencil(point_gid, 0);
+            const int iplus  = points_bin_stencil(point_gid, 1);
+            const int jminus = points_bin_stencil(point_gid, 2);
+            const int jplus  = points_bin_stencil(point_gid, 3);
+            const int kminus = points_bin_stencil(point_gid, 4);
+            const int kplus  = points_bin_stencil(point_gid, 5);
 
-            // loop over my bin stencil
-            for (int kcount=kminus; kcount<=kplus; kcount++){
-                for (int jcount=jminus; jcount<=jplus; jcount++) {
-                    for (int icount=iminus; icount<=iplus; icount++){
+            for (int kc = kminus; kc <= kplus; kc++)
+            for (int jc = jminus; jc <= jplus; jc++)
+            for (int ic = iminus; ic <= iplus; ic++){
 
-                        // get bin neighbor gid 
-                        size_t neighbor_bin_gid = get_id_of_ijk(icount, jcount, kcount, num_bins_x, num_bins_y);
+                size_t nbr_bin = get_id_of_ijk(ic, jc, kc, num_bins_x, num_bins_y);
 
-                        // save the points in this bin
-                        for(size_t neighbor_pt_lid=0; neighbor_pt_lid<num_points_in_bin(neighbor_bin_gid); neighbor_pt_lid++){
+                for (size_t sl = 0; sl < num_points_in_bin(nbr_bin); sl++){
 
-                            size_t neighbor_point_gid = points_in_bin(neighbor_bin_gid, neighbor_pt_lid);
+                    size_t nbr_gid = points_in_bin(nbr_bin, sl);
+                    if (nbr_gid == point_gid) continue; // skip self
 
-                            // check if the point-point pairs have identical, overlapping stencils, if not, increment the number of neighbors
-                            const int neighbor_iminus = points_bin_stencil(neighbor_point_gid,0);
-                            const int neighbor_iplus  = points_bin_stencil(neighbor_point_gid,1);
-                            const int neighbor_jminus = points_bin_stencil(neighbor_point_gid,2);
-                            const int neighbor_jplus  = points_bin_stencil(neighbor_point_gid,3);
-                            const int neighbor_kminus = points_bin_stencil(neighbor_point_gid,4);
-                            const int neighbor_kplus  = points_bin_stencil(neighbor_point_gid,5);
-                            
-                            // i,j,k is the bin where point_gid lives
-                            bool inside =
-                                (i >= neighbor_iminus && i <= neighbor_iplus) &&
-                                (j >= neighbor_jminus && j <= neighbor_jplus) &&
-                                (k >= neighbor_kminus && k <= neighbor_kplus);
+                    // does nbr's stencil cover point_gid's bin (i,j,k)?
+                    const bool nbr_sees_me =
+                        (i >= points_bin_stencil(nbr_gid, 0) && i <= points_bin_stencil(nbr_gid, 1)) &&
+                        (j >= points_bin_stencil(nbr_gid, 2) && j <= points_bin_stencil(nbr_gid, 3)) &&
+                        (k >= points_bin_stencil(nbr_gid, 4) && k <= points_bin_stencil(nbr_gid, 5));
 
-                            if(!inside){
-                                Kokkos::atomic_increment(&points_num_neighbors(neighbor_point_gid)); 
-                                // the other stencil didn't see my point because it was smaller, now it does see it
-                            }
+                    if (!nbr_sees_me){
+                        // nbr's own stencil walk won't find point_gid; reserve one slot now.
+                        // Safe: only thread point_gid can decide nbr missed point_gid,
+                        // so this increment happens exactly once per asymmetric pair.
+                        Kokkos::atomic_increment(&points_num_neighbors(nbr_gid));
+                    }
 
-                        } // neighbor_point_lid
+                } // end for sl
 
-                    } // end for kcount
-                } // end for jcount
-            } // end for icount        
+            } // end stencil triple-loop
 
         }); // end for all
         Kokkos::fence();
         points_num_neighbors.update_host();
 
-
-        //for(size_t point_gid=0; point_gid<num_points; point_gid++){
-        //    printf("point_gid = %zu, num_neighbors = %zu, num_points = %zu \n", point_gid, points_num_neighbors.host(point_gid), num_points);
-        //}
-        
-        // allocate memory for points in point
+        // -----------------------------------------------------------------------
+        // Allocate points_in_point using the now-exact neighbor counts, then
+        // reset points_num_neighbors to zero to reuse it as a write-index counter.
+        // -----------------------------------------------------------------------
         points_in_point = DRaggedRightArrayKokkos <size_t> (points_num_neighbors, "points_in_point");
-        points_num_neighbors.set_values(0);  // this is a num saved counter now
+        points_num_neighbors.set_values(0); // repurposed: tracks next free slot per point
 
-
-
-        // ---------------------
-        // Save the neighbors
-        // ---------------------
-
-        // find neighbors using bins
+        // -----------------------------------------------------------------------
+        // Pass 4 (save): populate points_in_point with neighbor gids.
+        //
+        //   Each thread i walks its own stencil and saves every neighbor j it
+        //   finds.  When j's stencil would not see i (the asymmetric case), thread
+        //   i also writes itself into j's list.  This mirrors Pass 3 exactly, so
+        //   the slot reserved there is always consumed here — no overflow.
+        //
+        //   Thread safety:
+        //     - Writes to points_in_point(point_gid, ...) are serialised by the
+        //       atomic fetch-add on points_num_neighbors(point_gid): each thread
+        //       owns that counter exclusively via its loop variable point_gid.
+        //     - Cross-writes to points_in_point(nbr_gid, ...) are serialised by
+        //       the atomic fetch-add on points_num_neighbors(nbr_gid): multiple
+        //       threads may cross-write different gids into the same nbr list, but
+        //       each claims a unique slot atomically, so no two writes collide.
+        //     - No slot is claimed twice: the cross-write fires only when
+        //       !nbr_sees_me, and only thread point_gid can satisfy that condition
+        //       for the (point_gid, nbr_gid) pair, so exactly one thread writes
+        //       point_gid into nbr_gid's list.
+        // -----------------------------------------------------------------------
         FOR_ALL(point_gid, 0, num_points, {
 
-            // get bin gid for this point
             size_t bin_gid = points_bin_gid(point_gid);
-                    
-            // get i,j,k for this bin
-            bin_keys_t bin_keys = keys_in_bin(bin_gid);
+            bin_keys_t bk  = keys_in_bin(bin_gid);
 
-            const int i = bin_keys.i;
-            const int j = bin_keys.j;
-            const int k = bin_keys.k;
+            const int i = bk.i;
+            const int j = bk.j;
+            const int k = bk.k;
 
-            // walk over the stencil to get neighbors
-            int iminus = points_bin_stencil(point_gid,0);
-            int iplus  = points_bin_stencil(point_gid,1);
-            int jminus = points_bin_stencil(point_gid,2);
-            int jplus  = points_bin_stencil(point_gid,3);
-            int kminus = points_bin_stencil(point_gid,4);
-            int kplus  = points_bin_stencil(point_gid,5);
+            const int iminus = points_bin_stencil(point_gid, 0);
+            const int iplus  = points_bin_stencil(point_gid, 1);
+            const int jminus = points_bin_stencil(point_gid, 2);
+            const int jplus  = points_bin_stencil(point_gid, 3);
+            const int kminus = points_bin_stencil(point_gid, 4);
+            const int kplus  = points_bin_stencil(point_gid, 5);
 
+            for (int kc = kminus; kc <= kplus; kc++)
+            for (int jc = jminus; jc <= jplus; jc++)
+            for (int ic = iminus; ic <= iplus; ic++){
 
-            for (int kcount=kminus; kcount<=kplus; kcount++){
-                for (int jcount=jminus; jcount<=jplus; jcount++) {
-                    for (int icount=iminus; icount<=iplus; icount++){
+                size_t nbr_bin = get_id_of_ijk(ic, jc, kc, num_bins_x, num_bins_y);
 
-                        // get bin neighbor gid 
-                        size_t neighbor_bin_gid = get_id_of_ijk(icount, jcount, kcount, num_bins_x, num_bins_y);
+                for (size_t sl = 0; sl < num_points_in_bin(nbr_bin); sl++){
 
-                        // save the points in this bin
-                        for(size_t neighbor_pt_lid=0; neighbor_pt_lid<num_points_in_bin(neighbor_bin_gid); neighbor_pt_lid++){
+                    size_t nbr_gid = points_in_bin(nbr_bin, sl);
+                    if (nbr_gid == point_gid) continue; // skip self
 
-                            size_t neighbor_point_gid = points_in_bin(neighbor_bin_gid, neighbor_pt_lid);
-                            
-                            // make sure its a neighbor
-                            if(neighbor_point_gid != point_gid){
+                    // save nbr into point_gid's list (stencil always covers nbr's bin)
+                    size_t idx = Kokkos::atomic_fetch_add(&points_num_neighbors(point_gid), 1);
+                    points_in_point(point_gid, idx) = nbr_gid;
 
-                                // save the neighbor, remember points_num_neighbors is counter now
-                                size_t num_saved = Kokkos::atomic_fetch_add(&points_num_neighbors(point_gid), 1);
-                                points_in_point(point_gid, num_saved) = neighbor_point_gid;
-                                
-                                
-                                // if point j's stencil did not see point i, then save i to j's list
-                                const int neighbor_iminus = points_bin_stencil(neighbor_point_gid,0);
-                                const int neighbor_iplus  = points_bin_stencil(neighbor_point_gid,1);
-                                const int neighbor_jminus = points_bin_stencil(neighbor_point_gid,2);
-                                const int neighbor_jplus  = points_bin_stencil(neighbor_point_gid,3);
-                                const int neighbor_kminus = points_bin_stencil(neighbor_point_gid,4);
-                                const int neighbor_kplus  = points_bin_stencil(neighbor_point_gid,5);
+                    // if nbr's stencil does not cover point_gid's bin, also save
+                    // point_gid into nbr's list to enforce symmetry
+                    const bool nbr_sees_me =
+                        (i >= points_bin_stencil(nbr_gid, 0) && i <= points_bin_stencil(nbr_gid, 1)) &&
+                        (j >= points_bin_stencil(nbr_gid, 2) && j <= points_bin_stencil(nbr_gid, 3)) &&
+                        (k >= points_bin_stencil(nbr_gid, 4) && k <= points_bin_stencil(nbr_gid, 5));
 
-                                // i,j,k is the bin where point_gid lives
-                                bool inside =
-                                    (i >= neighbor_iminus && i <= neighbor_iplus) &&
-                                    (j >= neighbor_jminus && j <= neighbor_jplus) &&
-                                    (k >= neighbor_kminus && k <= neighbor_kplus);
+                    if (!nbr_sees_me){
+                        size_t nbr_idx = Kokkos::atomic_fetch_add(&points_num_neighbors(nbr_gid), 1);
+                        points_in_point(nbr_gid, nbr_idx) = point_gid;
+                    }
 
-                                if(!inside){
+                } // end for sl
 
-                                    size_t num_saved_neighbor = Kokkos::atomic_fetch_add(&points_num_neighbors(neighbor_point_gid), 1);
-                                    points_in_point(neighbor_point_gid, num_saved_neighbor) = point_gid;
-                                    // the other stencil didn't see my point because it was smaller, now it does see it
-
-                                } // end if
-
-                            } // end if neighbor != point_gid
-
-                        } // neighbor_point_lid
-
-                    } // end for kcount
-                } // end for jcount
-            } // end for icount        
+            } // end stencil triple-loop
 
         }); // end for all
         Kokkos::fence();
         points_in_point.update_host();
+        points_num_neighbors.update_host(); // now holds the final neighbor counts
 
-
-        // build the reverse map
-        reverse_neighbor_lid = DRaggedRightArrayKokkos <size_t> (points_num_neighbors); 
+        // -----------------------------------------------------------------------
+        // Pass 5: build the reverse-neighbor map.
+        //
+        //   reverse_neighbor_lid(i, lid) = j_lid  such that
+        //   points_in_point(nbr, j_lid) == point_gid,
+        //   where nbr = points_in_point(point_gid, lid).
+        //
+        //   Each thread only reads and writes its own row of reverse_neighbor_lid,
+        //   so no atomics are needed.  The inner search is O(degree) per entry,
+        //   acceptable because point degrees are small.
+        // -----------------------------------------------------------------------
+        reverse_neighbor_lid = DRaggedRightArrayKokkos <size_t> (points_num_neighbors, "reverse_neighbor_lid");
 
         FOR_ALL(point_gid, 0, num_points, {
-                
-            for(size_t neighbor_point_lid = 0; neighbor_point_lid<points_num_neighbors(point_gid); neighbor_point_lid++){
-                
-                // get the point gid for this neighbor
-                size_t neighbor_point_gid = points_in_point(point_gid, neighbor_point_lid);
-                
-                // loop over the neighbors of my neighbor
-                size_t found = 0;
-                for(size_t j_lid = 0; j_lid<points_num_neighbors(neighbor_point_gid); j_lid++){
 
-                    // get the neighboring point gid of my neighbor
-                    size_t j_point_gid = points_in_point(neighbor_point_gid, j_lid);
-                    if (point_gid == j_point_gid){
-                        reverse_neighbor_lid(point_gid, neighbor_point_lid) = j_lid;
-                        found = 1;
+            for (size_t lid = 0; lid < points_num_neighbors(point_gid); lid++){
+
+                size_t nbr_gid = points_in_point(point_gid, lid);
+
+                for (size_t j_lid = 0; j_lid < points_num_neighbors(nbr_gid); j_lid++){
+
+                    if (points_in_point(nbr_gid, j_lid) == point_gid){
+                        reverse_neighbor_lid(point_gid, lid) = j_lid;
                         break;
                     }
-                } // end loop over j's neighboring points
-                
-                // uncomment to debug missing reverse pairs:
-                //if(found==0) printf("reverse map for i=%zu and j=%zu pair not found\n", point_gid, neighbor_point_gid);
 
-            } // end loop over i's neighboring points
-                
-        });
+                } // end for j_lid
+
+                // uncomment to debug missing pairs:
+                // bool found = false;
+                // for (...) { if (...) { found = true; break; } }
+                // if (!found) printf("reverse map missing: point %zu -> nbr %zu\n", point_gid, nbr_gid);
+
+            } // end for lid
+
+        }); // end for all
         Kokkos::fence();
 
 

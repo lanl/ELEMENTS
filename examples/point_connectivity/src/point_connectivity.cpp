@@ -48,7 +48,68 @@ MATAR_INITIALIZE(argc, argv);
 { // MATAR scope
     std::cout<<"Hello, running point-point connectivity examples! \n";
 
-    bin_keys_t bin;
+
+    // create the spatial connectivity data structure
+    SpatialConnectivity_t SpatialConnectivity;
+
+
+    // --------------------------------------------
+    // Create point cloud
+    // --------------------------------------------
+
+    // Domain of point cloud
+    const double X0 = 0.0;   // origin
+    const double Y0 = 0.0;
+    const double Z0 = 0.0;
+
+    const double LX = 1.0;   // length in x-dir
+    const double LY = 1.0;
+    const double LZ = 1.0;
+
+    // number of points in each direction, creating structured point cloud
+    const size_t num_1d_x = 5;
+    const size_t num_1d_y = 5;
+    const size_t num_1d_z = 5;
+
+    const size_t num_points = num_1d_x*num_1d_y*num_1d_z;
+
+    DCArrayKokkos <double> point_positions(num_points, 3, "point_positions");
+
+    // save point locations
+    size_t point_gid = 0;  
+    for(size_t k=0; k<num_1d_z; k++){
+        for(size_t j=0; j<num_1d_y; j++){
+            for(size_t i=0; i<num_1d_x; i++){
+                // x = x0 + i*dx
+                point_positions.host(point_gid, 0) = X0 + ((double)i)*(LX-X0)/((double)num_1d_x - 1.0);
+                point_positions.host(point_gid, 1) = Y0 + ((double)j)*(LY-Y0)/((double)num_1d_y - 1.0);
+                point_positions.host(point_gid, 2) = Z0 + ((double)k)*(LZ-Z0)/((double)num_1d_z - 1.0);
+                point_gid++;
+            } // end i
+        } // end j
+    } // end k
+    point_positions.update_device();
+
+
+    // --------------------------------------------
+    // create the bin mesh to build connectivities
+    // --------------------------------------------
+
+    std::cout<<"Test 1: connectivity in a point-cloud \n";
+
+
+    // fitting radius of the cloud
+    const double h_kernel = 1.5/((double)num_1d_x); 
+    const double cutoff_coeff = 2.0; // coeff*h_kernel
+
+    // min number of points to fit in the cloud
+    const double num_points_fit = 9; 
+
+    
+
+    // build the connectivity
+    SpatialConnectivity.build_point_cloud_connectivity(point_positions);
+
 
     std::cout<<"finished"<<std::endl;
     

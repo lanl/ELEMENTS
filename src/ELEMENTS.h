@@ -6,7 +6,7 @@
 
 // --- Swage Headers (Mesh & Core) ---
 #include "swage/unstructured_mesh.h"
-#include "swage/hash.h"
+#include "swage/connectivity_utils.h"
 #include "elements/ref_elem.h"
 #include "elements/ref_surf_elem.h"
 #include "elements/ref_quadrature.h"

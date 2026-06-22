@@ -35,20 +35,22 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
-// This pulls in kokkos, matar, mesh, ref_elem stuff, and PT-Scotch
+// This pulls in kokkos, matar, mesh, hash, ref_elem stuff, and PT-Scotch
 #include "ELEMENTS.h"
 
-// IO Utilities for the mesh
-#include "mesh_inputs.h"
-#include "mesh_io.h"
-#include "state.h"
+using namespace mtr;
+using namespace swage; // unstructured mesh and hash
 
 
 int main(int argc, char** argv) {
 
 MATAR_INITIALIZE(argc, argv);
 { // MATAR scope
-    std::cout<<"Hello, Average Example!"<<std::endl;
+    std::cout<<"Hello, running point-point connectivity examples! \n";
+
+    bin_keys_t bin;
+
+    std::cout<<"finished"<<std::endl;
     
 } // end MATAR scope
 MATAR_FINALIZE();

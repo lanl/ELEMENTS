@@ -67,9 +67,9 @@ MATAR_INITIALIZE(argc, argv);
     const double LZ = 1.0;
 
     // number of points in each direction, creating structured point cloud
-    const size_t num_1d_x = 5;
-    const size_t num_1d_y = 5;
-    const size_t num_1d_z = 5;
+    const size_t num_1d_x = 4;
+    const size_t num_1d_y = 4;
+    const size_t num_1d_z = 4;
 
     const size_t num_points = num_1d_x*num_1d_y*num_1d_z;
 
@@ -108,15 +108,15 @@ MATAR_INITIALIZE(argc, argv);
     // Test 1: 
     // --------------------------------------------
 
-    std::cout<<"Test 1: build connectivity in a point-cloud \n";
+    std::cout<<"Building connectivity in a point-cloud \n";
 
 
     // fitting radius of the cloud
-    const double h_kernel = 1.5/((double)num_1d_x); 
-    const double cutoff_coeff = 2.0; // coeff*h_kernel
+    const double h_kernel = LX/((double)num_1d_x-1.0); 
+    const double cutoff_coeff = 1.0; // coeff*h_kernel
 
     // min number of points to fit in the cloud
-    const double min_num_points_fit = 9; 
+    const double min_num_points_fit = 26; 
 
     // set the data structure variables
     SpatialConnectivity.initialize_point_cloud_vars(
@@ -126,8 +126,17 @@ MATAR_INITIALIZE(argc, argv);
     // build the point cloud connectivity
     SpatialConnectivity.build_point_cloud_connectivity(point_positions);
 
+    // verify correctness of the connectivity data structure looping interior points
+    FOR_ALL(i, 1, num_1d_x-1,
+            j, 1, num_1d_y-1,
+            k, 1, num_1d_z-1, {
 
-    std::cout<<"finished"<<std::endl;
+        size_t point_gid = get_id_of_ijk(i, j, k, num_1d_x, num_1d_y);
+        
+        printf("Number of neighbors = %zu, correct answer is 26 \n", SpatialConnectivity.points_num_neighbors(point_gid));
+
+    }); //end for all
+    std::cout<<"Finished"<<std::endl;
     
 } // end MATAR scope
 MATAR_FINALIZE();

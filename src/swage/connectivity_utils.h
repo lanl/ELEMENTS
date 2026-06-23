@@ -73,9 +73,9 @@ struct bin_keys_t{
 ///
 /////////////////////////////////////////////////////////////////////////////
 KOKKOS_INLINE_FUNCTION
-size_t get_id_of_ijk(size_t i, size_t j, size_t k, size_t num_x, size_t num_y){
+size_t get_id_of_ijk(size_t i, size_t j, size_t k, size_t num_x, size_t num_y) {
     return i + (j + k*num_y)*num_x;
-}
+};
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -171,7 +171,7 @@ struct SpatialConnectivity_t{
                         const double xmax_in, const double ymax_in, const double zmax_in,
                         const size_t num_bins_x_in,
                         const size_t num_bins_y_in,
-                        const size_t num_bins_z_in){
+                        const size_t num_bins_z_in) {
 
         xmin = xmin_in;  ymin = ymin_in;  zmin = zmin_in;
         xmax = xmax_in;  ymax = ymax_in;  zmax = zmax_in;
@@ -208,7 +208,7 @@ struct SpatialConnectivity_t{
         Kokkos::fence();
         keys_in_bin.update_host();
 
-    } // end function build bin mesh
+    }  // end function build bin mesh
 
 
     /////////////////////////////////////////////////////////////////////////////
@@ -225,7 +225,7 @@ struct SpatialConnectivity_t{
     KOKKOS_INLINE_FUNCTION
     bin_keys_t get_bin_keys(const double x_pt, 
                             const double y_pt, 
-                            const double z_pt){
+                            const double z_pt) {
 
         bin_keys_t bk;
         bk.i = (int)fmin((double)num_bins_x-1., fmax(0., round((x_pt - xmin)/bin_dx - 1.0e-10)));
@@ -251,7 +251,7 @@ struct SpatialConnectivity_t{
     KOKKOS_INLINE_FUNCTION
     size_t get_bin_gid(const double x_pt, 
                        const double y_pt, 
-                       const double z_pt){
+                       const double z_pt) const {
 
         size_t i = (size_t)fmin((double)num_bins_x-1., fmax(0., round((x_pt - xmin)/bin_dx - 1.0e-10)));
         size_t j = (size_t)fmin((double)num_bins_y-1., fmax(0., round((y_pt - ymin)/bin_dy - 1.0e-10)));
@@ -296,7 +296,7 @@ struct SpatialConnectivity_t{
                         const DViewCArrayKokkos <double> &v1Z,
                         const DViewCArrayKokkos <double> &v2X,
                         const DViewCArrayKokkos <double> &v2Y,
-                        const DViewCArrayKokkos <double> &v2Z){
+                        const DViewCArrayKokkos <double> &v2Z) {
 
         
         const size_t num_inp_triangles = v0X.dims(0);
@@ -365,7 +365,7 @@ struct SpatialConnectivity_t{
     /////////////////////////////////////////////////////////////////////////////
     void build_multi_node_connectivity(const CArrayKokkos <double>  &corner_point_positions,
                                        CArrayKokkos <size_t> &node_in_corner_point,
-                                       size_t &num_nodes){
+                                       size_t &num_nodes) {
 
         const size_t num_points = corner_point_positions.dims(0);
         
@@ -380,7 +380,7 @@ struct SpatialConnectivity_t{
         // -----------------------------------------------------------------------
         // Pass 1a: assign every point to a bin and record its storage slot
         // -----------------------------------------------------------------------
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
 
             size_t bin_gid = get_bin_gid(corner_point_positions(point_gid,0), 
                                          corner_point_positions(point_gid,1), 
@@ -401,7 +401,7 @@ struct SpatialConnectivity_t{
         // -----------------------------------------------------------------------
         points_in_bin = DRaggedRightArrayKokkos <size_t> (num_points_in_bin, "num_points_in_bin");
 
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
 
             size_t bin_gid     = points_bin_gid(point_gid);
             size_t storage_lid = points_bin_lid_storage(point_gid);
@@ -417,7 +417,7 @@ struct SpatialConnectivity_t{
         node_in_corner_point = CArrayKokkos <size_t> (num_points);   // saves the node_id to point
         CArrayKokkos <size_t> smallest_point_id_in_set (num_points); // saves the smallest point id in the point-point set
 
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
            
             bin_keys_t bk  = keys_in_bin(points_bin_gid(point_gid));
 
@@ -467,7 +467,7 @@ struct SpatialConnectivity_t{
         });
 
         // tally the unique point-point sets using the smallest_point_id as a flag
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
 
             if (smallest_point_id_in_set(point_gid) == point_gid){
                 // this point_id the smallest in the point-point set, so it is a unique node
@@ -487,7 +487,7 @@ struct SpatialConnectivity_t{
         //         Safe because step 2 fully completed (fence above) before this 
         //         kernel reads node_in_corner_point(smallest_point_gid).
         // -----------------------------------------------------------------------
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
 
             // if not the smallest, then save the node_gid saved to the smallest point
             if (smallest_point_id_in_set(point_gid) != point_gid){
@@ -514,8 +514,7 @@ struct SpatialConnectivity_t{
     /// \param points_num_neighbors is the number of neighboring points
     /// \param reverse_neighbor_lid is the local index to access the point
     /////////////////////////////////////////////////////////////////////////////
-    void build_point_cloud_connectivity(const DCArrayKokkos <double> &point_positions)
-        {
+    void build_point_cloud_connectivity(const DCArrayKokkos <double> &point_positions){
 
         const size_t num_points = point_positions.dims(0);
 
@@ -532,7 +531,7 @@ struct SpatialConnectivity_t{
         // -----------------------------------------------------------------------
         // Pass 1a: assign every point to a bin and record its storage slot
         // -----------------------------------------------------------------------
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
 
             size_t bin_gid = get_bin_gid(point_positions(point_gid, 0),
                                          point_positions(point_gid, 1),
@@ -552,7 +551,7 @@ struct SpatialConnectivity_t{
         // -----------------------------------------------------------------------
         points_in_bin = DRaggedRightArrayKokkos <size_t> (num_points_in_bin, "points_in_bin");
 
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
 
             size_t bin_gid     = points_bin_gid(point_gid);
             size_t storage_lid = points_bin_lid_storage(point_gid);
@@ -573,7 +572,7 @@ struct SpatialConnectivity_t{
         //   own entry of points_num_neighbors, so no atomics are needed here.
         //   The initial count is (points in stencil - 1) to exclude self.
         // -----------------------------------------------------------------------
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
 
             size_t bin_gid = points_bin_gid(point_gid);
             bin_keys_t bk  = keys_in_bin(bin_gid);
@@ -659,7 +658,7 @@ struct SpatialConnectivity_t{
         //
         //   No neighbor gids are written here — counts only.
         // -----------------------------------------------------------------------
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
 
             size_t bin_gid = points_bin_gid(point_gid);
             bin_keys_t bk  = keys_in_bin(bin_gid);
@@ -735,7 +734,7 @@ struct SpatialConnectivity_t{
         //       for the (point_gid, nbr_gid) pair, so exactly one thread writes
         //       point_gid into nbr_gid's list.
         // -----------------------------------------------------------------------
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
 
             size_t bin_gid = points_bin_gid(point_gid);
             bin_keys_t bk  = keys_in_bin(bin_gid);
@@ -800,7 +799,7 @@ struct SpatialConnectivity_t{
         // -----------------------------------------------------------------------
         reverse_neighbor_lid = DRaggedRightArrayKokkos <size_t> (points_num_neighbors, "reverse_neighbor_lid");
 
-        FOR_ALL(point_gid, 0, num_points, {
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
 
             for (size_t lid = 0; lid < points_num_neighbors(point_gid); lid++){
 

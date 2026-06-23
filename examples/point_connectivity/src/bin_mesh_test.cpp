@@ -60,18 +60,22 @@ MATAR_INITIALIZE(argc, argv);
 
     // a point at (0.15, 0.25, 0.35) should land in bin (1, 2, 3)
     bin_keys_t bk = sc.get_bin_keys(0.15, 0.25, 0.35);
-    assert(bk.i == 1 && bk.j == 2 && bk.k == 3);
+    assert(bk.i == 1 && bk.j == 2 && bk.k == 3 &&
+                    "bin keys i,j,k are wrong");
 
     // get_bin_gid should give the same result as get_id_of_ijk
     size_t gid = sc.get_bin_gid(0.15, 0.25, 0.35);
-    assert(gid == get_id_of_ijk(1, 2, 3, 10, 10));
+    assert(gid == get_id_of_ijk(1, 2, 3, 10, 10) &&
+                    "gid of i,j,k is wrong");
 
     // points at domain boundaries should clamp, not go out of bounds
     bk = sc.get_bin_keys(-1.0, -1.0, -1.0);  // below domain
-    assert(bk.i == 0 && bk.j == 0 && bk.k == 0);
+    assert(bk.i == 0 && bk.j == 0 && bk.k == 0 &&
+                    "bin keys i,j,k below domain are wrong");
 
     bk = sc.get_bin_keys(2.0, 2.0, 2.0);     // above domain
-    assert(bk.i == 9 && bk.j == 9 && bk.k == 9);
+    assert(bk.i == 9 && bk.j == 9 && bk.k == 9 &&
+                    "bin keys i,j,k above domain are wrong");
 
     printf("\nAll bin key checks passed.\n");
 

@@ -823,7 +823,7 @@ struct SpatialConnectivity_t{
 
         }); // end for all
         Kokkos::fence();
-
+        reverse_neighbor_lid.update_host();
 
     } // end function build point connectivity
 

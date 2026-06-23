@@ -39,6 +39,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // This pulls in kokkos, matar, mesh, hash, ref_elem stuff, and PT-Scotch
 #include "ELEMENTS.h"
 
+#undef NDEBUG     // Ensures NDEBUG is turned off
+
 using namespace mtr;
 using namespace swage;
 
@@ -97,9 +99,11 @@ int main(int argc, char* argv[]) {
             corner_pts(15, 0) = 1.0;  corner_pts(15, 1) = 1.0;  corner_pts(15, 2) = 1.0;
         });
 
-        // build the bin mesh with a small padding around the domain [0,2]^3
-        SpatialConnectivity_t sc;
         
+        SpatialConnectivity_t sc;
+
+
+        // build the bin mesh with a small padding around the domain [0,2]^3
         sc.build_bin_mesh(-0.1, -0.1, -0.1,
                            2.1,  2.1,  2.1,
                            10, 10, 10);
@@ -107,7 +111,7 @@ int main(int argc, char* argv[]) {
         CArrayKokkos <size_t> node_in_corner_point;
         size_t num_nodes = 0;
         sc.build_multi_node_connectivity(corner_pts, node_in_corner_point, num_nodes);
-        //node_in_corner_point.update_host();
+
 
         printf("\n--- build_multi_node_connectivity test ---\n");
         printf("num_points = %zu,  num_nodes = %zu  (expected 12)\n\n",

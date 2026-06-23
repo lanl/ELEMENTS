@@ -104,9 +104,6 @@ MATAR_INITIALIZE(argc, argv);
                                        num_bins_z_in);
 
 
-    // --------------------------------------------
-    // Test 1: 
-    // --------------------------------------------
 
     std::cout<<"Building connectivity in a point-cloud \n";
 

@@ -49,10 +49,6 @@ MATAR_INITIALIZE(argc, argv);
     std::cout<<"Hello, running point-point connectivity examples! \n";
 
 
-    // create the spatial connectivity data structure
-    SpatialConnectivity_t SpatialConnectivity;
-
-
     // --------------------------------------------
     // Create point cloud
     // --------------------------------------------
@@ -62,9 +58,9 @@ MATAR_INITIALIZE(argc, argv);
     const double Y0 = 0.0;
     const double Z0 = 0.0;
 
-    const double LX = 1.0;   // length in x-dir
-    const double LY = 1.0;
-    const double LZ = 1.0;
+    const double LX = 2.0;   // length 
+    const double LY = 2.0;
+    const double LZ = 2.0;
 
     // number of points in each direction, creating structured point cloud
     const size_t num_1d_x = 4;
@@ -72,6 +68,12 @@ MATAR_INITIALIZE(argc, argv);
     const size_t num_1d_z = 4;
 
     const size_t num_points = num_1d_x*num_1d_y*num_1d_z;
+
+
+    const double dx = (LX-X0)/((double)num_1d_x - 1.0);
+    const double dy = (LY-Y0)/((double)num_1d_y - 1.0);
+    const double dz = (LZ-Z0)/((double)num_1d_z - 1.0);
+
 
     DCArrayKokkos <double> point_positions(num_points, 3, "point_positions");
 
@@ -81,9 +83,9 @@ MATAR_INITIALIZE(argc, argv);
         for(size_t j=0; j<num_1d_y; j++){
             for(size_t i=0; i<num_1d_x; i++){
                 // x = x0 + i*dx
-                point_positions.host(point_gid, 0) = X0 + ((double)i)*(LX-X0)/((double)num_1d_x - 1.0);
-                point_positions.host(point_gid, 1) = Y0 + ((double)j)*(LY-Y0)/((double)num_1d_y - 1.0);
-                point_positions.host(point_gid, 2) = Z0 + ((double)k)*(LZ-Z0)/((double)num_1d_z - 1.0);
+                point_positions.host(point_gid, 0) = X0 + ((double)i)*dx;
+                point_positions.host(point_gid, 1) = Y0 + ((double)j)*dy;
+                point_positions.host(point_gid, 2) = Z0 + ((double)k)*dz;
                 point_gid++;
             } // end i
         } // end j
@@ -91,37 +93,48 @@ MATAR_INITIALIZE(argc, argv);
     point_positions.update_device();
 
 
+
+    // ------------------------------------------------
+    // create the spatial connectivity data structure
+    // ------------------------------------------------
+    SpatialConnectivity_t sc;
+    
+
+    // fitting radius of the cloud
+    const double h_kernel = fmax(fmax(dx,dy),dz); 
+    const double cutoff_coeff = 1.5; // coeff*h_kernel = search radius
+    const double min_num_points_fit = 7; 
+
+    // set the data structure variables
+    sc.initialize_point_cloud_vars(h_kernel*cutoff_coeff,min_num_points_fit);
+
+    
     // --------------------------------------------
     // create bin mesh for building connectivity
     // --------------------------------------------
-    const size_t num_bins_x_in = 10;
-    const size_t num_bins_y_in = 10;
-    const size_t num_bins_z_in = 10;
-    SpatialConnectivity.build_bin_mesh(X0, Y0, Z0,
-                                       LX+X0, LY+Y0, LZ+Z0,
-                                       num_bins_x_in,
-                                       num_bins_y_in,
-                                       num_bins_z_in);
+    const size_t num_bins_x_in = 6;
+    const size_t num_bins_y_in = 6;
+    const size_t num_bins_z_in = 6;
+    double dx_cloud = LX/((double)num_bins_x_in); // or use search radius
+    sc.build_bin_mesh(X0-dx_cloud, 
+                      Y0-dx_cloud, 
+                      Z0-dx_cloud,
+                      LX+X0+dx_cloud, 
+                      LY+Y0+dx_cloud, 
+                      LZ+Z0+dx_cloud,
+                      num_bins_x_in,
+                      num_bins_y_in,
+                      num_bins_z_in);
 
 
 
     std::cout<<"Building connectivity in a point-cloud \n";
 
 
-    // fitting radius of the cloud
-    const double h_kernel = LX/((double)num_1d_x-1.0); 
-    const double cutoff_coeff = 1.0; // coeff*h_kernel
 
-    // min number of points to fit in the cloud
-    const double min_num_points_fit = 26; 
-
-    // set the data structure variables
-    SpatialConnectivity.initialize_point_cloud_vars(
-                                    h_kernel*cutoff_coeff,
-                                    min_num_points_fit);
 
     // build the point cloud connectivity
-    SpatialConnectivity.build_point_cloud_connectivity(point_positions);
+    sc.build_point_cloud_connectivity(point_positions);
 
     // verify correctness of the connectivity data structure looping interior points
     FOR_ALL(i, 1, num_1d_x-1,
@@ -130,9 +143,26 @@ MATAR_INITIALIZE(argc, argv);
 
         size_t point_gid = get_id_of_ijk(i, j, k, num_1d_x, num_1d_y);
         
-        printf("Number of neighbors = %zu, correct answer is 26 \n", SpatialConnectivity.points_num_neighbors(point_gid));
+        printf("Number of neighbors = %zu, correct answer is 26 \n", sc.points_num_neighbors(point_gid));
 
     }); //end for all
+
+    printf("\n");
+
+    // verify correctness of the connectivity data structure showing points
+    RUN({
+        for (size_t i = 0; i < num_points; i++) {
+            for (size_t lid = 0; lid < sc.points_num_neighbors(i); lid++) {
+
+                size_t j = sc.points_in_point(i, lid);
+                printf("point %zu neighbors point %zu \n", j, i);
+                
+            } // end lid
+            printf("\n");
+        } // end i
+    });
+
+
     std::cout<<"Finished"<<std::endl;
     
 } // end MATAR scope

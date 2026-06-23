@@ -38,7 +38,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // This pulls in kokkos, matar, mesh, hash, ref_elem stuff, and PT-Scotch
 #include "ELEMENTS.h"
 
-#undef NDEBUG     // Ensures NDEBUG is turned off
+//#undef NDEBUG     // Ensures NDEBUG is turned off
 
 using namespace mtr;
 using namespace swage; // unstructured mesh and hash

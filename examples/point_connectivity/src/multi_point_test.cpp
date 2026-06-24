@@ -32,7 +32,6 @@ OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **********************************************************************************************/
 #include "matar.h"
-#include <cassert>
 #include <set>
 #include <cstdio>
 
@@ -118,15 +117,16 @@ int main(int argc, char* argv[]) {
                num_points, num_nodes);
 
         // --- check 1: correct number of unique nodes ---
-        assert(num_nodes == 12 && "wrong number of unique nodes");
+        if (num_nodes != 12) throw std::runtime_error("ERROR: wrong number of unique nodes \n");
+        
 
         // --- check 2: all node gids are in range [0, num_nodes) ---
         RUN({
             for (size_t pt = 0; pt < num_points; pt++) {
-                assert(node_in_corner_point(pt) < num_nodes &&
-                    "node gid out of range");
+                if(node_in_corner_point(pt) >= num_nodes) Kokkos::abort("ERROR: node gid out of range \n");
             }
         });
+
 
         // --- check 3: coincident point pairs share the same node gid ---
         // pairs: (1,8), (2,11), (5,12), (6,15)
@@ -135,11 +135,12 @@ int main(int argc, char* argv[]) {
             size_t pt_a = pair[0];
             size_t pt_b = pair[1];
             RUN({
-                assert(node_in_corner_point(pt_a) ==
-                    node_in_corner_point(pt_b) &&
-                    "coincident points have different node gids");
+                if(node_in_corner_point(pt_a) !=
+                   node_in_corner_point(pt_b)) Kokkos::abort("ERROR: coincident points have different node gids \n");
             });
-        }
+
+        } // end for
+
 
         // --- check 4: non-coincident points have different node gids ---
         // collect all 16 node gid assignments; exactly 12 must be unique
@@ -161,8 +162,7 @@ int main(int argc, char* argv[]) {
                 }
             } // end for
         
-            assert(num_unique_nodes == 12 &&
-                "wrong number of distinct node gids across all points");
+            if(num_unique_nodes != 12) Kokkos::abort("ERROR: wrong number of distinct node gids across all points \n");
         });
 
         // --- print the mapping for visual inspection ---

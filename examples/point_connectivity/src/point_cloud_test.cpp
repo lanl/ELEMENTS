@@ -98,7 +98,8 @@ MATAR_INITIALIZE(argc, argv);
             bool found = false;
             for (size_t jlid = 0; jlid < sc.points_num_neighbors(j); jlid++)
                 if (sc.points_in_point(j, jlid) == i) { found = true; break; }
-            assert(found && "asymmetry bug");  
+
+            if (found==false) Kokkos::abort("asymmetry bug \n");  
         } // end for
     });
 
@@ -109,7 +110,7 @@ MATAR_INITIALIZE(argc, argv);
         for (size_t lid = 0; lid <sc.points_num_neighbors(i); lid++) {
             size_t j    = sc.points_in_point(i, lid);
             size_t jlid = sc.reverse_neighbor_lid(i, lid);
-            assert(sc.points_in_point(j, jlid) == i && "reverse map bug");  // reverse map points back to i
+            if (sc.points_in_point(j, jlid) != i) Kokkos::abort("reverse map bug \n");  // reverse map points back to i
         }
     });
 
@@ -126,9 +127,9 @@ MATAR_INITIALIZE(argc, argv);
                 size_t j = sc.points_in_point(i, lid);
                 if(VERBOSE) printf("point %zu neighbors point %zu \n", j, i);
                 
-                assert(j != i && "self seen in neighbor list");  // self should never appear
+                if(j == i) Kokkos::abort("self seen in neighbor list \n");  // self should never appear
 
-                // check for duplicates
+                // check for duplicates, if true then its a duplicate
                 bool found = false;
 
                 // loop over all neighboring nodes to see if the node already appeared
@@ -141,7 +142,7 @@ MATAR_INITIALIZE(argc, argv);
                     num_unique_nodes++;
                 } 
 
-                assert(found==true && "duplicate neighbor"); 
+                if(found==true) Kokkos::abort("duplicate neighbor \n"); 
                 
             } // end lid
             if(VERBOSE) printf("\n");
@@ -154,10 +155,10 @@ MATAR_INITIALIZE(argc, argv);
     RUN({
 
         // center point of 3x3x3 grid is index 13
-        assert(sc.points_num_neighbors(13) == 26 && "wrong number of neighbors at center");
+        if (sc.points_num_neighbors(13) != 26) Kokkos::abort("wrong number of neighbors at center \n");
 
         // corner point (index 0) should have 2x2x2-1 neighbors
-        assert(sc.points_num_neighbors(0) == 7 && "wrong number of neighbors at corner");
+        if (sc.points_num_neighbors(0) != 7) Kokkos::abort("wrong number of neighbors at corner \n");
 
         for (size_t i = 0; i < num_points; i++) {
             printf("number of neighbors around point %zu = %zu\n", i, sc.points_num_neighbors(i));

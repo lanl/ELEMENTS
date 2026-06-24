@@ -34,7 +34,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <cassert>
 
 // This pulls in kokkos, matar, mesh, hash, ref_elem stuff, and PT-Scotch
 #include "ELEMENTS.h"
@@ -58,26 +57,32 @@ MATAR_INITIALIZE(argc, argv);
                       10, 10, 10);     // num bins per direction
 
     // bin spacing should be 0.1
-    assert(fabs(sc.bin_dx - 0.1) < 1.e-14);
+    if(fabs(sc.bin_dx - 0.1) > 1.e-14)
+        throw std::runtime_error("ERROR: wrong bin dx spacing \n");
+     
 
     // a point at (0.15, 0.25, 0.35) should land in bin (1, 2, 3)
     bin_keys_t bk = sc.get_bin_keys(0.15, 0.25, 0.35);
-    assert(bk.i == 1 && bk.j == 2 && bk.k == 3 &&
-                    "bin keys i,j,k are wrong");
+    if(bk.i != 1) throw std::runtime_error("ERROR: wrong bin key i \n");
+    if(bk.j != 2) throw std::runtime_error("ERROR: wrong bin key j \n");
+    if(bk.k != 3) throw std::runtime_error("ERROR: wrong bin key k \n");
 
     // get_bin_gid should give the same result as get_id_of_ijk
     size_t gid = sc.get_bin_gid(0.15, 0.25, 0.35);
-    assert(gid == get_id_of_ijk(1, 2, 3, 10, 10) &&
-                    "gid of i,j,k is wrong");
+
+    if(gid != get_id_of_ijk(1, 2, 3, 10, 10))
+                    throw std::runtime_error("gid of i,j,k is wrong");
 
     // points at domain boundaries should clamp, not go out of bounds
     bk = sc.get_bin_keys(-1.0, -1.0, -1.0);  // below domain
-    assert(bk.i == 0 && bk.j == 0 && bk.k == 0 &&
-                    "bin keys i,j,k below domain are wrong");
+    if(bk.i != 0) throw std::runtime_error("ERROR: wrong bin key i for below domain \n");
+    if(bk.j != 0) throw std::runtime_error("ERROR: wrong bin key j for below domain \n");
+    if(bk.k != 0) throw std::runtime_error("ERROR: wrong bin key k for below domain \n");
 
     bk = sc.get_bin_keys(2.0, 2.0, 2.0);     // above domain
-    assert(bk.i == 9 && bk.j == 9 && bk.k == 9 &&
-                    "bin keys i,j,k above domain are wrong");
+    if(bk.i != 9) throw std::runtime_error("ERROR: wrong bin key i for above domain \n");
+    if(bk.j != 9) throw std::runtime_error("ERROR: wrong bin key j for above domain \n");
+    if(bk.k != 9) throw std::runtime_error("ERROR: wrong bin key k for above domain \n");
 
     printf("\nAll bin key checks passed.\n");
 

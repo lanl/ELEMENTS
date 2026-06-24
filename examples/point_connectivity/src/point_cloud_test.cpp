@@ -43,7 +43,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using namespace mtr;
 using namespace swage; // unstructured mesh and hash
 
-bool VERBOSE = false; // flag for printing connectivity
+
 
 int main(int argc, char** argv) {
 
@@ -51,6 +51,7 @@ MATAR_INITIALIZE(argc, argv);
 { // MATAR scope
     std::cout<<"--- Point cloud connectivity test ---- \n";
 
+    bool VERBOSE = false; // flag for printing connectivity
 
     // --------------------------------------------
     // Create point cloud

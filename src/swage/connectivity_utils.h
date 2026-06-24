@@ -109,8 +109,8 @@ struct SpatialConnectivity_t{
     double zmax = 0.0;
 
     // --- point cloud parameters ---
-    double search_radius;       // kernel support radius
-    size_t min_num_points_fit;  // minimum neighbors required for basis fit
+    double search_radius = 0.0;     // kernel support radius
+    size_t min_num_points_fit = 0;  // minimum neighbors required for basis fit
 
     // --- bin mesh connectivity ---
     DCArrayKokkos <bin_keys_t> keys_in_bin;        // bin gid -> (i,j,k)

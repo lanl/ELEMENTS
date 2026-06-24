@@ -31,8 +31,8 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **********************************************************************************************/
-#ifndef CONNECTIVITY_UTILS_H
-#define CONNECTIVITY_UTILS_H
+#ifndef POINT_CLOUD_H
+#define POINT_CLOUD_H
 
 #include <cmath>
 #include "matar.h"
@@ -80,7 +80,7 @@ size_t get_id_of_ijk(size_t i, size_t j, size_t k, size_t num_x, size_t num_y) {
 
 /////////////////////////////////////////////////////////////////////////////
 ///
-/// \struct SpatialConnectivity_t
+/// \struct PointCloud_t
 ///
 /// \brief Builds and stores spatial connectivity for arbitrary point clouds.
 ///        Provides overlapping node detection and point-to-point neighbor
@@ -88,7 +88,7 @@ size_t get_id_of_ijk(size_t i, size_t j, size_t k, size_t num_x, size_t num_y) {
 ///        bin mesh is used internally to accelerate all proximity queries.
 ///
 /////////////////////////////////////////////////////////////////////////////
-struct SpatialConnectivity_t{
+struct PointCloud_t{
 
     // --- bin mesh ---
     size_t num_bins_x = 0;

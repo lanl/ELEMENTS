@@ -97,7 +97,7 @@ MATAR_INITIALIZE(argc, argv);
     // ------------------------------------------------
     // create the spatial connectivity data structure
     // ------------------------------------------------
-    SpatialConnectivity_t sc;
+    PointCloud_t pc;
     
 
     // fitting radius of the cloud
@@ -106,7 +106,7 @@ MATAR_INITIALIZE(argc, argv);
     const double min_num_points_fit = 7; 
 
     // set the data structure variables
-    sc.initialize_point_cloud_vars(h_kernel*cutoff_coeff,min_num_points_fit);
+    pc.initialize_point_cloud_vars(h_kernel*cutoff_coeff,min_num_points_fit);
 
     
     // --------------------------------------------
@@ -116,7 +116,7 @@ MATAR_INITIALIZE(argc, argv);
     const size_t num_bins_y_in = 6;
     const size_t num_bins_z_in = 6;
     double dx_cloud = LX/((double)num_bins_x_in); // or use search radius
-    sc.build_bin_mesh(X0-dx_cloud, 
+    pc.build_bin_mesh(X0-dx_cloud, 
                       Y0-dx_cloud, 
                       Z0-dx_cloud,
                       LX+X0+dx_cloud, 
@@ -134,7 +134,7 @@ MATAR_INITIALIZE(argc, argv);
 
 
     // build the point cloud connectivity
-    sc.build_point_cloud_connectivity(point_positions);
+    pc.build_point_cloud_connectivity(point_positions);
 
     // verify correctness of the connectivity data structure looping interior points
     FOR_ALL(i, 1, num_1d_x-1,
@@ -143,7 +143,7 @@ MATAR_INITIALIZE(argc, argv);
 
         size_t point_gid = get_id_of_ijk(i, j, k, num_1d_x, num_1d_y);
         
-        printf("Number of neighbors = %zu, correct answer is 26 \n", sc.points_num_neighbors(point_gid));
+        printf("Number of neighbors = %zu, correct answer is 26 \n", pc.points_num_neighbors(point_gid));
 
     }); //end for all
 
@@ -152,9 +152,9 @@ MATAR_INITIALIZE(argc, argv);
     // verify correctness of the connectivity data structure showing points
     RUN({
         for (size_t i = 0; i < num_points; i++) {
-            for (size_t lid = 0; lid < sc.points_num_neighbors(i); lid++) {
+            for (size_t lid = 0; lid < pc.points_num_neighbors(i); lid++) {
 
-                size_t j = sc.points_in_point(i, lid);
+                size_t j = pc.points_in_point(i, lid);
                 printf("point %zu neighbors point %zu \n", j, i);
                 
             } // end lid

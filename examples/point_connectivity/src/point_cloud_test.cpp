@@ -79,26 +79,26 @@ MATAR_INITIALIZE(argc, argv);
     point_positions.update_device();
 
 
-    SpatialConnectivity_t sc;
+    PointCloud_t pc;
 
-    sc.build_bin_mesh(-0.5,-0.5,-0.5, 2.5,2.5,2.5, 6,6,6);
+    pc.build_bin_mesh(-0.5,-0.5,-0.5, 2.5,2.5,2.5, 6,6,6);
 
     const size_t min_num_points = 1; 
-    sc.initialize_point_cloud_vars(1.5*h, min_num_points);
+    pc.initialize_point_cloud_vars(1.5*h, min_num_points);
 
 
-    sc.build_point_cloud_connectivity(point_positions);
+    pc.build_point_cloud_connectivity(point_positions);
 
 
     printf("\n--- point-point connectivity symmetry test ---\n");
 
     RUN({
         for (size_t i = 0; i < num_points; i++)
-        for (size_t lid = 0; lid < sc.points_num_neighbors(i); lid++) {
-            size_t j = sc.points_in_point(i, lid);
+        for (size_t lid = 0; lid < pc.points_num_neighbors(i); lid++) {
+            size_t j = pc.points_in_point(i, lid);
             bool found = false;
-            for (size_t jlid = 0; jlid < sc.points_num_neighbors(j); jlid++)
-                if (sc.points_in_point(j, jlid) == i) { found = true; break; }
+            for (size_t jlid = 0; jlid < pc.points_num_neighbors(j); jlid++)
+                if (pc.points_in_point(j, jlid) == i) { found = true; break; }
 
             if (found==false) Kokkos::abort("asymmetry bug \n");  
         } // end for
@@ -108,10 +108,10 @@ MATAR_INITIALIZE(argc, argv);
 
     RUN({
         for (size_t i = 0; i < num_points; i++)
-        for (size_t lid = 0; lid <sc.points_num_neighbors(i); lid++) {
-            size_t j    = sc.points_in_point(i, lid);
-            size_t jlid = sc.reverse_neighbor_lid(i, lid);
-            if (sc.points_in_point(j, jlid) != i) Kokkos::abort("reverse map bug \n");  // reverse map points back to i
+        for (size_t lid = 0; lid <pc.points_num_neighbors(i); lid++) {
+            size_t j    = pc.points_in_point(i, lid);
+            size_t jlid = pc.reverse_neighbor_lid(i, lid);
+            if (pc.points_in_point(j, jlid) != i) Kokkos::abort("reverse map bug \n");  // reverse map points back to i
         }
     });
 
@@ -123,9 +123,9 @@ MATAR_INITIALIZE(argc, argv);
             size_t num_unique_nodes = 0;
             size_t unique_nodes[N*N*N];  // holds points seen
 
-            for (size_t lid = 0; lid < sc.points_num_neighbors(i); lid++) {
+            for (size_t lid = 0; lid < pc.points_num_neighbors(i); lid++) {
 
-                size_t j = sc.points_in_point(i, lid);
+                size_t j = pc.points_in_point(i, lid);
                 if(VERBOSE) printf("point %zu neighbors point %zu \n", j, i);
                 
                 if(j == i) Kokkos::abort("self seen in neighbor list \n");  // self should never appear
@@ -156,13 +156,13 @@ MATAR_INITIALIZE(argc, argv);
     RUN({
 
         // center point of 3x3x3 grid is index 13
-        if (sc.points_num_neighbors(13) != 26) Kokkos::abort("wrong number of neighbors at center \n");
+        if (pc.points_num_neighbors(13) != 26) Kokkos::abort("wrong number of neighbors at center \n");
 
         // corner point (index 0) should have 2x2x2-1 neighbors
-        if (sc.points_num_neighbors(0) != 7) Kokkos::abort("wrong number of neighbors at corner \n");
+        if (pc.points_num_neighbors(0) != 7) Kokkos::abort("wrong number of neighbors at corner \n");
 
         for (size_t i = 0; i < num_points; i++) {
-            printf("number of neighbors around point %zu = %zu\n", i, sc.points_num_neighbors(i));
+            printf("number of neighbors around point %zu = %zu\n", i, pc.points_num_neighbors(i));
         } // end i
     });
     

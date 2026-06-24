@@ -99,17 +99,17 @@ int main(int argc, char* argv[]) {
         });
 
         
-        SpatialConnectivity_t sc;
+        PointCloud_t pc;
 
 
         // build the bin mesh with a small padding around the domain [0,2]^3
-        sc.build_bin_mesh(-0.1, -0.1, -0.1,
+        pc.build_bin_mesh(-0.1, -0.1, -0.1,
                            2.1,  2.1,  2.1,
                            10, 10, 10);
 
         CArrayKokkos <size_t> node_in_corner_point;
         size_t num_nodes = 0;
-        sc.build_multi_node_connectivity(corner_pts, node_in_corner_point, num_nodes);
+        pc.build_multi_node_connectivity(corner_pts, node_in_corner_point, num_nodes);
 
 
         printf("\n--- build_multi_node_connectivity test ---\n");

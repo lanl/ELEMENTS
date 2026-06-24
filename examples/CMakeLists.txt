@@ -2,4 +2,5 @@
 
 add_subdirectory(average)
 add_subdirectory(decomp_example)
+add_subdirectory(point_connectivity)
 # add_subdirectory(other_example) # Future examples go here

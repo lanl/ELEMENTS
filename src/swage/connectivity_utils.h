@@ -91,22 +91,22 @@ size_t get_id_of_ijk(size_t i, size_t j, size_t k, size_t num_x, size_t num_y) {
 struct SpatialConnectivity_t{
 
     // --- bin mesh ---
-    size_t num_bins_x;
-    size_t num_bins_y;
-    size_t num_bins_z;
-    size_t num_bins;
+    size_t num_bins_x = 0;
+    size_t num_bins_y = 0;
+    size_t num_bins_z = 0;
+    size_t num_bins = 0;
 
-    double bin_dx;
-    double bin_dy;
-    double bin_dz;
+    double bin_dx = 0.0;
+    double bin_dy = 0.0;
+    double bin_dz = 0.0;
 
-    double xmin;
-    double ymin;
-    double zmin;
+    double xmin = 0.0;
+    double ymin = 0.0;
+    double zmin = 0.0;
 
-    double xmax;
-    double ymax;
-    double zmax;
+    double xmax = 0.0;
+    double ymax = 0.0;
+    double zmax = 0.0;
 
     // --- point cloud parameters ---
     double search_radius;       // kernel support radius

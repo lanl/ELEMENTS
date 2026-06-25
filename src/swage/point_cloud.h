@@ -31,8 +31,8 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **********************************************************************************************/
-#ifndef CONNECTIVITY_UTILS_H
-#define CONNECTIVITY_UTILS_H
+#ifndef POINT_CLOUD_H
+#define POINT_CLOUD_H
 
 #include <cmath>
 #include "matar.h"
@@ -80,7 +80,7 @@ size_t get_id_of_ijk(size_t i, size_t j, size_t k, size_t num_x, size_t num_y) {
 
 /////////////////////////////////////////////////////////////////////////////
 ///
-/// \struct SpatialConnectivity_t
+/// \struct PointCloud_t
 ///
 /// \brief Builds and stores spatial connectivity for arbitrary point clouds.
 ///        Provides overlapping node detection and point-to-point neighbor
@@ -88,7 +88,7 @@ size_t get_id_of_ijk(size_t i, size_t j, size_t k, size_t num_x, size_t num_y) {
 ///        bin mesh is used internally to accelerate all proximity queries.
 ///
 /////////////////////////////////////////////////////////////////////////////
-struct SpatialConnectivity_t{
+struct PointCloud_t{
 
     // --- bin mesh ---
     size_t num_bins_x = 0;
@@ -111,6 +111,7 @@ struct SpatialConnectivity_t{
     // --- point cloud parameters ---
     double search_radius = 0.0;     // kernel support radius
     size_t min_num_points_fit = 0;  // minimum neighbors required for basis fit
+    double coincident_tol = 1.e-15; // tolerance for defining coincident points
 
     // --- bin mesh connectivity ---
     DCArrayKokkos <bin_keys_t> keys_in_bin;        // bin gid -> (i,j,k)
@@ -147,6 +148,24 @@ struct SpatialConnectivity_t{
         return;
 
     } // end initialize_point_cloud_vars
+
+
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \fn initialize_shared_node_vars
+    ///
+    /// \brief Sets parameters for overlapping point neighbor search
+    ///
+    /// \param coincident_tol_in      radius^2 defining coincident points
+    ///
+    /////////////////////////////////////////////////////////////////////////////
+    void initialize_shared_node_vars(const double coincident_tol_in){
+
+        coincident_tol = coincident_tol_in;  
+
+        return;
+
+    } // end initialize_shared_node_vars
 
 
     /////////////////////////////////////////////////////////////////////////////
@@ -264,106 +283,20 @@ struct SpatialConnectivity_t{
 
     /////////////////////////////////////////////////////////////////////////////
     ///
-    /// \struct get_bounds_STL
-    ///
-    /// \brief Computes the axis-aligned bounding box of an STL triangle mesh
-    ///        using parallel reductions.  Results are padded by 1e-6 on each
-    ///        side so the bin mesh strictly contains all geometry.
-    ///
-    /// \param x_min is the minimum x coordinate, the start location of bin mesh
-    /// \param y_min is the minimum y coordinate, the start location of bin mesh
-    /// \param z_min is the minimum z coordinate, the start location of bin mesh
-    /// \param x_max is the maximum x coordinate, the end of the bin mesh
-    /// \param y_max is the maximum y coordinate, the end of the bin mesh
-    /// \param z_max is the maximum z coordinate, the end of the bin mesh
-    /// \param v0X is the x coordinate of the first vertex on the triangle 
-    /// \param v0Y is the y coordinate of the first vertex on the triangle 
-    /// \param v0Z is the z coordinate of the first vertex on the triangle 
-    /// \param v1X is the x coordinate of the second vertex on the triangle 
-    /// \param v1Y is the y coordinate of the second vertex on the triangle 
-    /// \param v1Z is the z coordinate of the second vertex on the triangle 
-    /// \param v2X is the x coordinate of the third vertex on the triangle 
-    /// \param v2Y is the y coordinate of the third vertex on the triangle 
-    /// \param v2Z is the z coordinate of the third vertex on the triangle 
-    /////////////////////////////////////////////////////////////////////////////
-    void get_bounds_STL(double &xmin, double &ymin, double &zmin,
-                        double &xmax, double &ymax, double &zmax,
-                        const DViewCArrayKokkos <double> &v0X,
-                        const DViewCArrayKokkos <double> &v0Y,
-                        const DViewCArrayKokkos <double> &v0Z,
-                        const DViewCArrayKokkos <double> &v1X,
-                        const DViewCArrayKokkos <double> &v1Y,
-                        const DViewCArrayKokkos <double> &v1Z,
-                        const DViewCArrayKokkos <double> &v2X,
-                        const DViewCArrayKokkos <double> &v2Y,
-                        const DViewCArrayKokkos <double> &v2Z) {
-
-        
-        const size_t num_inp_triangles = v0X.dims(0);
-
-        // find (xmin, ymin, zmin) for building bin mesh
-        Kokkos::parallel_reduce(
-            "stl_min_domain_extents",
-            num_inp_triangles,
-            KOKKOS_LAMBDA(const int tri,         
-                        double& xmin_lcl,
-                        double& ymin_lcl,
-                        double& zmin_lcl) 
-            {
-                xmin_lcl = fmin(v2X(tri),fmin(v1X(tri),fmin(v0X(tri), xmin_lcl)));
-                ymin_lcl = fmin(v2Y(tri),fmin(v1Y(tri),fmin(v0Y(tri), ymin_lcl)));
-                zmin_lcl = fmin(v2Z(tri),fmin(v1Z(tri),fmin(v0Z(tri), zmin_lcl)));
-            },
-            Kokkos::Min<double>(xmin), 
-            Kokkos::Min<double>(ymin), 
-            Kokkos::Min<double>(zmin)); 
-            // end parallel reduction over all STL triangles
-
-        xmin -= 1.e-6; // decrease by a small fraction
-        ymin -= 1.e-6; // decrease by a small fraction
-        zmin -= 1.e-6; // decrease by a small fraction
-
-        // find (xmax, ymax, zmax) for building bin mesh
-        Kokkos::parallel_reduce(
-            "stl_max_domain_extents",
-            num_inp_triangles,
-            // this is the for loop coding
-            KOKKOS_LAMBDA(const int tri,         
-                        double& xmax_lcl,
-                        double& ymax_lcl,
-                        double& zmax_lcl) 
-            {
-                xmax_lcl = fmax(v2X(tri), fmax(v1X(tri), fmax(v0X(tri), xmax_lcl)));
-                ymax_lcl = fmax(v2Y(tri), fmax(v1Y(tri), fmax(v0Y(tri), ymax_lcl)));
-                zmax_lcl = fmax(v2Z(tri), fmax(v1Z(tri), fmax(v0Z(tri), zmax_lcl)));
-            },
-            Kokkos::Max<double>(xmax), 
-            Kokkos::Max<double>(ymax), 
-            Kokkos::Max<double>(zmax)); 
-            // end parallel reduction over all STL triangles
-
-        xmax += 1.e-6; // increase by a small fraction
-        ymax += 1.e-6; // increase by a small fraction
-        zmax += 1.e-6; // increase by a small fraction
-
-        return;
-
-    } // end get_bounds_STL
-
-
-    /////////////////////////////////////////////////////////////////////////////
-    ///
-    /// \struct build_multi_node_connectivity
+    /// \struct build_shared_node_connectivity
     ///
     /// \brief Assigns a unique node gid to each set of geometrically coincident
-    ///        points (distance^2 < 1e-25).  Used to build the shared-node
-    ///        connectivity of a multi-element mesh from its corner points.
+    ///        points (distance^2 < tol^2).  Used to build the shared-node 
+    ///        connectivity of a multi-element mesh from its corner points.   
+    ///        This routine is a specialization of the point cloud connectivity
+    ///        routine by searching only the nearest bins and using a small
+    ///        tolerance in place of a search radius. 
     ///
     /// \param corner_point_positions (x,y,z) coordinates of every corner point 
     /// \param node_in_corner_point   output: node gid for each corner point
     /// \param num_nodes              output: total number of unique nodes
     /////////////////////////////////////////////////////////////////////////////
-    void build_multi_node_connectivity(const CArrayKokkos <double>  &corner_point_positions,
+    void build_shared_node_connectivity(const CArrayKokkos <double>  &corner_point_positions,
                                        CArrayKokkos <size_t> &node_in_corner_point,
                                        size_t &num_nodes) {
 
@@ -445,7 +378,7 @@ struct SpatialConnectivity_t{
                     const double pnt_dy = (corner_point_positions(point_gid,1)-corner_point_positions(nbr_gid,1));
                     const double pnt_dz = (corner_point_positions(point_gid,2)-corner_point_positions(nbr_gid,2));
 
-                    if(pnt_dx*pnt_dx + pnt_dy*pnt_dy + pnt_dz*pnt_dz < 1.e-25) smallest_id = nbr_gid;
+                    if(pnt_dx*pnt_dx + pnt_dy*pnt_dy + pnt_dz*pnt_dz < coincident_tol) smallest_id = nbr_gid;
 
                 } // end for over stored points in bin
 
@@ -499,7 +432,7 @@ struct SpatialConnectivity_t{
         }); // end for all
         Kokkos::fence();
 
-    } // end build_multi_node_connectivity
+    } // end build_shared_node_connectivity
 
 
 
@@ -829,6 +762,96 @@ struct SpatialConnectivity_t{
 
 
 }; // Hash_t
+
+
+/////////////////////////////////////////////////////////////////////////////
+///
+/// \struct get_bounds_STL
+///
+/// \brief Computes the axis-aligned bounding box of an STL triangle mesh
+///        using parallel reductions.  Results are padded by 1e-6 on each
+///        side so the bin mesh strictly contains all geometry.
+///
+/// \param x_min is the minimum x coordinate, the start location of bin mesh
+/// \param y_min is the minimum y coordinate, the start location of bin mesh
+/// \param z_min is the minimum z coordinate, the start location of bin mesh
+/// \param x_max is the maximum x coordinate, the end of the bin mesh
+/// \param y_max is the maximum y coordinate, the end of the bin mesh
+/// \param z_max is the maximum z coordinate, the end of the bin mesh
+/// \param v0X is the x coordinate of the first vertex on the triangle 
+/// \param v0Y is the y coordinate of the first vertex on the triangle 
+/// \param v0Z is the z coordinate of the first vertex on the triangle 
+/// \param v1X is the x coordinate of the second vertex on the triangle 
+/// \param v1Y is the y coordinate of the second vertex on the triangle 
+/// \param v1Z is the z coordinate of the second vertex on the triangle 
+/// \param v2X is the x coordinate of the third vertex on the triangle 
+/// \param v2Y is the y coordinate of the third vertex on the triangle 
+/// \param v2Z is the z coordinate of the third vertex on the triangle 
+/////////////////////////////////////////////////////////////////////////////
+void get_bounds_STL(double &xmin, double &ymin, double &zmin,
+                    double &xmax, double &ymax, double &zmax,
+                    const DViewCArrayKokkos <double> &v0X,
+                    const DViewCArrayKokkos <double> &v0Y,
+                    const DViewCArrayKokkos <double> &v0Z,
+                    const DViewCArrayKokkos <double> &v1X,
+                    const DViewCArrayKokkos <double> &v1Y,
+                    const DViewCArrayKokkos <double> &v1Z,
+                    const DViewCArrayKokkos <double> &v2X,
+                    const DViewCArrayKokkos <double> &v2Y,
+                    const DViewCArrayKokkos <double> &v2Z) {
+
+    
+    const size_t num_inp_triangles = v0X.dims(0);
+
+    // find (xmin, ymin, zmin) for building bin mesh
+    Kokkos::parallel_reduce(
+        "stl_min_domain_extents",
+        num_inp_triangles,
+        KOKKOS_LAMBDA(const int tri,         
+                    double& xmin_lcl,
+                    double& ymin_lcl,
+                    double& zmin_lcl) 
+        {
+            xmin_lcl = fmin(v2X(tri),fmin(v1X(tri),fmin(v0X(tri), xmin_lcl)));
+            ymin_lcl = fmin(v2Y(tri),fmin(v1Y(tri),fmin(v0Y(tri), ymin_lcl)));
+            zmin_lcl = fmin(v2Z(tri),fmin(v1Z(tri),fmin(v0Z(tri), zmin_lcl)));
+        },
+        Kokkos::Min<double>(xmin), 
+        Kokkos::Min<double>(ymin), 
+        Kokkos::Min<double>(zmin)); 
+        // end parallel reduction over all STL triangles
+
+    xmin -= 1.e-6; // decrease by a small fraction
+    ymin -= 1.e-6; // decrease by a small fraction
+    zmin -= 1.e-6; // decrease by a small fraction
+
+    // find (xmax, ymax, zmax) for building bin mesh
+    Kokkos::parallel_reduce(
+        "stl_max_domain_extents",
+        num_inp_triangles,
+        // this is the for loop coding
+        KOKKOS_LAMBDA(const int tri,         
+                    double& xmax_lcl,
+                    double& ymax_lcl,
+                    double& zmax_lcl) 
+        {
+            xmax_lcl = fmax(v2X(tri), fmax(v1X(tri), fmax(v0X(tri), xmax_lcl)));
+            ymax_lcl = fmax(v2Y(tri), fmax(v1Y(tri), fmax(v0Y(tri), ymax_lcl)));
+            zmax_lcl = fmax(v2Z(tri), fmax(v1Z(tri), fmax(v0Z(tri), zmax_lcl)));
+        },
+        Kokkos::Max<double>(xmax), 
+        Kokkos::Max<double>(ymax), 
+        Kokkos::Max<double>(zmax)); 
+        // end parallel reduction over all STL triangles
+
+    xmax += 1.e-6; // increase by a small fraction
+    ymax += 1.e-6; // increase by a small fraction
+    zmax += 1.e-6; // increase by a small fraction
+
+    return;
+
+} // end get_bounds_STL
+
 
 } // end swage namespace
 

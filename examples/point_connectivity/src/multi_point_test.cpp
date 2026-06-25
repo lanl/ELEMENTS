@@ -99,20 +99,20 @@ int main(int argc, char* argv[]) {
         });
 
         
-        SpatialConnectivity_t sc;
-
+        PointCloud_t pc;
+        pc.initialize_shared_node_vars(1.0e-16);  // set tolerance for coincient points
 
         // build the bin mesh with a small padding around the domain [0,2]^3
-        sc.build_bin_mesh(-0.1, -0.1, -0.1,
+        pc.build_bin_mesh(-0.1, -0.1, -0.1,
                            2.1,  2.1,  2.1,
                            10, 10, 10);
 
         CArrayKokkos <size_t> node_in_corner_point;
         size_t num_nodes = 0;
-        sc.build_multi_node_connectivity(corner_pts, node_in_corner_point, num_nodes);
+        pc.build_shared_node_connectivity(corner_pts, node_in_corner_point, num_nodes);
 
 
-        printf("\n--- build_multi_node_connectivity test ---\n");
+        printf("\n--- build_shared_node_connectivity test ---\n");
         printf("num_points = %zu,  num_nodes = %zu  (expected 12)\n\n",
                num_points, num_nodes);
 
@@ -178,7 +178,7 @@ int main(int argc, char* argv[]) {
             }
         });
 
-        printf("\nAll build_multi_node_connectivity checks passed.\n");
+        printf("\nAll build_shared_node_connectivity checks passed.\n");
 
     } // end Kokkos scope
     Kokkos::finalize();

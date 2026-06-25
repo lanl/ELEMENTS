@@ -85,7 +85,23 @@ struct stl_data{
 
 
     // --- Bit Manipulation Helpers ---
-    KOKKOS_INLINE_FUNCTION 
+
+    // Portable CLZ: pure integer arithmetic, no architecture guards needed.
+    // Modern compilers (nvcc, hipcc, gcc, clang) recognize this pattern and
+    // emit the hardware instruction (__clz on CUDA/HIP, lzcnt on x86).
+    // Behavior is undefined for x == 0, matching __builtin_clz semantics.
+    KOKKOS_INLINE_FUNCTION
+    int clz32(uint32_t x) const {
+        int n = 0;
+        if ((x & 0xFFFF0000u) == 0) { n += 16; x <<= 16; }
+        if ((x & 0xFF000000u) == 0) { n +=  8; x <<=  8; }
+        if ((x & 0xF0000000u) == 0) { n +=  4; x <<=  4; }
+        if ((x & 0xC0000000u) == 0) { n +=  2; x <<=  2; }
+        if ((x & 0x80000000u) == 0) { n +=  1;           }
+        return n;
+    }
+
+    KOKKOS_INLINE_FUNCTION
     uint32_t expandBits(uint32_t v) const {
         v = (v * 0x00010001u) & 0xFF0000FFu;
         v = (v * 0x00000101u) & 0x0F00F00Fu;
@@ -106,10 +122,10 @@ struct stl_data{
         const uint32_t a = codes(i);
         const uint32_t b = codes(j);
         if (a != b) {
-            return __builtin_clz(a ^ b);
+            return clz32(a ^ b);
         }
         // Tie-break identical Morton codes with the indices so ordering is total
-        return 32 + __builtin_clz(static_cast<uint32_t>(i ^ j));
+        return 32 + clz32(static_cast<uint32_t>(i ^ j));
     }
 
     
@@ -185,6 +201,7 @@ struct stl_data{
             morton_codes(i) = morton3D(x, y, z);
             sorted_facet_indices(i) = i; // write into member view
         });
+        MATAR_FENCE();
 
         std::cout<<"Morton codes generated"<<std::endl;
 
@@ -250,7 +267,7 @@ struct stl_data{
             }
         }
 
-        auto clz32 = [](uint32_t x) { return __builtin_clz(x); };
+        auto clz32 = [this](uint32_t x) { return this->clz32(x); };
 
         auto prefix_host = [&](int i, int j) {
             if (j < 0 || j > num_leaves - 1) return -1;
@@ -310,15 +327,15 @@ struct stl_data{
         int root = build(0, num_leaves);
         root_idx = root;
         tree_nodes.host(root).parent = -1;
-
+        vertices.update_host();
         // Leaf bounds on host
         for (int i = 0; i < num_facets; ++i) {
             int leaf_idx = num_internal + i;
             int facet_idx = idx_h(i);
             for (int d = 0; d < 3; ++d) {
-                float v0 = vertices(facet_idx, 0, d);
-                float v1 = vertices(facet_idx, 1, d);
-                float v2 = vertices(facet_idx, 2, d);
+                float v0 = vertices.host(facet_idx, 0, d);
+                float v1 = vertices.host(facet_idx, 1, d);
+                float v2 = vertices.host(facet_idx, 2, d);
                 tree_nodes.host(leaf_idx).min_ext[d] = std::fmin(std::fmin(v0, v1), v2);
                 tree_nodes.host(leaf_idx).max_ext[d] = std::fmax(std::fmax(v0, v1), v2);
             }
@@ -343,6 +360,7 @@ struct stl_data{
         // 1. Sync data to host
         tree_nodes.update_host();
         sorted_facet_indices.update_host();
+        
         int num_internal = num_facets - 1;
         int total_nodes = num_facets + num_internal;
         
@@ -353,8 +371,8 @@ struct stl_data{
         // 2. Check Root Bounding Box against Global Bounding Box
         // Root is always index 0
         bool root_bounds_ok = true;
-        float root_min[3] = {tree_nodes(0).min_ext[0], tree_nodes(0).min_ext[1], tree_nodes(0).min_ext[2]};
-        float root_max[3] = {tree_nodes(0).max_ext[0], tree_nodes(0).max_ext[1], tree_nodes(0).max_ext[2]};
+        float root_min[3] = {tree_nodes.host(0).min_ext[0], tree_nodes.host(0).min_ext[1], tree_nodes.host(0).min_ext[2]};
+        float root_max[3] = {tree_nodes.host(0).max_ext[0], tree_nodes.host(0).max_ext[1], tree_nodes.host(0).max_ext[2]};
         
         if (std::abs(root_min[0] - min_x) > 1e-4 || std::abs(root_max[0] - max_x) > 1e-4) root_bounds_ok = false;
         
@@ -366,7 +384,7 @@ struct stl_data{
         // 3. Structural and Geometric Invariants
         for (int i = 0; i < total_nodes; i++) {
             // Check Parent-Child Linkage
-            int p = tree_nodes(i).parent;
+            int p = tree_nodes.host(i).parent;
             if (i == 0) {
                 if (p != -1) { 
                     std::cout << "  Error: Root has a parent index: " << p << std::endl;
@@ -378,7 +396,7 @@ struct stl_data{
                     errors++;
                 } else {
                     // Reciprocity check: If p is my parent, I must be p's left or right child
-                    if (tree_nodes(p).left != i && tree_nodes(p).right != i) {
+                    if (tree_nodes.host(p).left != i && tree_nodes.host(p).right != i) {
                         parent_mismatch++;
                     }
                 }
@@ -386,19 +404,19 @@ struct stl_data{
 
             // Check Bounding Box Containment (Internal Nodes Only)
             if (i < num_internal) {
-                int l = tree_nodes(i).left;
-                int r = tree_nodes(i).right;
+                int l = tree_nodes.host(i).left;
+                int r = tree_nodes.host(i).right;
 
                 if (l != -1 && r != -1) {
                     for (int d = 0; d < 3; d++) {
                         // Left child containment
-                        if (tree_nodes(l).min_ext[d] < tree_nodes(i).min_ext[d] - 1e-6 || 
+                        if (tree_nodes.host(l).min_ext[d] < tree_nodes.host(i).min_ext[d] - 1e-6 || 
                             tree_nodes(l).max_ext[d] > tree_nodes(i).max_ext[d] + 1e-6) {
                             containment_errors++;
                         }
                         // Right child containment
-                        if (tree_nodes(r).min_ext[d] < tree_nodes(i).min_ext[d] - 1e-6 || 
-                            tree_nodes(r).max_ext[d] > tree_nodes(i).max_ext[d] + 1e-6) {
+                        if (tree_nodes.host(r).min_ext[d] < tree_nodes.host(i).min_ext[d] - 1e-6 || 
+                            tree_nodes.host(r).max_ext[d] > tree_nodes.host(i).max_ext[d] + 1e-6) {
                             containment_errors++;
                         }
                     }
@@ -641,18 +659,18 @@ void binary_stl_reader(std::string stl_file_path, stl_data& stl_data){
         
         // read the normal
         for (int j=0; j<3; j++) {
-            stl_data.normal(i,j) = normalp[j];
+            stl_data.normal.host(i,j) = normalp[j];
         }
 
         // read the vertices
         for (int j=0; j<3; j++) {
-            stl_data.vertices(i,0,j) = v1p[j];
+            stl_data.vertices.host(i,0,j) = v1p[j];
         }
         for (int j=0; j<3; j++) {
-            stl_data.vertices(i,1,j) = v2p[j];
+            stl_data.vertices.host(i,1,j) = v2p[j];
         }
         for (int j=0; j<3; j++) {
-            stl_data.vertices(i,2,j) = v3p[j];
+            stl_data.vertices.host(i,2,j) = v3p[j];
         }
     }
     input.close();
@@ -660,9 +678,13 @@ void binary_stl_reader(std::string stl_file_path, stl_data& stl_data){
     // calculate the center of the facet
     FOR_ALL(i, 0, n_facets, {   // loop over the facets
         for (int j = 0; j < 3; j++) {
-            stl_data.center(i, j) = (stl_data.vertices(i,0,j) + stl_data.vertices(i,1,j) + stl_data.vertices(i,2,j)) / 3.0f;
+            stl_data.center.host(i, j) = (stl_data.vertices.host(i,0,j) + stl_data.vertices.host(i,1,j) + stl_data.vertices.host(i,2,j)) / 3.0f;
         }
     });
+
+    stl_data.normal.update_host();
+    stl_data.vertices.update_host();
+    stl_data.center.update_host();
 }
 
 

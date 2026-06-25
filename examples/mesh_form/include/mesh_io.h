@@ -523,7 +523,7 @@ void write_vtu(swage::Mesh& mesh,
     num_elems_in_elem.update_host();
     MATAR_FENCE();
 
-    std::cout<<"Populating cell fields for rank "<<rank<<std::endl;
+    // std::cout<<"Populating cell fields for rank "<<rank<<std::endl;
     for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
         elem_fields(elem_gid, 0) = rank;
         elem_fields(elem_gid, 1) = num_elems_in_elem.host(elem_gid);

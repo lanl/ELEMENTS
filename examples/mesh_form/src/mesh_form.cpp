@@ -1,6 +1,7 @@
 
 
 #include <cmath> // for sin
+#include <chrono>
 
 
 #include "ELEMENTS.h"
@@ -40,14 +41,14 @@ int main(int argc, char** argv) {
     // Mesh size for 3D box
     double origin[3] = {0.0, 0.0, 0.0};
     double length[3] = {1.0, 1.0, 1.0};
-    int num_elems_dim[3] = {1, 1, 1};
+    int num_elems_dim[3] = {20, 20, 20};
 
 
     // --- XPBD Parameters ---
     double dt = 0.01;           
-    const int num_iterations = 30;
-    int repeats = 2;
-    const int num_steps = 50*repeats;
+    const int num_iterations = 1;
+    int repeats = 1;
+    const int num_steps = 10*repeats;
 
     // Stiffness controls: Higher compliance = Softer
     // Note, these are starting value, they will be updates inthe relaxation loop
@@ -99,9 +100,10 @@ int main(int argc, char** argv) {
 
     // Read the STL file
     stl_data stl_data;
-    binary_stl_reader("/home/jacobmoore/Desktop/repos/ELEMENTS/examples/mesh_form/stl_files/Sphere_medium.stl", stl_data);
+    binary_stl_reader("/home/jacobmoore/Desktop/repos/ELEMENTS/examples/mesh_form/stl_files/Sphere_superfine.stl", stl_data);
 
     std::cout << "Number of facets: " << stl_data.num_facets << std::endl;
+    printf("Number of boundary nodes: %d\n", mesh.num_bdy_nodes);
     
     stl_data.buildAABBTree();
     stl_data.verifyAABBTree();
@@ -457,7 +459,9 @@ int main(int argc, char** argv) {
     write_vtu(mesh, node, gauss_point, rank, MPI_COMM_WORLD, step, 0.0);
 
 
-    return 0;
+    // return 0;
+
+    auto relaxation_start_time = std::chrono::high_resolution_clock::now();
 
     for(step = 1; step < num_steps/repeats; step++) {
 
@@ -488,843 +492,882 @@ int main(int argc, char** argv) {
         boundary_lambda.set_values(0.0);
         element_lambda_iso.set_values(0.0);
         element_lambda_diag.set_values(0.0);
+
         
-        for(int iter = 0; iter < num_iterations; iter++) {
-            
-            // --- 1. Boundary Snap Constraint ---
-            FOR_ALL(node_lid, 0, mesh.num_bdy_nodes, {
-                size_t node_gid = mesh.bdy_nodes(node_lid);
-                
-                float p[3];
-                for(int i=0; i<3; i++) p[i] = static_cast<float>(node.coords(node_gid, i));
-                
-                float closest[3];
-                float dist_sq;
-                // int facet_idx = stl_data.query_nearest_facet(p, dist_sq, closest);
-                
-                // float dist = sqrtf(dist_sq);
-
-                // Calculate the distance using the previously saved nearest facet point
-                dist_sq = 0.0f;
-                for(int d = 0; d < 3; d++) {
-                    dist_sq += (node.coords(node_gid, d) - nearest_facet_point(node_lid, d))*(node.coords(node_gid, d) - nearest_facet_point(node_lid, d));
-                }
-
-                float dist = sqrt(dist_sq);
-
-                if (dist < 1e-9) return; 
-
-                node.scalar_field(node_gid) = sqrt(dist_sq);
-
-                // node.closest_facet_point(node_gid, 0) = closest[0] - node.coords(node_gid, 0);
-                // node.closest_facet_point(node_gid, 1) = closest[1] - node.coords(node_gid, 1);
-                // node.closest_facet_point(node_gid, 2) = closest[2] - node.coords(node_gid, 2);
-
-                closest[0] = nearest_facet_point(node_lid, 0);
-                closest[1] = nearest_facet_point(node_lid, 1);
-                closest[2] = nearest_facet_point(node_lid, 2);
-
-                node.closest_facet_point(node_gid, 0) = nearest_facet_point(node_lid, 0) - node.coords(node_gid, 0);
-                node.closest_facet_point(node_gid, 1) = nearest_facet_point(node_lid, 1) - node.coords(node_gid, 1);
-                node.closest_facet_point(node_gid, 2) = nearest_facet_point(node_lid, 2) - node.coords(node_gid, 2);
-
-
-                if (dist < 1e-9) return; 
-            
-                float grad[3];
-                for(int i=0; i<3; i++) grad[i] = (p[i] - closest[i]) / dist;
-            
-                // XPBD update for boundary
-                double old_lambda = boundary_lambda(node_lid);
-                double delta_lambda = (-dist - alpha_tilde_bdy * old_lambda) / (1.0 + alpha_tilde_bdy);
-                boundary_lambda(node_lid) += delta_lambda;
-                
-                for(int d=0; d<3; d++) {
-                    node.coords(node_gid, d) += delta_lambda * grad[d];
-                }
-            });
-
-
-            // --- 4. Edge Length Constraint (Relaxation) ---
-            FOR_ALL(node_gid, 0, mesh.num_nodes, {
-
-                size_t node_a = node_gid;
-                for(int node_lid = 0; node_lid < mesh.num_nodes_in_node(node_gid); node_lid++){
-
-
-                    size_t node_b = mesh.nodes_in_node(node_gid, node_lid);
-                    double L0 = min_distance_calc;
-
-                    double dx[3];
-                    double dist_sq = 0.0;
-                    for(int d=0; d<3; d++) {
-                        dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
-                        dist_sq += dx[d] * dx[d];
-                    }
-                    double dist = sqrt(dist_sq);
-                    
-                    if (dist < 1e-12) return; // Prevent division by zero
-
-                    double C = dist - L0;
-                    
-                    // XPBD Denominator: sum(w*grad^2) + alpha_tilde
-                    // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
-                    double denominator = 2.0 + alpha_tilde_edge;
-
-                    double old_lambda = edge_lambda(node_gid);
-                    double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
-                    edge_lambda(node_gid) += delta_lambda/mesh.num_nodes_in_node(node_gid);
-
-                    // Unit gradient vector n
-                    double n[3];
-                    for(int d=0; d<3; d++) n[d] = dx[d] / dist;
-
-                    // Update positions
-                    for(int d=0; d<3; d++) {
-                        double corr = delta_lambda * n[d];
-                        Kokkos::atomic_add(&node.coords(node_a, d), corr);
-                        Kokkos::atomic_add(&node.coords(node_b, d), -corr);
-                    }
-                }
-            });
-
-            // Element internal Diagonal Constraints
-            FOR_ALL(elem_gid, 0, mesh.num_elems, {
-
-                int num_sets = 4;
-
-                int set_[num_sets*2];
-                auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);
-
-
-                // Daigonals within the elelent
-                set(0,0) = 0;
-                set(0,1) = 7;
-                set(1,0) = 1;
-                set(1,1) = 6;
-                set(2,0) = 2;
-                set(2,1) = 5;
-                set(3,0) = 3;
-                set(3,1) = 4;
-
-                double target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
-                target = sqrt(target);
-
-                for(int i = 0; i < 4; i++){
-
-                    size_t node_a = mesh.nodes_in_elem(elem_gid, set(i,0));
-                    size_t node_b = mesh.nodes_in_elem(elem_gid, set(i,1));
-
-                    
-                    double L0 = target;
-
-                    double dx[3];
-                    double dist_sq = 0.0;
-                    for(int d=0; d<3; d++) {
-                        dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
-                        dist_sq += dx[d] * dx[d];
-                    }
-                    double dist = sqrt(dist_sq);
-                    
-                    if (dist < 1e-12) return; // Prevent division by zero
-
-                    double C = dist - L0;
-                    
-                    // XPBD Denominator: sum(w*grad^2) + alpha_tilde
-                    // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
-                    double denominator = 2.0 + alpha_tilde_edge;
-
-                    double old_lambda = element_lambda_diag(elem_gid);
-                    double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
-                    element_lambda_diag(elem_gid) += delta_lambda / 4;
-
-                    // Unit gradient vector n
-                    double n[3];
-                    for(int d=0; d<3; d++) n[d] = dx[d] / dist;
-
-                    // Update positions
-                    for(int d=0; d<3; d++) {
-                        double corr = delta_lambda * n[d];
-                        Kokkos::atomic_add(&node.coords(node_a, d), corr);
-                        Kokkos::atomic_add(&node.coords(node_b, d), -corr);
-                    }
-                }
-            
-            });
-
-            // Element face Diagonal Constraints
-            FOR_ALL(elem_gid, 0, mesh.num_elems, {
-
-                int num_sets = 8;
-
-                int set_[num_sets*2];
-                auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);
-
-                // Diagonals on the element face
-                // -i face face
-                set(0,0) = 0;
-                set(0,1) = 6;
-                set(1,0) = 3;
-                set(1,1) = 4;
-                // +i face face
-                set(2,0) = 1;
-                set(2,1) = 7;
-                set(3,0) = 5;
-                set(3,1) = 3;
-                // -j face face
-                set(4,0) = 0;
-                set(4,1) = 5;
-                set(5,0) = 1;
-                set(5,1) = 4;
-                // +j face face
-                set(6,0) = 2;
-                set(6,1) = 7;
-                set(7,0) = 3;
-                set(7,1) = 6;
-
-
-                double target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
-                target = sqrt(target);
-
-                for(int i = 0; i < num_sets; i++){
-
-                    size_t node_a = mesh.nodes_in_elem(elem_gid, set(i,0));
-                    size_t node_b = mesh.nodes_in_elem(elem_gid, set(i,1));
-
-                    
-                    double L0 = target;
-
-                    double dx[3];
-                    double dist_sq = 0.0;
-                    for(int d=0; d<3; d++) {
-                        dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
-                        dist_sq += dx[d] * dx[d];
-                    }
-                    double dist = sqrt(dist_sq);
-                    
-                    if (dist < 1e-12) return; // Prevent division by zero
-
-                    double C = dist - L0;
-                    
-                    // XPBD Denominator: sum(w*grad^2) + alpha_tilde
-                    // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
-                    double denominator = 2.0 + alpha_tilde_edge;
-
-                    double old_lambda = element_lambda_diag(elem_gid);
-                    double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
-                    element_lambda_diag(elem_gid) += delta_lambda / 4;
-
-                    // Unit gradient vector n
-                    double n[3];
-                    for(int d=0; d<3; d++) n[d] = dx[d] / dist;
-
-                    // Update positions
-                    for(int d=0; d<3; d++) {
-                        double corr = delta_lambda * n[d];
-                        Kokkos::atomic_add(&node.coords(node_a, d), corr);
-                        Kokkos::atomic_add(&node.coords(node_b, d), -corr);
-                    }
-                }
-            
-            });
-
-            // --- 2. Element Volumetric Constraint ---
-            // FOR_ALL(elem_gid, 0, mesh.num_elems, {
-            // //for(int elem_gid=0; elem_gid<mesh.num_elems; elem_gid++) {
-            //     double x1[8][3];
-            //     for (int n = 0; n < 8; n++) {
-            //         size_t node_gid = mesh.nodes_in_elem(elem_gid, n);
-            //         for (int d = 0; d < 3; d++) x1[n][d] = node.coords(node_gid, d);
-            //     }
-            
-            //     // Shape Matrix A (using i,j,k mapping)
-            //     double A_mem[9];
-            //     ViewCArrayKokkos<double> A(A_mem, 3, 3);
-            //     A.set_values(0.0);
-
-            //     for (int axis = 0; axis < 3; axis++) {
-            //         for (int i = 0; i < 4; i++) {
-            //             for (int d = 0; d < 3; d++) {
-            //                 A(d, axis) += 0.25 * (x1[pos_nodes[axis][i]][d] - x1[neg_nodes[axis][i]][d]);
-            //             }
-            //         }
-            //     }
-            
-            //     // Deformation Gradient F = A * invB
-            //     double F_mem[9];
-            //     ViewCArrayKokkos<double> F(F_mem, 3, 3);
-            //     F.set_values(0.0);
-                
-            //     for(int i=0; i<3; i++)
-            //         for(int j=0; j<3; j++)
-            //             for(int k=0; k<3; k++)
-            //                 F(i, j) += A(i, k) * inverse_reference_matrix(elem_gid, k, j);
-            
-            //     // C = det(F) - 1
-            //     double detF = F(0,0)*(F(1,1)*F(2,2) - F(1,2)*F(2,1))
-            //                 - F(0,1)*(F(1,0)*F(2,2) - F(1,2)*F(2,0))
-            //                 + F(0,2)*(F(1,0)*F(2,1) - F(1,1)*F(2,0));
-                
-            //     double C = detF - 1.0;
-            
-            //     // Gradient of C (Cofactor matrix H)
-            //     double H_mem[9];
-            //     ViewCArrayKokkos<double> H(H_mem, 3, 3);
-            //     H(0, 0) = F(1, 1)*F(2, 2) - F(1, 2)*F(2, 1); H(0, 1) = F(1, 2)*F(2, 0) - F(1, 0)*F(2, 2); H(0, 2) = F(1, 0)*F(2, 1) - F(1, 1)*F(2, 0);
-            //     H(1, 0) = F(0, 2)*F(2, 1) - F(0, 1)*F(2, 2); H(1, 1) = F(0, 0)*F(2, 2) - F(0, 2)*F(2, 0); H(1, 2) = F(0, 1)*F(2, 0) - F(0, 0)*F(2, 1);
-            //     H(2, 0) = F(0, 1)*F(1, 2) - F(0, 2)*F(1, 1); H(2, 1) = F(0, 2)*F(1, 0) - F(0, 0)*F(1, 2); H(2, 2) = F(0, 0)*F(1, 1) - F(0, 1)*F(1, 0);
-
-            //     double grad_mem[24];
-            //     ViewCArrayKokkos<double> grad(grad_mem, 8, 3);
-            //     grad.set_values(0.0);
-            //     double sum_grad_sq = 0;
-
-            //     for (int n = 0; n < 8; n++) {
-            //         double dN_dxi[3];
-            //         get_shape_grad_at_center(n, dN_dxi); 
-            //         for (int d = 0; d < 3; d++) { 
-            //             for (int i = 0; i < 3; i++) {
-            //                 for (int j = 0; j < 3; j++) {
-            //                     // Chain rule through the reference configuration
-            //                     grad(n, d) += H(d, i) * inverse_reference_matrix(elem_gid, j, i) * dN_dxi[j];
-            //                 }
-            //             }
-            //             sum_grad_sq += grad(n, d) * grad(n, d);
-            //         }
-            //     }
-
-            //     // XPBD update logic for elements
-            //     double old_lambda = volume_lambda(elem_gid);
-            //     double delta_lambda = (-C - alpha_tilde_vol * old_lambda) / (sum_grad_sq + alpha_tilde_vol);
-            //     volume_lambda(elem_gid) += delta_lambda;
-
-            //     for (int n = 0; n < 8; n++) {
-            //         int corner_gid = mesh.corners_in_elem(elem_gid, n);
-            //         int node_gid = mesh.nodes_in_elem(elem_gid, n);
-
-            //         for (int d = 0; d < 3; d++) {
-            //             corner_delta(corner_gid, d) = (float)(delta_lambda * grad(n, d));
-            //             Kokkos::atomic_add(&node.coords(node_gid, d), corner_delta(corner_gid, d));
-            //         }
-            //     }
-
-                
-
-            // });
-            //}
-
-            // Compute the volume of the element
-            FOR_ALL(elem_gid, 0, mesh.num_elems, {
-
-                const size_t num_nodes = 8;
-
-                double x_array[8];
-                double y_array[8];
-                double z_array[8];
-
-                // x, y, z coordinates of elem vertices
-                auto x = ViewCArrayKokkos<double>(x_array, num_nodes);
-                auto y = ViewCArrayKokkos<double>(y_array, num_nodes);
-                auto z = ViewCArrayKokkos<double>(z_array, num_nodes);
-
-                // get the coordinates of the nodes(rk,elem,node) in this element
-                for (int node_lid = 0; node_lid < num_nodes; node_lid++) {
-                    size_t node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
-                    x(node_lid) = node_coords(node_gid, 0);
-                    y(node_lid) = node_coords(node_gid, 1);
-                    z(node_lid) = node_coords(node_gid, 2);
-                }     // end for
-
-                double twelth = 1. / 12.;
-
-                // element volume
-                double volume =
-                    (x(1) * (y(2) * (-z(0) + z(3)) + y(4) * (z(0) - z(5)) + y(0) * (z(3) + z(2) - z(4) - z(5)) + y(7) * (-z(3) + z(5)) + y(5) * (z(0) - z(3) + z(4) - z(7)) + y(3) * (-z(0) - z(2) + z(5) + z(7))) +
-                    x(6) * (y(0) * (-z(2) + z(4)) + y(7) * (z(3) + z(2) - z(4) - z(5)) + y(3) * (z(2) - z(7)) + y(2) * (z(0) - z(3) + z(4) - z(7)) + y(5) * (-z(4) + z(7)) + y(4) * (-z(0) - z(2) + z(5) + z(7))) +
-                    x(2) * (y(1) * (z(0) - z(3)) + y(6) * (-z(0) + z(3) - z(4) + z(7)) + y(7) * (z(3) - z(6)) + y(3) * (z(0) + z(1) - z(7) - z(6)) + y(4) * (-z(0) + z(6)) + y(0) * (-z(1) - z(3) + z(4) + z(6))) +
-                    x(5) * (y(0) * (z(1) - z(4)) + y(6) * (z(4) - z(7)) + y(3) * (-z(1) + z(7)) + y(1) * (-z(0) + z(3) - z(4) + z(7)) + y(4) * (z(0) + z(1) - z(7) - z(6)) + y(7) * (-z(1) - z(3) + z(4) + z(6))) +
-                    x(7) * (y(1) * (z(3) - z(5)) + y(6) * (-z(3) - z(2) + z(4) + z(5)) + y(5) * (z(1) + z(3) - z(4) - z(6)) + y(4) * (z(5) - z(6)) + y(2) * (-z(3) + z(6)) + y(3) * (-z(1) + z(2) - z(5) + z(6))) +
-                    x(0) * (y(3) * (z(1) - z(2)) + y(6) * (z(2) - z(4)) + y(5) * (-z(1) + z(4)) + y(1) * (-z(3) - z(2) + z(4) + z(5)) + y(2) * (z(1) + z(3) - z(4) - z(6)) + y(4) * (-z(1) + z(2) - z(5) + z(6))) +
-                    x(3) * (y(0) * (-z(1) + z(2)) + y(5) * (z(1) - z(7)) + y(1) * (z(0) + z(2) - z(5) - z(7)) + y(6) * (-z(2) + z(7)) + y(7) * (z(1) - z(2) + z(5) - z(6)) + y(2) * (-z(0) - z(1) + z(7) + z(6))) +
-                    x(4) *
-                    (y(1) * (-z(0) + z(5)) + y(6) * (z(0) + z(2) - z(5) - z(7)) + y(2) * (z(0) - z(6)) + y(0) * (z(1) - z(2) + z(5) - z(6)) + y(7) * (-z(5) + z(6)) + y(5) * (-z(0) - z(1) + z(7) + z(6)))) *
-                    twelth;
-
-                gauss_point.fields(elem_gid) = static_cast<float>(volume);
-            });
-            
-
-        }
-
-        std::cout<<"Writing VTU file for step "<<step<<std::endl;
-        int rank = 0;
-        double time_value = static_cast<double>(step) * dt;
-        write_vtu(mesh, node, gauss_point, rank, MPI_COMM_WORLD, step, time_value);
-    }
-
-
-    // Compute the shortest distance between any node in the mesh
-    std::cout<<"Computing the shortest distance between any node in the mesh"<<std::endl;
-    distance_lcl = 1.0e32;
-    min_distance_calc = 1.0e32;
-    FOR_REDUCE_MIN(elem_gid, 0, mesh.num_elems, distance_lcl, {
-
-        double coords0[24];  // element coords
-        ViewCArrayKokkos<double> coords(coords0, 8, 3);
-
-        double distance0[28];  // array for holding distances between each node
-        ViewCArrayKokkos<double> dist(distance0, 28);
-
-        // Getting the coordinates of the element
-        for (size_t node_lid = 0; node_lid < 8; node_lid++) {
-            for (size_t dim = 0; dim < mesh.num_dims; dim++) {
-                coords(node_lid, dim) = node_coords(mesh.nodes_in_elem(elem_gid, node_lid), dim);
-            } // end for dim
-        } // end for loop over node_lid
-
-        // loop conditions needed for distance calculation
-        size_t countA = 0;
-        size_t countB = 1;
-        size_t a;
-        size_t b;
-        size_t loop = 0;
-
-        // Only works for 3D
-        // Solving for the magnitude of distance between each node
-        for (size_t i = 0; i < 28; i++) {
-            a = countA;
-            b = countB;
-
-            // returns magnitude of distance between each node, 28 total options
-            dist(i) = fabs(sqrt((pow((coords(b, 0) - coords(a, 0)), 2.0)
-            + pow((coords(b, 1) - coords(a, 1)), 2.0)
-            + pow((coords(b, 2) - coords(a, 2)), 2.0))));
-
-            countB++;
-            countA++;
-
-            // tricky indexing
-            if (countB > 7) {
-                loop++;
-                countB = 1 + loop;
-                countA = 0;
+        // Get the nearest facet point for each boundary node   
+        FOR_ALL(node_lid, 0, mesh.num_bdy_nodes, {
+            size_t node_gid = mesh.bdy_nodes(node_lid);
+            float p[3];
+            for(int i=0; i<3; i++) {
+                p[i] = static_cast<float>(node.coords(node_gid, i));
             }
-        } // end for i
-
-        double dist_min = dist(0);
-
-        for (int i = 0; i < 28; ++i) {
-            dist_min = fmin(dist(i), dist_min);
-        }
-
-        if (dist_min < distance_lcl) {
-            distance_lcl = dist_min;
-        }
-    }, min_distance_calc);  // end parallel reduction
-    Kokkos::fence();
-
-    std::cout<<"Minimum distance: "<<min_distance_calc<<std::endl;
-
-
-
-    for(step = num_steps/repeats; step < num_steps; step++) {
-
-
-        boundary_compliance = 0.0;
-        // Linearly drop volume_compliance to zero after cutoff% of steps
-        // volume_compliance = volume_compliance / 1.1;
-        // Linearly drop edge_compliance to zero after cutoff% of steps
-        // edge_compliance = edge_compliance / 1.1;
-
-
-        double sub_step = dt/num_steps;
-        
-        double alpha_tilde_bdy = boundary_compliance / (sub_step * sub_step);
-        double alpha_tilde_vol =  volume_compliance / (sub_step * sub_step);
-        double alpha_tilde_edge =  edge_compliance / (sub_step * sub_step);
-        
-        volume_lambda.set_values(0.0);
-        boundary_lambda.set_values(0.0);
-        element_lambda_iso.set_values(0.0);
-        element_lambda_diag.set_values(0.0);
-        
-        for(int iter = 0; iter < num_iterations; iter++) {
-        
-           
-            // --- 2. Element Volumetric Constraint ---
-            // FOR_ALL(elem_gid, 0, mesh.num_elems, {
-            //     // for(int elem_gid=0; elem_gid<mesh.num_elems; elem_gid++) {
-            //     double x1[8][3];
-            //     for (int n = 0; n < 8; n++) {
-            //         size_t node_gid = mesh.nodes_in_elem(elem_gid, n);
-            //         for (int d = 0; d < 3; d++) x1[n][d] = node.coords(node_gid, d);
-            //     }
             
-            //     // Shape Matrix A (using i,j,k mapping)
-            //     double A_mem[9];
-            //     ViewCArrayKokkos<double> A(A_mem, 3, 3);
-            //     A.set_values(0.0);
-
-            //     for (int axis = 0; axis < 3; axis++) {
-            //         for (int i = 0; i < 4; i++) {
-            //             for (int d = 0; d < 3; d++) {
-            //                 A(d, axis) += 0.25 * (x1[pos_nodes[axis][i]][d] - x1[neg_nodes[axis][i]][d]);
-            //             }
-            //         }
-            //     }
-            
-            //     // Deformation Gradient F = A * invB
-            //     double F_mem[9];
-            //     ViewCArrayKokkos<double> F(F_mem, 3, 3);
-            //     F.set_values(0.0);
-                
-            //     for(int i=0; i<3; i++)
-            //         for(int j=0; j<3; j++)
-            //             for(int k=0; k<3; k++)
-            //                 F(i, j) += A(i, k) * inverse_reference_matrix(elem_gid, k, j);
-            
-            //     // C = det(F) - 1
-            //     double detF = F(0,0)*(F(1,1)*F(2,2) - F(1,2)*F(2,1))
-            //                 - F(0,1)*(F(1,0)*F(2,2) - F(1,2)*F(2,0))
-            //                 + F(0,2)*(F(1,0)*F(2,1) - F(1,1)*F(2,0));
-                
-            //     double C = detF - 1.0;
-            
-            //     // Gradient of C (Cofactor matrix H)
-            //     double H_mem[9];
-            //     ViewCArrayKokkos<double> H(H_mem, 3, 3);
-            //     H(0, 0) = F(1, 1)*F(2, 2) - F(1, 2)*F(2, 1); H(0, 1) = F(1, 2)*F(2, 0) - F(1, 0)*F(2, 2); H(0, 2) = F(1, 0)*F(2, 1) - F(1, 1)*F(2, 0);
-            //     H(1, 0) = F(0, 2)*F(2, 1) - F(0, 1)*F(2, 2); H(1, 1) = F(0, 0)*F(2, 2) - F(0, 2)*F(2, 0); H(1, 2) = F(0, 1)*F(2, 0) - F(0, 0)*F(2, 1);
-            //     H(2, 0) = F(0, 1)*F(1, 2) - F(0, 2)*F(1, 1); H(2, 1) = F(0, 2)*F(1, 0) - F(0, 0)*F(1, 2); H(2, 2) = F(0, 0)*F(1, 1) - F(0, 1)*F(1, 0);
-
-            //     double grad_mem[24];
-            //     ViewCArrayKokkos<double> grad(grad_mem, 8, 3);
-            //     grad.set_values(0.0);
-            //     double sum_grad_sq = 0;
-
-            //     for (int n = 0; n < 8; n++) {
-            //         double dN_dxi[3];
-            //         get_shape_grad_at_center(n, dN_dxi); 
-            //         for (int d = 0; d < 3; d++) { 
-            //             for (int i = 0; i < 3; i++) {
-            //                 for (int j = 0; j < 3; j++) {
-            //                     // Chain rule through the reference configuration
-            //                     grad(n, d) += H(d, i) * inverse_reference_matrix(elem_gid, j, i) * dN_dxi[j];
-            //                 }
-            //             }
-            //             sum_grad_sq += grad(n, d) * grad(n, d);
-            //         }
-            //     }
-
-            //     // XPBD update logic for elements
-            //     double old_lambda = volume_lambda(elem_gid);
-            //     double delta_lambda = (-C - alpha_tilde_vol * old_lambda) / (sum_grad_sq + alpha_tilde_vol);
-            //     volume_lambda(elem_gid) += delta_lambda;
-
-            //     for (int n = 0; n < 8; n++) {
-            //         int corner_gid = mesh.corners_in_elem(elem_gid, n);
-            //         int node_gid = mesh.nodes_in_elem(elem_gid, n);
-
-            //         for (int d = 0; d < 3; d++) {
-            //             corner_delta(corner_gid, d) = (float)(delta_lambda * grad(n, d));
-            //             Kokkos::atomic_add(&node.coords(node_gid, d), corner_delta(corner_gid, d));
-            //         }
-            //     }
-
-                
+            float closest[3];
+            for(int i=0; i<3; i++) closest[i] = 0.0f;
+            float dist_sq = 0.0f;
+            int facet_idx = stl_data.query_nearest_facet(p, dist_sq, closest);
     
-            // });
-
-            // --- 4. Edge Length Constraint (Relaxation) ---
-            FOR_ALL(node_gid, 0, mesh.num_nodes, {
-
-                size_t node_a = node_gid;
-                for(int node_lid = 0; node_lid < mesh.num_nodes_in_node(node_gid); node_lid++){
-
-
-                    size_t node_b = mesh.nodes_in_node(node_gid, node_lid);
-                    double L0 = min_distance_calc;
-
-                    double dx[3];
-                    double dist_sq = 0.0;
-                    for(int d=0; d<3; d++) {
-                        dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
-                        dist_sq += dx[d] * dx[d];
-                    }
-                    double dist = sqrt(dist_sq);
-                    
-                    if (dist < 1e-12) return; // Prevent division by zero
-
-                    double C = dist - L0;
-                    
-                    // XPBD Denominator: sum(w*grad^2) + alpha_tilde
-                    // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
-                    double denominator = 2.0 + alpha_tilde_edge;
-
-                    double old_lambda = edge_lambda(node_gid);
-                    double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
-                    edge_lambda(node_gid) += delta_lambda/mesh.num_nodes_in_node(node_gid);
-
-                    // Unit gradient vector n
-                    double n[3];
-                    for(int d=0; d<3; d++) n[d] = dx[d] / dist;
-
-                    // Update positions
-                    for(int d=0; d<3; d++) {
-                        double corr = delta_lambda * n[d];
-                        Kokkos::atomic_add(&node.coords(node_a, d), corr);
-                        Kokkos::atomic_add(&node.coords(node_b, d), -corr);
-                    }
-                }
-            });
-
-            // Element internal Diagonal Constraints
-            FOR_ALL(elem_gid, 0, mesh.num_elems, {
-
-                int num_sets = 4;
-
-                int set_[num_sets*2];
-                auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);
-
-
-                // Daigonals within the elelent
-                set(0,0) = 0;
-                set(0,1) = 7;
-                set(1,0) = 1;
-                set(1,1) = 6;
-                set(2,0) = 2;
-                set(2,1) = 5;
-                set(3,0) = 3;
-                set(3,1) = 4;
-
-                double target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
-                target = sqrt(target);
-
-                for(int i = 0; i < 4; i++){
-
-                    size_t node_a = mesh.nodes_in_elem(elem_gid, set(i,0));
-                    size_t node_b = mesh.nodes_in_elem(elem_gid, set(i,1));
-
-                    
-                    double L0 = target;
-
-                    double dx[3];
-                    double dist_sq = 0.0;
-                    for(int d=0; d<3; d++) {
-                        dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
-                        dist_sq += dx[d] * dx[d];
-                    }
-                    double dist = sqrt(dist_sq);
-                    
-                    if (dist < 1e-12) return; // Prevent division by zero
-
-                    double C = dist - L0;
-                    
-                    // XPBD Denominator: sum(w*grad^2) + alpha_tilde
-                    // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
-                    double denominator = 2.0 + alpha_tilde_edge;
-
-                    double old_lambda = element_lambda_diag(elem_gid);
-                    double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
-                    element_lambda_diag(elem_gid) += delta_lambda / 4;
-
-                    // Unit gradient vector n
-                    double n[3];
-                    for(int d=0; d<3; d++) n[d] = dx[d] / dist;
-
-                    // Update positions
-                    for(int d=0; d<3; d++) {
-                        double corr = delta_lambda * n[d];
-                        Kokkos::atomic_add(&node.coords(node_a, d), corr);
-                        Kokkos::atomic_add(&node.coords(node_b, d), -corr);
-                    }
-                }
-            
-            });
-
-            // Element face Diagonal Constraints
-            FOR_ALL(elem_gid, 0, mesh.num_elems, {
-
-                int num_sets = 8;
-
-                int set_[num_sets*2];
-                auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);
-
-                // Diagonals on the element face
-                // -i face face
-                set(0,0) = 0;
-                set(0,1) = 6;
-                set(1,0) = 3;
-                set(1,1) = 4;
-                // +i face face
-                set(2,0) = 1;
-                set(2,1) = 7;
-                set(3,0) = 5;
-                set(3,1) = 3;
-                // -j face face
-                set(4,0) = 0;
-                set(4,1) = 5;
-                set(5,0) = 1;
-                set(5,1) = 4;
-                // +j face face
-                set(6,0) = 2;
-                set(6,1) = 7;
-                set(7,0) = 3;
-                set(7,1) = 6;
-
-
-                double target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
-                target = sqrt(target);
-
-                for(int i = 0; i < num_sets; i++){
-
-                    size_t node_a = mesh.nodes_in_elem(elem_gid, set(i,0));
-                    size_t node_b = mesh.nodes_in_elem(elem_gid, set(i,1));
-
-                    
-                    double L0 = target;
-
-                    double dx[3];
-                    double dist_sq = 0.0;
-                    for(int d=0; d<3; d++) {
-                        dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
-                        dist_sq += dx[d] * dx[d];
-                    }
-                    double dist = sqrt(dist_sq);
-                    
-                    if (dist < 1e-12) return; // Prevent division by zero
-
-                    double C = dist - L0;
-                    
-                    // XPBD Denominator: sum(w*grad^2) + alpha_tilde
-                    // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
-                    double denominator = 2.0 + alpha_tilde_edge;
-
-                    double old_lambda = element_lambda_diag(elem_gid);
-                    double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
-                    element_lambda_diag(elem_gid) += delta_lambda / 4;
-
-                    // Unit gradient vector n
-                    double n[3];
-                    for(int d=0; d<3; d++) n[d] = dx[d] / dist;
-
-                    // Update positions
-                    for(int d=0; d<3; d++) {
-                        double corr = delta_lambda * n[d];
-                        Kokkos::atomic_add(&node.coords(node_a, d), corr);
-                        Kokkos::atomic_add(&node.coords(node_b, d), -corr);
-                    }
-                }
-            
-            });
-
-
-            
-
-
-            // --- 3. Boundary Snap Constraint ---
-            FOR_ALL(node_lid, 0, mesh.num_bdy_nodes, {
-                size_t node_gid = mesh.bdy_nodes(node_lid);
+    
+            nearest_facet_point(node_lid, 0) = closest[0];
+            nearest_facet_point(node_lid, 1) = closest[1];
+            nearest_facet_point(node_lid, 2) = closest[2];
+            // std::cout<<"Nearest facet: "<<facet_idx<<std::endl;
+            // std::cout<<"Distance: "<<dist_sq<<std::endl;
+            // std::cout<<"Closest point: "<<closest[0]<<", "<<closest[1]<<", "<<closest[2]<<std::endl;
+    
+            node.scalar_field(node_gid) = sqrt(dist_sq);
+    
+            node.closest_facet_point(node_gid, 0) = closest[0] - node.coords(node_gid, 0);
+            node.closest_facet_point(node_gid, 1) = closest[1] - node.coords(node_gid, 1);
+            node.closest_facet_point(node_gid, 2) = closest[2] - node.coords(node_gid, 2);
+        });
+        bool doing_PBD = false;
+        if(doing_PBD) {
+            for(int iter = 0; iter < num_iterations; iter++) {
                 
-                float p[3];
-                for(int i=0; i<3; i++) p[i] = static_cast<float>(node.coords(node_gid, i));
-                
-                float closest[3];
-                float dist_sq;
-                // int facet_idx = stl_data.query_nearest_facet(p, dist_sq, closest);
-                
-                // float dist = sqrtf(dist_sq);
+                // --- 1. Boundary Snap Constraint ---
+                FOR_ALL(node_lid, 0, mesh.num_bdy_nodes, {
+                    size_t node_gid = mesh.bdy_nodes(node_lid);
+                    
+                    float p[3];
+                    for(int i=0; i<3; i++) p[i] = static_cast<float>(node.coords(node_gid, i));
+                    
+                    float closest[3];
+                    float dist_sq;
+                    // int facet_idx = stl_data.query_nearest_facet(p, dist_sq, closest);
+                    
+                    // float dist = sqrtf(dist_sq);
 
-                // Calculate the distance using the previously saved nearest facet point
-                dist_sq = 0.0f;
-                for(int d = 0; d < 3; d++) {
-                    dist_sq += (node.coords(node_gid, d) - nearest_facet_point(node_lid, d))*(node.coords(node_gid, d) - nearest_facet_point(node_lid, d));
+                    // Calculate the distance using the previously saved nearest facet point
+                    dist_sq = 0.0f;
+                    for(int d = 0; d < 3; d++) {
+                        dist_sq += (node.coords(node_gid, d) - nearest_facet_point(node_lid, d))*(node.coords(node_gid, d) - nearest_facet_point(node_lid, d));
+                    }
+
+                    float dist = sqrt(dist_sq);
+
+                    if (dist < 1e-9) return; 
+
+                    node.scalar_field(node_gid) = sqrt(dist_sq);
+
+                    // node.closest_facet_point(node_gid, 0) = closest[0] - node.coords(node_gid, 0);
+                    // node.closest_facet_point(node_gid, 1) = closest[1] - node.coords(node_gid, 1);
+                    // node.closest_facet_point(node_gid, 2) = closest[2] - node.coords(node_gid, 2);
+
+                    closest[0] = nearest_facet_point(node_lid, 0);
+                    closest[1] = nearest_facet_point(node_lid, 1);
+                    closest[2] = nearest_facet_point(node_lid, 2);
+
+                    node.closest_facet_point(node_gid, 0) = nearest_facet_point(node_lid, 0) - node.coords(node_gid, 0);
+                    node.closest_facet_point(node_gid, 1) = nearest_facet_point(node_lid, 1) - node.coords(node_gid, 1);
+                    node.closest_facet_point(node_gid, 2) = nearest_facet_point(node_lid, 2) - node.coords(node_gid, 2);
+
+
+                    if (dist < 1e-9) return; 
+                
+                    float grad[3];
+                    for(int i=0; i<3; i++) grad[i] = (p[i] - closest[i]) / dist;
+                
+                    // XPBD update for boundary
+                    double old_lambda = boundary_lambda(node_lid);
+                    double delta_lambda = (-dist - alpha_tilde_bdy * old_lambda) / (1.0 + alpha_tilde_bdy);
+                    boundary_lambda(node_lid) += delta_lambda;
+                    
+                    for(int d=0; d<3; d++) {
+                        node.coords(node_gid, d) += delta_lambda * grad[d];
+                    }
+                });
+
+
+                // --- 4. Edge Length Constraint (Relaxation) ---
+                FOR_ALL(node_gid, 0, mesh.num_nodes, {
+
+                    size_t node_a = node_gid;
+                    for(int node_lid = 0; node_lid < mesh.num_nodes_in_node(node_gid); node_lid++){
+
+
+                        size_t node_b = mesh.nodes_in_node(node_gid, node_lid);
+                        double L0 = min_distance_calc;
+
+                        double dx[3];
+                        double dist_sq = 0.0;
+                        for(int d=0; d<3; d++) {
+                            dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
+                            dist_sq += dx[d] * dx[d];
+                        }
+                        double dist = sqrt(dist_sq);
+                        
+                        if (dist < 1e-12) return; // Prevent division by zero
+
+                        double C = dist - L0;
+                        
+                        // XPBD Denominator: sum(w*grad^2) + alpha_tilde
+                        // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
+                        double denominator = 2.0 + alpha_tilde_edge;
+
+                        double old_lambda = edge_lambda(node_gid);
+                        double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
+                        edge_lambda(node_gid) += delta_lambda/mesh.num_nodes_in_node(node_gid);
+
+                        // Unit gradient vector n
+                        double n[3];
+                        for(int d=0; d<3; d++) n[d] = dx[d] / dist;
+
+                        // Update positions
+                        for(int d=0; d<3; d++) {
+                            double corr = delta_lambda * n[d];
+                            Kokkos::atomic_add(&node.coords(node_a, d), corr);
+                            Kokkos::atomic_add(&node.coords(node_b, d), -corr);
+                        }
+                    }
+                });
+
+                // Element internal Diagonal Constraints
+                FOR_ALL(elem_gid, 0, mesh.num_elems, {
+
+                    int num_sets = 4;
+
+                    int set_[num_sets*2];
+                    auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);
+
+
+                    // Daigonals within the elelent
+                    set(0,0) = 0;
+                    set(0,1) = 7;
+                    set(1,0) = 1;
+                    set(1,1) = 6;
+                    set(2,0) = 2;
+                    set(2,1) = 5;
+                    set(3,0) = 3;
+                    set(3,1) = 4;
+
+                    double target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
+                    target = sqrt(target);
+
+                    for(int i = 0; i < 4; i++){
+
+                        size_t node_a = mesh.nodes_in_elem(elem_gid, set(i,0));
+                        size_t node_b = mesh.nodes_in_elem(elem_gid, set(i,1));
+
+                        
+                        double L0 = target;
+
+                        double dx[3];
+                        double dist_sq = 0.0;
+                        for(int d=0; d<3; d++) {
+                            dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
+                            dist_sq += dx[d] * dx[d];
+                        }
+                        double dist = sqrt(dist_sq);
+                        
+                        if (dist < 1e-12) return; // Prevent division by zero
+
+                        double C = dist - L0;
+                        
+                        // XPBD Denominator: sum(w*grad^2) + alpha_tilde
+                        // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
+                        double denominator = 2.0 + alpha_tilde_edge;
+
+                        double old_lambda = element_lambda_diag(elem_gid);
+                        double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
+                        element_lambda_diag(elem_gid) += delta_lambda / 4;
+
+                        // Unit gradient vector n
+                        double n[3];
+                        for(int d=0; d<3; d++) n[d] = dx[d] / dist;
+
+                        // Update positions
+                        for(int d=0; d<3; d++) {
+                            double corr = delta_lambda * n[d];
+                            Kokkos::atomic_add(&node.coords(node_a, d), corr);
+                            Kokkos::atomic_add(&node.coords(node_b, d), -corr);
+                        }
+                    }
+                
+                });
+
+                // Element face Diagonal Constraints
+                FOR_ALL(elem_gid, 0, mesh.num_elems, {
+
+                    int num_sets = 8;
+
+                    int set_[num_sets*2];
+                    auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);
+
+                    // Diagonals on the element face
+                    // -i face face
+                    set(0,0) = 0;
+                    set(0,1) = 6;
+                    set(1,0) = 3;
+                    set(1,1) = 4;
+                    // +i face face
+                    set(2,0) = 1;
+                    set(2,1) = 7;
+                    set(3,0) = 5;
+                    set(3,1) = 3;
+                    // -j face face
+                    set(4,0) = 0;
+                    set(4,1) = 5;
+                    set(5,0) = 1;
+                    set(5,1) = 4;
+                    // +j face face
+                    set(6,0) = 2;
+                    set(6,1) = 7;
+                    set(7,0) = 3;
+                    set(7,1) = 6;
+
+
+                    double target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
+                    target = sqrt(target);
+
+                    for(int i = 0; i < num_sets; i++){
+
+                        size_t node_a = mesh.nodes_in_elem(elem_gid, set(i,0));
+                        size_t node_b = mesh.nodes_in_elem(elem_gid, set(i,1));
+
+                        
+                        double L0 = target;
+
+                        double dx[3];
+                        double dist_sq = 0.0;
+                        for(int d=0; d<3; d++) {
+                            dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
+                            dist_sq += dx[d] * dx[d];
+                        }
+                        double dist = sqrt(dist_sq);
+                        
+                        if (dist < 1e-12) return; // Prevent division by zero
+
+                        double C = dist - L0;
+                        
+                        // XPBD Denominator: sum(w*grad^2) + alpha_tilde
+                        // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
+                        double denominator = 2.0 + alpha_tilde_edge;
+
+                        double old_lambda = element_lambda_diag(elem_gid);
+                        double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
+                        element_lambda_diag(elem_gid) += delta_lambda / 4;
+
+                        // Unit gradient vector n
+                        double n[3];
+                        for(int d=0; d<3; d++) n[d] = dx[d] / dist;
+
+                        // Update positions
+                        for(int d=0; d<3; d++) {
+                            double corr = delta_lambda * n[d];
+                            Kokkos::atomic_add(&node.coords(node_a, d), corr);
+                            Kokkos::atomic_add(&node.coords(node_b, d), -corr);
+                        }
+                    }
+                
+                });
+
+                // --- 2. Element Volumetric Constraint ---
+                // FOR_ALL(elem_gid, 0, mesh.num_elems, {
+                // //for(int elem_gid=0; elem_gid<mesh.num_elems; elem_gid++) {
+                //     double x1[8][3];
+                //     for (int n = 0; n < 8; n++) {
+                //         size_t node_gid = mesh.nodes_in_elem(elem_gid, n);
+                //         for (int d = 0; d < 3; d++) x1[n][d] = node.coords(node_gid, d);
+                //     }
+                
+                //     // Shape Matrix A (using i,j,k mapping)
+                //     double A_mem[9];
+                //     ViewCArrayKokkos<double> A(A_mem, 3, 3);
+                //     A.set_values(0.0);
+
+                //     for (int axis = 0; axis < 3; axis++) {
+                //         for (int i = 0; i < 4; i++) {
+                //             for (int d = 0; d < 3; d++) {
+                //                 A(d, axis) += 0.25 * (x1[pos_nodes[axis][i]][d] - x1[neg_nodes[axis][i]][d]);
+                //             }
+                //         }
+                //     }
+                
+                //     // Deformation Gradient F = A * invB
+                //     double F_mem[9];
+                //     ViewCArrayKokkos<double> F(F_mem, 3, 3);
+                //     F.set_values(0.0);
+                    
+                //     for(int i=0; i<3; i++)
+                //         for(int j=0; j<3; j++)
+                //             for(int k=0; k<3; k++)
+                //                 F(i, j) += A(i, k) * inverse_reference_matrix(elem_gid, k, j);
+                
+                //     // C = det(F) - 1
+                //     double detF = F(0,0)*(F(1,1)*F(2,2) - F(1,2)*F(2,1))
+                //                 - F(0,1)*(F(1,0)*F(2,2) - F(1,2)*F(2,0))
+                //                 + F(0,2)*(F(1,0)*F(2,1) - F(1,1)*F(2,0));
+                    
+                //     double C = detF - 1.0;
+                
+                //     // Gradient of C (Cofactor matrix H)
+                //     double H_mem[9];
+                //     ViewCArrayKokkos<double> H(H_mem, 3, 3);
+                //     H(0, 0) = F(1, 1)*F(2, 2) - F(1, 2)*F(2, 1); H(0, 1) = F(1, 2)*F(2, 0) - F(1, 0)*F(2, 2); H(0, 2) = F(1, 0)*F(2, 1) - F(1, 1)*F(2, 0);
+                //     H(1, 0) = F(0, 2)*F(2, 1) - F(0, 1)*F(2, 2); H(1, 1) = F(0, 0)*F(2, 2) - F(0, 2)*F(2, 0); H(1, 2) = F(0, 1)*F(2, 0) - F(0, 0)*F(2, 1);
+                //     H(2, 0) = F(0, 1)*F(1, 2) - F(0, 2)*F(1, 1); H(2, 1) = F(0, 2)*F(1, 0) - F(0, 0)*F(1, 2); H(2, 2) = F(0, 0)*F(1, 1) - F(0, 1)*F(1, 0);
+
+                //     double grad_mem[24];
+                //     ViewCArrayKokkos<double> grad(grad_mem, 8, 3);
+                //     grad.set_values(0.0);
+                //     double sum_grad_sq = 0;
+
+                //     for (int n = 0; n < 8; n++) {
+                //         double dN_dxi[3];
+                //         get_shape_grad_at_center(n, dN_dxi); 
+                //         for (int d = 0; d < 3; d++) { 
+                //             for (int i = 0; i < 3; i++) {
+                //                 for (int j = 0; j < 3; j++) {
+                //                     // Chain rule through the reference configuration
+                //                     grad(n, d) += H(d, i) * inverse_reference_matrix(elem_gid, j, i) * dN_dxi[j];
+                //                 }
+                //             }
+                //             sum_grad_sq += grad(n, d) * grad(n, d);
+                //         }
+                //     }
+
+                //     // XPBD update logic for elements
+                //     double old_lambda = volume_lambda(elem_gid);
+                //     double delta_lambda = (-C - alpha_tilde_vol * old_lambda) / (sum_grad_sq + alpha_tilde_vol);
+                //     volume_lambda(elem_gid) += delta_lambda;
+
+                //     for (int n = 0; n < 8; n++) {
+                //         int corner_gid = mesh.corners_in_elem(elem_gid, n);
+                //         int node_gid = mesh.nodes_in_elem(elem_gid, n);
+
+                //         for (int d = 0; d < 3; d++) {
+                //             corner_delta(corner_gid, d) = (float)(delta_lambda * grad(n, d));
+                //             Kokkos::atomic_add(&node.coords(node_gid, d), corner_delta(corner_gid, d));
+                //         }
+                //     }
+
+                    
+
+                // });
+                //}
+
+                // Compute the volume of the element
+                FOR_ALL(elem_gid, 0, mesh.num_elems, {
+
+                    const size_t num_nodes = 8;
+
+                    double x_array[8];
+                    double y_array[8];
+                    double z_array[8];
+
+                    // x, y, z coordinates of elem vertices
+                    auto x = ViewCArrayKokkos<double>(x_array, num_nodes);
+                    auto y = ViewCArrayKokkos<double>(y_array, num_nodes);
+                    auto z = ViewCArrayKokkos<double>(z_array, num_nodes);
+
+                    // get the coordinates of the nodes(rk,elem,node) in this element
+                    for (int node_lid = 0; node_lid < num_nodes; node_lid++) {
+                        size_t node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                        x(node_lid) = node_coords(node_gid, 0);
+                        y(node_lid) = node_coords(node_gid, 1);
+                        z(node_lid) = node_coords(node_gid, 2);
+                    }     // end for
+
+                    double twelth = 1. / 12.;
+
+                    // element volume
+                    double volume =
+                        (x(1) * (y(2) * (-z(0) + z(3)) + y(4) * (z(0) - z(5)) + y(0) * (z(3) + z(2) - z(4) - z(5)) + y(7) * (-z(3) + z(5)) + y(5) * (z(0) - z(3) + z(4) - z(7)) + y(3) * (-z(0) - z(2) + z(5) + z(7))) +
+                        x(6) * (y(0) * (-z(2) + z(4)) + y(7) * (z(3) + z(2) - z(4) - z(5)) + y(3) * (z(2) - z(7)) + y(2) * (z(0) - z(3) + z(4) - z(7)) + y(5) * (-z(4) + z(7)) + y(4) * (-z(0) - z(2) + z(5) + z(7))) +
+                        x(2) * (y(1) * (z(0) - z(3)) + y(6) * (-z(0) + z(3) - z(4) + z(7)) + y(7) * (z(3) - z(6)) + y(3) * (z(0) + z(1) - z(7) - z(6)) + y(4) * (-z(0) + z(6)) + y(0) * (-z(1) - z(3) + z(4) + z(6))) +
+                        x(5) * (y(0) * (z(1) - z(4)) + y(6) * (z(4) - z(7)) + y(3) * (-z(1) + z(7)) + y(1) * (-z(0) + z(3) - z(4) + z(7)) + y(4) * (z(0) + z(1) - z(7) - z(6)) + y(7) * (-z(1) - z(3) + z(4) + z(6))) +
+                        x(7) * (y(1) * (z(3) - z(5)) + y(6) * (-z(3) - z(2) + z(4) + z(5)) + y(5) * (z(1) + z(3) - z(4) - z(6)) + y(4) * (z(5) - z(6)) + y(2) * (-z(3) + z(6)) + y(3) * (-z(1) + z(2) - z(5) + z(6))) +
+                        x(0) * (y(3) * (z(1) - z(2)) + y(6) * (z(2) - z(4)) + y(5) * (-z(1) + z(4)) + y(1) * (-z(3) - z(2) + z(4) + z(5)) + y(2) * (z(1) + z(3) - z(4) - z(6)) + y(4) * (-z(1) + z(2) - z(5) + z(6))) +
+                        x(3) * (y(0) * (-z(1) + z(2)) + y(5) * (z(1) - z(7)) + y(1) * (z(0) + z(2) - z(5) - z(7)) + y(6) * (-z(2) + z(7)) + y(7) * (z(1) - z(2) + z(5) - z(6)) + y(2) * (-z(0) - z(1) + z(7) + z(6))) +
+                        x(4) *
+                        (y(1) * (-z(0) + z(5)) + y(6) * (z(0) + z(2) - z(5) - z(7)) + y(2) * (z(0) - z(6)) + y(0) * (z(1) - z(2) + z(5) - z(6)) + y(7) * (-z(5) + z(6)) + y(5) * (-z(0) - z(1) + z(7) + z(6)))) *
+                        twelth;
+
+                    gauss_point.fields(elem_gid) = static_cast<float>(volume);
+                });
+                
+
+            }
+
+            std::cout<<"Writing VTU file for step "<<step<<std::endl;
+            // int rank = 0;
+            double time_value = static_cast<double>(step) * dt;
+            write_vtu(mesh, node, gauss_point, rank, MPI_COMM_WORLD, step, time_value);
+        
+
+
+
+            // Compute the shortest distance between any node in the mesh
+            std::cout<<"Computing the shortest distance between any node in the mesh"<<std::endl;
+            distance_lcl = 1.0e32;
+            min_distance_calc = 1.0e32;
+            FOR_REDUCE_MIN(elem_gid, 0, mesh.num_elems, distance_lcl, {
+
+                double coords0[24];  // element coords
+                ViewCArrayKokkos<double> coords(coords0, 8, 3);
+
+                double distance0[28];  // array for holding distances between each node
+                ViewCArrayKokkos<double> dist(distance0, 28);
+
+                // Getting the coordinates of the element
+                for (size_t node_lid = 0; node_lid < 8; node_lid++) {
+                    for (size_t dim = 0; dim < mesh.num_dims; dim++) {
+                        coords(node_lid, dim) = node_coords(mesh.nodes_in_elem(elem_gid, node_lid), dim);
+                    } // end for dim
+                } // end for loop over node_lid
+
+                // loop conditions needed for distance calculation
+                size_t countA = 0;
+                size_t countB = 1;
+                size_t a;
+                size_t b;
+                size_t loop = 0;
+
+                // Only works for 3D
+                // Solving for the magnitude of distance between each node
+                for (size_t i = 0; i < 28; i++) {
+                    a = countA;
+                    b = countB;
+
+                    // returns magnitude of distance between each node, 28 total options
+                    dist(i) = fabs(sqrt((pow((coords(b, 0) - coords(a, 0)), 2.0)
+                    + pow((coords(b, 1) - coords(a, 1)), 2.0)
+                    + pow((coords(b, 2) - coords(a, 2)), 2.0))));
+
+                    countB++;
+                    countA++;
+
+                    // tricky indexing
+                    if (countB > 7) {
+                        loop++;
+                        countB = 1 + loop;
+                        countA = 0;
+                    }
+                } // end for i
+
+                double dist_min = dist(0);
+
+                for (int i = 0; i < 28; ++i) {
+                    dist_min = fmin(dist(i), dist_min);
                 }
 
-                double dist = sqrt(dist_sq);
-
-
-                node.scalar_field(node_gid) = sqrt(dist_sq);
-
-                // node.closest_facet_point(node_gid, 0) = closest[0] - node.coords(node_gid, 0);
-                // node.closest_facet_point(node_gid, 1) = closest[1] - node.coords(node_gid, 1);
-                // node.closest_facet_point(node_gid, 2) = closest[2] - node.coords(node_gid, 2);
-
-
-                node.closest_facet_point(node_gid, 0) = nearest_facet_point(node_lid, 0) - node.coords(node_gid, 0);
-                node.closest_facet_point(node_gid, 1) = nearest_facet_point(node_lid, 1) - node.coords(node_gid, 1);
-                node.closest_facet_point(node_gid, 2) = nearest_facet_point(node_lid, 2) - node.coords(node_gid, 2);
-
-                closest[0] = nearest_facet_point(node_lid, 0);
-                closest[1] = nearest_facet_point(node_lid, 1);
-                closest[2] = nearest_facet_point(node_lid, 2);
-
-                if (dist < 1e-9) return; 
-            
-                float grad[3];
-                for(int i=0; i<3; i++) grad[i] = (p[i] - closest[i]) / dist;
-            
-                // XPBD update for boundary
-                double old_lambda = boundary_lambda(node_lid);
-                double delta_lambda = (-dist - alpha_tilde_bdy * old_lambda) / (1.0 + alpha_tilde_bdy);
-                boundary_lambda(node_lid) += delta_lambda;
-                
-                for(int d=0; d<3; d++) {
-                    node.coords(node_gid, d) += delta_lambda * grad[d];
+                if (dist_min < distance_lcl) {
+                    distance_lcl = dist_min;
                 }
-            });
+            }, min_distance_calc);  // end parallel reduction
+            Kokkos::fence();
 
-            // Compute the volume of the element
-            FOR_ALL(elem_gid, 0, mesh.num_elems, {
+            std::cout<<"Minimum distance: "<<min_distance_calc<<std::endl;
 
-                const size_t num_nodes = 8;
 
-                double x_array[8];
-                double y_array[8];
-                double z_array[8];
 
-                // x, y, z coordinates of elem vertices
-                auto x = ViewCArrayKokkos<double>(x_array, num_nodes);
-                auto y = ViewCArrayKokkos<double>(y_array, num_nodes);
-                auto z = ViewCArrayKokkos<double>(z_array, num_nodes);
+            for(step = num_steps/repeats; step < num_steps; step++) {
 
-                // get the coordinates of the nodes(rk,elem,node) in this element
-                for (int node_lid = 0; node_lid < num_nodes; node_lid++) {
-                    size_t node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
-                    x(node_lid) = node_coords(node_gid, 0);
-                    y(node_lid) = node_coords(node_gid, 1);
-                    z(node_lid) = node_coords(node_gid, 2);
-                }     // end for
 
-                double twelth = 1. / 12.;
+                boundary_compliance = 0.0;
+                // Linearly drop volume_compliance to zero after cutoff% of steps
+                // volume_compliance = volume_compliance / 1.1;
+                // Linearly drop edge_compliance to zero after cutoff% of steps
+                // edge_compliance = edge_compliance / 1.1;
 
-                // element volume
-                double volume =
-                    (x(1) * (y(2) * (-z(0) + z(3)) + y(4) * (z(0) - z(5)) + y(0) * (z(3) + z(2) - z(4) - z(5)) + y(7) * (-z(3) + z(5)) + y(5) * (z(0) - z(3) + z(4) - z(7)) + y(3) * (-z(0) - z(2) + z(5) + z(7))) +
-                    x(6) * (y(0) * (-z(2) + z(4)) + y(7) * (z(3) + z(2) - z(4) - z(5)) + y(3) * (z(2) - z(7)) + y(2) * (z(0) - z(3) + z(4) - z(7)) + y(5) * (-z(4) + z(7)) + y(4) * (-z(0) - z(2) + z(5) + z(7))) +
-                    x(2) * (y(1) * (z(0) - z(3)) + y(6) * (-z(0) + z(3) - z(4) + z(7)) + y(7) * (z(3) - z(6)) + y(3) * (z(0) + z(1) - z(7) - z(6)) + y(4) * (-z(0) + z(6)) + y(0) * (-z(1) - z(3) + z(4) + z(6))) +
-                    x(5) * (y(0) * (z(1) - z(4)) + y(6) * (z(4) - z(7)) + y(3) * (-z(1) + z(7)) + y(1) * (-z(0) + z(3) - z(4) + z(7)) + y(4) * (z(0) + z(1) - z(7) - z(6)) + y(7) * (-z(1) - z(3) + z(4) + z(6))) +
-                    x(7) * (y(1) * (z(3) - z(5)) + y(6) * (-z(3) - z(2) + z(4) + z(5)) + y(5) * (z(1) + z(3) - z(4) - z(6)) + y(4) * (z(5) - z(6)) + y(2) * (-z(3) + z(6)) + y(3) * (-z(1) + z(2) - z(5) + z(6))) +
-                    x(0) * (y(3) * (z(1) - z(2)) + y(6) * (z(2) - z(4)) + y(5) * (-z(1) + z(4)) + y(1) * (-z(3) - z(2) + z(4) + z(5)) + y(2) * (z(1) + z(3) - z(4) - z(6)) + y(4) * (-z(1) + z(2) - z(5) + z(6))) +
-                    x(3) * (y(0) * (-z(1) + z(2)) + y(5) * (z(1) - z(7)) + y(1) * (z(0) + z(2) - z(5) - z(7)) + y(6) * (-z(2) + z(7)) + y(7) * (z(1) - z(2) + z(5) - z(6)) + y(2) * (-z(0) - z(1) + z(7) + z(6))) +
-                    x(4) *
-                    (y(1) * (-z(0) + z(5)) + y(6) * (z(0) + z(2) - z(5) - z(7)) + y(2) * (z(0) - z(6)) + y(0) * (z(1) - z(2) + z(5) - z(6)) + y(7) * (-z(5) + z(6)) + y(5) * (-z(0) - z(1) + z(7) + z(6)))) *
-                    twelth;
 
-                gauss_point.fields(elem_gid) = static_cast<float>(volume);
-            });
+                double sub_step = dt/num_steps;
+                
+                double alpha_tilde_bdy = boundary_compliance / (sub_step * sub_step);
+                double alpha_tilde_vol =  volume_compliance / (sub_step * sub_step);
+                double alpha_tilde_edge =  edge_compliance / (sub_step * sub_step);
+                
+                volume_lambda.set_values(0.0);
+                boundary_lambda.set_values(0.0);
+                element_lambda_iso.set_values(0.0);
+                element_lambda_diag.set_values(0.0);
+                
+                for(int iter = 0; iter < num_iterations; iter++) {
+                
+                
+                    // --- 2. Element Volumetric Constraint ---
+                    // FOR_ALL(elem_gid, 0, mesh.num_elems, {
+                    //     // for(int elem_gid=0; elem_gid<mesh.num_elems; elem_gid++) {
+                    //     double x1[8][3];
+                    //     for (int n = 0; n < 8; n++) {
+                    //         size_t node_gid = mesh.nodes_in_elem(elem_gid, n);
+                    //         for (int d = 0; d < 3; d++) x1[n][d] = node.coords(node_gid, d);
+                    //     }
+                    
+                    //     // Shape Matrix A (using i,j,k mapping)
+                    //     double A_mem[9];
+                    //     ViewCArrayKokkos<double> A(A_mem, 3, 3);
+                    //     A.set_values(0.0);
+
+                    //     for (int axis = 0; axis < 3; axis++) {
+                    //         for (int i = 0; i < 4; i++) {
+                    //             for (int d = 0; d < 3; d++) {
+                    //                 A(d, axis) += 0.25 * (x1[pos_nodes[axis][i]][d] - x1[neg_nodes[axis][i]][d]);
+                    //             }
+                    //         }
+                    //     }
+                    
+                    //     // Deformation Gradient F = A * invB
+                    //     double F_mem[9];
+                    //     ViewCArrayKokkos<double> F(F_mem, 3, 3);
+                    //     F.set_values(0.0);
+                        
+                    //     for(int i=0; i<3; i++)
+                    //         for(int j=0; j<3; j++)
+                    //             for(int k=0; k<3; k++)
+                    //                 F(i, j) += A(i, k) * inverse_reference_matrix(elem_gid, k, j);
+                    
+                    //     // C = det(F) - 1
+                    //     double detF = F(0,0)*(F(1,1)*F(2,2) - F(1,2)*F(2,1))
+                    //                 - F(0,1)*(F(1,0)*F(2,2) - F(1,2)*F(2,0))
+                    //                 + F(0,2)*(F(1,0)*F(2,1) - F(1,1)*F(2,0));
+                        
+                    //     double C = detF - 1.0;
+                    
+                    //     // Gradient of C (Cofactor matrix H)
+                    //     double H_mem[9];
+                    //     ViewCArrayKokkos<double> H(H_mem, 3, 3);
+                    //     H(0, 0) = F(1, 1)*F(2, 2) - F(1, 2)*F(2, 1); H(0, 1) = F(1, 2)*F(2, 0) - F(1, 0)*F(2, 2); H(0, 2) = F(1, 0)*F(2, 1) - F(1, 1)*F(2, 0);
+                    //     H(1, 0) = F(0, 2)*F(2, 1) - F(0, 1)*F(2, 2); H(1, 1) = F(0, 0)*F(2, 2) - F(0, 2)*F(2, 0); H(1, 2) = F(0, 1)*F(2, 0) - F(0, 0)*F(2, 1);
+                    //     H(2, 0) = F(0, 1)*F(1, 2) - F(0, 2)*F(1, 1); H(2, 1) = F(0, 2)*F(1, 0) - F(0, 0)*F(1, 2); H(2, 2) = F(0, 0)*F(1, 1) - F(0, 1)*F(1, 0);
+
+                    //     double grad_mem[24];
+                    //     ViewCArrayKokkos<double> grad(grad_mem, 8, 3);
+                    //     grad.set_values(0.0);
+                    //     double sum_grad_sq = 0;
+
+                    //     for (int n = 0; n < 8; n++) {
+                    //         double dN_dxi[3];
+                    //         get_shape_grad_at_center(n, dN_dxi); 
+                    //         for (int d = 0; d < 3; d++) { 
+                    //             for (int i = 0; i < 3; i++) {
+                    //                 for (int j = 0; j < 3; j++) {
+                    //                     // Chain rule through the reference configuration
+                    //                     grad(n, d) += H(d, i) * inverse_reference_matrix(elem_gid, j, i) * dN_dxi[j];
+                    //                 }
+                    //             }
+                    //             sum_grad_sq += grad(n, d) * grad(n, d);
+                    //         }
+                    //     }
+
+                    //     // XPBD update logic for elements
+                    //     double old_lambda = volume_lambda(elem_gid);
+                    //     double delta_lambda = (-C - alpha_tilde_vol * old_lambda) / (sum_grad_sq + alpha_tilde_vol);
+                    //     volume_lambda(elem_gid) += delta_lambda;
+
+                    //     for (int n = 0; n < 8; n++) {
+                    //         int corner_gid = mesh.corners_in_elem(elem_gid, n);
+                    //         int node_gid = mesh.nodes_in_elem(elem_gid, n);
+
+                    //         for (int d = 0; d < 3; d++) {
+                    //             corner_delta(corner_gid, d) = (float)(delta_lambda * grad(n, d));
+                    //             Kokkos::atomic_add(&node.coords(node_gid, d), corner_delta(corner_gid, d));
+                    //         }
+                    //     }
+
+                        
             
+                    // });
+
+                    // --- 4. Edge Length Constraint (Relaxation) ---
+                    FOR_ALL(node_gid, 0, mesh.num_nodes, {
+
+                        size_t node_a = node_gid;
+                        for(int node_lid = 0; node_lid < mesh.num_nodes_in_node(node_gid); node_lid++){
+
+
+                            size_t node_b = mesh.nodes_in_node(node_gid, node_lid);
+                            double L0 = min_distance_calc;
+
+                            double dx[3];
+                            double dist_sq = 0.0;
+                            for(int d=0; d<3; d++) {
+                                dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
+                                dist_sq += dx[d] * dx[d];
+                            }
+                            double dist = sqrt(dist_sq);
+                            
+                            if (dist < 1e-12) return; // Prevent division by zero
+
+                            double C = dist - L0;
+                            
+                            // XPBD Denominator: sum(w*grad^2) + alpha_tilde
+                            // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
+                            double denominator = 2.0 + alpha_tilde_edge;
+
+                            double old_lambda = edge_lambda(node_gid);
+                            double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
+                            edge_lambda(node_gid) += delta_lambda/mesh.num_nodes_in_node(node_gid);
+
+                            // Unit gradient vector n
+                            double n[3];
+                            for(int d=0; d<3; d++) n[d] = dx[d] / dist;
+
+                            // Update positions
+                            for(int d=0; d<3; d++) {
+                                double corr = delta_lambda * n[d];
+                                Kokkos::atomic_add(&node.coords(node_a, d), corr);
+                                Kokkos::atomic_add(&node.coords(node_b, d), -corr);
+                            }
+                        }
+                    });
+
+                    // Element internal Diagonal Constraints
+                    FOR_ALL(elem_gid, 0, mesh.num_elems, {
+
+                        int num_sets = 4;
+
+                        int set_[num_sets*2];
+                        auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);
+
+
+                        // Daigonals within the elelent
+                        set(0,0) = 0;
+                        set(0,1) = 7;
+                        set(1,0) = 1;
+                        set(1,1) = 6;
+                        set(2,0) = 2;
+                        set(2,1) = 5;
+                        set(3,0) = 3;
+                        set(3,1) = 4;
+
+                        double target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
+                        target = sqrt(target);
+
+                        for(int i = 0; i < 4; i++){
+
+                            size_t node_a = mesh.nodes_in_elem(elem_gid, set(i,0));
+                            size_t node_b = mesh.nodes_in_elem(elem_gid, set(i,1));
+
+                            
+                            double L0 = target;
+
+                            double dx[3];
+                            double dist_sq = 0.0;
+                            for(int d=0; d<3; d++) {
+                                dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
+                                dist_sq += dx[d] * dx[d];
+                            }
+                            double dist = sqrt(dist_sq);
+                            
+                            if (dist < 1e-12) return; // Prevent division by zero
+
+                            double C = dist - L0;
+                            
+                            // XPBD Denominator: sum(w*grad^2) + alpha_tilde
+                            // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
+                            double denominator = 2.0 + alpha_tilde_edge;
+
+                            double old_lambda = element_lambda_diag(elem_gid);
+                            double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
+                            element_lambda_diag(elem_gid) += delta_lambda / 4;
+
+                            // Unit gradient vector n
+                            double n[3];
+                            for(int d=0; d<3; d++) n[d] = dx[d] / dist;
+
+                            // Update positions
+                            for(int d=0; d<3; d++) {
+                                double corr = delta_lambda * n[d];
+                                Kokkos::atomic_add(&node.coords(node_a, d), corr);
+                                Kokkos::atomic_add(&node.coords(node_b, d), -corr);
+                            }
+                        }
+                    
+                    });
+
+                    // Element face Diagonal Constraints
+                    FOR_ALL(elem_gid, 0, mesh.num_elems, {
+
+                        int num_sets = 8;
+
+                        int set_[num_sets*2];
+                        auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);
+
+                        // Diagonals on the element face
+                        // -i face face
+                        set(0,0) = 0;
+                        set(0,1) = 6;
+                        set(1,0) = 3;
+                        set(1,1) = 4;
+                        // +i face face
+                        set(2,0) = 1;
+                        set(2,1) = 7;
+                        set(3,0) = 5;
+                        set(3,1) = 3;
+                        // -j face face
+                        set(4,0) = 0;
+                        set(4,1) = 5;
+                        set(5,0) = 1;
+                        set(5,1) = 4;
+                        // +j face face
+                        set(6,0) = 2;
+                        set(6,1) = 7;
+                        set(7,0) = 3;
+                        set(7,1) = 6;
+
+
+                        double target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
+                        target = sqrt(target);
+
+                        for(int i = 0; i < num_sets; i++){
+
+                            size_t node_a = mesh.nodes_in_elem(elem_gid, set(i,0));
+                            size_t node_b = mesh.nodes_in_elem(elem_gid, set(i,1));
+
+                            
+                            double L0 = target;
+
+                            double dx[3];
+                            double dist_sq = 0.0;
+                            for(int d=0; d<3; d++) {
+                                dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
+                                dist_sq += dx[d] * dx[d];
+                            }
+                            double dist = sqrt(dist_sq);
+                            
+                            if (dist < 1e-12) return; // Prevent division by zero
+
+                            double C = dist - L0;
+                            
+                            // XPBD Denominator: sum(w*grad^2) + alpha_tilde
+                            // w_a = 1.0, w_b = 1.0 -> denominator = 2.0 + alpha_tilde
+                            double denominator = 2.0 + alpha_tilde_edge;
+
+                            double old_lambda = element_lambda_diag(elem_gid);
+                            double delta_lambda = (-C - alpha_tilde_edge * old_lambda) / denominator;
+                            element_lambda_diag(elem_gid) += delta_lambda / 4;
+
+                            // Unit gradient vector n
+                            double n[3];
+                            for(int d=0; d<3; d++) n[d] = dx[d] / dist;
+
+                            // Update positions
+                            for(int d=0; d<3; d++) {
+                                double corr = delta_lambda * n[d];
+                                Kokkos::atomic_add(&node.coords(node_a, d), corr);
+                                Kokkos::atomic_add(&node.coords(node_b, d), -corr);
+                            }
+                        }
+                    
+                    });
+
+
+                    
+
+
+                    // --- 3. Boundary Snap Constraint ---
+                    FOR_ALL(node_lid, 0, mesh.num_bdy_nodes, {
+                        size_t node_gid = mesh.bdy_nodes(node_lid);
+                        
+                        float p[3];
+                        for(int i=0; i<3; i++) p[i] = static_cast<float>(node.coords(node_gid, i));
+                        
+                        float closest[3];
+                        float dist_sq;
+                        // int facet_idx = stl_data.query_nearest_facet(p, dist_sq, closest);
+                        
+                        // float dist = sqrtf(dist_sq);
+
+                        // Calculate the distance using the previously saved nearest facet point
+                        dist_sq = 0.0f;
+                        for(int d = 0; d < 3; d++) {
+                            dist_sq += (node.coords(node_gid, d) - nearest_facet_point(node_lid, d))*(node.coords(node_gid, d) - nearest_facet_point(node_lid, d));
+                        }
+
+                        double dist = sqrt(dist_sq);
+
+
+                        node.scalar_field(node_gid) = sqrt(dist_sq);
+
+                        // node.closest_facet_point(node_gid, 0) = closest[0] - node.coords(node_gid, 0);
+                        // node.closest_facet_point(node_gid, 1) = closest[1] - node.coords(node_gid, 1);
+                        // node.closest_facet_point(node_gid, 2) = closest[2] - node.coords(node_gid, 2);
+
+
+                        node.closest_facet_point(node_gid, 0) = nearest_facet_point(node_lid, 0) - node.coords(node_gid, 0);
+                        node.closest_facet_point(node_gid, 1) = nearest_facet_point(node_lid, 1) - node.coords(node_gid, 1);
+                        node.closest_facet_point(node_gid, 2) = nearest_facet_point(node_lid, 2) - node.coords(node_gid, 2);
+
+                        closest[0] = nearest_facet_point(node_lid, 0);
+                        closest[1] = nearest_facet_point(node_lid, 1);
+                        closest[2] = nearest_facet_point(node_lid, 2);
+
+                        if (dist < 1e-9) return; 
+                    
+                        float grad[3];
+                        for(int i=0; i<3; i++) grad[i] = (p[i] - closest[i]) / dist;
+                    
+                        // XPBD update for boundary
+                        double old_lambda = boundary_lambda(node_lid);
+                        double delta_lambda = (-dist - alpha_tilde_bdy * old_lambda) / (1.0 + alpha_tilde_bdy);
+                        boundary_lambda(node_lid) += delta_lambda;
+                        
+                        for(int d=0; d<3; d++) {
+                            node.coords(node_gid, d) += delta_lambda * grad[d];
+                        }
+                    });
+
+                    // Compute the volume of the element
+                    FOR_ALL(elem_gid, 0, mesh.num_elems, {
+
+                        const size_t num_nodes = 8;
+
+                        double x_array[8];
+                        double y_array[8];
+                        double z_array[8];
+
+                        // x, y, z coordinates of elem vertices
+                        auto x = ViewCArrayKokkos<double>(x_array, num_nodes);
+                        auto y = ViewCArrayKokkos<double>(y_array, num_nodes);
+                        auto z = ViewCArrayKokkos<double>(z_array, num_nodes);
+
+                        // get the coordinates of the nodes(rk,elem,node) in this element
+                        for (int node_lid = 0; node_lid < num_nodes; node_lid++) {
+                            size_t node_gid = mesh.nodes_in_elem(elem_gid, node_lid);
+                            x(node_lid) = node_coords(node_gid, 0);
+                            y(node_lid) = node_coords(node_gid, 1);
+                            z(node_lid) = node_coords(node_gid, 2);
+                        }     // end for
+
+                        double twelth = 1. / 12.;
+
+                        // element volume
+                        double volume =
+                            (x(1) * (y(2) * (-z(0) + z(3)) + y(4) * (z(0) - z(5)) + y(0) * (z(3) + z(2) - z(4) - z(5)) + y(7) * (-z(3) + z(5)) + y(5) * (z(0) - z(3) + z(4) - z(7)) + y(3) * (-z(0) - z(2) + z(5) + z(7))) +
+                            x(6) * (y(0) * (-z(2) + z(4)) + y(7) * (z(3) + z(2) - z(4) - z(5)) + y(3) * (z(2) - z(7)) + y(2) * (z(0) - z(3) + z(4) - z(7)) + y(5) * (-z(4) + z(7)) + y(4) * (-z(0) - z(2) + z(5) + z(7))) +
+                            x(2) * (y(1) * (z(0) - z(3)) + y(6) * (-z(0) + z(3) - z(4) + z(7)) + y(7) * (z(3) - z(6)) + y(3) * (z(0) + z(1) - z(7) - z(6)) + y(4) * (-z(0) + z(6)) + y(0) * (-z(1) - z(3) + z(4) + z(6))) +
+                            x(5) * (y(0) * (z(1) - z(4)) + y(6) * (z(4) - z(7)) + y(3) * (-z(1) + z(7)) + y(1) * (-z(0) + z(3) - z(4) + z(7)) + y(4) * (z(0) + z(1) - z(7) - z(6)) + y(7) * (-z(1) - z(3) + z(4) + z(6))) +
+                            x(7) * (y(1) * (z(3) - z(5)) + y(6) * (-z(3) - z(2) + z(4) + z(5)) + y(5) * (z(1) + z(3) - z(4) - z(6)) + y(4) * (z(5) - z(6)) + y(2) * (-z(3) + z(6)) + y(3) * (-z(1) + z(2) - z(5) + z(6))) +
+                            x(0) * (y(3) * (z(1) - z(2)) + y(6) * (z(2) - z(4)) + y(5) * (-z(1) + z(4)) + y(1) * (-z(3) - z(2) + z(4) + z(5)) + y(2) * (z(1) + z(3) - z(4) - z(6)) + y(4) * (-z(1) + z(2) - z(5) + z(6))) +
+                            x(3) * (y(0) * (-z(1) + z(2)) + y(5) * (z(1) - z(7)) + y(1) * (z(0) + z(2) - z(5) - z(7)) + y(6) * (-z(2) + z(7)) + y(7) * (z(1) - z(2) + z(5) - z(6)) + y(2) * (-z(0) - z(1) + z(7) + z(6))) +
+                            x(4) *
+                            (y(1) * (-z(0) + z(5)) + y(6) * (z(0) + z(2) - z(5) - z(7)) + y(2) * (z(0) - z(6)) + y(0) * (z(1) - z(2) + z(5) - z(6)) + y(7) * (-z(5) + z(6)) + y(5) * (-z(0) - z(1) + z(7) + z(6)))) *
+                            twelth;
+
+                        gauss_point.fields(elem_gid) = static_cast<float>(volume);
+                    });
+                    
+
+                }
+            }
+
+            std::cout<<"Writing VTU file for step "<<step<<std::endl;
+            int rank = 0;
+            // double time_value = static_cast<double>(step) * dt;
+            // write_vtu(mesh, node, gauss_point, rank, MPI_COMM_WORLD, step, time_value);
 
         }
-
-        std::cout<<"Writing VTU file for step "<<step<<std::endl;
-        int rank = 0;
-        double time_value = static_cast<double>(step) * dt;
-        write_vtu(mesh, node, gauss_point, rank, MPI_COMM_WORLD, step, time_value);
-
-    }
+    
+        printf("Step %d completed\n", step);
   
+    }
 
+    auto relaxation_end_time = std::chrono::high_resolution_clock::now();
+    double relaxation_elapsed_seconds =
+        std::chrono::duration<double>(relaxation_end_time - relaxation_start_time).count();
+    std::cout << "Relaxation loop elapsed time: " << relaxation_elapsed_seconds << " seconds" << std::endl;
     
 
     } // end MATAR scope

@@ -18,4 +18,7 @@
 // --- Geometry Headers ---
 #include "geometry/geometry.h"
 
+// --- STL Utilities ---
+#include "utils/stl_utils.h"
+
 #endif // ELEMENTS_LIBRARY_H

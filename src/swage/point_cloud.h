@@ -232,7 +232,7 @@ struct PointCloud_t{
 
     /////////////////////////////////////////////////////////////////////////////
     ///
-    /// \struct get_bin_keys
+    /// \fn get_bin_keys
     ///
     /// \brief returns the i,j,k indices for the bin cell center given the (x,y,z)
     ///        coordinates of a point
@@ -244,7 +244,7 @@ struct PointCloud_t{
     KOKKOS_INLINE_FUNCTION
     bin_keys_t get_bin_keys(const double x_pt, 
                             const double y_pt, 
-                            const double z_pt) {
+                            const double z_pt) const {
 
         bin_keys_t bk;
         bk.i = (int)fmin((double)num_bins_x-1., fmax(0., round((x_pt - xmin)/bin_dx - 1.0e-10)));
@@ -283,7 +283,7 @@ struct PointCloud_t{
 
     /////////////////////////////////////////////////////////////////////////////
     ///
-    /// \struct build_shared_node_connectivity
+    /// \fn build_shared_node_connectivity
     ///
     /// \brief Assigns a unique node gid to each set of geometrically coincident
     ///        points (distance^2 < tol^2).  Used to build the shared-node 
@@ -438,14 +438,11 @@ struct PointCloud_t{
 
     /////////////////////////////////////////////////////////////////////////////
     ///
-    /// \struct build_point_cloud_connectivity
+    /// \fn build_point_cloud_connectivity
     ///
     /// \brief Calculates connectivity structures between points in a point cloud 
     ///
     /// \param point_positions are the (x,y,z) coordinates of every point 
-    /// \param points_in_point gives the neighboring point indicies
-    /// \param points_num_neighbors is the number of neighboring points
-    /// \param reverse_neighbor_lid is the local index to access the point
     /////////////////////////////////////////////////////////////////////////////
     void build_point_cloud_connectivity(const DCArrayKokkos <double> &point_positions){
 
@@ -761,7 +758,294 @@ struct PointCloud_t{
     } // end function build point connectivity
 
 
-}; // Hash_t
+
+
+
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \fn get_points_in_box
+    ///
+    /// \brief Finds all points in a bounding box region 
+    ///
+    /// \param point_positions are the (x,y,z) coordinates of every point 
+    /// \param points_in_box gives the point indicies in the cubic region
+    /// \param num_points_in_box gives the number of points in each bounding box
+    /// \param bounding_box array holding the min and max coordinates of each box
+    /////////////////////////////////////////////////////////////////////////////
+    void get_points_in_box(const DCArrayKokkos <double> &point_positions, 
+                           RaggedRightArrayKokkos <size_t> &points_in_box, 
+                           DCArrayKokkos <size_t> &num_points_in_box,
+                           const CArrayKokkos <double> &bounding_box){
+
+        const size_t num_points = point_positions.dims(0);
+        const size_t num_boxes = num_points_in_box.dims(0);
+
+        // -----------------------------------------------------------------------
+        // Allocate per-point and per-bin arrays
+        // -----------------------------------------------------------------------
+        points_bin_gid         = DCArrayKokkos <size_t> (num_points, "points_bin_gid");
+        points_bin_lid_storage = CArrayKokkos  <size_t> (num_points, "bin_lid_storage");
+
+        num_points_in_bin.set_values(0);
+
+        // -----------------------------------------------------------------------
+        // Pass 1a: assign every point to a bin and record its storage slot
+        // -----------------------------------------------------------------------
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
+
+            size_t bin_gid = get_bin_gid(point_positions(point_gid, 0),
+                                         point_positions(point_gid, 1),
+                                         point_positions(point_gid, 2));
+
+            size_t storage_lid = Kokkos::atomic_fetch_add(&num_points_in_bin(bin_gid), 1);
+            points_bin_gid(point_gid)         = bin_gid;
+            points_bin_lid_storage(point_gid) = storage_lid;
+
+        }); // end for all
+        Kokkos::fence();
+        points_bin_gid.update_host();
+        num_points_in_bin.update_host();
+
+        // -----------------------------------------------------------------------
+        // Pass 1b: build the ragged bin->points map
+        // -----------------------------------------------------------------------
+        points_in_bin = DRaggedRightArrayKokkos <size_t> (num_points_in_bin, "points_in_bin");
+
+        FOR_ALL_CLASS(point_gid, 0, num_points, {
+
+            size_t bin_gid     = points_bin_gid(point_gid);
+            size_t storage_lid = points_bin_lid_storage(point_gid);
+            points_in_bin(bin_gid, storage_lid) = point_gid;
+
+        }); // end for all
+        Kokkos::fence();
+
+
+
+        // -----------------------------------------------------------------------
+        // Pass 2: determine the point's in each bounding box region.
+        //
+        //   For each box, find the range of bins that overlap the box (with a
+        //   one-bin outward margin to catch points near the box boundary), then
+        //   test each candidate point exactly against the box min/max corners.
+        //   This two-step approach (bin filter + exact test) avoids counting
+        //   points that fall in an overlapping bin but outside the actual box.
+        //
+        //   Each thread owns its own box_gid row; no atomics are needed.
+        // -----------------------------------------------------------------------
+        FOR_ALL_CLASS(box_gid, 0, num_boxes, {
+
+            // get the (i,j,k) indices for the bounding box search
+            bin_keys_t box_min_keys = get_bin_keys(bounding_box(box_gid,0,0), 
+                                                   bounding_box(box_gid,0,1), 
+                                                   bounding_box(box_gid,0,2));
+
+            bin_keys_t box_max_keys = get_bin_keys(bounding_box(box_gid,1,0), 
+                                                   bounding_box(box_gid,1,1), 
+                                                   bounding_box(box_gid,1,2));
+
+            // bounding box search includes 1 layer outward from point, 
+            // and is forced to be within the spatial hash bin range
+            const int iminus = MAX(0,                  box_min_keys.i-1);
+            const int iplus  = MIN((int)num_bins_x-1,  box_max_keys.i+1);
+            const int jminus = MAX(0,                  box_min_keys.j-1);
+            const int jplus  = MIN((int)num_bins_y-1,  box_max_keys.j+1);
+            const int kminus = MAX(0,                  box_min_keys.k-1);
+            const int kplus  = MIN((int)num_bins_z-1,  box_max_keys.k+1);
+
+            // exact box bounds for the geometric test
+            const double xlo = bounding_box(box_gid, 0, 0);
+            const double ylo = bounding_box(box_gid, 0, 1);
+            const double zlo = bounding_box(box_gid, 0, 2);
+            const double xhi = bounding_box(box_gid, 1, 0);
+            const double yhi = bounding_box(box_gid, 1, 1);
+            const double zhi = bounding_box(box_gid, 1, 2);
+
+
+            // count all points inside the bounding box
+            size_t num_found = 0;
+
+            for (int kc = kminus; kc <= kplus; kc++)
+            for (int jc = jminus; jc <= jplus; jc++)
+            for (int ic = iminus; ic <= iplus; ic++) {
+ 
+                size_t nbr_bin = get_id_of_ijk(ic, jc, kc, num_bins_x, num_bins_y);
+ 
+                for (size_t sl = 0; sl < num_points_in_bin(nbr_bin); sl++) {
+ 
+                    size_t nbr_gid = points_in_bin(nbr_bin, sl);
+ 
+                    // exact geometric test: point must lie inside the box
+                    const double px = point_positions(nbr_gid, 0);
+                    const double py = point_positions(nbr_gid, 1);
+                    const double pz = point_positions(nbr_gid, 2);
+ 
+                    if (px >= xlo && px <= xhi &&
+                        py >= ylo && py <= yhi &&
+                        pz >= zlo && pz <= zhi) {
+                        num_found++;
+                    }
+ 
+                } // end for sl
+ 
+            } // end stencil triple-loop
+
+            num_points_in_box(box_gid) = num_found; // all points must be accounted for
+
+        }); // end for all over boxes
+        Kokkos::fence();
+
+
+        // -----------------------------------------------------------------------
+        // Allocate points_in_point using the exact neighbor counts
+        // -----------------------------------------------------------------------
+        points_in_box = RaggedRightArrayKokkos <size_t> (num_points_in_box, "points_in_box");
+
+        // -----------------------------------------------------------------------
+        // Pass 3 (save): populate points_in_box with neighbor gids.
+        //
+        //   Identical bin filter and exact geometric test as pass 1.
+        //   Each thread writes into its own row using a local index counter;
+        //   no atomics are needed because box_gid threads never share rows.
+        // -----------------------------------------------------------------------
+        FOR_ALL_CLASS(box_gid, 0, num_boxes, {
+
+            // get the (i,j,k) indices for the bounding box search
+            bin_keys_t box_min_keys = get_bin_keys(bounding_box(box_gid,0,0), 
+                                                   bounding_box(box_gid,0,1), 
+                                                   bounding_box(box_gid,0,2));
+
+            bin_keys_t box_max_keys = get_bin_keys(bounding_box(box_gid,1,0), 
+                                                   bounding_box(box_gid,1,1), 
+                                                   bounding_box(box_gid,1,2));
+
+            // bounding box search includes 1 layer outward from point
+            const int iminus = MAX(0,                  box_min_keys.i-1);
+            const int iplus  = MIN((int)num_bins_x-1,  box_max_keys.i+1);
+            const int jminus = MAX(0,                  box_min_keys.j-1);
+            const int jplus  = MIN((int)num_bins_y-1,  box_max_keys.j+1);
+            const int kminus = MAX(0,                  box_min_keys.k-1);
+            const int kplus  = MIN((int)num_bins_z-1,  box_max_keys.k+1);
+
+            // exact box bounds for the geometric test
+            const double xlo = bounding_box(box_gid, 0, 0);
+            const double ylo = bounding_box(box_gid, 0, 1);
+            const double zlo = bounding_box(box_gid, 0, 2);
+            const double xhi = bounding_box(box_gid, 1, 0);
+            const double yhi = bounding_box(box_gid, 1, 1);
+            const double zhi = bounding_box(box_gid, 1, 2);
+
+            size_t idx = 0;
+
+            for (int kc = kminus; kc <= kplus; kc++)
+            for (int jc = jminus; jc <= jplus; jc++)
+            for (int ic = iminus; ic <= iplus; ic++) {
+ 
+                size_t nbr_bin = get_id_of_ijk(ic, jc, kc, num_bins_x, num_bins_y);
+ 
+                for (size_t sl = 0; sl < num_points_in_bin(nbr_bin); sl++) {
+ 
+                    size_t nbr_gid = points_in_bin(nbr_bin, sl);
+ 
+                    const double px = point_positions(nbr_gid, 0);
+                    const double py = point_positions(nbr_gid, 1);
+                    const double pz = point_positions(nbr_gid, 2);
+ 
+                    if (px >= xlo && px <= xhi &&
+                        py >= ylo && py <= yhi &&
+                        pz >= zlo && pz <= zhi) {
+                        points_in_box(box_gid, idx) = nbr_gid;
+                        idx++;
+                    }
+ 
+                } // end for sl
+ 
+            } // end stencil triple-loop
+
+        }); // end for all
+        Kokkos::fence();
+
+
+    } // end function build points in bounding box  
+
+
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \fn get_bounds_point_cloud
+    ///
+    /// \brief Computes the axis-aligned bounding box of a point cloud
+    ///        using parallel reductions.  Results are padded by 1e-6 on each
+    ///        side so when used for a bin mesh it contains all geometry.
+    ///
+    /// \param x_min is the minimum x coordinate, the start location of bin mesh
+    /// \param y_min is the minimum y coordinate, the start location of bin mesh
+    /// \param z_min is the minimum z coordinate, the start location of bin mesh
+    /// \param x_max is the maximum x coordinate, the end of the bin mesh
+    /// \param y_max is the maximum y coordinate, the end of the bin mesh
+    /// \param z_max is the maximum z coordinate, the end of the bin mesh
+    /// \param points is point cloud coordinates array
+    /////////////////////////////////////////////////////////////////////////////
+    void get_bounds_point_cloud(double &xmin, double &ymin, double &zmin,
+                                double &xmax, double &ymax, double &zmax,
+                                const DCArrayKokkos <double> &point_positions) {
+
+        const size_t num_points = point_positions.dims(0);
+
+        // find (xmin, ymin, zmin) for building bin mesh
+        Kokkos::parallel_reduce(
+            "point_min_domain_extents",
+            num_points,
+            KOKKOS_LAMBDA(const int point_gid,         
+                        double& xmin_lcl,
+                        double& ymin_lcl,
+                        double& zmin_lcl) 
+            {
+                xmin_lcl = fmin(point_positions(point_gid,0), xmin_lcl);
+                ymin_lcl = fmin(point_positions(point_gid,1), ymin_lcl);
+                zmin_lcl = fmin(point_positions(point_gid,2), zmin_lcl);
+            },
+            Kokkos::Min<double>(xmin), 
+            Kokkos::Min<double>(ymin), 
+            Kokkos::Min<double>(zmin)); 
+            // end parallel reduction over all STL triangles
+
+        xmin -= 1.e-6; // decrease by a small fraction
+        ymin -= 1.e-6; // decrease by a small fraction
+        zmin -= 1.e-6; // decrease by a small fraction
+
+        // find (xmax, ymax, zmax) for building bin mesh
+        Kokkos::parallel_reduce(
+            "point_max_domain_extents",
+            num_points,
+            // this is the for loop coding
+            KOKKOS_LAMBDA(const int point_gid,         
+                        double& xmax_lcl,
+                        double& ymax_lcl,
+                        double& zmax_lcl) 
+            {
+                xmax_lcl = fmax(point_positions(point_gid,0), xmax_lcl);
+                ymax_lcl = fmax(point_positions(point_gid,1), ymax_lcl);
+                zmax_lcl = fmax(point_positions(point_gid,2), zmax_lcl);
+            },
+            Kokkos::Max<double>(xmax), 
+            Kokkos::Max<double>(ymax), 
+            Kokkos::Max<double>(zmax)); 
+            // end parallel reduction over all STL triangles
+
+        xmax += 1.e-6; // increase by a small fraction
+        ymax += 1.e-6; // increase by a small fraction
+        zmax += 1.e-6; // increase by a small fraction
+
+        return;
+
+    } // end get_bounds_point_cloud
+
+
+
+}; // PointCloud_t
+
+
+
 
 
 /////////////////////////////////////////////////////////////////////////////

@@ -114,14 +114,14 @@ int main(int argc, char** argv) {
         for (size_t gauss_pt_lid = 0; gauss_pt_lid < 1; gauss_pt_lid++) {
             size_t gauss_pt_gid = mesh.gauss_in_elem(elem_gid, gauss_pt_lid);
 
-            // verify that the gauss gid matches the element git
+            // verify that the gauss gid matches the element gid
             if(gauss_pt_gid != elem_gid) {
-                std::cout<<"Error: gauss gid "<<gauss_pt_gid<<" does not match element gid "<<elem_gid<<std::endl;
-                throw std::runtime_error("**** Error in Gauss Point ID ****");
+                printf("Error: gauss gid %zu does not match element gid %zu\n",
+                       gauss_pt_gid, (size_t)elem_gid);
+                Kokkos::abort("**** Error in Gauss Point ID ****");
             }
-            
-            double position[mesh.num_dims];
 
+            double position[3];
             position[0] = 0.0;
             position[1] = 0.0;
             position[2] = 0.0;
@@ -149,12 +149,14 @@ int main(int argc, char** argv) {
     std::cout<<"Computing outward normal for each surface node"<<std::endl;
     FOR_ALL(node_lid, 0, mesh.num_bdy_nodes, {
         size_t node_gid = mesh.bdy_nodes(node_lid);
-        double normal[mesh.num_dims] = {0.0};
+        double normal[3];
+        normal[0] = 0.0; normal[1] = 0.0; normal[2] = 0.0;
 
         for(int elem_lid = 0; elem_lid < mesh.num_corners_in_node(node_gid); elem_lid++) {
             size_t elem_gid = mesh.elems_in_node(node_gid, elem_lid);
-            
-            double vector[mesh.num_dims] = {0.0};
+
+            double vector[3];
+            vector[0] = 0.0; vector[1] = 0.0; vector[2] = 0.0;
             for(int gauss_pt_lid = 0; gauss_pt_lid < mesh.num_gauss_in_elem; gauss_pt_lid++) {
                 size_t gauss_pt_gid = mesh.gauss_in_elem(elem_gid, gauss_pt_lid);
                 
@@ -625,7 +627,7 @@ int main(int argc, char** argv) {
                 // Element internal Diagonal Constraints
                 FOR_ALL(elem_gid, 0, mesh.num_elems, {
 
-                    int num_sets = 4;
+                    constexpr int num_sets = 4;
 
                     int set_[num_sets*2];
                     auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);
@@ -689,7 +691,7 @@ int main(int argc, char** argv) {
                 // Element face Diagonal Constraints
                 FOR_ALL(elem_gid, 0, mesh.num_elems, {
 
-                    int num_sets = 8;
+                    constexpr int num_sets = 8;
 
                     int set_[num_sets*2];
                     auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);

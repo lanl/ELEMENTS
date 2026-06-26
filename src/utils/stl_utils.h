@@ -146,14 +146,14 @@ struct stl_data{
 
         // --- X Dimension ---
         float loc_min_x = 1e30f;
-        FOR_REDUCE_MIN(i, 0, num_facets, loc_min_x, {
+        FOR_REDUCE_MIN_CLASS(i, 0, num_facets, loc_min_x, {
             for (int v = 0; v < 3; ++v) {
                 if (vertices(i, v, 0) < loc_min_x) loc_min_x = vertices(i, v, 0);
             }
         }, min_x);
 
         float loc_max_x = -1e30f;
-        FOR_REDUCE_MAX(i, 0, num_facets, loc_max_x, {
+        FOR_REDUCE_MAX_CLASS(i, 0, num_facets, loc_max_x, {
             for (int v = 0; v < 3; ++v) {
                 if (vertices(i, v, 0) > loc_max_x) loc_max_x = vertices(i, v, 0);
             }
@@ -161,14 +161,14 @@ struct stl_data{
 
         // --- Y Dimension ---
         float loc_min_y = 1e30f;
-        FOR_REDUCE_MIN(i, 0, num_facets, loc_min_y, {
+        FOR_REDUCE_MIN_CLASS(i, 0, num_facets, loc_min_y, {
             for (int v = 0; v < 3; ++v) {
                 if (vertices(i, v, 1) < loc_min_y) loc_min_y = vertices(i, v, 1);
             }
         }, min_y);
 
         float loc_max_y = -1e30f;
-        FOR_REDUCE_MAX(i, 0, num_facets, loc_max_y, {
+        FOR_REDUCE_MAX_CLASS(i, 0, num_facets, loc_max_y, {
             for (int v = 0; v < 3; ++v) {
                 if (vertices(i, v, 1) > loc_max_y) loc_max_y = vertices(i, v, 1);
             }
@@ -176,14 +176,14 @@ struct stl_data{
 
         // --- Z Dimension ---
         float loc_min_z = 1e30f;
-        FOR_REDUCE_MIN(i, 0, num_facets, loc_min_z, {
+        FOR_REDUCE_MIN_CLASS(i, 0, num_facets, loc_min_z, {
             for (int v = 0; v < 3; ++v) {
                 if (vertices(i, v, 2) < loc_min_z) loc_min_z = vertices(i, v, 2);
             }
         }, min_z);
 
         float loc_max_z = -1e30f;
-        FOR_REDUCE_MAX(i, 0, num_facets, loc_max_z, {
+        FOR_REDUCE_MAX_CLASS(i, 0, num_facets, loc_max_z, {
             for (int v = 0; v < 3; ++v) {
                 if (vertices(i, v, 2) > loc_max_z) loc_max_z = vertices(i, v, 2);
             }

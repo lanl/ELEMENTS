@@ -204,7 +204,7 @@ struct stl_data{
         this->sorted_facet_indices = DCArrayKokkos<int>(num_facets, "sorted_facet_indices");
 
         std::cout<<"Generating Morton codes"<<std::endl;
-        FOR_ALL(i, 0, num_facets, {
+        FOR_ALL_CLASS(i, 0, num_facets, {
         
             float x = (center(i,0) - min_x) / (max_x - min_x) * 1023.0f;
             float y = (center(i,1) - min_y) / (max_y - min_y) * 1023.0f;

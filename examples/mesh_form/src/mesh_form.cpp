@@ -1118,7 +1118,7 @@ int main(int argc, char** argv) {
                     // Element internal Diagonal Constraints
                     FOR_ALL(elem_gid, 0, mesh.num_elems, {
 
-                        int num_sets = 4;
+                        constexpr int num_sets = 4;
 
                         int set_[num_sets*2];
                         auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);
@@ -1182,7 +1182,7 @@ int main(int argc, char** argv) {
                     // Element face Diagonal Constraints
                     FOR_ALL(elem_gid, 0, mesh.num_elems, {
 
-                        int num_sets = 8;
+                        constexpr int num_sets = 8;
 
                         int set_[num_sets*2];
                         auto set = ViewCArrayKokkos<int>(set_, num_sets, 2);

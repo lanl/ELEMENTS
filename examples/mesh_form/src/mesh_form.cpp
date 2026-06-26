@@ -9,6 +9,17 @@
 #include "mesh_io.h"
 
 
+static constexpr int pos_nodes[3][4] = {
+    {1, 3, 5, 7},
+    {2, 3, 6, 7},
+    {4, 5, 6, 7}
+};
+static constexpr int neg_nodes[3][4] = {
+    {0, 2, 4, 6},
+    {0, 1, 4, 5},
+    {0, 1, 2, 3}
+};
+
 KOKKOS_INLINE_FUNCTION
 void get_shape_grad_at_center(int node_idx, double dN[3]) {
     // node_idx is 0-7, following the i + 2j + 4k mapping
@@ -290,19 +301,6 @@ int main(int argc, char** argv) {
 
     DCArrayKokkos<float> corner_delta(mesh.num_corners, 3, "corner_delta");
     std::cout<<"NUmber of corners: "<<mesh.num_corners<<std::endl;
-
-    // Index maps for the 8-node hex trilinear gradients at center
-    // These represent the nodes on the "positive" and "negative" faces for each axis
-    static const int pos_nodes[3][4] = {
-        {1, 3, 5, 7}, // i = 1 face
-        {2, 3, 6, 7}, // j = 1 face
-        {4, 5, 6, 7}  // k = 1 face
-    };
-    static const int neg_nodes[3][4] = {
-        {0, 2, 4, 6}, // i = 0 face
-        {0, 1, 4, 5}, // j = 0 face
-        {0, 1, 2, 3}  // k = 0 face
-    };
 
     FOR_ALL(elem_gid, 0, mesh.num_elems, {
         

@@ -9,16 +9,14 @@
 #include "mesh_io.h"
 
 
-static constexpr int pos_nodes[3][4] = {
-    {1, 3, 5, 7},
-    {2, 3, 6, 7},
-    {4, 5, 6, 7}
-};
-static constexpr int neg_nodes[3][4] = {
-    {0, 2, 4, 6},
-    {0, 1, 4, 5},
-    {0, 1, 2, 3}
-};
+KOKKOS_INLINE_FUNCTION int pos_node(int axis, int i) {
+    constexpr int tbl[3][4] = {{1,3,5,7},{2,3,6,7},{4,5,6,7}};
+    return tbl[axis][i];
+}
+KOKKOS_INLINE_FUNCTION int neg_node(int axis, int i) {
+    constexpr int tbl[3][4] = {{0,2,4,6},{0,1,4,5},{0,1,2,3}};
+    return tbl[axis][i];
+}
 
 KOKKOS_INLINE_FUNCTION
 void get_shape_grad_at_center(int node_idx, double dN[3]) {
@@ -314,9 +312,9 @@ int main(int argc, char** argv) {
 
         for (int axis = 0; axis < 3; axis++) {
             for (int i = 0; i < 4; i++) {
-                int p_idx = pos_nodes[axis][i];
+                int p_idx = pos_node(axis, i);
                 int p_node_gid = mesh.nodes_in_elem(elem_gid, p_idx);
-                int n_idx = neg_nodes[axis][i];
+                int n_idx = neg_node(axis, i);
                 int n_node_gid = mesh.nodes_in_elem(elem_gid, n_idx);
                 for (int d = 0; d < 3; d++) {
                     // The 0.25 weight averages the 4 edges along the specific axis

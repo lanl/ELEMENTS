@@ -411,8 +411,8 @@ struct stl_data{
                 if (l != -1 && r != -1) {
                     for (int d = 0; d < 3; d++) {
                         // Left child containment
-                        if (tree_nodes.host(l).min_ext[d] < tree_nodes.host(i).min_ext[d] - 1e-6 || 
-                            tree_nodes(l).max_ext[d] > tree_nodes(i).max_ext[d] + 1e-6) {
+                        if (tree_nodes.host(l).min_ext[d] < tree_nodes.host(i).min_ext[d] - 1e-6 ||
+                            tree_nodes.host(l).max_ext[d] > tree_nodes.host(i).max_ext[d] + 1e-6) {
                             containment_errors++;
                         }
                         // Right child containment

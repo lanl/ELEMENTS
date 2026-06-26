@@ -89,9 +89,9 @@ struct stl_data{
 
     void initialize(size_t num_facets_in){
         this->num_facets = num_facets_in;
-        normal = DCArrayKokkos<float>(num_facets, 3);
-        vertices = DCArrayKokkos<float>(num_facets, 3, 3);
-        center = DCArrayKokkos<float>(num_facets, 3);
+        normal = DCArrayKokkos<float>(num_facets, 3, "normal");
+        vertices = DCArrayKokkos<float>(num_facets, 3, 3, "vertices");
+        center = DCArrayKokkos<float>(num_facets, 3, "center");
     }
 
 
@@ -244,7 +244,7 @@ struct stl_data{
         std::cout<<"Number of internal nodes: "<<num_internal<<std::endl;
         std::cout<<"Total nodes: "<<total_nodes<<std::endl;
 
-        this->tree_nodes = DCArrayKokkos<AABBNode>(total_nodes);
+        this->tree_nodes = DCArrayKokkos<AABBNode>(total_nodes, "tree_AABBnodes");
 
         // Host mirrors for deterministic serial build (works in serial/device-default too)
         sorted_codes.update_host(); // ensure host codes up to date
@@ -327,6 +327,8 @@ struct stl_data{
         root_idx = root;
         tree_nodes.host(root).parent = -1;
         vertices.update_host();
+
+        std::cout<<"Initializing leaf bounds (host)"<<std::endl;
         // Leaf bounds on host
         for (int i = 0; i < num_facets; ++i) {
             int leaf_idx = num_internal + i;

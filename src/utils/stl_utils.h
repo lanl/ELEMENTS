@@ -139,55 +139,58 @@ struct stl_data{
         return 32 + clz32(static_cast<uint32_t>(i ^ j));
     }
 
-    
 
+    /////////////////////////////////////////////////////////////////////////////
+    ///
+    /// \fn computeGlobalBoundingBox
+    ///
+    /// \brief Computes the axis-aligned bounding box (AABB) of an STL triangle 
+    ///        surface mesh using parallel reductions.  
+    ///
+    /////////////////////////////////////////////////////////////////////////////
     void computeGlobalBoundingBox() {
 
+        // find (min_x, min_y, min_z) 
+        Kokkos::parallel_reduce(
+            "stl_min_domain_extents",
+            num_facets,
+            KOKKOS_CLASS_LAMBDA(const int facet,         
+                                float& loc_min_x,
+                                float& loc_min_y,
+                                float& loc_min_z) 
+            {
+                for (int v = 0; v < 3; ++v){ 
+                    loc_min_x =  fmin(vertices(facet, v, 0), loc_min_x);
+                    loc_min_y =  fmin(vertices(facet, v, 1), loc_min_y);
+                    loc_min_z =  fmin(vertices(facet, v, 2), loc_min_z);
+                } // end for
+            },
+            Kokkos::Min<float>(min_x), 
+            Kokkos::Min<float>(min_y), 
+            Kokkos::Min<float>(min_z)); 
+            // end parallel reduction over all STL triangles
 
-        // --- X Dimension ---
-        float loc_min_x = 1e30f;
-        FOR_REDUCE_MIN_CLASS(i, 0, num_facets, loc_min_x, {
-            for (int v = 0; v < 3; ++v) {
-                if (vertices(i, v, 0) < loc_min_x) loc_min_x = vertices(i, v, 0);
-            }
-        }, min_x);
+        // find (max_x, max_y, max_z)
+        Kokkos::parallel_reduce(
+            "stl_max_domain_extents",
+            num_facets,
+            // this is the for loop coding
+            KOKKOS_CLASS_LAMBDA(const int facet,         
+                                float& loc_max_x,
+                                float& loc_max_y,
+                                float& loc_max_z) 
+            {
+                for (int v = 0; v < 3; ++v){ 
+                    loc_max_x =  fmax(vertices(facet, v, 0), loc_max_x);
+                    loc_max_y =  fmax(vertices(facet, v, 1), loc_max_y);
+                    loc_max_z =  fmax(vertices(facet, v, 2), loc_max_z);
+                } // end for
+            },
+            Kokkos::Max<float>(max_x), 
+            Kokkos::Max<float>(max_y), 
+            Kokkos::Max<float>(max_z)); 
+            // end parallel reduction over all STL triangles
 
-        float loc_max_x = -1e30f;
-        FOR_REDUCE_MAX_CLASS(i, 0, num_facets, loc_max_x, {
-            for (int v = 0; v < 3; ++v) {
-                if (vertices(i, v, 0) > loc_max_x) loc_max_x = vertices(i, v, 0);
-            }
-        }, max_x);
-
-        // --- Y Dimension ---
-        float loc_min_y = 1e30f;
-        FOR_REDUCE_MIN_CLASS(i, 0, num_facets, loc_min_y, {
-            for (int v = 0; v < 3; ++v) {
-                if (vertices(i, v, 1) < loc_min_y) loc_min_y = vertices(i, v, 1);
-            }
-        }, min_y);
-
-        float loc_max_y = -1e30f;
-        FOR_REDUCE_MAX_CLASS(i, 0, num_facets, loc_max_y, {
-            for (int v = 0; v < 3; ++v) {
-                if (vertices(i, v, 1) > loc_max_y) loc_max_y = vertices(i, v, 1);
-            }
-        }, max_y);
-
-        // --- Z Dimension ---
-        float loc_min_z = 1e30f;
-        FOR_REDUCE_MIN_CLASS(i, 0, num_facets, loc_min_z, {
-            for (int v = 0; v < 3; ++v) {
-                if (vertices(i, v, 2) < loc_min_z) loc_min_z = vertices(i, v, 2);
-            }
-        }, min_z);
-
-        float loc_max_z = -1e30f;
-        FOR_REDUCE_MAX_CLASS(i, 0, num_facets, loc_max_z, {
-            for (int v = 0; v < 3; ++v) {
-                if (vertices(i, v, 2) > loc_max_z) loc_max_z = vertices(i, v, 2);
-            }
-        }, max_z);
 
         std::cout<<"Global bounding box: "<<min_x<<", "<<max_x<<", "<<min_y<<", "<<max_y<<", "<<min_z<<", "<<max_z<<std::endl;
     }

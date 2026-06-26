@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
 
     // Read the STL file
     stl_data stl_data;
-    binary_stl_reader("/home/jacobmoore/Desktop/repos/ELEMENTS/examples/mesh_form/stl_files/Sphere_superfine.stl", stl_data);
+    binary_stl_reader("../../../examples/mesh_form/stl_files/Sphere_superfine.stl", stl_data);
 
     std::cout << "Number of facets: " << stl_data.num_facets << std::endl;
     printf("Number of boundary nodes: %d\n", (int)mesh.num_bdy_nodes);

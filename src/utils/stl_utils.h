@@ -75,6 +75,17 @@ struct stl_data{
     DCArrayKokkos<int> sorted_facet_indices;
     int root_idx = 0;
 
+    // Comparator for Kokkos::sort — must be at struct scope, not defined
+    // inside buildAABBTree(), because CUDA's stub generator cannot handle
+    // locally-defined types in kernel instantiations (ZZ-mangled names).
+    struct MortonComparator {
+        Kokkos::View<uint32_t*> codes;
+        KOKKOS_INLINE_FUNCTION
+        bool operator()(const int& i, const int& j) const {
+            return codes(i) < codes(j);
+        }
+    };
+
 
     void initialize(size_t num_facets_in){
         this->num_facets = num_facets_in;
@@ -211,19 +222,7 @@ struct stl_data{
 
         std::cout<<"Sorting indices by Morton code"<<std::endl;
 
-        // Define the Comparator
-        // This tells Kokkos: "To compare two indices i and j, look at morton_codes(i) and morton_codes(j)"
-        struct MortonComparator {
-            Kokkos::View<uint32_t*> codes;
-            
-            KOKKOS_INLINE_FUNCTION
-            bool operator()(const int& i, const int& j) const {
-                return codes(i) < codes(j);
-            }
-        };
-
-        // 3. Call Kokkos::sort
-        // We sort the indices view using our custom comparator
+        // 3. Call Kokkos::sort using the struct-scope MortonComparator
         MortonComparator comp = { morton_view };
         Kokkos::sort(index_view, comp);
         sorted_facet_indices.update_host();
@@ -656,7 +655,7 @@ void binary_stl_reader(std::string stl_file_path, stl_data& stl_data){
         input.read(reinterpret_cast<char*>(ptr5), n_bytes);
         input.read(reinterpret_cast<char*>(ptr6), n_bytes);
         input.seekg(2,input.cur);
-        
+
         // read the normal
         for (int j=0; j<3; j++) {
             stl_data.normal.host(i,j) = normalp[j];
@@ -672,19 +671,17 @@ void binary_stl_reader(std::string stl_file_path, stl_data& stl_data){
         for (int j=0; j<3; j++) {
             stl_data.vertices.host(i,2,j) = v3p[j];
         }
+
+        // center is I/O-bound arithmetic — compute here on host
+        for (int j=0; j<3; j++) {
+            stl_data.center.host(i, j) = (v1p[j] + v2p[j] + v3p[j]) / 3.0f;
+        }
     }
     input.close();
 
-    // calculate the center of the facet
-    FOR_ALL(i, 0, n_facets, {   // loop over the facets
-        for (int j = 0; j < 3; j++) {
-            stl_data.center.host(i, j) = (stl_data.vertices.host(i,0,j) + stl_data.vertices.host(i,1,j) + stl_data.vertices.host(i,2,j)) / 3.0f;
-        }
-    });
-
-    stl_data.normal.update_host();
-    stl_data.vertices.update_host();
-    stl_data.center.update_host();
+    stl_data.normal.update_device();
+    stl_data.vertices.update_device();
+    stl_data.center.update_device();
 }
 
 

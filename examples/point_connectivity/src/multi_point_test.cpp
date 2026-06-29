@@ -169,7 +169,7 @@ int main(int argc, char* argv[]) {
         printf("point -> node mapping:\n");
         RUN({
             for (size_t pt = 0; pt < num_points; pt++) {
-                printf("  point %2zu  (%.1f, %.1f, %.1f)  ->  node %zu\n",
+                printf("  point %zu  (%.1f, %.1f, %.1f)  ->  node %zu\n",
                     pt,
                     corner_pts(pt, 0),
                     corner_pts(pt, 1),

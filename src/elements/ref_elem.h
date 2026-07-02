@@ -42,7 +42,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using namespace mtr;
 
 
-namespace ref_space
+namespace reference_space
 {
     enum ElementType
     {
@@ -71,7 +71,7 @@ namespace elements
     // Quadrature rules for surfaces and elems
     struct Quadrature_t
     {
-        ref_space::QuadratureType QuadratureType;
+        reference_space::QuadratureType QuadratureType;
 
         size_t elem_dims = 0;
         size_t num_qpts_in_elem = 0;
@@ -91,7 +91,7 @@ namespace elements
         /// \param elem_dims_in The number dimensions 
         ///
         /////////////////////////////////////////////////////////////////////////////
-        void initialize_quadrature(const ref_space::QuadratureType TypeInp, 
+        void initialize_quadrature(const reference_space::QuadratureType TypeInp, 
                                    const size_t num_qpts_in_1d_inp, 
                                    const size_t elem_dims_in)
         {
@@ -112,13 +112,13 @@ namespace elements
             CArrayKokkos<double> qpt_positions_1d(num_qpts_in_1d, "qpt_positions_1d");
             CArrayKokkos<double> qpt_weights_1d (num_qpts_in_1d, "qpt_weights_1d");
 
-            if(QuadratureType == ref_space::GaussLegendre){
+            if(QuadratureType == reference_space::GaussLegendre){
                 RUN_CLASS({
                     get_legendre_nodes_1D(qpt_positions_1d, num_qpts_in_1d);
                     get_legendre_weights_1D(qpt_weights_1d, num_qpts_in_1d);
                 });
             }
-            else if(QuadratureType == ref_space::GaussLobatto){         
+            else if(QuadratureType == reference_space::GaussLobatto){         
                 RUN_CLASS({
                     get_lobatto_nodes_1D(qpt_positions_1d, num_qpts_in_1d);
                     get_lobatto_weights_1D(qpt_weights_1d, num_qpts_in_1d);
@@ -234,11 +234,11 @@ namespace elements
 
 
     // reference element data structure
-    struct ref_elem_t
+    struct ReferenceElement_t
     {
 
-        ref_space::ElementType ElementType = ref_space::linearElement; ///< The type of element
-        ref_space::BasisType BasisType = ref_space::LagrangeLobatto;  ///<Basis DOF location
+        reference_space::ElementType ElementType = reference_space::linearElement; ///< The type of element
+        reference_space::BasisType BasisType = reference_space::LagrangeLobatto;  ///<Basis DOF location
         
         size_t elem_dims = 0;
 
@@ -283,8 +283,8 @@ namespace elements
         /// \return void
         ///
         /////////////////////////////////////////////////////////////////////////////
-        void initialize_ref_elem(const ref_space::ElementType ElemTypeInp,
-                                 const ref_space::BasisType BasisTypeInp,
+        void initialize_ref_elem(const reference_space::ElementType ElemTypeInp,
+                                 const reference_space::BasisType BasisTypeInp,
                                  const struct Quadrature_t Quadrature,
                                  const size_t p_order)
         {
@@ -294,7 +294,7 @@ namespace elements
 
             elem_dims = Quadrature.elem_dims; 
             if(elem_dims==0) throw std::runtime_error("ERROR: quadrature not correctly specified \n");
-            if(elem_dims>3) throw std::runtime_error("ERROR: only 1D, 2D, and 3D reference elems supported \n");
+            if(elem_dims>3) throw std::runtime_error("ERROR: only 1D, 2D, and 3D reference elements supported \n");
 
             // -----------------------------------------------------------------------
             // Step 1a: determine the number of DOFs in 3D
@@ -313,12 +313,12 @@ namespace elements
             CArrayKokkos<double> dof_positions_1d(num_dofs_1d, "dof_positions_1d");
 
             // dof positions can be at legendre or lobatto locations in elem
-            if(BasisTypeInp == ref_space::LagrangeLegendre){
+            if(BasisTypeInp == reference_space::LagrangeLegendre){
                 RUN_CLASS({
                     get_legendre_nodes_1D(dof_positions_1d, num_dofs_1d);
                 });
             }
-            else if(BasisTypeInp == ref_space::LagrangeLobatto){         
+            else if(BasisTypeInp == reference_space::LagrangeLobatto){         
                 RUN_CLASS({
                     get_lobatto_nodes_1D(dof_positions_1d, num_dofs_1d);
                 });
@@ -952,8 +952,9 @@ namespace elements
                         denominator = denominator * (dof_positions_1d(vert_i) - dof_positions_1d(vert_j));
                     } // end if
 
-                    interpolant = numerator / denominator; // storing a single value for interpolation for node vert_i
+                    
                 } // end looping over nodes != vert_i
+                interpolant = numerator / denominator; // storing a single value for interpolation for node vert_i
 
                 // writing value to vectors for later use
                 interp(vert_i) = interpolant;             // Interpolant value at given point
@@ -1008,9 +1009,11 @@ namespace elements
                         num_gradient += product_gradient;
                     } // end if
 
-                    gradient = (num_gradient / denominator); // storing the derivative of the interpolating function
+                    
                 } // end looping over nodes != vert_i
-
+                
+                gradient = (num_gradient / denominator); // storing the derivative of the interpolating function
+                
                 // writing value to vectors for later use
                 derivative(vert_i) = gradient;     // derivative of each function
             } // end loop over all nodes

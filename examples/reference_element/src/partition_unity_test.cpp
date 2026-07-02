@@ -44,6 +44,10 @@ using namespace mtr;
 using namespace swage; // unstructured mesh and hash
 using namespace elements;
 
+bool Verbose = true;
+size_t max_num   = 8; // max number of quadrature points to test
+size_t max_order = 7; // max polynomial order to test
+
 void verify_partition_of_unity(const Quadrature_t& Quad,
                                const ReferenceElement_t& RefElem) {
     for (size_t qpt = 0; qpt < Quad.num_qpts_in_elem; qpt++) {
@@ -56,7 +60,29 @@ void verify_partition_of_unity(const Quadrature_t& Quad,
             printf("Error: partion of unity failed, sum of basis = %f at rid = %zu \n", sum, qpt);
             Kokkos::abort("Partition of unity failed at quadrature point ");
         }
-        printf("sum = %f \n", sum);
+        if(Verbose)printf("sum = %f \n", sum);
+    } // end loop over qpts
+} // end function
+
+void verify_gradient(const Quadrature_t& Quad,
+                     const ReferenceElement_t& RefElem) {
+    for (size_t qpt = 0; qpt < Quad.num_qpts_in_elem; qpt++) {
+        double sum[3];
+        sum[0] = 0.0;
+        sum[1] = 0.0;
+        sum[2] = 0.0;
+        
+        for(size_t dim=0; dim<RefElem.elem_dims; dim++){
+            for (size_t basis = 0; basis < RefElem.num_dofs_in_elem; basis++) {
+                sum[dim] += RefElem.qpt_grad_basis(qpt, basis, dim);
+            }
+            if (fabs(sum[dim]) > 1.e-13) {
+                printf("Error: gradient failed, sum of gradient basis = %f at rid = %zu \n", sum[dim], qpt);
+                Kokkos::abort("Gradient of basis failed at quadrature point ");
+            }
+            if(Verbose)printf("dim = %zu, sum = %f \n", dim, sum[dim]);
+        } // for dim
+
     } // end loop over qpts
 } // end function
 
@@ -68,28 +94,40 @@ MATAR_INITIALIZE(argc, argv);
     printf("\n--- partition unity test ---\n");
 
     printf("\n--- 1D element ---\n");
-    for(size_t num_qpts_1D = 1; num_qpts_1D<21; num_qpts_1D++){
+    for(size_t num_qpts_1D = 1; num_qpts_1D<max_num; num_qpts_1D++){
 
-        printf("num quadrature points in 1D = %zu \n", num_qpts_1D);
+        if(Verbose)printf("num quadrature points in 1D = %zu \n", num_qpts_1D);
 
-        Quadrature_t Quad1D;
-        ReferenceElement_t FERefElem1D;
+        Quadrature_t Quad;
+        
+        // elem_dims=1,2,3
+        for(size_t elem_dims_test = 1; elem_dims_test<=3; elem_dims_test++){   
+            Quad.initialize_quadrature(reference_space::GaussLegendre,
+                                       num_qpts_1D,
+                                       elem_dims_test);
 
-        const size_t elem_dims_test = 1;  
-        Quad1D.initialize_quadrature(reference_space::GaussLegendre,
-                                    num_qpts_1D,
-                                    elem_dims_test);
+            // build reference elements of varing orders
+            for (size_t p_order = 1; p_order<max_order; p_order++){
+                if(Verbose)printf("p_order = %zu: \n", p_order);
+                ReferenceElement_t FERefElem;
 
-        const size_t p_order = 1; // basis order for Lagrange polynomial
-        FERefElem1D.initialize_ref_elem(reference_space::arbitraryOrderElement,
-                                        reference_space::LagrangeLobatto,
-                                        Quad1D,
-                                        p_order);
+                // p_order is the basis order for Lagrange polynomial
+                FERefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                            reference_space::LagrangeLobatto,
+                                            Quad,
+                                            p_order);
 
-        verify_partition_of_unity(Quad1D,
-                                  FERefElem1D);
+                if(Verbose)printf("basis check: \n");
+                verify_partition_of_unity(Quad, FERefElem);
+                if(Verbose)printf("\n");
 
-        printf("\n");
+                if(Verbose)printf("gradient basis check: \n");
+                verify_gradient(Quad, FERefElem);
+                if(Verbose)printf("\n");
+            } // end p_order loop
+        } // elem
+
+        if(Verbose)printf("\n");
     } // end loop of num qpts 
 
     printf("\nAll partition unity checks passed.\n");

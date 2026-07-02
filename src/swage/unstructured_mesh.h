@@ -412,6 +412,9 @@ struct Mesh
         num_elems = num_elems_inp;  
 
         Pn = Pn_order;
+        if (Pn == 0) {
+            Kokkos::abort("Error: Pn must be greater than 0. Exiting at initialize_elems_Pn().");
+        }
 
         num_nodes_in_elem = (size_t)std::pow(Pn_order + 1, num_dims); //(Pn_order + 1)**num_dims; // (Pn +1)
         num_nodes_in_zone = (size_t)std::pow(2, num_dims); // (4, or 8, always)

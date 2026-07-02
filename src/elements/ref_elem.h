@@ -243,7 +243,7 @@ namespace elements
         size_t elem_dims = 0;
 
         // Dofs
-        size_t num_dofs_in_elem = 0;
+        size_t num_dofs_in_elem = 1;
         size_t num_dofs_1d = 0;
       
 
@@ -301,7 +301,8 @@ namespace elements
             // -----------------------------------------------------------------------
             num_dofs_1d = p_order + 1;
 
-            for (int dim = 0; dim < elem_dims; dim++) {
+            num_dofs_in_elem = 1;  // Initialize to 1
+            for (size_t dim = 0; dim < elem_dims; dim++) {
                 num_dofs_in_elem *= num_dofs_1d;
             } // end for
 
@@ -409,7 +410,7 @@ namespace elements
 
 
             RUN_CLASS({
-                for (int qpt_rid = 0; qpt_rid < Quadrature.num_qpts_in_elem; qpt_rid++) {
+                for (size_t qpt_rid = 0; qpt_rid < Quadrature.num_qpts_in_elem; qpt_rid++) {
                     
                     // Get the evaluation coordinates
                     for (size_t dim = 0; dim < elem_dims; dim++) {
@@ -476,7 +477,7 @@ namespace elements
         ///
         /////////////////////////////////////////////////////////////////////////////
         KOKKOS_INLINE_FUNCTION
-        int get_dof_rid(int i, int j, int k) const
+        size_t get_dof_rid(size_t i, size_t j, size_t k) const
         {
             return i + (j + k * num_dofs_1d) * num_dofs_1d;
         }
@@ -498,7 +499,7 @@ namespace elements
         ///
         /////////////////////////////////////////////////////////////////////////////
         KOKKOS_INLINE_FUNCTION
-        int get_dof_rid(int i, int j) const
+        size_t get_dof_rid(size_t i, size_t j) const
         {
             return i + j * num_dofs_1d;
         }

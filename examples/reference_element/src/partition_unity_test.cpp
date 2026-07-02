@@ -45,28 +45,34 @@ using namespace swage; // unstructured mesh and hash
 using namespace elements;
 
 bool Verbose = false;
-size_t max_num   = 20; // max number of quadrature points to test
-size_t max_order = 20; // max polynomial order to test
+size_t max_num   = 19; // max number of quadrature points to test up to, the limit is 19
+size_t max_order = 19; // max polynomial order to test, limit is 19th-order with Legendre
+
 
 void verify_partition_of_unity(const Quadrature_t& Quad,
                                const ReferenceElement_t& RefElem) {
-    for (size_t qpt = 0; qpt < Quad.num_qpts_in_elem; qpt++) {
+
+    // device parallel loop
+    FOR_ALL(qpt, 0, Quad.num_qpts_in_elem, {
         double sum = 0.0;
         
         for (size_t basis = 0; basis < RefElem.num_dofs_in_elem; basis++) {
             sum += RefElem.qpt_basis(qpt, basis);
         }
         if (fabs(sum - 1.0) > 1.e-12) {
-            printf("Error: partion of unity failed, sum of basis = %f at rid = %zu \n", sum, qpt);
+            printf("Error: partion of unity failed, sum of basis = %f at rid = %d with order = %zu \n", sum, qpt, RefElem.num_dofs_1d);
             Kokkos::abort("Partition of unity failed at quadrature point ");
         }
         if(Verbose)printf("sum = %f \n", sum);
-    } // end loop over qpts
+    }); // end loop over qpts
+
 } // end function
 
 void verify_gradient(const Quadrature_t& Quad,
                      const ReferenceElement_t& RefElem) {
-    for (size_t qpt = 0; qpt < Quad.num_qpts_in_elem; qpt++) {
+    
+    // device parallel loop
+    FOR_ALL(qpt, 0, Quad.num_qpts_in_elem, {
         double sum[3];
         sum[0] = 0.0;
         sum[1] = 0.0;
@@ -77,13 +83,14 @@ void verify_gradient(const Quadrature_t& Quad,
                 sum[dim] += RefElem.qpt_grad_basis(qpt, basis, dim);
             }
             if (fabs(sum[dim]) > 1.e-12) {
-                printf("Error: gradient failed, sum of gradient basis = %f at rid = %zu, for dim = %zu, with order = %zu \n", sum[dim], qpt, dim, RefElem.num_dofs_1d);
+                printf("Error: gradient failed, sum of gradient basis = %f at rid = %d, for dim = %zu, with order = %zu \n", sum[dim], qpt, dim, RefElem.num_dofs_1d);
                 Kokkos::abort("Gradient of basis failed at quadrature point ");
             }
             if(Verbose)printf("dim = %zu, sum = %f \n", dim, sum[dim]);
         } // for dim
 
-    } // end loop over qpts
+    }); // end loop over qpts
+
 } // end function
 
 int main(int argc, char** argv) {
@@ -91,10 +98,10 @@ int main(int argc, char** argv) {
 MATAR_INITIALIZE(argc, argv);
 { // MATAR scope
 
-    printf("\n--- partition unity test ---\n");
+    printf("\n--- partition unity and gradient test ---\n");
 
-    printf("\n--- 1D element ---\n");
-    for(size_t num_qpts_1D = 1; num_qpts_1D<max_num; num_qpts_1D++){
+    printf("\n--- AO element with Legendre Quadrature & Legendre DOFs ---\n");
+    for(size_t num_qpts_1D = 1; num_qpts_1D<=max_num; num_qpts_1D++){
 
         if(Verbose)printf("num quadrature points in 1D = %zu \n", num_qpts_1D);
 
@@ -113,9 +120,9 @@ MATAR_INITIALIZE(argc, argv);
 
                 // p_order is the basis order for Lagrange polynomial
                 FERefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
-                                            reference_space::LagrangeLobatto,
-                                            Quad,
-                                            p_order);
+                                              reference_space::LagrangeLegendre,
+                                              Quad,
+                                              p_order);
 
                 if(Verbose)printf("basis check: \n");
                 verify_partition_of_unity(Quad, FERefElem);
@@ -130,7 +137,45 @@ MATAR_INITIALIZE(argc, argv);
         if(Verbose)printf("\n");
     } // end loop of num qpts 
 
-    printf("\nAll partition unity checks passed.\n");
+
+    printf("\n--- AO element with Legendre Quadrature & Lobatto DOFs ---\n");
+    for(size_t num_qpts_1D = 1; num_qpts_1D<=max_num; num_qpts_1D++){
+
+        if(Verbose)printf("num quadrature points in 1D = %zu \n", num_qpts_1D);
+
+        Quadrature_t Quad;
+        
+        // elem_dims=1,2,3
+        for(size_t elem_dims_test = 1; elem_dims_test<=3; elem_dims_test++){   
+            Quad.initialize_quadrature(reference_space::GaussLegendre,
+                                       num_qpts_1D,
+                                       elem_dims_test);
+
+            // build reference elements of varing orders
+            for (size_t p_order = 1; p_order<max_order; p_order++){
+                if(Verbose)printf("p_order = %zu: \n", p_order);
+                ReferenceElement_t FERefElem;
+
+                // p_order is the basis order for Lagrange polynomial
+                FERefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                              reference_space::LagrangeLobatto,
+                                              Quad,
+                                              p_order);
+
+                if(Verbose)printf("basis check: \n");
+                verify_partition_of_unity(Quad, FERefElem);
+                if(Verbose)printf("\n");
+
+                if(Verbose)printf("gradient basis check: \n");
+                verify_gradient(Quad, FERefElem);
+                if(Verbose)printf("\n");
+            } // end p_order loop
+        } // elem
+
+        if(Verbose)printf("\n");
+    } // end loop of num qpts 
+
+    printf("\nAll partition unity and gradient checks passed.\n");
 
 }
 MATAR_FINALIZE();

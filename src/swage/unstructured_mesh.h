@@ -191,6 +191,33 @@ struct lobatto_in_elem_t
         };
 };
 
+/// if material points are defined at element interfaces
+struct corners_in_elem_t
+{
+    private:
+        size_t num_corners_in_elem_;
+    public:
+        corners_in_elem_t() {
+        };
+
+        corners_in_elem_t(const size_t num_corners_in_elem_inp) {
+            this->num_corners_in_elem_ = num_corners_in_elem_inp;
+        };
+
+        // return global gauss index for given local gauss index in an element
+        size_t host(const size_t elem_gid, const size_t corner_lid) const
+        {
+            return elem_gid * num_corners_in_elem_ + corner_lid;
+        };
+
+        // Return the global gauss ID given an element gloabl ID and a local gauss ID
+        KOKKOS_INLINE_FUNCTION
+        size_t operator()(const size_t elem_gid, const size_t corner_lid) const
+        {
+            return elem_gid * num_corners_in_elem_ + corner_lid;
+        };
+};
+
 // struct nodes_in_zone_t {
 //     private:
 //          size_t num_nodes_in_zone_;
@@ -216,7 +243,7 @@ struct lobatto_in_elem_t
 struct Mesh
 {
     // ******* Entity Definitions **********//
-    // Element: A hexahedral volume
+    // Element: A hexahedral or Quadralateral volume
     // Zone: A discretization of an element base on subdividing the element using the nodes
     // Node: A kinematic degree of freedom
     // Surface: The 2D surface of the element
@@ -242,7 +269,7 @@ struct Mesh
     size_t num_lobatto_in_elem = 0; ///< Number of Gauss Lobatto points in an element
 
     DCArrayKokkos<size_t> nodes_in_elem; ///< Nodes in an element
-    CArrayKokkos<size_t> corners_in_elem; ///< Corners in an element -- this can just be a functor
+    corners_in_elem_t corners_in_elem;
 
     RaggedRightArrayKokkos<size_t> elems_in_elem; ///< Elements connected to an element
     CArrayKokkos<size_t> num_elems_in_elem; ///< Number of elements connected to an element
@@ -347,23 +374,25 @@ struct Mesh
         if (num_dims == 0) {
             Kokkos::abort("Error: mesh.num_dims is not set. Exiting at initialize_elems().");
         }
-        num_dims = num_dims_inp;
-        num_nodes_in_elem = 1;
+        num_dims  = num_dims_inp;
+        num_elems = num_elems_inp;
+
+        Pn = 1;
+
+        num_nodes_in_elem = (size_t)std::pow(2, num_dims); 
+        num_nodes_in_zone = (size_t)std::pow(2, num_dims); // (4, or 8, always)
+        num_gauss_in_elem = 1;  // 1 Gauss point per element
+        num_zones_in_elem = 1;  // 1 zone per element
+        num_surfs_in_elem = num_dims == 2 ? 4 : 6; // 4 or 6 (always)
         
-        for (int dim = 0; dim < num_dims; dim++) {
-            num_nodes_in_elem *= 2;
-        }
-        num_elems       = num_elems_inp;
         nodes_in_elem   = DCArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.nodes_in_elem");
-        corners_in_elem = CArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.corners_in_elem");
+        corners_in_elem = corners_in_elem_t(num_nodes_in_elem); 
+        gauss_in_elem   = gauss_in_elem_t(num_gauss_in_elem);
 
-        // 1 Gauss point per element
-        num_gauss_in_elem = 1;
+        num_zones = num_zones_in_elem * num_elems;
 
-        // 1 zone per element
-        num_zones_in_elem = 1;
-
-        gauss_in_elem = gauss_in_elem_t(num_gauss_in_elem);
+        zones_in_elem    = zones_in_elem_t(num_zones_in_elem);
+        surfs_in_elem    = CArrayKokkos<size_t>(num_elems, num_surfs_in_elem, "mesh.surfs_in_zone");
 
         return;
     }; // end method
@@ -384,16 +413,16 @@ struct Mesh
 
         Pn = Pn_order;
 
-        num_nodes_in_elem     = std::pow(Pn_order + 1, num_dims); //(Pn_order + 1)**num_dims; // (Pn +1)
-        num_nodes_in_zone     = std::pow(2, num_dims); // (4, or 8, always)
-        num_gauss_in_elem     = std::pow(2*Pn_order, num_dims); // = 2*Pn
-        num_zones_in_elem     = std::pow(Pn_order, num_dims);  // Pn
-        num_surfs_in_elem     = num_dims == 2 ? 4 : 6; // 4 or 6 (always)
+        num_nodes_in_elem = (size_t)std::pow(Pn_order + 1, num_dims); //(Pn_order + 1)**num_dims; // (Pn +1)
+        num_nodes_in_zone = (size_t)std::pow(2, num_dims); // (4, or 8, always)
+        num_gauss_in_elem = (size_t)std::pow(2*Pn_order, num_dims); // = 2*Pn
+        num_zones_in_elem = (size_t)std::pow(Pn_order, num_dims);  // Pn
+        num_surfs_in_elem = num_dims == 2 ? 4 : 6; // 4 or 6 (always)
 
         num_zones = num_zones_in_elem * num_elems;
 
         nodes_in_elem    = DCArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.nodes_in_elem");
-        corners_in_elem  = CArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.corners_in_elem");
+        corners_in_elem  = corners_in_elem_t(num_nodes_in_elem); 
         zones_in_elem    = zones_in_elem_t(num_zones_in_elem);
         surfs_in_elem    = CArrayKokkos<size_t>(num_elems, num_surfs_in_elem, "mesh.surfs_in_zone");
         nodes_in_zone    = CArrayKokkos<size_t>(num_zones, num_nodes_in_zone, "mesh.nodes_in_zone");
@@ -465,8 +494,8 @@ struct Mesh
                 elems_in_node(node_gid, j) = elem_gid; // save the elem_gid
 
                 // Save corner index to element
-                size_t corner_lid = node_lid;
-                corners_in_elem(elem_gid, corner_lid) = corner_gid;
+                //size_t corner_lid = node_lid;
+                //corners_in_elem(elem_gid, corner_lid) = corner_gid;
 
                 // increment the number of corners saved to this node_gid
                 count_saved_corners_in_node(node_gid) = count_saved_corners_in_node(node_gid) + 1;

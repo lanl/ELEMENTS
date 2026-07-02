@@ -42,6 +42,23 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace mtr;
 using namespace swage; // unstructured mesh and hash
+using namespace elements;
+
+void verify_partition_of_unity(const Quadrature_t& Quad,
+                               const ReferenceElement_t& RefElem) {
+    for (size_t qpt = 0; qpt < Quad.num_qpts_in_elem; qpt++) {
+        double sum = 0.0;
+        
+        for (size_t basis = 0; basis < RefElem.num_dofs_in_elem; basis++) {
+            sum += RefElem.qpt_basis(qpt, basis);
+        }
+        if (fabs(sum - 1.0) > 1e-13) {
+            printf("Error: partion of unity failed, sum of basis = %f at rid = %zu \n", sum, qpt);
+            Kokkos::abort("Partition of unity failed at quadrature point ");
+        }
+        printf("sum = %f \n", sum);
+    } // end loop over qpts
+} // end function
 
 int main(int argc, char** argv) {
 
@@ -50,7 +67,30 @@ MATAR_INITIALIZE(argc, argv);
 
     printf("\n--- partition unity test ---\n");
 
+    printf("\n--- 1D element ---\n");
+    for(size_t num_qpts_1D = 1; num_qpts_1D<21; num_qpts_1D++){
 
+        printf("num quadrature points in 1D = %zu \n", num_qpts_1D);
+
+        Quadrature_t Quad1D;
+        ReferenceElement_t FERefElem1D;
+
+        const size_t elem_dims_test = 1;  
+        Quad1D.initialize_quadrature(reference_space::GaussLegendre,
+                                    num_qpts_1D,
+                                    elem_dims_test);
+
+        const size_t p_order = 1; // basis order for Lagrange polynomial
+        FERefElem1D.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                        reference_space::LagrangeLobatto,
+                                        Quad1D,
+                                        p_order);
+
+        verify_partition_of_unity(Quad1D,
+                                  FERefElem1D);
+
+        printf("\n");
+    } // end loop of num qpts 
 
     printf("\nAll partition unity checks passed.\n");
 

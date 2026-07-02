@@ -100,7 +100,7 @@ MATAR_INITIALIZE(argc, argv);
 
     printf("\n--- partition unity and gradient test ---\n");
 
-    printf("\n--- AO element with Legendre Quadrature & Legendre DOFs ---\n");
+    printf("\n--- DG element with Legendre Quadrature & Legendre DOFs ---\n");
     for(size_t num_qpts_1D = 1; num_qpts_1D<=max_num; num_qpts_1D++){
 
         if(Verbose)printf("num quadrature points in 1D = %zu \n", num_qpts_1D);
@@ -138,7 +138,82 @@ MATAR_INITIALIZE(argc, argv);
     } // end loop of num qpts 
 
 
-    printf("\n--- AO element with Legendre Quadrature & Lobatto DOFs ---\n");
+    printf("\n--- DG element with Lobatto Quadrature & Legendre DOFs ---\n");
+    for(size_t num_qpts_1D = 1; num_qpts_1D<=max_num; num_qpts_1D++){
+
+        if(Verbose)printf("num quadrature points in 1D = %zu \n", num_qpts_1D);
+
+        Quadrature_t Quad;
+        
+        // elem_dims=1,2,3
+        for(size_t elem_dims_test = 1; elem_dims_test<=3; elem_dims_test++){   
+            Quad.initialize_quadrature(reference_space::GaussLobatto,
+                                       num_qpts_1D,
+                                       elem_dims_test);
+
+            // build reference elements of varing orders
+            for (size_t p_order = 1; p_order<max_order; p_order++){
+                if(Verbose)printf("p_order = %zu: \n", p_order);
+                ReferenceElement_t FERefElem;
+
+                // p_order is the basis order for Lagrange polynomial
+                FERefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                              reference_space::LagrangeLegendre,
+                                              Quad,
+                                              p_order);
+
+                if(Verbose)printf("basis check: \n");
+                verify_partition_of_unity(Quad, FERefElem);
+                if(Verbose)printf("\n");
+
+                if(Verbose)printf("gradient basis check: \n");
+                verify_gradient(Quad, FERefElem);
+                if(Verbose)printf("\n");
+            } // end p_order loop
+        } // elem
+
+        if(Verbose)printf("\n");
+    } // end loop of num qpts 
+
+
+    printf("\n--- FE element with Lobatto Quadrature & Lobatto DOFs ---\n");
+    for(size_t num_qpts_1D = 1; num_qpts_1D<=max_num; num_qpts_1D++){
+
+        if(Verbose)printf("num quadrature points in 1D = %zu \n", num_qpts_1D);
+
+        Quadrature_t Quad;
+        
+        // elem_dims=1,2,3
+        for(size_t elem_dims_test = 1; elem_dims_test<=3; elem_dims_test++){   
+            Quad.initialize_quadrature(reference_space::GaussLobatto,
+                                       num_qpts_1D,
+                                       elem_dims_test);
+
+            // build reference elements of varing orders
+            for (size_t p_order = 1; p_order<max_order; p_order++){
+                if(Verbose)printf("p_order = %zu: \n", p_order);
+                ReferenceElement_t FERefElem;
+
+                // p_order is the basis order for Lagrange polynomial
+                FERefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                              reference_space::LagrangeLobatto,
+                                              Quad,
+                                              p_order);
+
+                if(Verbose)printf("basis check: \n");
+                verify_partition_of_unity(Quad, FERefElem);
+                if(Verbose)printf("\n");
+
+                if(Verbose)printf("gradient basis check: \n");
+                verify_gradient(Quad, FERefElem);
+                if(Verbose)printf("\n");
+            } // end p_order loop
+        } // elem
+
+        if(Verbose)printf("\n");
+    } // end loop of num qpts 
+
+    printf("\n--- FE element with Legendre Quadrature & Lobatto DOFs ---\n");
     for(size_t num_qpts_1D = 1; num_qpts_1D<=max_num; num_qpts_1D++){
 
         if(Verbose)printf("num quadrature points in 1D = %zu \n", num_qpts_1D);

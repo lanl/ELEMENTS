@@ -56,7 +56,7 @@ namespace elements
 /////////////////////////////////////////////////////////////////////////////
 KOKKOS_FUNCTION
 static void get_lobatto_nodes_1D(const CArrayKokkos<double>& lob_nodes_1D,
-    const int& num) 
+    const size_t& num) 
 {
     if (num == 1) {
         lob_nodes_1D(0) = 0.0;
@@ -320,7 +320,7 @@ static void get_lobatto_nodes_1D(const CArrayKokkos<double>& lob_nodes_1D,
 KOKKOS_FUNCTION
 static void get_lobatto_weights_1D(
     const CArrayKokkos<double>& lob_weights_1D,                   // Lobbatto weights
-    const int& num)                                        // Interpolation order
+    const size_t& num)                                        // Interpolation order
 {
     if (num == 1) {
         lob_weights_1D(0) = 2.0;
@@ -593,7 +593,7 @@ static void get_lobatto_weights_1D(
 KOKKOS_FUNCTION
 static void get_legendre_nodes_1D(
     const CArrayKokkos<double>& leg_nodes_1D,
-    const int& num) 
+    const size_t& num) 
 {
     if (num == 1) {
         leg_nodes_1D(0) = 0.0;
@@ -844,7 +844,7 @@ static void get_legendre_nodes_1D(
 KOKKOS_FUNCTION
 static void get_legendre_weights_1D(
     const CArrayKokkos<double>& leg_weights_1D,                    // Legendre weights
-    const int& num)                                     // Interpolation order
+    const size_t& num)                                     // Interpolation order
 {
     if (num == 1) {
         leg_weights_1D(0) = 2.0;

@@ -46,9 +46,8 @@ namespace mesh_init
 // element mesh types
 enum elem_name_tag
 {
-    linear_simplex_element = 0,
-    linear_tensor_element = 1,
-    arbitrary_tensor_element = 2
+    linear_tensor_element = 1,   // single quadrature point element
+    arbitrary_tensor_element = 2 // fully integrated arbitrary-order element
 };
 
 // other enums could go here on the mesh

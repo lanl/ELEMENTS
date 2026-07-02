@@ -5,7 +5,7 @@
 add_executable(gradient_test src/gradient_test.cpp)
 add_executable(interpolation_test src/interpolation_test.cpp)
 add_executable(kronecker_delta_test src/kronecker_delta_test.cpp)
-add_executable(partition_unity_test src/partition_unity.cpp)
+add_executable(partition_unity_test src/partition_unity_test.cpp)
 
 # 2. Add this example's specific include path
 #    This allows main.cpp to find headers in examples/point_connectivity/include/

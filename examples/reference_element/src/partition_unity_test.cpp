@@ -44,9 +44,9 @@ using namespace mtr;
 using namespace swage; // unstructured mesh and hash
 using namespace elements;
 
-bool Verbose = true;
-size_t max_num   = 8; // max number of quadrature points to test
-size_t max_order = 7; // max polynomial order to test
+bool Verbose = false;
+size_t max_num   = 20; // max number of quadrature points to test
+size_t max_order = 20; // max polynomial order to test
 
 void verify_partition_of_unity(const Quadrature_t& Quad,
                                const ReferenceElement_t& RefElem) {
@@ -56,7 +56,7 @@ void verify_partition_of_unity(const Quadrature_t& Quad,
         for (size_t basis = 0; basis < RefElem.num_dofs_in_elem; basis++) {
             sum += RefElem.qpt_basis(qpt, basis);
         }
-        if (fabs(sum - 1.0) > 1e-13) {
+        if (fabs(sum - 1.0) > 1.e-12) {
             printf("Error: partion of unity failed, sum of basis = %f at rid = %zu \n", sum, qpt);
             Kokkos::abort("Partition of unity failed at quadrature point ");
         }
@@ -76,8 +76,8 @@ void verify_gradient(const Quadrature_t& Quad,
             for (size_t basis = 0; basis < RefElem.num_dofs_in_elem; basis++) {
                 sum[dim] += RefElem.qpt_grad_basis(qpt, basis, dim);
             }
-            if (fabs(sum[dim]) > 1.e-13) {
-                printf("Error: gradient failed, sum of gradient basis = %f at rid = %zu \n", sum[dim], qpt);
+            if (fabs(sum[dim]) > 1.e-12) {
+                printf("Error: gradient failed, sum of gradient basis = %f at rid = %zu, for dim = %zu, with order = %zu \n", sum[dim], qpt, dim, RefElem.num_dofs_1d);
                 Kokkos::abort("Gradient of basis failed at quadrature point ");
             }
             if(Verbose)printf("dim = %zu, sum = %f \n", dim, sum[dim]);

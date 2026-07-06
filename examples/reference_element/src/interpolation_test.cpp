@@ -42,14 +42,177 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace mtr;
 using namespace swage; // unstructured mesh and hash
+using namespace elements;
+
+bool Verbose = true;
+size_t max_num   = 3; // max number of quadrature points to test up to, the limit is 19
+size_t max_order = 3; // max polynomial order to test, limit is 19th-order with Legendre
+
+
+// polynomial with terms <= p_order
+KOKKOS_INLINE_FUNCTION
+double polynomial(const CArrayKokkos<double> &coeff, const double x, const size_t p_order){
+
+    double result = 0.0;
+    for (int i = 0; i <= p_order; ++i) {
+        result += coeff(i) * pow(x, (double)i);
+    }
+    return result;
+} // end polynomial
+
+KOKKOS_INLINE_FUNCTION
+double polynomial(const CArrayKokkos<double> &coeff, const double x, const double y, const size_t p_order){
+
+    double result = 0.0;
+    for (int j = 0; j <= p_order; ++j) 
+    for (int i = 0; i <= p_order-j; ++i) {
+        result += coeff(i,j) * pow(x, (double)i) * pow(y, (double)j);
+        
+    } // end for
+    return result;
+} // end polynomial
+
+KOKKOS_INLINE_FUNCTION
+double polynomial(const CArrayKokkos<double> &coeff, const double x, const double y, const double z, const size_t p_order){
+
+    double result = 0.0;
+    for (int k = 0; k <= p_order; ++k) 
+    for (int j = 0; j <= p_order-k; ++j) 
+    for (int i = 0; i <= p_order-j-k; ++i) {
+        result += coeff(i,j,k) * pow(x, (double)i) * pow(y, (double)j) * pow(z, (double)k); 
+    } // end for
+
+    return result;
+} // end polynomial
+
+
+// Test: interpolate a polynomial that the basis can represent exactly
+void test_interpolation(const Quadrature_t& Quad,
+                        const ReferenceElement_t& RefElem) {
+    
+    // For polynomial order p, Lagrange basis can represent 
+    // any polynomial of degree <= p exactly
+    
+    const size_t p_order = RefElem.num_dofs_1d - 1;
+
+    CArrayKokkos<double> dof_values(RefElem.num_dofs_in_elem);
+    CArrayKokkos<double> coeff;
+
+
+    if(RefElem.elem_dims==1){
+        coeff = CArrayKokkos<double>(p_order);
+    }
+    else if (RefElem.elem_dims==2){
+        coeff = CArrayKokkos<double>(p_order, p_order);
+    }
+    else {
+        coeff = CArrayKokkos<double>(p_order, p_order, p_order);
+    }
+    coeff.set_values(0.78914567);  // a radom value
+
+    
+
+    // populate polynomial values at DOFs of the ref element
+    FOR_ALL(dof, 0, RefElem.num_dofs_in_elem, {
+
+        double value=0.0;
+        if(RefElem.elem_dims==1){
+            const double xi = RefElem.dof_positions(dof, 0);
+            value = polynomial(coeff, xi, p_order);
+        }
+        else if (RefElem.elem_dims==2){
+            const double xi  = RefElem.dof_positions(dof, 0);
+            const double eta = RefElem.dof_positions(dof, 1);
+            value = polynomial(coeff, xi, eta, p_order);
+        }
+        else {
+            const double xi  = RefElem.dof_positions(dof, 0);
+            const double eta = RefElem.dof_positions(dof, 1);
+            const double mu  = RefElem.dof_positions(dof, 2);
+            value = polynomial(coeff, xi, eta, mu, p_order);
+        }
+
+        dof_values(dof) = value; // the value at the ref elem node
+
+    }); // end parallel
+
+
+    // compare interpoloation with exact solution
+    FOR_ALL(qpt, 0, Quad.num_qpts_in_elem, {
+        
+        double sum = 0; // interpolated value
+
+        for (size_t dof = 0; dof < RefElem.num_dofs_in_elem; dof++) {
+            sum += RefElem.qpt_basis(qpt, dof)*dof_values(dof);
+        }
+
+        double exact_value=0.0;
+        if(RefElem.elem_dims==1){
+            const double xi = Quad.qpt_positions(qpt, 0);
+            exact_value = polynomial(coeff, xi, p_order);
+        }
+        else if (RefElem.elem_dims==2){
+            const double xi  = Quad.qpt_positions(qpt, 0);
+            const double eta = Quad.qpt_positions(qpt, 1);
+            exact_value = polynomial(coeff, xi, eta, p_order);
+        }
+        else {
+            const double xi  = Quad.qpt_positions(qpt, 0);
+            const double eta = Quad.qpt_positions(qpt, 1);
+            const double mu  = Quad.qpt_positions(qpt, 2);
+            exact_value = polynomial(coeff, xi, eta, mu, p_order);
+        }
+
+        if (fabs(sum - exact_value) > 1.e-12) {
+            printf("Error: interpolation failed at qpt id = %d with order = %zu \n", qpt, p_order);
+            Kokkos::abort("Interpolation failed at quadrature point ");
+        }
+        if(Verbose)printf("interpolated = %f vs exact value = %f \n", sum, exact_value);
+
+    }); // end loop over qpts
+}
 
 int main(int argc, char** argv) {
 
 MATAR_INITIALIZE(argc, argv);
 { // MATAR scope
 
-    printf("\n--- interpolation test ---\n");
+    printf("\n--- interpolation tests ---\n");
 
+
+    printf("\n--- DG element with Legendre Quadrature & Legendre DOFs ---\n");
+    for(size_t num_qpts_1D = 1; num_qpts_1D<=max_num; num_qpts_1D++){
+
+        if(Verbose)printf("num quadrature points in 1D = %zu \n", num_qpts_1D);
+
+        Quadrature_t Quad;
+        
+        // elem_dims=1,2,3
+        for(size_t elem_dims_test = 1; elem_dims_test<=3; elem_dims_test++){   
+            Quad.initialize_quadrature(reference_space::GaussLegendre,
+                                       num_qpts_1D,
+                                       elem_dims_test);
+
+            // build reference elements of varing orders
+            for (size_t p_order = 1; p_order<max_order; p_order++){
+                if(Verbose)printf("p_order = %zu: \n", p_order);
+                ReferenceElement_t FERefElem;
+
+                // p_order is the basis order for Lagrange polynomial
+                FERefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                              reference_space::LagrangeLegendre,
+                                              Quad,
+                                              p_order);
+
+                if(Verbose)printf("interpolation check: \n");
+                test_interpolation(Quad, FERefElem);
+                if(Verbose)printf("\n");
+
+            } // end p_order loop
+        } // elem
+
+        if(Verbose)printf("\n");
+    } // end loop of num qpts 
 
 
     printf("\nAll interpolation checks passed.\n");

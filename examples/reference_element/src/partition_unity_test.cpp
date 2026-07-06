@@ -60,7 +60,7 @@ void verify_partition_of_unity(const Quadrature_t& Quad,
             sum += RefElem.qpt_basis(qpt, basis);
         }
         if (fabs(sum - 1.0) > 1.e-12) {
-            printf("Error: partion of unity failed, sum of basis = %f at rid = %d with order = %zu \n", sum, qpt, RefElem.num_dofs_1d);
+            printf("Error: partion of unity failed, sum of basis = %f at qpt id = %d with order = %zu \n", sum, qpt, RefElem.num_dofs_1d-1);
             Kokkos::abort("Partition of unity failed at quadrature point ");
         }
         if(Verbose)printf("sum = %f \n", sum);
@@ -207,6 +207,7 @@ MATAR_INITIALIZE(argc, argv);
                 if(Verbose)printf("gradient basis check: \n");
                 verify_gradient(Quad, FERefElem);
                 if(Verbose)printf("\n");
+
             } // end p_order loop
         } // elem
 

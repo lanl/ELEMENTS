@@ -114,7 +114,7 @@ MATAR_INITIALIZE(argc, argv);
                                        elem_dims_test);
 
             // build reference elements of varing orders
-            for (size_t p_order = 1; p_order<max_order; p_order++){
+            for (size_t p_order = 0; p_order<max_order; p_order++){
                 if(Verbose)printf("p_order = %zu: \n", p_order);
                 ReferenceElement_t FERefElem;
 
@@ -152,7 +152,7 @@ MATAR_INITIALIZE(argc, argv);
                                        elem_dims_test);
 
             // build reference elements of varing orders
-            for (size_t p_order = 1; p_order<max_order; p_order++){
+            for (size_t p_order = 0; p_order<max_order; p_order++){
                 if(Verbose)printf("p_order = %zu: \n", p_order);
                 ReferenceElement_t FERefElem;
 

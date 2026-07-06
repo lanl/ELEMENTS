@@ -46,7 +46,7 @@ using namespace elements;
 
 bool Verbose = true;
 size_t max_num   = 3; // max number of quadrature points to test up to, the limit is 19
-size_t max_order = 3; // max polynomial order to test, limit is 19th-order with Legendre
+size_t max_order = 2; // max polynomial order to test, limit is 19th-order with Legendre
 
 
 // polynomial with terms <= p_order
@@ -100,13 +100,13 @@ void test_interpolation(const Quadrature_t& Quad,
 
 
     if(RefElem.elem_dims==1){
-        coeff = CArrayKokkos<double>(p_order);
+        coeff = CArrayKokkos<double>(p_order+1);
     }
     else if (RefElem.elem_dims==2){
-        coeff = CArrayKokkos<double>(p_order, p_order);
+        coeff = CArrayKokkos<double>(p_order+1, p_order+1);
     }
     else {
-        coeff = CArrayKokkos<double>(p_order, p_order, p_order);
+        coeff = CArrayKokkos<double>(p_order+1, p_order+1, p_order+1);
     }
     coeff.set_values(0.78914567);  // a radom value
 
@@ -193,8 +193,8 @@ MATAR_INITIALIZE(argc, argv);
                                        num_qpts_1D,
                                        elem_dims_test);
 
-            // build reference elements of varing orders
-            for (size_t p_order = 1; p_order<max_order; p_order++){
+            // build reference elements of varing orders, 
+            for (size_t p_order = 0; p_order<max_order; p_order++){
                 if(Verbose)printf("p_order = %zu: \n", p_order);
                 ReferenceElement_t FERefElem;
 
@@ -214,6 +214,40 @@ MATAR_INITIALIZE(argc, argv);
         if(Verbose)printf("\n");
     } // end loop of num qpts 
 
+
+    printf("\n--- DG element with Lobatto Quadrature & Legendre DOFs ---\n");
+    for(size_t num_qpts_1D = 1; num_qpts_1D<=max_num; num_qpts_1D++){
+
+        if(Verbose)printf("num quadrature points in 1D = %zu \n", num_qpts_1D);
+
+        Quadrature_t Quad;
+        
+        // elem_dims=1,2,3
+        for(size_t elem_dims_test = 1; elem_dims_test<=3; elem_dims_test++){   
+            Quad.initialize_quadrature(reference_space::GaussLobatto,
+                                       num_qpts_1D,
+                                       elem_dims_test);
+
+            // build reference elements of varing orders
+            for (size_t p_order = 0; p_order<max_order; p_order++){
+                if(Verbose)printf("p_order = %zu: \n", p_order);
+                ReferenceElement_t FERefElem;
+
+                // p_order is the basis order for Lagrange polynomial
+                FERefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                              reference_space::LagrangeLegendre,
+                                              Quad,
+                                              p_order);
+
+                if(Verbose)printf("interpolation check: \n");
+                test_interpolation(Quad, FERefElem);
+                if(Verbose)printf("\n");
+
+            } // end p_order loop
+        } // elem
+
+        if(Verbose)printf("\n");
+    } // end loop of num qpts 
 
     printf("\nAll interpolation checks passed.\n");
 

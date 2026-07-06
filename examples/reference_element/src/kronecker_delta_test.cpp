@@ -42,6 +42,11 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace mtr;
 using namespace swage; // unstructured mesh and hash
+using namespace elements;
+
+bool Verbose = false;
+size_t max_num   = 19; // max number of quadrature points to test up to, the limit is 19
+
 
 int main(int argc, char** argv) {
 
@@ -50,7 +55,56 @@ MATAR_INITIALIZE(argc, argv);
 
     printf("\n--- kronecker delta test ---\n");
 
+    // Note: quadrature points will be collocated with kinematic DOFs
+    for(size_t num_qpts_1D = 2; num_qpts_1D<=max_num; num_qpts_1D++){
 
+        Quadrature_t Quad;
+        
+        // elem_dims=1,2,3
+        for(size_t elem_dims_test = 1; elem_dims_test<=3; elem_dims_test++){   
+            Quad.initialize_quadrature(reference_space::GaussLobatto,
+                                       num_qpts_1D,
+                                       elem_dims_test);
+
+            // build reference element with collocated DOFs
+            const size_t p_order = num_qpts_1D - 1;
+
+            if(Verbose)printf("p_order = %zu: \n", p_order);
+            ReferenceElement_t FERefElem;
+
+            // p_order is the basis order for Lagrange polynomial
+            FERefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                          reference_space::LagrangeLobatto,
+                                          Quad,
+                                          p_order);
+
+
+            // Check: should be 1 at i, 0 elsewhere
+            FOR_ALL(basis, 0, FERefElem.num_dofs_in_elem, {
+                
+                if(Verbose) printf("basis DOF id = %d \n", basis);
+                for(int dof_pt=0; dof_pt<FERefElem.num_dofs_in_elem; dof_pt++){
+
+                    // remember: dof_pt = qpt, it is a collocated grid
+
+                    double expected = (basis == dof_pt) ? 1.0 : 0.0;
+
+                    if(Verbose){
+                        printf("   checking at DOF basis = %d \n", basis);
+                        printf("   expected val = %f, basis val = %f \n", expected, FERefElem.qpt_basis(dof_pt, basis));
+                        for(size_t dim=0; dim<elem_dims_test; dim++){
+                            printf("   quad pos     = %f, basis pos = %f \n", Quad.qpt_positions(dof_pt, dim), FERefElem.dof_positions(dof_pt, dim));
+                        }
+                    }
+                    if (fabs(FERefElem.qpt_basis(dof_pt, basis) - expected) > 1.0e-12) {
+                        Kokkos::abort("ERROR: Kronecker delta property violated");
+                    }
+                } // end loop over other nodes
+
+            });
+
+        } // end elem_dims
+    } // end number of quadrature points
 
     printf("\nAll kronecker delta checks passed.\n");
 

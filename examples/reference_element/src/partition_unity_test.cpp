@@ -35,13 +35,13 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
-// This pulls in kokkos, matar, mesh, hash, ref_elem stuff, and PT-Scotch
+// This pulls in kokkos, matar, mesh, point cloud, ref_elem stuff, and PT-Scotch
 #include "ELEMENTS.h"
 
 //#undef NDEBUG     // Ensures NDEBUG is turned off
 
 using namespace mtr;
-using namespace swage; // unstructured mesh and hash
+using namespace swage; // unstructured mesh and point cloud
 using namespace elements;
 
 bool Verbose = false;

@@ -90,19 +90,24 @@ KOKKOS_INLINE_FUNCTION
 double grad_polynomial_x(const CArrayKokkos<double> &coeff, const double x, const size_t p_order){
 
     double result = 0.0;
-    for (int i = 0; i <= p_order; ++i) {
+    if(p_order==0) return 0.0;
+
+    for (int i = 1; i <= p_order; ++i) {
         result += (double)i*coeff(i) * pow(x, (double)i-1);
     }
 
     return result;
 } // end polynomial
 
+// --- 2D grad
 KOKKOS_INLINE_FUNCTION
 double grad_polynomial_x(const CArrayKokkos<double> &coeff, const double x, const double y, const size_t p_order){
 
     double result = 0.0;
+    if(p_order==0) return 0.0;
+
     for (int j = 0; j <= p_order; ++j) 
-    for (int i = 0; i <= p_order-j; ++i) {
+    for (int i = 1; i <= p_order-j; ++i) {
         result += (double)i*coeff(i,j) * pow(x, (double)i-1) * pow(y, (double)j);
     } // end for
 
@@ -113,7 +118,9 @@ KOKKOS_INLINE_FUNCTION
 double grad_polynomial_y(const CArrayKokkos<double> &coeff, const double x, const double y, const size_t p_order){
 
     double result = 0.0;
-    for (int j = 0; j <= p_order; ++j) 
+    if(p_order==0) return 0.0;
+
+    for (int j = 1; j <= p_order; ++j) 
     for (int i = 0; i <= p_order-j; ++i) {
         result += (double)j*coeff(i,j) * pow(x, (double)i) * pow(y, (double)j-1);
     } // end for
@@ -121,13 +128,16 @@ double grad_polynomial_y(const CArrayKokkos<double> &coeff, const double x, cons
     return result;
 } // end polynomial
 
+// --- 3D grad
 KOKKOS_INLINE_FUNCTION
 double grad_polynomial_x(const CArrayKokkos<double> &coeff, const double x, const double y, const double z, const size_t p_order){
 
     double result = 0.0;
+    if(p_order==0) return 0.0;
+
     for (int k = 0; k <= p_order; ++k) 
     for (int j = 0; j <= p_order-k; ++j) 
-    for (int i = 0; i <= p_order-j-k; ++i) {
+    for (int i = 1; i <= p_order-j-k; ++i) {
         result += (double)i*coeff(i,j,k) * pow(x, (double)i-1.) * pow(y, (double)j) * pow(z, (double)k); 
     } // end for
 
@@ -138,8 +148,10 @@ KOKKOS_INLINE_FUNCTION
 double grad_polynomial_y(const CArrayKokkos<double> &coeff, const double x, const double y, const double z, const size_t p_order){
 
     double result = 0.0;
+    if(p_order==0) return 0.0;
+
     for (int k = 0; k <= p_order; ++k) 
-    for (int j = 0; j <= p_order-k; ++j) 
+    for (int j = 1; j <= p_order-k; ++j) 
     for (int i = 0; i <= p_order-j-k; ++i) {
         result += (double)j*coeff(i,j,k) * pow(x, (double)i) * pow(y, (double)j-1.) * pow(z, (double)k); 
     } // end for
@@ -151,7 +163,9 @@ KOKKOS_INLINE_FUNCTION
 double grad_polynomial_z(const CArrayKokkos<double> &coeff, const double x, const double y, const double z, const size_t p_order){
 
     double result = 0.0;
-    for (int k = 0; k <= p_order; ++k) 
+    if(p_order==0) return 0.0;
+
+    for (int k = 1; k <= p_order; ++k) 
     for (int j = 0; j <= p_order-k; ++j) 
     for (int i = 0; i <= p_order-j-k; ++i) {
         result += (double)k*coeff(i,j,k) * pow(x, (double)i) * pow(y, (double)j) * pow(z, (double)k-1.); 
@@ -216,9 +230,9 @@ void test_gradient(const Quadrature_t& Quad,
     FOR_ALL(qpt, 0, Quad.num_qpts_in_elem, {
         
         double sum[3]; // gradient value
-        sum[0] = 0.;
-        sum[1] = 0.;
-        sum[2] = 0.;
+        sum[0] = 0.0;
+        sum[1] = 0.0;
+        sum[2] = 0.0;
 
         for (size_t dof = 0; dof < RefElem.num_dofs_in_elem; dof++) {
             for(size_t dim=0; dim<RefElem.elem_dims; dim++){
@@ -257,7 +271,7 @@ void test_gradient(const Quadrature_t& Quad,
                 printf("interpolated = %f vs exact value = %f, error = %f \n", sum[dim], exact_value[dim], sum[dim]-exact_value[dim]);
                 Kokkos::abort("Interpolation failed at quadrature point ");
             }
-            if(Verbose)printf("Grad in dim = %zu: interpolated = %f vs exact value = %f \n", dim, sum[dim], exact_value[dim]);
+            if(Verbose)printf("Grad in dim = %zu: interpolated = %f vs exact value = %f, error = %f \n", dim, sum[dim], exact_value[dim], sum[dim]-exact_value[dim]);
         }
 
     }); // end loop over qpts

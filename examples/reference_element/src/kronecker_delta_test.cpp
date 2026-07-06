@@ -97,6 +97,7 @@ MATAR_INITIALIZE(argc, argv);
                         }
                     }
                     if (fabs(FERefElem.qpt_basis(dof_pt, basis) - expected) > 1.0e-12) {
+                        printf("ERROR: expected val = %f, basis val = %f \n", expected, FERefElem.qpt_basis(dof_pt, basis));
                         Kokkos::abort("ERROR: Kronecker delta property violated");
                     }
                 } // end loop over other nodes

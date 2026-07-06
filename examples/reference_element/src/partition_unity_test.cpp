@@ -83,10 +83,10 @@ void verify_gradient(const Quadrature_t& Quad,
                 sum[dim] += RefElem.qpt_grad_basis(qpt, basis, dim);
             }
             if (fabs(sum[dim]) > 1.e-12) {
-                printf("Error: gradient failed, sum of gradient basis = %f at qpt id = %d, for dim = %zu, with order = %zu \n", sum[dim], qpt, dim, RefElem.num_dofs_1d);
+                printf("Error: gradient failed, sum of gradient basis = %.15e at qpt id = %d, for dim = %zu, with order = %zu \n", sum[dim], qpt, dim, RefElem.num_dofs_1d);
                 Kokkos::abort("Gradient of basis failed at quadrature point ");
             }
-            if(Verbose)printf("dim = %zu, sum = %f \n", dim, sum[dim]);
+            if(Verbose)printf("dim = %zu, sum = %.15e \n", dim, sum[dim]);
         } // for dim
 
     }); // end loop over qpts

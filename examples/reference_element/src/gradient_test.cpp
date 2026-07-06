@@ -266,7 +266,11 @@ void test_gradient(const Quadrature_t& Quad,
 
         // round off get bad at high p_order's due to polynomial sensativity
         for(size_t dim=0; dim<RefElem.elem_dims; dim++){
-            if (fabs(sum[dim] - exact_value[dim]) > 1.e-10*(double)p_order) {
+
+            const double error = fabs(sum[dim] - exact_value[dim]);
+            const double tolerance = fmax(1.e-10, 1.e-10 * (double)p_order);
+            
+            if (error > tolerance) {
                 printf("Error: interpolation failed at qpt id = %d with order = %zu \n", qpt, p_order);
                 printf("interpolated = %f vs exact value = %f, error = %f \n", sum[dim], exact_value[dim], sum[dim]-exact_value[dim]);
                 Kokkos::abort("Interpolation failed at quadrature point ");

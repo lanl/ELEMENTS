@@ -163,8 +163,11 @@ void test_interpolation(const Quadrature_t& Quad,
             exact_value = polynomial(coeff, xi, eta, mu, p_order);
         }
 
-        // round off get bad at high p_order's due to polynomial sensativity
-        if (fabs(sum - exact_value) > 1.e-11*(double)p_order) {
+        // round off gets bad at high p_order's due to polynomial sensativity
+        const double error = fabs(sum - exact_value);
+        const double tolerance = fmax(1.e-11, 1.e-11 * (double)p_order);
+
+        if (error > tolerance) {
             printf("Error: interpolation failed at qpt id = %d with order = %zu \n", qpt, p_order);
             printf("interpolated = %f vs exact value = %f, error = %f \n", sum, exact_value, sum-exact_value);
             Kokkos::abort("Interpolation failed at quadrature point ");

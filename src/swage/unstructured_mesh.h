@@ -240,7 +240,7 @@ struct corners_in_elem_t
 // };
 
 // mesh sizes and connectivity data structures
-struct Mesh
+struct Mesh_t
 {
     // ******* Entity Definitions **********//
     // Element: A hexahedral or Quadralateral volume
@@ -358,6 +358,13 @@ struct Mesh
     // DCArrayKokkos<size_t> boundary_node_local_ids; ///< Local IDs of boundary nodes on this rank (send data to neighboring MPI ranks)
     size_t num_ghost_nodes = 0; ///< Number of ghost nodes on this rank (receive data from neighboring MPI ranks)
     
+
+    // initialization methods
+    void initialize_dims(const size_t num_dims_inp)
+    {
+        num_dims  = num_dims_inp;
+    }; // end method
+
     // initialization methods
     void initialize_nodes(const size_t num_nodes_inp)
     { 
@@ -368,71 +375,87 @@ struct Mesh
         return;
     }; // end method
 
+
     // initialization methods
-    void initialize_elems(const size_t num_elems_inp, const size_t num_dims_inp)
+    void initialize_elems(const size_t num_elems_inp)
     {
+
         if (num_dims == 0) {
             Kokkos::abort("Error: mesh.num_dims is not set. Exiting at initialize_elems().");
         }
-        num_dims  = num_dims_inp;
+
+        // --- Basic element bookkeeping ---
         num_elems = num_elems_inp;
 
+        // initializes a linear element with a single gauss point for saving results
         Pn = 1;
 
+        // --- Derived sizes ---
         num_nodes_in_elem = (size_t)std::pow(2, num_dims); 
         num_nodes_in_zone = (size_t)std::pow(2, num_dims); // (4, or 8, always)
         num_gauss_in_elem = 1;  // 1 Gauss point per element
         num_zones_in_elem = 1;  // 1 zone per element
         num_surfs_in_elem = num_dims == 2 ? 4 : 6; // 4 or 6 (always)
-        
-        nodes_in_elem   = DCArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.nodes_in_elem");
-        corners_in_elem = corners_in_elem_t(num_nodes_in_elem); 
-        gauss_in_elem   = gauss_in_elem_t(num_gauss_in_elem);
-
         num_zones = num_zones_in_elem * num_elems;
 
+        
+        // --- Allocations ---
+        nodes_in_elem    = DCArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.nodes_in_elem");
+        corners_in_elem  = corners_in_elem_t(num_nodes_in_elem); 
+        gauss_in_elem    = gauss_in_elem_t(num_gauss_in_elem);
         zones_in_elem    = zones_in_elem_t(num_zones_in_elem);
         surfs_in_elem    = CArrayKokkos<size_t>(num_elems, num_surfs_in_elem, "mesh.surfs_in_zone");
 
         return;
     }; // end method
 
-    // initialization method
+    // initialization method for an FE mesh
     void initialize_elems_Pn(
         const size_t num_elems_inp,
-        const size_t num_dims_inp, 
-        const size_t Pn_order)
+        const size_t elem_Pn_order,
+        const size_t num_gauss_1D)
     {
+
+        // Note: num_gauss_1D creates an index space that can be used to register state on
+
         if (num_dims == 0) {
             Kokkos::abort("Error: mesh.num_dims is not set. Exiting at initialize_elems_Pn().");
         }
-        elem_kind = mesh_init::arbitrary_tensor_element;
-        
-        num_dims  = num_dims_inp;
-        num_elems = num_elems_inp;  
 
-        Pn = Pn_order;
+        // --- Set element details ---
+        Pn = elem_Pn_order; // Note: element Pn_order = dofs_1D-1, where dofs are the element nodes
         if (Pn == 0) {
             Kokkos::abort("Error: Pn must be greater than 0. Exiting at initialize_elems_Pn().");
         }
 
-        num_nodes_in_elem = (size_t)std::pow(Pn_order + 1, num_dims); //(Pn_order + 1)**num_dims; // (Pn +1)
-        num_nodes_in_zone = (size_t)std::pow(2, num_dims); // (4, or 8, always)
-        num_gauss_in_elem = (size_t)std::pow(2*Pn_order, num_dims); // = 2*Pn
-        num_zones_in_elem = (size_t)std::pow(Pn_order, num_dims);  // Pn
-        num_surfs_in_elem = num_dims == 2 ? 4 : 6; // 4 or 6 (always)
+        num_elems = num_elems_inp;  
+        if (num_elems == 0) {
+            Kokkos::abort("Error: num_elems must be greater than 0. Exiting at initialize_elems_Pn().");
+        }
 
-        num_zones = num_zones_in_elem * num_elems;
+        elem_kind = mesh_init::arbitrary_tensor_element;
 
+
+        // --- Derived sizes ---
+        num_gauss_in_elem = (size_t)std::pow(num_gauss_1D, num_dims); // Note: 2*Pn with Legendre is needed for solids mechanics
+        num_nodes_in_elem = (size_t)std::pow(Pn + 1, num_dims);;
+        num_nodes_in_zone = (size_t)std::pow(2, num_dims);   // (4, or 8, always)
+        num_zones_in_elem = (size_t)std::pow(Pn, num_dims);  // Pn^dim
+        num_surfs_in_elem = num_dims == 2 ? 4 : 6;           // 4 or 6 (always)
+        num_zones = num_zones_in_elem * num_elems;        
+        
+
+        // --- Allocations ---
         nodes_in_elem    = DCArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.nodes_in_elem");
         corners_in_elem  = corners_in_elem_t(num_nodes_in_elem); 
         zones_in_elem    = zones_in_elem_t(num_zones_in_elem);
         surfs_in_elem    = CArrayKokkos<size_t>(num_elems, num_surfs_in_elem, "mesh.surfs_in_zone");
         nodes_in_zone    = CArrayKokkos<size_t>(num_zones, num_nodes_in_zone, "mesh.nodes_in_zone");
-        gauss_in_elem = gauss_in_elem_t(num_gauss_in_elem);
+        gauss_in_elem    = gauss_in_elem_t(num_gauss_in_elem);
 
         return;
     }; // end method
+
 
     // initialization methods
     void initialize_corners(const size_t num_corners_inp)

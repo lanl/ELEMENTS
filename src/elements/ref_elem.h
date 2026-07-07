@@ -75,7 +75,7 @@ namespace elements
 
         size_t elem_dims = 0;
         size_t num_qpts_in_elem = 0;
-        size_t num_qpts_in_1d = 0;
+        size_t num_qpts_1d = 0;
 
         CArrayKokkos<double> qpt_positions;
         CArrayKokkos<double> qpt_weights;
@@ -87,41 +87,41 @@ namespace elements
         /// \brief Set up quadrature in a volume or surface element
         ///
         /// \param TypeInp The type of quadrature (e.g., Lobatto or Legendra)
-        /// \param num_qpts_in_1d_inp The number of quadrature in 1D, applied to each direction.
+        /// \param num_qpts_1d_inp The number of quadrature in 1D, applied to each direction.
         /// \param elem_dims_in The number dimensions 
         ///
         /////////////////////////////////////////////////////////////////////////////
         void initialize_quadrature(const reference_space::QuadratureType TypeInp, 
-                                   const size_t num_qpts_in_1d_inp, 
+                                   const size_t num_qpts_1d_inp, 
                                    const size_t elem_dims_in)
         {
             QuadratureType = TypeInp;
 
             elem_dims = elem_dims_in;
-            num_qpts_in_1d = num_qpts_in_1d_inp;
-            if(num_qpts_in_1d==0) throw std::runtime_error("ERROR: zero quadrature points specified \n");
+            num_qpts_1d = num_qpts_1d_inp;
+            if(num_qpts_1d==0) throw std::runtime_error("ERROR: zero quadrature points specified \n");
 
             num_qpts_in_elem = 1;
             for(size_t dim=0; dim<elem_dims; dim++){
-                num_qpts_in_elem *= num_qpts_in_1d;
+                num_qpts_in_elem *= num_qpts_1d;
             }
             qpt_positions = CArrayKokkos<double>(num_qpts_in_elem, elem_dims, "qpt_positions");
             qpt_weights   = CArrayKokkos<double>(num_qpts_in_elem, "qpt_weights");
 
             // temporary 1D variables to build 3D element
-            CArrayKokkos<double> qpt_positions_1d(num_qpts_in_1d, "qpt_positions_1d");
-            CArrayKokkos<double> qpt_weights_1d (num_qpts_in_1d, "qpt_weights_1d");
+            CArrayKokkos<double> qpt_positions_1d(num_qpts_1d, "qpt_positions_1d");
+            CArrayKokkos<double> qpt_weights_1d (num_qpts_1d, "qpt_weights_1d");
 
             if(QuadratureType == reference_space::GaussLegendre){
                 RUN_CLASS({
-                    get_legendre_nodes_1D(qpt_positions_1d, num_qpts_in_1d);
-                    get_legendre_weights_1D(qpt_weights_1d, num_qpts_in_1d);
+                    get_legendre_nodes_1D(qpt_positions_1d, num_qpts_1d);
+                    get_legendre_weights_1D(qpt_weights_1d, num_qpts_1d);
                 });
             }
             else if(QuadratureType == reference_space::GaussLobatto){         
                 RUN_CLASS({
-                    get_lobatto_nodes_1D(qpt_positions_1d, num_qpts_in_1d);
-                    get_lobatto_weights_1D(qpt_weights_1d, num_qpts_in_1d);
+                    get_lobatto_nodes_1D(qpt_positions_1d, num_qpts_1d);
+                    get_lobatto_weights_1D(qpt_weights_1d, num_qpts_1d);
                 });
             }
             else
@@ -131,9 +131,9 @@ namespace elements
 
             // 3D volume element
             if(elem_dims==3){
-                FOR_ALL_CLASS(k, 0, num_qpts_in_1d,
-                              j, 0, num_qpts_in_1d,
-                              i, 0, num_qpts_in_1d, {
+                FOR_ALL_CLASS(k, 0, num_qpts_1d,
+                              j, 0, num_qpts_1d,
+                              i, 0, num_qpts_1d, {
 
                     const size_t rid = get_qpt_rid(i, j, k);
 
@@ -147,8 +147,8 @@ namespace elements
             }
             // 2D volume or 2D surface element
             else if (elem_dims==2){
-                FOR_ALL_CLASS(j, 0, num_qpts_in_1d,
-                              i, 0, num_qpts_in_1d, {
+                FOR_ALL_CLASS(j, 0, num_qpts_1d,
+                              i, 0, num_qpts_1d, {
 
                     const size_t rid = get_qpt_rid(i, j);
 
@@ -161,7 +161,7 @@ namespace elements
             }
             // 1D volume, edge, or 1D surface element
             else if (elem_dims==1) {
-                FOR_ALL_CLASS(i, 0, num_qpts_in_1d, {
+                FOR_ALL_CLASS(i, 0, num_qpts_1d, {
 
                     const size_t rid = i;
 
@@ -201,7 +201,7 @@ namespace elements
         KOKKOS_INLINE_FUNCTION
         size_t get_qpt_rid(size_t i, size_t j, size_t k) const
         {
-            return i + (j + k * num_qpts_in_1d) * num_qpts_in_1d;
+            return i + (j + k * num_qpts_1d) * num_qpts_1d;
         } // end function
 
         /////////////////////////////////////////////////////////////////////////////
@@ -227,7 +227,7 @@ namespace elements
         KOKKOS_INLINE_FUNCTION
         size_t get_qpt_rid(size_t i, size_t j) const
         {
-            return i + j * num_qpts_in_1d;
+            return i + j * num_qpts_1d;
         } // end function
 
     }; // end Quadrature_t
@@ -245,6 +245,8 @@ namespace elements
         // Dofs
         size_t num_dofs_in_elem = 1;
         size_t num_dofs_1d = 0;
+
+        size_t Pn = 0;
       
 
         // DOF positions
@@ -299,6 +301,7 @@ namespace elements
             // -----------------------------------------------------------------------
             // Step 1a: determine the number of DOFs in 3D
             // -----------------------------------------------------------------------
+            Pn = p_order;
             num_dofs_1d = p_order + 1;
 
             num_dofs_in_elem = 1;  // Initialize to 1

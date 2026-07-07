@@ -164,7 +164,7 @@ int PointIndexFromIJK(int i, int j, int k, const int* order)
 ///
 /////////////////////////////////////////////////////////////////////////////
 void build_3d_box(
-    swage::Mesh& mesh,
+    swage::Mesh_t& mesh,
     MPICArrayKokkos<double>& node_coords,
     double origin[3],
     double length[3],
@@ -243,11 +243,11 @@ void build_3d_box(
     node_coords.update_host();
 
     // initialize elem variables
-    if (Pn_order == 0){
-        mesh.initialize_elems(num_elems, num_dim); 
+    if (Pn_order == 0){ // BUG: Pn_order=1 is needed for coding above to work correctly
+        mesh.initialize_elems(num_elems); 
         Pn_order = 1;
     } else {
-        mesh.initialize_elems_Pn(num_elems, num_dim, Pn_order);
+        mesh.initialize_elems_Pn(num_elems, Pn_order, 2*Pn_order);
     }
 
     // populate the point data structures
@@ -321,7 +321,7 @@ void build_3d_box(
 ///
 /////////////////////////////////////////////////////////////////////////////
 void build_2d_polar(
-    swage::Mesh& mesh,
+    swage::Mesh_t& mesh,
     MPICArrayKokkos<double>& node_coords,
     double& inner_radius,
     double& outer_radius,
@@ -398,7 +398,7 @@ void build_2d_polar(
     node_coords.update_device();
 
     // initialize elem variables
-    mesh.initialize_elems(num_elems, num_dim);
+    mesh.initialize_elems(num_elems);
 
     // populate the elem center data structures
     for (int j = 0; j < num_elems_j; j++) {
@@ -455,7 +455,7 @@ void build_2d_polar(
 /// \param comm MPI communicator
 ///
 /////////////////////////////////////////////////////////////////////////////
-void write_vtu(swage::Mesh& mesh,
+void write_vtu(swage::Mesh_t& mesh,
                node_t& node,
                GaussPoint_t& gauss_point,
                int rank,

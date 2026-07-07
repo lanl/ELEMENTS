@@ -50,9 +50,9 @@ namespace elements
  */
 
 inline void naive_partition_mesh(
-    swage::Mesh& initial_mesh,
+    swage::Mesh_t& initial_mesh,
     MPICArrayKokkos<double>& initial_node_coords,
-    swage::Mesh& naive_mesh,
+    swage::Mesh_t& naive_mesh,
     MPICArrayKokkos<double>& naive_node_coords,
     CArrayDual<int>& elems_in_elem_on_rank,
     CArrayDual<int>& num_elems_in_elem_per_rank,
@@ -490,9 +490,9 @@ inline void naive_partition_mesh(
     // ****************************************************************************************** 
     naive_mesh.initialize_nodes(num_nodes_on_rank);
     if (initial_mesh.Pn > 1){
-        naive_mesh.initialize_elems_Pn(num_elements_on_rank, num_dim, initial_mesh.Pn);
+        naive_mesh.initialize_elems_Pn(num_elements_on_rank, initial_mesh.Pn, 2*initial_mesh.Pn);
     } else {
-        naive_mesh.initialize_elems(num_elements_on_rank, num_dim);
+        naive_mesh.initialize_elems(num_elements_on_rank);
     }
     naive_mesh.local_to_global_node_mapping = DCArrayKokkos<size_t>(num_nodes_on_rank, "naive_mesh.local_to_global_node_mapping");
     naive_mesh.local_to_global_elem_mapping = DCArrayKokkos<size_t>(num_elements_on_rank, "naive_mesh.local_to_global_elem_mapping");
@@ -589,8 +589,8 @@ inline void naive_partition_mesh(
 /// @note Performance: O(n_local_elements * n_nodes_per_element) for local operations,
 ///                    plus O(n_global_elements) for global MPI collective operations
 inline void build_ghost(
-    swage::Mesh& input_mesh,
-    swage::Mesh& output_mesh,
+    swage::Mesh_t& input_mesh,
+    swage::Mesh_t& output_mesh,
     MPICArrayKokkos<double>& input_node_coords,
     MPICArrayKokkos<double>& output_node_coords,
     CommunicationPlan& element_communication_plan,
@@ -1126,10 +1126,10 @@ inline void build_ghost(
     // (Pn == 1) use initialize_elems to keep the element kind/layout consistent
     // with naive_mesh and intermediate_mesh.
     if (input_mesh.Pn > 1){
-        output_mesh.initialize_elems_Pn(total_extended_elems, input_mesh.num_dims, input_mesh.Pn);
+        output_mesh.initialize_elems_Pn(total_extended_elems, input_mesh.Pn, 2*input_mesh.Pn);
     }   
     else {
-        output_mesh.initialize_elems(total_extended_elems, input_mesh.num_dims);
+        output_mesh.initialize_elems(total_extended_elems);
     }
     output_mesh.local_to_global_node_mapping = DCArrayKokkos<size_t>(total_extended_nodes);
     output_mesh.local_to_global_elem_mapping = DCArrayKokkos<size_t>(total_extended_elems);
@@ -1734,8 +1734,8 @@ inline void build_ghost(
  */
 
 inline void partition_mesh(
-    swage::Mesh& initial_mesh,
-    swage::Mesh& final_mesh,
+    swage::Mesh_t& initial_mesh,
+    swage::Mesh_t& final_mesh,
     MPICArrayKokkos<double>& initial_node_coords,
     MPICArrayKokkos<double>& final_node_coords,
     CommunicationPlan& element_communication_plan,
@@ -1759,13 +1759,13 @@ inline void partition_mesh(
 
     // Create mesh, gauss points, and node data structures on each rank
     // This is the initial partitioned mesh
-    swage::Mesh naive_mesh;
+    swage::Mesh_t naive_mesh;
     naive_mesh.num_dims = initial_mesh.num_dims;
     naive_mesh.Pn = initial_mesh.Pn;
     MPICArrayKokkos<double> naive_node_coords;
 
     // Mesh partitioned by pt-scotch, not including ghost
-    swage::Mesh intermediate_mesh; 
+    swage::Mesh_t intermediate_mesh; 
     MPICArrayKokkos<double> intermediate_node_coords;
 
     // Helper arrays to hold element-element connectivity for naive partitioning that include what would be ghost, without having to build the full mesh
@@ -2287,9 +2287,9 @@ inline void partition_mesh(
     // arbitrary_tensor_element layout whose connectivity-build path writes
     // 8 nodes-per-zone unconditionally and would corrupt the heap in 2D.
     if (initial_mesh.Pn > 1){
-        intermediate_mesh.initialize_elems_Pn(num_new_elems, naive_mesh.num_dims, initial_mesh.Pn);
+        intermediate_mesh.initialize_elems_Pn(num_new_elems, initial_mesh.Pn, 2*initial_mesh.Pn);
     } else {
-        intermediate_mesh.initialize_elems(num_new_elems, naive_mesh.num_dims);
+        intermediate_mesh.initialize_elems(num_new_elems);
     }
     intermediate_mesh.local_to_global_node_mapping = DCArrayKokkos<size_t>(num_new_nodes, "intermediate_mesh.local_to_global_node_mapping");
     intermediate_mesh.local_to_global_elem_mapping = DCArrayKokkos<size_t>(num_new_elems, "intermediate_mesh.local_to_global_elem_mapping");

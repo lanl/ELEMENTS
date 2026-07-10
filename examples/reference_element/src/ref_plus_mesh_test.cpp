@@ -107,9 +107,11 @@ MATAR_INITIALIZE(argc, argv);
         size_t elem_gid = i + (j+k*num_elems_1D)*num_elems_1D;
 
         size_t node_lid = 0;
-        for(size_t ic=i; ic<=i+elem_order; ic++)
+        
+        
+        for(size_t kc=k; kc<=k+elem_order; kc++)
         for(size_t jc=j; jc<=j+elem_order; jc++)
-        for(size_t kc=k; kc<=k+elem_order; kc++){
+        for(size_t ic=i; ic<=i+elem_order; ic++){
             size_t node_gid = ic + (jc+kc*num_nodes_1D)*num_nodes_1D;
             Mesh.nodes_in_elem(elem_gid,node_lid) = node_gid;
             node_lid++;
@@ -139,6 +141,37 @@ MATAR_INITIALIZE(argc, argv);
 
     DCArrayKokkos <double> node_scalar(Mesh.num_nodes);
     DCArrayKokkos <double> gauss_scalar(Mesh.num_gauss_in_elem);
+
+
+    // ===========
+    RUN({
+
+        size_t elem_gid = 0; // testing first element
+        size_t qpt = 0;      // testing geometry at first quadrature point
+
+        const size_t num_nodes_in_elem = FERefElem.num_dofs_in_elem;
+
+        // get Jacobian
+        double j_1D[9];
+        ViewCArrayKokkos <double> jac(&j_1D[0], 3, 3); 
+
+        // make views on device, extacting only element and quadrature point values
+        ViewCArrayKokkos <size_t> nodes_in_an_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
+        ViewCArrayKokkos <double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt, 0, 0), num_nodes_in_elem, 3);
+
+        jacobian(jac, 
+                 node_coords, 
+                 nodes_in_an_elem,
+                 a_grad_basis);
+
+        printf("jacobian matrix = \n");
+        for(size_t i = 0; i < elem_dims; i++){  // looping over dimension
+            for(size_t j = 0; j < elem_dims; j++){ // looping over dimension
+               printf("%f, ", jac(i, j));
+           }
+           printf("\n");
+        } // end for 
+    });
 
 
     printf("\nReference plus mesh test finished.\n");

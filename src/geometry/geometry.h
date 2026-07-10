@@ -30,23 +30,25 @@ void jacobian(
     const ViewCArrayKokkos <size_t> &nodes_in_an_elem,
     const ViewCArrayKokkos <real_t> &a_grad_basis){
 
-    const size_t dim = a_grad_basis.dims(1);
+    const size_t dims = a_grad_basis.dims(1);
     const size_t num_dofs_in_elem = nodes_in_an_elem.size();
 
     // setting jacobian matrix to all zeros
-    for(size_t j = 0; j < dim; j++)  // looping over dimension
-    for(size_t k = 0; k < dim; k++){ // looping over dimension
-        jacobian(j, k) = 0.0;
+    for(size_t i = 0; i < dims; i++)  // looping over dimension
+    for(size_t j = 0; j < dims; j++){ // looping over dimension
+        jacobian(i, j) = 0.0;
     } // end for 
 
     // solving for the jacobian 
-    for(size_t j = 0; j < dim; j++) // looping over dimension (partial)
-    for(size_t k = 0; k < dim; k++) // looping over dimension (node position)
+    for(size_t i = 0; i < dims; i++) // looping over dimension (partial)
+    for(size_t j = 0; j < dims; j++) // looping over dimension (node position)
     for(size_t node_lid = 0; node_lid < num_dofs_in_elem; node_lid++){ 
         const size_t node_gid = nodes_in_an_elem(node_lid);  
-        jacobian(j, k) += a_grad_basis(node_lid, j)*node_coords(node_gid, k);           
-    } // end for 
-} // end of jacobian_2d function
+        jacobian(i, j) += node_coords(node_gid, i)*a_grad_basis(node_lid, j);           
+    } // end for  
+
+
+} // end of jacobian function
 
 
 

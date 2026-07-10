@@ -438,7 +438,7 @@ struct Mesh_t
 
         // --- Derived sizes ---
         num_gauss_in_elem = (size_t)std::pow(num_gauss_1D, num_dims); // Note: 2*Pn with Legendre is needed for solids mechanics
-        num_nodes_in_elem = (size_t)std::pow(Pn + 1, num_dims);;
+        num_nodes_in_elem = (size_t)std::pow(Pn + 1, num_dims);
         num_nodes_in_zone = (size_t)std::pow(2, num_dims);   // (4, or 8, always)
         num_zones_in_elem = (size_t)std::pow(Pn, num_dims);  // Pn^dim
         num_surfs_in_elem = num_dims == 2 ? 4 : 6;           // 4 or 6 (always)

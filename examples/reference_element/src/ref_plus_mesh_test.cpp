@@ -320,13 +320,164 @@ void test_skewed_hexahedron() {
     for(size_t i = 0; i < 3; i++)  // looping over dimension
     for(size_t j = 0; j < 3; j++){ // looping over dimension
         if(fabs(jac.host(i, j)-J_approx[i][j])>1.e-10){
-            Kokkos::abort("ERROR: Jacobian calculation in affine test failed\n");
+            Kokkos::abort("ERROR: Jacobian calculation in skewed hex test failed\n");
         }
     } // end for 
 
     printf("\nSkewed hex test: Passes\n\n");
 
 } // end function
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// Test 3: Rotated and Scaled Cube
+/// Apply known rotation matrix + scaling
+///////////////////////////////////////////////////////////////////////////////
+void test_rotated_scaled_cube() {
+    printf("\n=== TEST: Rotated and Scaled Cube ===\n");
+    
+    // Rotation angle
+    const real_t theta = M_PI / 6.0;  // 30 degrees
+    const real_t phi   = M_PI / 4.0;  // 45 degrees
+    
+    // Scale factors
+    const real_t sx = 0.5, sy = 0.8, sz = 1.2;
+    
+    // Combined transformation matrix: R_z(phi) * R_y(theta) * Scale
+    real_t cos_t = cos(theta), sin_t = sin(theta);
+    real_t cos_p = cos(phi),   sin_p = sin(phi);
+    
+    real_t T[3][3] = {
+        {sx * cos_t * cos_p,  sx * (-sin_p),  sx * sin_t * cos_p},
+        {sy * cos_t * sin_p,  sy * cos_p,     sy * sin_t * sin_p},
+        {sz * (-sin_t),       sz * 0.0,       sz * cos_t}
+    };
+    
+    printf("Transformation matrix (Rotation + Scale):\n");
+    for(int i = 0; i < 3; i++) {
+        printf("  ");
+        for(int j = 0; j < 3; j++) {
+            printf("%10.6f ", T[i][j]);
+        }
+        printf("\n");
+    }
+    
+    // Reference cube vertices
+    real_t ref_verts[8][3] = {
+        {-1, -1, -1}, {1, -1, -1}, {1, 1, -1}, {-1, 1, -1},
+        {-1, -1,  1}, {1, -1,  1}, {1, 1,  1}, {-1, 1,  1}
+    };
+    
+    // Transform vertices
+    real_t node_coords[8][3];
+    for(int n = 0; n < 8; n++) {
+        for(int i = 0; i < 3; i++) {
+            node_coords[n][i] = 0.0;
+            for(int j = 0; j < 3; j++) {
+                node_coords[n][i] += T[i][j] * ref_verts[n][j];
+            }
+        }
+    }
+    
+    printf("\nTransformed node coordinates:\n");
+    for(int n = 0; n < 8; n++) {
+        printf("  Node %d: [%8.4f, %8.4f, %8.4f]\n", 
+               n, node_coords[n][0], node_coords[n][1], node_coords[n][2]);
+    }
+    
+    // Expected Jacobian = T (constant for affine transformation)
+    printf("\nExpected Jacobian (equals T):\n");
+    for(int i = 0; i < 3; i++) {
+        printf("  ");
+        for(int j = 0; j < 3; j++) {
+            printf("%10.6f ", T[i][j]);
+        }
+        printf("\n");
+    }
+    
+    // Expected determinant
+    real_t expected_det = sx * sy * sz * 
+                         (cos_t * cos_t * cos_p * cos_p + 
+                          cos_t * cos_t * sin_p * sin_p + 
+                          sin_t * sin_t);
+    
+    // Simplified: det(R) = 1, det(Scale) = sx*sy*sz
+    expected_det = sx * sy * sz;
+    
+    printf("\nExpected determinant: %12.8f\n", expected_det);
+    printf("(Should equal sx*sy*sz = %f * %f * %f = 0.48)\n", sx, sy, sz);
+
+
+    // =======================
+    // using ELEMENTS
+    // =======================
+    DCArrayKokkos <double> node_coords_dual(8,3);
+    DCArrayKokkos <double> node_in_elem_dual(8);
+    
+    for(size_t n = 0; n < 8; n++) {
+        for(size_t i = 0; i < 3; i++) {
+            // get i,j,k node lid for this node
+            size_t node_lid = convert_ensight_to_ijk[n];
+            node_coords_dual.host(node_lid,i) = node_coords[n][i];
+            node_in_elem_dual.host(node_lid) = node_lid;
+        }
+    }
+    node_coords_dual.update_device();
+    node_in_elem_dual.update_device();
+
+    Quadrature_t Quad;
+    ReferenceElement_t RefElem; 
+
+    // create quadrature, it is a single point at this time
+    Quad.initialize_quadrature(reference_space::GaussLegendre,
+                               1,
+                               3);
+
+    // create ref element
+    RefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                  reference_space::LagrangeLobatto,
+                                  Quad,
+                                  1);   
+
+    // Call jacobian function and then compare results
+    DCArrayKokkos <double> jac(3, 3);
+    RUN({
+        // exact the basis and grad basis for this quadrature point
+        //ViewCArrayKokkos a_basis(&RefElem.qpt_basis(0,0),RefElem.num_dofs_in_elem);
+        ViewCArrayKokkos a_grad_basis(&RefElem.qpt_grad_basis(0,0,0),RefElem.num_dofs_in_elem,3);
+
+        jacobian(jac, 
+                 node_coords_dual, 
+                 node_in_elem_dual,
+                 a_grad_basis);
+
+        printf("\n");
+        printf("calculated jacobian matrix = \n");
+        for(size_t i = 0; i < 3; i++){  // looping over dimension
+            for(size_t j = 0; j < 3; j++){ // looping over dimension
+                printf("%10.6f, ", jac(i, j));
+            }
+            printf("\n");
+        } // end for 
+
+        double det = det_3x3(jac);
+        printf("Calculated determinant: %12.8f\n", det);
+    }); // end RUN on device
+    jac.update_host();
+
+    for(size_t i = 0; i < 3; i++)  // looping over dimension
+    for(size_t j = 0; j < 3; j++){ // looping over dimension
+        if(fabs(jac.host(i, j)-T[i][j])>1.e-10){
+            Kokkos::abort("ERROR: Jacobian calculation in rotated and scaled test failed\n");
+        }
+    } // end for 
+
+    printf("\nRotated and scaled hex test: Passes\n\n");
+
+} // end function
+
+
 
 
 int main(int argc, char** argv) {
@@ -464,8 +615,8 @@ MATAR_INITIALIZE(argc, argv);
 
     // running unit tests of Jacobian
     test_affine_transformation(); 
-
     test_skewed_hexahedron();
+    test_rotated_scaled_cube();
 
 
 } // end MATAR scope

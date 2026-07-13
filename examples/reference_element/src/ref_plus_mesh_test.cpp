@@ -62,7 +62,7 @@ const size_t convert_ensight_to_ijk[8] =
 /// Maps reference cube [-1,1]³ to a skewed, rotated, stretched parallelepiped
 ///////////////////////////////////////////////////////////////////////////////
 void test_affine_transformation() {
-    printf("\n=== TEST 1: Affine Transformation ===\n");
+    printf("\n=== TEST: Affine Transformation ===\n");
     
     // Reference element: unit cube [-1,1]^3
     // Physical element: defined by affine map x = A*xi + b
@@ -144,7 +144,7 @@ void test_affine_transformation() {
     // Now compute Jacobian at element center (xi=0, eta=0, zeta=0)
     // and verify it matches A
 
-    // [Call jacobian function here and compare]
+    // Call jacobian function and then compare results
     DCArrayKokkos <double> jac(3, 3);
     RUN({
         // exact the basis and grad basis for this quadrature point
@@ -167,15 +167,14 @@ void test_affine_transformation() {
 
         double det = det_3x3(jac);
         printf("Calculated determinant: %12.8f\n", det);
-    }); // end RUN
+    }); // end RUN on device
     jac.update_host();
 
-    for(size_t i = 0; i < 3; i++){  // looping over dimension
+    for(size_t i = 0; i < 3; i++)  // looping over dimension
     for(size_t j = 0; j < 3; j++){ // looping over dimension
         if(fabs(jac.host(i, j)-A[i][j])>1e-12){
-            Kokkos::abort("Jacobian calculation failed \n");
+            Kokkos::abort("ERROR: Jacobian calculation in affine test failed\n");
         }
-    }
     } // end for 
 
     printf("\nTest criteria:\n");
@@ -183,7 +182,150 @@ void test_affine_transformation() {
     printf("  2. det(J) should equal %12.8f\n", expected_det);
     printf("  3. J should be same at ALL quadrature points (affine property)\n");
 
-    printf("\nTEST 1: Passes\n\n");
+    printf("\nAffine test: Passes\n\n");
+} // end function
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// Test 2: Heavily Skewed Hexahedron
+/// Creates a non-trivial, fully-populated Jacobian
+///////////////////////////////////////////////////////////////////////////////
+void test_skewed_hexahedron() {
+    printf("\n=== TEST: Heavily Skewed Hexahedron ===\n");
+    
+    // Define a highly skewed but valid element
+    real_t node_coords[8][3] = {
+        // Bottom face (z=0 plane, but skewed)
+        {0.0, 0.0, 0.0},     // node 0
+        {1.0, 0.2, 0.1},     // node 1
+        {1.1, 1.0, 0.15},    // node 2
+        {0.1, 0.9, 0.05},    // node 3
+        // Top face (z~1 plane, but twisted and stretched)
+        {0.1, 0.1, 0.9},     // node 4
+        {1.2, 0.1, 1.0},     // node 5
+        {1.3, 1.1, 1.1},     // node 6
+        {0.0, 1.0, 0.95}     // node 7
+    };
+    
+    printf("Node coordinates (Ensight FE element ordering):\n");
+    for(int n = 0; n < 8; n++) {
+        printf("  Node %d: [%8.4f, %8.4f, %8.4f]\n", 
+               n, node_coords[n][0], node_coords[n][1], node_coords[n][2]);
+    }
+    
+    // Compute Jacobian at center
+    printf("\nJacobian at element center (xi=eta=zeta=0):\n");
+    printf("Expected properties:\n");
+    printf("  - All 9 entries should be non-zero\n");
+    printf("  - Determinant should be positive\n");
+    printf("  - Off-diagonal terms significant (non-trivial mapping)\n");
+    
+    // Analytical approximation (for verification):
+    // At center, with trilinear shape functions:
+    // J ~ (1/8) * sum of differences in each direction
+    
+    real_t J_approx[3][3];
+    for(int i = 0; i < 3; i++) {
+        J_approx[i][0] = 0.125 * ((node_coords[1][i] + node_coords[2][i] + 
+                                   node_coords[5][i] + node_coords[6][i]) -
+                                  (node_coords[0][i] + node_coords[3][i] + 
+                                   node_coords[4][i] + node_coords[7][i]));
+        
+        J_approx[i][1] = 0.125 * ((node_coords[2][i] + node_coords[3][i] + 
+                                   node_coords[6][i] + node_coords[7][i]) -
+                                  (node_coords[0][i] + node_coords[1][i] + 
+                                   node_coords[4][i] + node_coords[5][i]));
+        
+        J_approx[i][2] = 0.125 * ((node_coords[4][i] + node_coords[5][i] + 
+                                   node_coords[6][i] + node_coords[7][i]) -
+                                  (node_coords[0][i] + node_coords[1][i] + 
+                                   node_coords[2][i] + node_coords[3][i]));
+    }
+    
+    printf("\nApproximate Jacobian (analytical):\n");
+    for(int i = 0; i < 3; i++) {
+        printf("  ");
+        for(int j = 0; j < 3; j++) {
+            printf("%10.6f ", J_approx[i][j]);
+        }
+        printf("\n");
+    }
+    
+    real_t det_approx = J_approx[0][0]*(J_approx[1][1]*J_approx[2][2] - 
+                                        J_approx[1][2]*J_approx[2][1])
+                      - J_approx[0][1]*(J_approx[1][0]*J_approx[2][2] - 
+                                        J_approx[1][2]*J_approx[2][0])
+                      + J_approx[0][2]*(J_approx[1][0]*J_approx[2][1] - 
+                                        J_approx[1][1]*J_approx[2][0]);
+    
+    printf("Approximate determinant: %12.8f\n", det_approx);
+
+    // =======================
+    // using ELEMENTS
+    // =======================
+    DCArrayKokkos <double> node_coords_dual(8,3);
+    DCArrayKokkos <double> node_in_elem_dual(8);
+    
+    for(size_t n = 0; n < 8; n++) {
+        for(size_t i = 0; i < 3; i++) {
+            // get i,j,k node lid for this node
+            size_t node_lid = convert_ensight_to_ijk[n];
+            node_coords_dual.host(node_lid,i) = node_coords[n][i];
+            node_in_elem_dual.host(node_lid) = node_lid;
+        }
+    }
+    node_coords_dual.update_device();
+    node_in_elem_dual.update_device();
+
+    Quadrature_t Quad;
+    ReferenceElement_t RefElem; 
+
+    // create quadrature, it is a single point at this time
+    Quad.initialize_quadrature(reference_space::GaussLegendre,
+                               1,
+                               3);
+
+    // create ref element
+    RefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                  reference_space::LagrangeLobatto,
+                                  Quad,
+                                  1);   
+
+    // Call jacobian function and then compare results
+    DCArrayKokkos <double> jac(3, 3);
+    RUN({
+        // exact the basis and grad basis for this quadrature point
+        //ViewCArrayKokkos a_basis(&RefElem.qpt_basis(0,0),RefElem.num_dofs_in_elem);
+        ViewCArrayKokkos a_grad_basis(&RefElem.qpt_grad_basis(0,0,0),RefElem.num_dofs_in_elem,3);
+
+        jacobian(jac, 
+                 node_coords_dual, 
+                 node_in_elem_dual,
+                 a_grad_basis);
+
+        printf("\n");
+        printf("calculated jacobian matrix = \n");
+        for(size_t i = 0; i < 3; i++){  // looping over dimension
+            for(size_t j = 0; j < 3; j++){ // looping over dimension
+                printf("%10.6f, ", jac(i, j));
+            }
+            printf("\n");
+        } // end for 
+
+        double det = det_3x3(jac);
+        printf("Calculated determinant: %12.8f\n", det);
+    }); // end RUN on device
+    jac.update_host();
+
+    for(size_t i = 0; i < 3; i++)  // looping over dimension
+    for(size_t j = 0; j < 3; j++){ // looping over dimension
+        if(fabs(jac.host(i, j)-J_approx[i][j])>1.e-10){
+            Kokkos::abort("ERROR: Jacobian calculation in affine test failed\n");
+        }
+    } // end for 
+
+    printf("\nSkewed hex test: Passes\n\n");
+
 } // end function
 
 
@@ -322,6 +464,8 @@ MATAR_INITIALIZE(argc, argv);
 
     // running unit tests of Jacobian
     test_affine_transformation(); 
+
+    test_skewed_hexahedron();
 
 
 } // end MATAR scope

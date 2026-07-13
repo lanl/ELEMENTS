@@ -37,11 +37,155 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // This pulls in kokkos, matar, mesh, ref_elem stuff, and PT-Scotch
 #include "ELEMENTS.h"
-
+#include "cramers_rule.hpp" // det and solvers
 
 using namespace mtr;
 using namespace swage;    // unstructured mesh and point cloud
 using namespace elements; // reference element space
+
+
+
+
+// Convert from ensight FE elem to IJK elem
+const size_t convert_ensight_to_ijk[8] =
+        {0,
+         1,
+         3,
+         2,
+         4,
+         5,
+         7,
+         6};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Test 1: 3D Affine Transformation
+/// Maps reference cube [-1,1]³ to a skewed, rotated, stretched parallelepiped
+///////////////////////////////////////////////////////////////////////////////
+void test_affine_transformation() {
+    printf("\n=== TEST 1: Affine Transformation ===\n");
+    
+    // Reference element: unit cube [-1,1]^3
+    // Physical element: defined by affine map x = A*xi + b
+    // where A is the transformation matrix
+
+    Quadrature_t Quad;
+    ReferenceElement_t RefElem; 
+
+    // create quadrature, it is a single point at this time
+    Quad.initialize_quadrature(reference_space::GaussLegendre,
+                               1,
+                               3);
+
+    // create ref element
+    RefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                  reference_space::LagrangeLobatto,
+                                  Quad,
+                                  1);   
+    
+    // Transformation matrix (rotation + stretch + shear)
+    real_t A[3][3] = {
+        { 0.5,  0.3,  0.2},   // dx/dxi, dx/deta, dx/dzeta
+        { 0.2,  0.6,  0.1},   // dy/dxi, dy/deta, dy/dzeta
+        { 0.1,  0.2,  0.4}    // dz/dxi, dz/deta, dz/dzeta
+    };
+    
+    real_t b[3] = {1.0, 2.0, 3.0};  // Translation
+    
+    // Generate 8 corner nodes of transformed hexahedron
+    real_t node_coords[8][3];
+    real_t ref_corners[8][3] = {
+        {-1, -1, -1}, {1, -1, -1}, {1, 1, -1}, {-1, 1, -1},  // bottom
+        {-1, -1,  1}, {1, -1,  1}, {1, 1,  1}, {-1, 1,  1}   // top
+    };
+
+    DCArrayKokkos <double> node_coords_dual(8,3);
+    DCArrayKokkos <double> node_in_elem_dual(8);
+    
+    for(size_t n = 0; n < 8; n++) {
+        for(size_t i = 0; i < 3; i++) {
+            node_coords[n][i] = b[i];
+            for(size_t j = 0; j < 3; j++) {
+                node_coords[n][i] += A[i][j] * ref_corners[n][j];
+            }
+
+            // get i,j,k node lid for this node
+            size_t node_lid = convert_ensight_to_ijk[n];
+            node_coords_dual.host(node_lid,i) = node_coords[n][i];
+            node_in_elem_dual.host(node_lid) = node_lid;
+        }
+    }
+    node_coords_dual.update_device();
+    node_in_elem_dual.update_device();
+
+    
+    printf("Node coordinates (Ensight FE element ordering):\n");
+    for(size_t n = 0; n < 8; n++) {
+        printf("  Node %zu: [%8.4f, %8.4f, %8.4f]\n", 
+               n, node_coords[n][0], node_coords[n][1], node_coords[n][2]);
+    }
+    
+    // For an AFFINE transformation, Jacobian is CONSTANT everywhere
+    // and equals the transformation matrix A
+    printf("\nExpected Jacobian (constant, equals A):\n");
+    for(int i = 0; i < 3; i++) {
+        printf("  ");
+        for(int j = 0; j < 3; j++) {
+            printf("%10.6f ", A[i][j]);
+        }
+        printf("\n");
+    }
+    
+    real_t expected_det = A[0][0]*(A[1][1]*A[2][2] - A[1][2]*A[2][1])
+                        - A[0][1]*(A[1][0]*A[2][2] - A[1][2]*A[2][0])
+                        + A[0][2]*(A[1][0]*A[2][1] - A[1][1]*A[2][0]);
+    
+    printf("Expected determinant: %12.8f\n", expected_det);
+    
+    // Now compute Jacobian at element center (xi=0, eta=0, zeta=0)
+    // and verify it matches A
+
+    // [Call jacobian function here and compare]
+    DCArrayKokkos <double> jac(3, 3);
+    RUN({
+        // exact the basis and grad basis for this quadrature point
+        //ViewCArrayKokkos a_basis(&RefElem.qpt_basis(0,0),RefElem.num_dofs_in_elem);
+        ViewCArrayKokkos a_grad_basis(&RefElem.qpt_grad_basis(0,0,0),RefElem.num_dofs_in_elem,3);
+
+        jacobian(jac, 
+                 node_coords_dual, 
+                 node_in_elem_dual,
+                 a_grad_basis);
+
+        printf("\n");
+        printf("calculated jacobian matrix = \n");
+        for(size_t i = 0; i < 3; i++){  // looping over dimension
+            for(size_t j = 0; j < 3; j++){ // looping over dimension
+                printf("%10.6f, ", jac(i, j));
+            }
+            printf("\n");
+        } // end for 
+
+        double det = det_3x3(jac);
+        printf("Calculated determinant: %12.8f\n", det);
+    }); // end RUN
+    jac.update_host();
+
+    for(size_t i = 0; i < 3; i++){  // looping over dimension
+    for(size_t j = 0; j < 3; j++){ // looping over dimension
+        if(fabs(jac.host(i, j)-A[i][j])>1e-12){
+            Kokkos::abort("Jacobian calculation failed \n");
+        }
+    }
+    } // end for 
+
+    printf("\nTest criteria:\n");
+    printf("  1. J should equal A within tolerance (~1e-12)\n");
+    printf("  2. det(J) should equal %12.8f\n", expected_det);
+    printf("  3. J should be same at ALL quadrature points (affine property)\n");
+
+    printf("\nTEST 1: Passes\n\n");
+} // end function
+
 
 int main(int argc, char** argv) {
 
@@ -175,6 +319,9 @@ MATAR_INITIALIZE(argc, argv);
 
 
     printf("\nReference plus mesh test finished.\n");
+
+    // running unit tests of Jacobian
+    test_affine_transformation(); 
 
 
 } // end MATAR scope

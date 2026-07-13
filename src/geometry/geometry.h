@@ -23,12 +23,13 @@ using namespace elements;
 /// \param a_grad_basis The gradient of the basis at a single point, Grad[DOFs,dims]
 ///
 /////////////////////////////////////////////////////////////////////////////
+template <typename T1, typename T2, typename T3, typename T4>
 KOKKOS_INLINE_FUNCTION
 void jacobian(
-    const ViewCArrayKokkos <real_t> &jacobian, 
-    const DCArrayKokkos    <real_t> &node_coords, 
-    const ViewCArrayKokkos <size_t> &nodes_in_an_elem,
-    const ViewCArrayKokkos <real_t> &a_grad_basis){
+    const T1 &jacobian,         // e.g., ViewCArrayKokkos <double>
+    const T2 &node_coords,      // e.g., DCArrayKokkos    <double>
+    const T3 &nodes_in_an_elem, // e.g., ViewCArrayKokkos <size_t>
+    const T4 &a_grad_basis){    // e.g., ViewCArrayKokkos <double>
 
     const size_t dims = a_grad_basis.dims(1);
     const size_t num_dofs_in_elem = nodes_in_an_elem.size();
@@ -39,7 +40,7 @@ void jacobian(
         jacobian(i, j) = 0.0;
     } // end for 
 
-    // solving for the jacobian 
+    // Calculate Jacobian: J[i,j] = partial x_i/partial \xi_j
     for(size_t i = 0; i < dims; i++) // looping over dimension (partial)
     for(size_t j = 0; j < dims; j++) // looping over dimension (node position)
     for(size_t node_lid = 0; node_lid < num_dofs_in_elem; node_lid++){ 

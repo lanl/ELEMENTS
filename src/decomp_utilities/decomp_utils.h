@@ -1749,6 +1749,7 @@ inline void partition_mesh(
     int num_dim = initial_mesh.num_dims;
     // Ensure all ranks have the same dimension metadata as rank 0
     MPI_Bcast(&num_dim, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    initial_mesh.num_dims = num_dim;
 
     // Ensure all ranks agree on polynomial order so element node counts stay consistent
     unsigned long long Pn_order = static_cast<unsigned long long>(initial_mesh.Pn);

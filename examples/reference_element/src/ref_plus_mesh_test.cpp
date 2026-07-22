@@ -674,6 +674,8 @@ void test_manufactured_solution() {
         
         printf("\n  Max Error: %12.2e\n", max_error);
         printf("  Result: %s\n", passed ? " PASSED" : "X FAILED");
+
+        if(passed==false)Kokkos::abort("test failed \n");
         
         if(!passed) all_passed = false;
         
@@ -684,15 +686,31 @@ void test_manufactured_solution() {
     // Now testing a surface element
     // ===============================
 
-    real_t surf_test_points[6][3] = {
-        // side 0, xi = -1
+    real_t surf_test_points[18][3] = {
+        // side 0 (xi=-1)
         {-1, -qpt, -qpt},  // qpt_id = 0
         {-1, 0.0, 0.0},    // qpt_id = 4 
         {-1, qpt, qpt},    // qpt_id = 8
-        // side 1, xi = 1
-        {1, -qpt, -qpt},  // qpt_id = 0
-        {1, 0.0, 0.0},    // qpt_id = 4 
-        {1, qpt, qpt},    // qpt_id = 8
+        // side 1 (xi=1)
+        {1, -qpt, -qpt},   // qpt_id = 0
+        {1, 0.0, 0.0},     // qpt_id = 4 
+        {1, qpt, qpt},     // qpt_id = 8
+        // side 2 (eta=-1)
+        {-qpt, -1, -qpt},  // qpt_id = 0
+        {0.0, -1, 0.0},    // qpt_id = 4 
+        {qpt, -1, qpt},    // qpt_id = 8
+        // side 3 (eta=1)
+        {-qpt, 1, -qpt},   // qpt_id = 0
+        {0.0, 1, 0.0},     // qpt_id = 4 
+        {qpt, 1, qpt},     // qpt_id = 8
+        //side 4 (mu=-1)
+        {-qpt, -qpt, -1},  // qpt_id = 0
+        {0.0, 0.0, -1},    // qpt_id = 4 
+        {qpt, qpt, -1},    // qpt_id = 8
+        //side 5 (mu=1)
+        {-qpt, -qpt, 1},   // qpt_id = 0
+        {0.0, 0.0, 1},     // qpt_id = 4 
+        {qpt, qpt, 1}      // qpt_id = 8
     };
     
     printf("\nTesting Jacobian at quadrature points:\n");
@@ -702,8 +720,9 @@ void test_manufactured_solution() {
     qpt_id = 0;
     all_passed = true;
     
-    for(int side = 0; side<2; side++){
+    for(int side = 0; side<6; side++){
         printf("\n\n  side = %d\n", side);
+
         for(int lid = 0; lid < 3; lid++) {
             int p = lid + side*3;
             real_t xi   = surf_test_points[p][0];
@@ -711,12 +730,13 @@ void test_manufactured_solution() {
             real_t zeta = surf_test_points[p][2];
             
             printf("\n  Point %d: (xi=%7.4f, eta=%7.4f, zeta=%7.4f)\n", p+1, xi, eta, zeta);
-            printf("  QPt # %zu: (xi=%7.4f, eta=%7.4f, zeta=%7.4f)\n", 
-                    qpt_id, 
-                    SurfQuad.qpt_positions(side,qpt_id,0),
-                    SurfQuad.qpt_positions(side,qpt_id,1),
-                    SurfQuad.qpt_positions(side,qpt_id,2)
-                  );
+            // CPU prints only after here for verifying tests:
+            //printf("  QPt # %zu: (xi=%7.4f, eta=%7.4f, zeta=%7.4f)\n", 
+            //        qpt_id, 
+            //        SurfQuad.qpt_positions(side,qpt_id,0),
+            //        SurfQuad.qpt_positions(side,qpt_id,1),
+            //        SurfQuad.qpt_positions(side,qpt_id,2)
+            //      );
             printf("  %s\n", std::string(70, '-').c_str());
             
             // Analytical
@@ -790,6 +810,8 @@ void test_manufactured_solution() {
             printf("\n  Max Error: %12.2e\n", max_error);
             printf("  Result: %s\n", passed ? " PASSED" : "X FAILED");
             
+            if(passed==false)Kokkos::abort("test failed \n");
+
             if(!passed) all_passed = false;
             
             qpt_id += 4;

@@ -478,6 +478,327 @@ void test_rotated_scaled_cube() {
 } // end function
 
 
+void test_manufactured_solution() {
+    printf("\n=== TEST: Method of Manufactured Solutions ===\n");
+    
+    // Define physical node positions in ENSIGHT order (your input)
+    real_t node_coords_ensight[8][3] = {
+        {0.0,  0.0,  0.0},      // node 0: ref(-1,-1,-1)
+        {1.0,  0.1,  0.05},     // node 1: ref( 1,-1,-1)
+        {0.9,  1.0,  0.1},      // node 2: ref( 1, 1,-1)
+        {0.05, 0.95, 0.05},     // node 3: ref(-1, 1,-1)
+        {0.1,  0.05, 1.0},      // node 4: ref(-1,-1, 1)
+        {1.05, 0.15, 0.95},     // node 5: ref( 1,-1, 1)
+        {1.0,  1.05, 1.05},     // node 6: ref( 1, 1, 1)
+        {0.1,  1.0,  0.95}      // node 7: ref(-1, 1, 1)
+    };
+    
+    // Convert to IJK ordering for BOTH analytical and numerical
+    real_t node_coords_ijk[8][3];
+    for(size_t n = 0; n < 8; n++) {
+        size_t ijk_lid = convert_ensight_to_ijk[n];
+        for(size_t i = 0; i < 3; i++) {
+            node_coords_ijk[ijk_lid][i] = node_coords_ensight[n][i];
+        }
+    }
+    
+    printf("Physical node coordinates (IJK ordering):\n");
+    for(int n = 0; n < 8; n++) {
+        printf("  Node %d: [%9.4f, %9.4f, %9.4f]\n", 
+               n, node_coords_ijk[n][0], node_coords_ijk[n][1], node_coords_ijk[n][2]);
+    }
+    
+    // Compute basis function gradients in IJK ordering
+    auto compute_hex8_basis_gradients_ijk = [](real_t xi, real_t eta, real_t zeta, 
+                                               real_t grad_basis[8][3]) {
+        // IJK reference coordinates
+        real_t ref_coords[8][3] = {
+            {-1, -1, -1},  // 0: i=0, j=0, k=0
+            { 1, -1, -1},  // 1: i=1, j=0, k=0
+            {-1,  1, -1},  // 2: i=0, j=1, k=0
+            { 1,  1, -1},  // 3: i=1, j=1, k=0
+            {-1, -1,  1},  // 4: i=0, j=0, k=1
+            { 1, -1,  1},  // 5: i=1, j=0, k=1
+            {-1,  1,  1},  // 6: i=0, j=1, k=1
+            { 1,  1,  1}   // 7: i=1, j=1, k=1
+        };
+        
+        for(int i = 0; i < 8; i++) {
+            real_t xi_i   = ref_coords[i][0];
+            real_t eta_i  = ref_coords[i][1];
+            real_t zeta_i = ref_coords[i][2];
+            
+            grad_basis[i][0] = 0.125 * xi_i   * (1.0 + eta_i*eta)  * (1.0 + zeta_i*zeta);
+            grad_basis[i][1] = 0.125 * (1.0 + xi_i*xi) * eta_i  * (1.0 + zeta_i*zeta);
+            grad_basis[i][2] = 0.125 * (1.0 + xi_i*xi) * (1.0 + eta_i*eta)  * zeta_i;
+        }
+    };
+    
+    // Compute ANALYTICAL Jacobian using IJK ordering
+    auto compute_analytical_jacobian = [&](real_t xi, real_t eta, real_t zeta, 
+                                           real_t J[3][3]) {
+        real_t grad_basis[8][3];
+        compute_hex8_basis_gradients_ijk(xi, eta, zeta, grad_basis);
+        
+        // J_ij = Sum_k x_k^i * (partial N_k/partial xi_j)
+        for(int i = 0; i < 3; i++) {
+            for(int j = 0; j < 3; j++) {
+                J[i][j] = 0.0;
+                for(int k = 0; k < 8; k++) {
+                    J[i][j] += node_coords_ijk[k][i] * grad_basis[k][j];
+                }
+            }
+        }
+    };
+    
+    // Setup Kokkos arrays with IJK ordering
+    DCArrayKokkos<double> node_coords_dual(8,3);
+    DCArrayKokkos<double> node_in_elem_dual(8);
+    DCArrayKokkos<double> jac(3, 3);
+
+    for(size_t n = 0; n < 8; n++) {
+        for(size_t i = 0; i < 3; i++) {
+            node_coords_dual.host(n,i) = node_coords_ijk[n][i];  // Already in IJK order!
+            node_in_elem_dual.host(n) = n;
+        }
+    }
+    node_coords_dual.update_device();
+    node_in_elem_dual.update_device();
+
+    // ---- reference volume ----
+    Quadrature_t Quad;
+    ReferenceElement_t RefElem; 
+
+    Quad.initialize_quadrature(reference_space::GaussLegendre, 3, 3);
+    RefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                                reference_space::LagrangeLobatto,
+                                Quad,
+                                1);
+
+    // ---- reference surface ----
+    SurfaceQuadrature_t SurfQuad;
+    ReferenceSurface_t RefSurf;
+
+    SurfQuad.initialize_quadrature(reference_space::GaussLegendre, 3, 3);
+    RefSurf.initialize_ref_surf(SurfQuad,
+                                RefElem);
+
+    // Test points
+    const double qpt = 0.774596669241483377035853079956;  // sqrt(3/5)
+    real_t test_points[3][3] = {
+        {-qpt, -qpt, -qpt},  // qpt_id = 0
+        {0.0, 0.0, 0.0},     // qpt_id = 13 
+        {qpt, qpt, qpt},     // qpt_id = 26
+    };
+    
+    printf("\nTesting Jacobian at quadrature points:\n");
+    printf("%s\n", std::string(80, '=').c_str());
+    
+    size_t qpt_id = 0;
+    bool all_passed = true;
+    
+    for(int p = 0; p < 3; p++) {
+        real_t xi   = test_points[p][0];
+        real_t eta  = test_points[p][1];
+        real_t zeta = test_points[p][2];
+        
+        printf("\n  Point %d: (xi=%7.4f, eta=%7.4f, zeta=%7.4f)\n", p+1, xi, eta, zeta);
+        printf("  %s\n", std::string(70, '-').c_str());
+        
+        // Analytical
+        real_t J_analytical[3][3];
+        compute_analytical_jacobian(xi, eta, zeta, J_analytical);
+        
+        printf("  Analytical Jacobian:\n");
+        for(int i = 0; i < 3; i++) {
+            printf("    ");
+            for(int j = 0; j < 3; j++) {
+                printf("%10.6f ", J_analytical[i][j]);
+            }
+            printf("\n");
+        }
+
+        // Numerical
+        RUN({
+            ViewCArrayKokkos<double> a_grad_basis(&RefElem.qpt_grad_basis(qpt_id,0,0),
+                                                   RefElem.num_dofs_in_elem, 3);
+
+            jacobian(jac, 
+                    node_coords_dual, 
+                    node_in_elem_dual,
+                    a_grad_basis);
+        });
+        Kokkos::fence();
+        jac.update_host();
+
+        printf("\n  Numerical Jacobian:\n");
+        for(size_t i = 0; i < 3; i++){
+            printf("    ");
+            for(size_t j = 0; j < 3; j++){ 
+                printf("%10.6f ", jac.host(i, j));
+            }
+            printf("\n");
+        }
+        
+        // Compare
+        double max_error = 0.0;
+        printf("\n  Absolute Error:\n");
+        for(int i = 0; i < 3; i++) {
+            printf("    ");
+            for(int j = 0; j < 3; j++) {
+                double error = fabs(J_analytical[i][j] - jac.host(i,j));
+                max_error = fmax(max_error, error);
+                printf("%10.2e ", error);
+            }
+            printf("\n");
+        }
+        
+        // Determinant
+        auto det_analytical = J_analytical[0][0]*(J_analytical[1][1]*J_analytical[2][2] - 
+                                                   J_analytical[1][2]*J_analytical[2][1])
+                            - J_analytical[0][1]*(J_analytical[1][0]*J_analytical[2][2] - 
+                                                   J_analytical[1][2]*J_analytical[2][0])
+                            + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
+                                                   J_analytical[1][1]*J_analytical[2][0]);
+        
+        double det_numerical = det_3x3(jac);
+        double det_error = fabs(det_analytical - det_numerical);
+        
+        printf("\n  Determinant:\n");
+        printf("    Analytical: %12.8f\n", det_analytical);
+        printf("    Numerical:  %12.8f\n", det_numerical);
+        printf("    Error:      %12.2e\n", det_error);
+        
+        const double tol = 1e-10;
+        bool passed = (max_error < tol) && (det_error < tol);
+        
+        printf("\n  Max Error: %12.2e\n", max_error);
+        printf("  Result: %s\n", passed ? " PASSED" : "X FAILED");
+        
+        if(!passed) all_passed = false;
+        
+        qpt_id += 13;
+    } // end for qpt loop
+
+    // ===============================
+    // Now testing a surface element
+    // ===============================
+
+    real_t surf_test_points[6][3] = {
+        // side 0, xi = -1
+        {-1, -qpt, -qpt},  // qpt_id = 0
+        {-1, 0.0, 0.0},    // qpt_id = 4 
+        {-1, qpt, qpt},    // qpt_id = 8
+        // side 1, xi = 1
+        {1, -qpt, -qpt},  // qpt_id = 0
+        {1, 0.0, 0.0},    // qpt_id = 4 
+        {1, qpt, qpt},    // qpt_id = 8
+    };
+    
+    printf("\nTesting Jacobian at quadrature points:\n");
+    printf("%s\n", std::string(80, '=').c_str());
+    
+    // reset helper vars
+    qpt_id = 0;
+    all_passed = true;
+    
+    for(int side = 0; side<2; side++){
+        printf("\n\n  side = %d\n", side);
+        for(int lid = 0; lid < 3; lid++) {
+            int p = lid + side*3;
+            real_t xi   = surf_test_points[p][0];
+            real_t eta  = surf_test_points[p][1];
+            real_t zeta = surf_test_points[p][2];
+            
+            printf("\n  Point %d: (xi=%7.4f, eta=%7.4f, zeta=%7.4f)\n", p+1, xi, eta, zeta);
+            printf("  QPt # %zu: (xi=%7.4f, eta=%7.4f, zeta=%7.4f)\n", 
+                    qpt_id, 
+                    SurfQuad.qpt_positions(side,qpt_id,0),
+                    SurfQuad.qpt_positions(side,qpt_id,1),
+                    SurfQuad.qpt_positions(side,qpt_id,2)
+                  );
+            printf("  %s\n", std::string(70, '-').c_str());
+            
+            // Analytical
+            real_t J_analytical[3][3];
+            compute_analytical_jacobian(xi, eta, zeta, J_analytical);
+            
+            printf("  Analytical Jacobian:\n");
+            for(int i = 0; i < 3; i++) {
+                printf("    ");
+                for(int j = 0; j < 3; j++) {
+                    printf("%10.6f ", J_analytical[i][j]);
+                }
+                printf("\n");
+            }
+
+            // Numerical
+            RUN({
+                // extract the grad_basis at a single quadrature point (num_dofs,3D)
+                ViewCArrayKokkos<double> a_grad_basis(&RefSurf.qpt_grad_basis(side,qpt_id,0,0),
+                                                    RefElem.num_dofs_in_elem, 3);
+
+                jacobian(jac, 
+                        node_coords_dual, 
+                        node_in_elem_dual,
+                        a_grad_basis);
+            });
+            Kokkos::fence();
+            jac.update_host();
+
+            printf("\n  Numerical Jacobian:\n");
+            for(size_t i = 0; i < 3; i++){
+                printf("    ");
+                for(size_t j = 0; j < 3; j++){ 
+                    printf("%10.6f ", jac.host(i, j));
+                }
+                printf("\n");
+            }
+            
+            // Compare
+            double max_error = 0.0;
+            printf("\n  Absolute Error:\n");
+            for(int i = 0; i < 3; i++) {
+                printf("    ");
+                for(int j = 0; j < 3; j++) {
+                    double error = fabs(J_analytical[i][j] - jac.host(i,j));
+                    max_error = fmax(max_error, error);
+                    printf("%10.2e ", error);
+                }
+                printf("\n");
+            }
+            
+            // Determinant
+            auto det_analytical = J_analytical[0][0]*(J_analytical[1][1]*J_analytical[2][2] - 
+                                                    J_analytical[1][2]*J_analytical[2][1])
+                                - J_analytical[0][1]*(J_analytical[1][0]*J_analytical[2][2] - 
+                                                    J_analytical[1][2]*J_analytical[2][0])
+                                + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
+                                                    J_analytical[1][1]*J_analytical[2][0]);
+            
+            double det_numerical = det_3x3(jac);
+            double det_error = fabs(det_analytical - det_numerical);
+            
+            printf("\n  Determinant:\n");
+            printf("    Analytical: %12.8f\n", det_analytical);
+            printf("    Numerical:  %12.8f\n", det_numerical);
+            printf("    Error:      %12.2e\n", det_error);
+            
+            const double tol = 1e-10;
+            bool passed = (max_error < tol) && (det_error < tol);
+            
+            printf("\n  Max Error: %12.2e\n", max_error);
+            printf("  Result: %s\n", passed ? " PASSED" : "X FAILED");
+            
+            if(!passed) all_passed = false;
+            
+            qpt_id += 4;
+            if(qpt_id>8) qpt_id=0; // restart local counter on the surface
+        } // end for qpt loop
+    } // end for side of ref element
+
+} // end function
+
 
 
 int main(int argc, char** argv) {
@@ -617,6 +938,7 @@ MATAR_INITIALIZE(argc, argv);
     test_affine_transformation(); 
     test_skewed_hexahedron();
     test_rotated_scaled_cube();
+    test_manufactured_solution();
 
 
 } // end MATAR scope

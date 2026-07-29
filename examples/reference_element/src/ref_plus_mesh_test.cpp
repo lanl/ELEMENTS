@@ -836,7 +836,7 @@ MATAR_INITIALIZE(argc, argv);
     Mesh_t Mesh; // unstructured mesh
 
     const size_t elem_dims = 3;
-    const size_t elem_order = 3;  // cubic element
+    const size_t elem_order = 3;  // cubic element will have 4 nodes in 1D
     const size_t num_elems_1D = 2;
 
     // the minimum quadrature for FE hydrodynamics based on elem order
@@ -883,30 +883,6 @@ MATAR_INITIALIZE(argc, argv);
     const double h = 1.0/((double)num_nodes_1D);
 
     // create indexing for a Pn order mesh
-    /*
-    FOR_ALL(i,0,num_elems_1D,
-            j,0,num_elems_1D,
-            k,0,num_elems_1D,{
-
-        size_t elem_gid = i + (j+k*num_elems_1D)*num_elems_1D;
-
-        size_t node_lid = 0;
-        
-        
-        for(size_t kc=k; kc<=k+elem_order; kc++)
-        for(size_t jc=j; jc<=j+elem_order; jc++)
-        for(size_t ic=i; ic<=i+elem_order; ic++){
-            size_t node_gid = ic + (jc+kc*num_nodes_1D)*num_nodes_1D;
-            Mesh.nodes_in_elem(elem_gid,node_lid) = node_gid;
-            node_lid++;
-
-            node_coords(node_gid,0) = (double)ic*h;
-            node_coords(node_gid,1) = (double)jc*h;
-            node_coords(node_gid,2) = (double)kc*h;
-        } // end for 
-
-    }); // end parallel for
-    */
 
     // Step 1: Initialize ALL node coordinates once (no race condition)
     FOR_ALL(kc, 0, num_nodes_1D,
@@ -920,7 +896,7 @@ MATAR_INITIALIZE(argc, argv);
         node_coords(node_gid, 2) = (double)kc * h;
     });
 
-    // Step 2: Build element connectivity (no coordinate writes)
+    // Step 2: Build element connectivity
     FOR_ALL(i, 0, num_elems_1D,
             j, 0, num_elems_1D,
             k, 0, num_elems_1D, {
@@ -928,9 +904,10 @@ MATAR_INITIALIZE(argc, argv);
         size_t elem_gid = i + (j + k*num_elems_1D)*num_elems_1D;
         size_t node_lid = 0;
         
-        for(size_t kc=k; kc<=k+elem_order; kc++)
-        for(size_t jc=j; jc<=j+elem_order; jc++)
-        for(size_t ic=i; ic<=i+elem_order; ic++){
+        // FIX: Multiply by elem_order to space elements correctly
+        for(size_t kc = k*elem_order; kc <= k*elem_order + elem_order; kc++)
+        for(size_t jc = j*elem_order; jc <= j*elem_order + elem_order; jc++)
+        for(size_t ic = i*elem_order; ic <= i*elem_order + elem_order; ic++){
             size_t node_gid = ic + (jc + kc*num_nodes_1D)*num_nodes_1D;
             Mesh.nodes_in_elem(elem_gid, node_lid) = node_gid;
             node_lid++;
@@ -950,23 +927,20 @@ MATAR_INITIALIZE(argc, argv);
         Kokkos::abort("ERROR: wrong number of Gauss points in elem");
     }
 
-    /*
+
     // check surfaces
     FOR_ALL(elem_gid, 0, Mesh.num_elems, {
+
+        for(size_t patch_lid=0; patch_lid<Mesh.num_patches_in_elem; patch_lid++){
+
+            const size_t patch_gid = Mesh.patches_in_elem(elem_gid, patch_lid);
             
-            printf("Num patches in elem = %zu \n", Mesh.num_patches_in_elem);
-
-            for(size_t patch_lid=0; patch_lid<Mesh.num_patches_in_elem; patch_lid++){
-
-                const size_t patch_gid = Mesh.patches_in_elem(elem_gid, patch_lid);  
-                printf("Elem = %d : patch_lid = %zu has patch_gid is = %zu \n", elem_gid, patch_lid, patch_gid);
-                for(size_t node_lid=0; node_lid<4; node_lid++){
-                    const size_t node_gid = Mesh.nodes_in_patch(patch_gid, node_lid);
-                    printf("   node %zu = (%f, %f, %f) \n", node_gid, node_coords(node_gid,0),node_coords(node_gid,1),node_coords(node_gid,2));
-                } // end for
+            for(size_t node_lid=0; node_lid<4; node_lid++){
+                const size_t node_gid = Mesh.nodes_in_patch(patch_gid, node_lid);
             } // end for
+        } // end for
     });
-
+    /*
     FOR_ALL(surf_gid, 0, Mesh.num_surfs, {
         
         for(size_t side=0; side<1; side++){

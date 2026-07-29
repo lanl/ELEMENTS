@@ -645,7 +645,9 @@ struct Mesh_t
 
         for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
             
+            
             FOR_ALL_CLASS(face_lid, 0, num_surfs_in_elem, {
+
 
                 // only search for a matching surface if it wasn't already found
                 if(face_elems_in_elem(elem_gid,face_lid)<0){
@@ -713,9 +715,9 @@ struct Mesh_t
                                                 
                         // --- must compress these later to have size num_surfs ---
                         elems_in_surf_helper(surf_gid,0) =  elem_gid; 
-                        elems_in_surf_helper(surf_gid,1) = -elem_gid; // negative because elem does not exist
+                        elems_in_surf_helper(surf_gid,1) = -elem_gid-1; // negative because elem does not exist
                         faces_in_surf_helper(surf_gid,0) =  face_lid; 
-                        faces_in_surf_helper(surf_gid,1) = -face_lid; // negative because elem does not exist
+                        faces_in_surf_helper(surf_gid,1) = -face_lid-1; // negative because elem does not exist
 
                         num_elems_in_surf_helper(surf_gid) = 1; // no neighbor, it's a boundary
 
@@ -763,9 +765,9 @@ struct Mesh_t
         
         FOR_ALL_CLASS(surf_gid, 0, num_surfs, {
             elems_in_surf(surf_gid,0) = elems_in_surf_helper(surf_gid,0); // = elem_gid 
-            elems_in_surf(surf_gid,1) = elems_in_surf_helper(surf_gid,1); // = nbr_elem_gid (on bdy = -elem_gid)     
+            elems_in_surf(surf_gid,1) = elems_in_surf_helper(surf_gid,1); // = nbr_elem_gid (on bdy = -elem_gid-1)     
             faces_in_surf(surf_gid,0) = faces_in_surf_helper(surf_gid,0); // = face_lid   
-            faces_in_surf(surf_gid,1) = faces_in_surf_helper(surf_gid,1); // = nbr_face_lid (on bdy = -face_lid)
+            faces_in_surf(surf_gid,1) = faces_in_surf_helper(surf_gid,1); // = nbr_face_lid (on bdy = -face_lid-1)
             num_elems_in_surf(surf_gid) = num_elems_in_surf_helper(surf_gid);
             
             //if(mk_sides){
@@ -863,12 +865,12 @@ struct Mesh_t
         num_nodes_in_patch = 2*(num_dims-1);         // 2 (2D) or 4 (3D)
         num_patches_in_elem = num_surfs_in_elem*num_patches_in_surf;
 
-        patches_in_surf  = patches_in_surf_t(num_surfs); 
+        patches_in_surf  = patches_in_surf_t(num_patches_in_surf); // initializing
 
         num_patches     = num_surfs*num_patches_in_surf;
         elems_in_patch  = CArrayKokkos<int>(num_patches, 2, "mesh.elems_in_patch");
         nodes_in_patch  = CArrayKokkos<size_t>(num_patches, num_nodes_in_patch, "mesh.nodes_in_patch");
-        patches_in_surf = patches_in_surf_t(num_surfs);
+        
         surf_in_patch   = CArrayKokkos<size_t>(num_patches, "mesh.surf_in_patch");
         patches_in_elem = CArrayKokkos<size_t>(num_elems, num_patches_in_elem,"patches_in_elem");
         
@@ -876,25 +878,15 @@ struct Mesh_t
         DCArrayKokkos<size_t> patch_node_ordering_in_elem (num_surfs_in_elem, num_patches_in_surf, num_nodes_in_patch);
         get_patch_node_lids(patch_node_ordering_in_elem, num_1D, num_dims); // R-hand rule node convention for patch nodes
 
-printf("here0 num_surfs = %zu\n", num_surfs);
-printf("here0 num_surfs_in_elem = %zu\n", num_surfs_in_elem);
-printf("here0 num_patches_in_surf = %zu\n", num_patches_in_surf);
-printf("here0 num_nodes_in_patch = %zu\n", num_nodes_in_patch);
-
 
         // now break up the surface into patches
         FOR_ALL_CLASS(surf_gid, 0, num_surfs,{
 
-printf("here0 surf_gid = %d\n", surf_gid);
             const size_t elem_gid     = elems_in_surf(surf_gid,0);
             const size_t face_lid     = faces_in_surf(surf_gid,0);
 
             const int nbr_elem_gid = elems_in_surf(surf_gid,1); // num_nbrs (if negative, does not exist)
             const int nbr_face_lid = faces_in_surf(surf_gid,1); // num_nbrs (if negative, does not exist)
-
-printf("here0 elem_gid = %zu, face_lid = %zu, nbr_elem = %d, nbr_face = %d\n", 
-            elem_gid, face_lid, nbr_elem_gid, nbr_face_lid);
-printf("here0 looping patches\n");
 
             // loop patches on this surface
             for(size_t patch_lid =0; patch_lid<num_patches_in_surf; patch_lid++){
@@ -902,29 +894,28 @@ printf("here0 looping patches\n");
 
                 elems_in_patch(patch_gid,0) = elem_gid;
                 elems_in_patch(patch_gid,1) = nbr_elem_gid; 
-printf("here0 saving surf_gid for patch_gid = %zu\n", patch_gid);
+ 
                 surf_in_patch(patch_gid) = surf_gid;
 
                 size_t elem_patch_lid = patch_lid + face_lid*num_patches_in_surf;
                 patches_in_elem(elem_gid, elem_patch_lid) = patch_gid;
 
-printf("here0 num_elems_in_surf = %zu \n", num_elems_in_surf(surf_gid));
+ 
                 if(num_elems_in_surf(surf_gid)==2){
                     size_t nbr_elem_patch_lid = patch_lid + nbr_face_lid*num_patches_in_surf;
                     patches_in_elem(nbr_elem_gid, nbr_elem_patch_lid) = patch_gid;
                 }
-printf("here0 saving nodes_in_patch\n");
+ 
                 // save the nodes in this patch using the first element to find the surface
                 for(size_t patch_node_lid=0; patch_node_lid<num_nodes_in_patch; patch_node_lid++){
                     size_t elem_node_lid=patch_node_ordering_in_elem(face_lid, patch_lid, patch_node_lid);
-                    printf("here0 elem_node = %zu\n", patch_node_lid);
+                     
                     nodes_in_patch(patch_gid,patch_node_lid) = nodes_in_elem(elem_gid, elem_node_lid);
                 }
             } // end loop over patches
 
         });
 
-printf("here0 done building patches\n");
 
         // -----------------------------------------------------------------------
         // 2b. Build boundary patches
@@ -946,7 +937,7 @@ printf("here0 done building patches\n");
             
         }); // end parallel for
         Kokkos::fence();
-printf("here0 done with surface connectivity\n");   
+ 
     } // end of build surface connectivity
 
         // testing:

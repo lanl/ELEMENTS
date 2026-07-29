@@ -186,7 +186,7 @@ struct gauss_in_elem_t
 };
 
 
-/// if material points are defined at element interfaces
+/// 
 struct corners_in_elem_t
 {
     private:
@@ -213,30 +213,30 @@ struct corners_in_elem_t
         };
 };
 
-/// if material points are defined at element interfaces
+/// A functor to access the patches in a surface
 struct patches_in_surf_t
 {
     private:
-        size_t num_surfs_;
+        size_t num_patches_in_surf_;  
     public:
         patches_in_surf_t() {
         };
 
-        patches_in_surf_t(const size_t num_surfs_inp) {
-            this->num_surfs_ = num_surfs_inp;
+        patches_in_surf_t(const size_t num_patches_in_surf_inp) { 
+            this->num_patches_in_surf_ = num_patches_in_surf_inp;
         };
 
         // return global patch index for given local patch index on a surface
         size_t host(const size_t surf_gid, const size_t patch_lid) const
         {
-            return surf_gid * num_surfs_ + patch_lid;
+            return surf_gid * num_patches_in_surf_ + patch_lid; 
         };
 
         // return global patch index for given local patch index on a surface
         KOKKOS_INLINE_FUNCTION
         size_t operator()(const size_t surf_gid, const size_t patch_lid) const
         {
-            return surf_gid * num_surfs_ + patch_lid;
+            return surf_gid * num_patches_in_surf_ + patch_lid;  
         };
 };
 

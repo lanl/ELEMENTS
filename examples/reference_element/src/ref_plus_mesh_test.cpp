@@ -927,19 +927,65 @@ MATAR_INITIALIZE(argc, argv);
         Kokkos::abort("ERROR: wrong number of Gauss points in elem");
     }
 
+    
+    printf("\n=== TEST: 2x2x2 Cubic Mesh Face Pair Test ===\n");
 
-    // check surfaces
+    // Face 1 of element 0 matches face 0 of element 1
+    const size_t elem_nodes_in_face_match[16] = 
+        {3, 10, 17, 24, 52, 59, 66, 73, 101, 108, 115, 122, 150, 157, 164, 171};
+
+    // Check surfaces and patches
     FOR_ALL(elem_gid, 0, Mesh.num_elems, {
-
-        for(size_t patch_lid=0; patch_lid<Mesh.num_patches_in_elem; patch_lid++){
-
-            const size_t patch_gid = Mesh.patches_in_elem(elem_gid, patch_lid);
+        
+        for(size_t face_lid = 0; face_lid < Mesh.num_surfs_in_elem; face_lid++) {
             
-            for(size_t node_lid=0; node_lid<4; node_lid++){
-                const size_t node_gid = Mesh.nodes_in_patch(patch_gid, node_lid);
-            } // end for
-        } // end for
+            // Only test the specific faces we want to validate
+            if(!((elem_gid == 0 && face_lid == 1) || (elem_gid == 1 && face_lid == 0))) {
+                continue;
+            }
+            
+            size_t count = 0;  // Count unique nodes found across all patches in this face
+            bool found[16] = {false};  // Track which of the 16 face nodes we've found
+            
+            for(size_t patch_surf_lid = 0; patch_surf_lid < Mesh.num_patches_in_surf; patch_surf_lid++) {
+                
+                const size_t patch_lid = face_lid * Mesh.num_patches_in_surf + patch_surf_lid;  // FIX: num_patches_in_surf
+                const size_t patch_gid = Mesh.patches_in_elem(elem_gid, patch_lid);
+                const size_t surf_gid  = Mesh.surf_in_patch(patch_gid);
+                
+                // Validate surface ID
+                if(surf_gid > 5) {
+                    Kokkos::abort("Surface gid is out of bounds\n");
+                }
+                
+                // Check each node in this patch
+                for(size_t node_lid = 0; node_lid < 4; node_lid++) {
+                    const size_t node_gid = Mesh.nodes_in_patch(patch_gid, node_lid);
+                    
+                    // Check if this node is in our expected face list
+                    for(size_t i = 0; i < 16; i++) {
+                        if(elem_nodes_in_face_match[i] == node_gid && !found[i]) {
+                            found[i] = true;
+                            count++;
+                            break;
+                        }
+                    }
+                }
+            } // end patch loop
+            
+            // Now check that we found all 16 unique nodes
+            if(count != 16) {
+                printf("ERROR: Elem %d, Face %zu found only %zu/16 nodes\n", 
+                    elem_gid, face_lid, count);
+                Kokkos::abort("Face nodes don't match!\n");
+            }
+            
+        } // end face loop
     });
+
+    printf(" Face matching test PASSED!\n\n");
+
+
     /*
     FOR_ALL(surf_gid, 0, Mesh.num_surfs, {
         

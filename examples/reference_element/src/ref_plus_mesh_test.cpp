@@ -986,28 +986,20 @@ MATAR_INITIALIZE(argc, argv);
     printf(" Face matching test PASSED!\n\n");
 
 
-    /*
+
     FOR_ALL(surf_gid, 0, Mesh.num_surfs, {
         
         for(size_t side=0; side<1; side++){
-            const size_t elem_gid = Mesh.elems_in_surf(surf_gid,side);
-            const size_t side_lid = Mesh.elem_sides_in_surf(surf_gid,side);
-
-            //const size_t patch_lid = side_lid * Mesh.num_patches_in_surf;
-            //const size_t patch_gid = Mesh.patches_in_elem(elem_gid, patch_lid);  // first patch on this surface
-            //printf("Patch_gid in elem on this side = %zu\n", patch_gid);
-
-
-            // verify reverse map in element, it must have surf gid using side_lid 
-            printf("surf = %d on side = %zu has elem_gid = %zu, this surf is on elem_side = %zu, but the elem has the surf = %zu \n",
-                   surf_gid, side, elem_gid, side_lid, Mesh.surfs_in_elem(elem_gid,side_lid));
-            
-
-            if(Mesh.surfs_in_elem(elem_gid,side_lid)!=surf_gid) Kokkos::abort("failed to match surf_gid using surf_lid \n");
-        } // looping over the 2 sides of the surface ()
+            const int elem_gid = Mesh.elems_in_surf(surf_gid,side);
+            const int face_lid = Mesh.faces_in_surf(surf_gid,side);
+           
+            // verifying the reverse map
+            if(Mesh.num_elems_in_surf(surf_gid)==2)
+                if(Mesh.surfs_in_elem(elem_gid,face_lid)!=surf_gid) Kokkos::abort("failed to match surf_gid using surf_lid \n");
+        } // looping over the 2 sides of the surface
     });
 
-    */
+
 
     // ==========================================
     // Create state on the unstructured mesh structure

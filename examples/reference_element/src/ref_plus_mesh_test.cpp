@@ -983,22 +983,69 @@ MATAR_INITIALIZE(argc, argv);
         } // end face loop
     });
 
-    printf(" Face matching test PASSED!\n\n");
+    printf("Face matching test PASSED!\n\n");
 
 
+
+    // Test bidirectional surface-element mapping consistency
+    DCArrayKokkos <size_t> bdy_surf_counter(1);
+    bdy_surf_counter.set_values(0);
 
     FOR_ALL(surf_gid, 0, Mesh.num_surfs, {
         
-        for(size_t side=0; side<1; side++){
-            const int elem_gid = Mesh.elems_in_surf(surf_gid,side);
-            const int face_lid = Mesh.faces_in_surf(surf_gid,side);
-           
-            // verifying the reverse map
-            if(Mesh.num_elems_in_surf(surf_gid)==2)
-                if(Mesh.surfs_in_elem(elem_gid,face_lid)!=surf_gid) Kokkos::abort("failed to match surf_gid using surf_lid \n");
-        } // looping over the 2 sides of the surface
-    });
+        const size_t num_elems_in_surf = Mesh.num_elems_in_surf(surf_gid);
+        if(num_elems_in_surf==1) bdy_surf_counter(0)++;
+        
+        // Test should work for both boundary (1 elem) and interior (2 elems) surfaces
+        for(size_t side_lid = 0; side_lid < num_elems_in_surf; side_lid++) {
+            
+            const int elem_gid = Mesh.elems_in_surf(surf_gid, side_lid);
+            const int face_lid = Mesh.faces_in_surf(surf_gid, side_lid);
+            
+            // Verify elem_gid is valid
+            if(elem_gid < 0 || elem_gid >= Mesh.num_elems) {
+                printf("ERROR: surf %d side_lid %zu has invalid elem_gid = %d\n", 
+                    surf_gid, side_lid, elem_gid);
+                Kokkos::abort("Invalid element in surface\n");
+            }
+            
+            // Verify face_lid is valid
+            if(face_lid < 0 || face_lid >= Mesh.num_surfs_in_elem) {
+                printf("ERROR: surf %d side_lid %zu has invalid face_lid = %d\n", 
+                    surf_gid, side_lid, face_lid);
+                Kokkos::abort("Invalid face in surface\n");
+            }
+            
+            // *** CRITICAL TEST: Verify reverse mapping ***
+            const size_t reverse_surf_gid = Mesh.surfs_in_elem(elem_gid, face_lid);
+            if(reverse_surf_gid != surf_gid) {
+                printf("ERROR: Mapping inconsistency!\n");
+                printf("  surf %d -> elem %d, face %d\n", surf_gid, elem_gid, face_lid);
+                printf("  BUT elem %d, face %d -> surf %zu\n", 
+                    elem_gid, face_lid, reverse_surf_gid);
+                Kokkos::abort("Failed reverse mapping surf->elem->surf\n");
+            }
+            
+        } // end side_lid loop
+        
+    }); // end surf loop
+    Kokkos::fence();
+    bdy_surf_counter.update_host();
+    printf("Surface-Element bidirectional mapping test PASSED!\n");
 
+    if(Mesh.num_bdy_surfs!=bdy_surf_counter.host(0)) Kokkos::abort("Failed to find correct number of boundary surfaces\n");
+    if(Mesh.num_bdy_patches!=bdy_surf_counter.host(0)*Mesh.num_patches_in_surf) Kokkos::abort("Failed to find correct number of boundary patches\n");
+    printf("Boundary surfaces and patches test PASSED!\n");
+
+    // for this 2x2x2 mesh, there are:
+    // 12 interior surfaces + 24 boundary surfaces
+    //     3 planes of 2x2 in x-dir = 12
+    //     3 planes of 2x2 in y-dir = 12
+    //     3 planes of 2x2 in z-dir = 12
+    // 36 total surfaces
+    if(Mesh.num_surfs!=36) Kokkos::abort("Wrong number of surfaces\n");
+    if(Mesh.num_bdy_surfs!=24) Kokkos::abort("Wrong number of boundary surfaces\n");
+    printf("\n\n");
 
 
     // ==========================================

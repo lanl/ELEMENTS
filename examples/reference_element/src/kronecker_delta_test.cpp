@@ -44,8 +44,8 @@ using namespace mtr;
 using namespace swage; // unstructured mesh and hash
 using namespace elements;
 
-bool Verbose = false;
-size_t max_num   = 19; // max number of quadrature points to test up to, the limit is 19
+const bool Verbose = false;
+const size_t max_num   = 19; // max number of quadrature points to test up to, the limit is 19
 
 
 int main(int argc, char** argv) {

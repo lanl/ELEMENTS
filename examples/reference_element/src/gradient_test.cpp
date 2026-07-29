@@ -44,9 +44,9 @@ using namespace mtr;
 using namespace swage; // unstructured mesh and hash
 using namespace elements;
 
-bool Verbose = false;
-size_t max_num   = 19; // max number of quadrature points to test up to, the limit is 19
-size_t max_order = 19; // max polynomial order to test, limit is 19th-order with Legendre
+const bool Verbose = false;
+const size_t max_num   = 19; // max number of quadrature points to test up to, the limit is 19
+const size_t max_order = 19; // max polynomial order to test, limit is 19th-order with Legendre
 
 // polynomial with terms <= p_order
 KOKKOS_INLINE_FUNCTION

@@ -310,8 +310,9 @@ void build_3d_box(
 
     // initialize corner variables (corner = element-node pair)
     // used for per-corner data like corner_delta in mesh_mold.cpp
-    int num_corners = num_elems * mesh.num_nodes_in_elem;
-    mesh.initialize_corners(num_corners);
+    // the corners are initialized in initialize_elems
+    //int num_corners = num_elems * mesh.num_nodes_in_elem;
+    //mesh.initialize_corners(num_corners);
 
     // Build connectivity
     mesh.build_connectivity();
@@ -444,8 +445,9 @@ void build_2d_polar(
     mesh.nodes_in_elem.update_device();
 
     // intialize corner variables
-    int num_corners = num_elems * mesh.num_nodes_in_elem;
-    mesh.initialize_corners(num_corners);
+    // this is initialized in initialize_elems
+    //int num_corners = num_elems * mesh.num_nodes_in_elem;
+    //mesh.initialize_corners(num_corners);
     // corner.initialize(num_corners, num_dim);
 
     // Build connectivity
@@ -1097,8 +1099,9 @@ mesh.nodes_in_elem.update_device();
 
 
 // initialize corner variables
-size_t num_corners = num_elem * num_nodes_in_elem;
-mesh.initialize_corners(num_corners);
+// this is initialized in initialize_elems
+//size_t num_corners = num_elem * num_nodes_in_elem;
+//mesh.initialize_corners(num_corners);
 
 
 // Build connectivity

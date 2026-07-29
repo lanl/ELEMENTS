@@ -432,9 +432,9 @@ void build_2d_polar(
     // update device side
     mesh.nodes_in_elem.update_device();
 
-    // intialize corner variables
-    int num_corners = num_elems * mesh.num_nodes_in_elem;
-    mesh.initialize_corners(num_corners);
+    // intialize corner variables (this is initialized in initialize_elems)
+    //int num_corners = num_elems * mesh.num_nodes_in_elem;
+    //mesh.initialize_corners(num_corners);
     // corner.initialize(num_corners, num_dim);
 
     // Build connectivity

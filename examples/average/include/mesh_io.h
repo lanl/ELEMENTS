@@ -1001,9 +1001,9 @@ void write_vtu(swage::Mesh_t& mesh,
     mesh.nodes_in_elem.update_device();
 
 
-    // initialize corner variables
-    size_t num_corners = num_elem * num_nodes_in_elem;
-    mesh.initialize_corners(num_corners);
+    // initialize corner variables (it is set in the elems initialization)
+    //size_t num_corners = num_elem * num_nodes_in_elem;
+    //mesh.initialize_corners(num_corners);
 
 
     // Build connectivity

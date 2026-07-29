@@ -128,9 +128,10 @@ namespace elements
     ///
     /// \brief Compute the 1D array index for a degree of freedom (DOF) in an element.
     ///
-    /// Calculates the flat row-major index corresponding to a DOF located at position (i, j, k)
-    /// in the element, for continuous fields. This is used for basis functions and data fields
-    /// that are continuous across element boundaries.
+    /// Calculates the flat row-major index corresponding to a DOF located at 
+    /// position (i, j, k) in the element, for continuous fields. This is used 
+    /// for basis functions and data fields that are continuous across element
+    /// boundaries.
     ///
     /// \param i Local DOF index in the first (xi) coordinate direction.
     /// \param j Local DOF index in the second (eta) coordinate direction.
@@ -150,11 +151,13 @@ namespace elements
     ///
     /// \fn get_dof_rid
     ///
-    /// \brief Compute the 1D array index for a degree of freedom (DOF) in an element.
+    /// \brief Compute the 1D array index for a degree of freedom (DOF) in an 
+    ///        element.
     ///
-    /// Calculates the flat row-major index corresponding to a DOF located at position (i, j, k)
-    /// in the element, for continuous fields. This is used for basis functions and data fields
-    /// that are continuous across element boundaries.
+    /// Calculates the flat row-major index corresponding to a DOF located at 
+    /// position (i, j, k) in the element, for continuous fields. This is used for
+    /// basis functions and data fields that are continuous across element
+    /// boundaries.
     ///
     /// \param i Local DOF index in the first (xi) coordinate direction.
     /// \param j Local DOF index in the second (eta) coordinate direction.
@@ -175,12 +178,14 @@ namespace elements
     ///
     /// \brief Computes the Lagrange basis functions in 1D at a given point.
     ///
-    /// This function evaluates the values of the 1D Lagrange basis functions at a specified point 
-    /// within the reference element, using the nodal positions. For each basis node, it computes 
-    /// the interpolation value (the product over all other node positions) and stores 
-    /// the result in the provided array.
+    /// This function evaluates the values of the 1D Lagrange basis functions at 
+    /// a specified point within the reference element, using the nodal positions.
+    /// For each basis node, it computes the interpolation value (the product
+    /// over all other node positions) and stores the result in the provided 
+    /// array.
     ///
-    /// \param interp   Output array to store the value of each basis function at the specified point.
+    /// \param interp   Output array to store the value of each basis function at 
+    ///                 the specified point.
     /// \param dof_positions_1d the positions of the DOFs in reference coordinates
     /// \param x_point  Point at which to evaluate the basis functions.
     ///
@@ -287,16 +292,21 @@ namespace elements
     ///
     /// \brief Computes the tensor-product nodal basis values at an arbitrary point.
     ///
-    /// This function evaluates the Lagrange basis functions at a specified point within
-    /// the reference element and assembles the tensor-product basis values for all degrees 
-    /// of freedom (DOFs). Basis values in each coordinate direction are computed independently 
-    /// using the 1D Lagrange basis, and then combined to form the full multi-dimensional basis.
-    /// The results are written to the provided output array.
+    /// This function evaluates the Lagrange basis functions at a specified point 
+    /// within the reference element and assembles the tensor-product basis values
+    /// for all degrees of freedom (DOFs). Basis values in each coordinate 
+    /// direction are computed independently using the 1D Lagrange basis, and then
+    /// combined to form the full multi-dimensional basis. The results are written
+    /// to the provided output array.
     ///
-    /// \param basis Reference to the output CArrayKokkos<double> to hold full tensor-product basis values, sized for all DOFs in the element.
-    /// \param val_1d Temporary CArrayKokkos<double> for holding 1D basis values (as workspace).
-    /// \param val_3d Temporary CArrayKokkos<double> for holding basis values for each direction; shape should be (num_dofs_1d, 3).
-    /// \param point Reference to CArrayKokkos<double> representing the coordinates (xi, eta, mu) at which the basis is evaluated (size 3).
+    /// \param basis Reference to the output CArrayKokkos<double> to hold full 
+    ///              tensor-product basis values, sized for all DOFs in the element.
+    /// \param val_1d Temporary CArrayKokkos<double> for holding 1D basis values 
+    ///               (as workspace).
+    /// \param val_3d Temporary CArrayKokkos<double> for holding basis values for 
+    ///               each direction; shape should be (num_dofs_1d, 3).
+    /// \param point Reference to CArrayKokkos<double> representing the 
+    ///              coordinates (xi, eta, mu) at which the basis is evaluated (size 3).
     ///
     /// \return void
     ///
@@ -372,19 +382,26 @@ namespace elements
     ///
     /// \fn partial_xi_basis
     ///
-    /// \brief Compute the partial derivative of the basis function with respect to the xi coordinate.
+    /// \brief Compute the partial derivative of the basis function with respect 
+    ///        to the xi coordinate.
     ///
-    /// This function evaluates the tensor-product Lagrange basis function derivatives in the xi direction
-    /// at a given point within the reference element. The computation is performed by first evaluating the
-    /// 1D derivatives and basis functions for each coordinate and then combining them using the chain rule
-    /// for tensor products. The result is stored in the provided array for all degrees of freedom.
+    /// This function evaluates the tensor-product Lagrange basis function 
+    /// derivatives in the xi direction at a given point within the reference
+    /// element. The computation is performed by first evaluating the 1D 
+    /// derivatives and basis functions for each coordinate and then combining 
+    /// them using the chain rule for tensor products. The result is stored in
+    /// the provided array for all degrees of freedom.
     ///
-    /// \param partial_xi Array to store the value of the partial derivative with respect to xi for each basis function.
+    /// \param partial_xi Array to store the value of the partial derivative with 
+    ///                   respect to xi for each basis function.
     /// \param val_1d Temporary workspace array for 1D basis evaluations.
-    /// \param val_Nd Temporary workspace array for 1D/2D/3D basis component evaluations.
+    /// \param val_Nd Temporary workspace array for 1D/2D/3D basis component 
+    ///               evaluations.
     /// \param Dval_1d Temporary workspace array for 1D derivative evaluations.
-    /// \param Dval_Nd Temporary workspace array for 1D/2D/3D derivative component evaluations.
-    /// \param point Input array specifying the coordinates (xi, eta, mu) at which to evaluate the derivative.
+    /// \param Dval_Nd Temporary workspace array for 1D/2D/3D derivative component 
+    ///                evaluations.
+    /// \param point Input array specifying the coordinates (xi, eta, mu) at which 
+    ///.             to evaluate the derivative.
     ///
     /// \return void
     ///
@@ -499,20 +516,29 @@ namespace elements
     ///
     /// \fn partial_eta_basis
     ///
-    /// \brief Computes the partial derivative of the Lagrange basis functions with respect to eta at a given point.
+    /// \brief Computes the partial derivative of the Lagrange basis functions 
+    ///        with respect to eta at a given point.
     ///
-    /// This function evaluates the partial derivative of the tensor-product Lagrange basis 
-    /// functions with respect to the eta (second) coordinate at a given point in the reference element.
-    /// It builds up the 3D basis and its derivatives using repeated calls to 1D basis and derivative 
-    /// evaluations, and computes the tensor-product forms to populate the provided partial_eta array 
-    /// with the values of the partials at every reference node.
+    /// This function evaluates the partial derivative of the tensor-product 
+    /// Lagrange basis functions with respect to the eta (second) coordinate
+    /// at a given point in the reference element. It builds up the 3D basis 
+    /// and its derivatives using repeated calls to 1D basis and derivative 
+    /// evaluations, and computes the tensor-product forms to populate the 
+    /// provided partial_eta array with the values of the partials at every
+    /// reference node.
     ///
-    /// \param partial_eta   Output array to store the partial derivatives with respect to eta at each basis node.
-    /// \param val_1d       Temporary array used for storing 1D basis values during calculation.
-    /// \param val_3d       Temporary 2D array used for storing intermediate 3D basis values.
-    /// \param Dval_1d      Temporary array used for storing 1D derivative values during calculation.
-    /// \param Dval_3d      Temporary 2D array used for storing intermediate 3D derivative values.
-    /// \param point        Input array representing the coordinates (xi, eta, zeta) at which to evaluate the derivative.
+    /// \param partial_eta Output array to store the partial derivatives with 
+    ///                    respect to eta at each basis node.
+    /// \param val_1d      Temporary array used for storing 1D basis values 
+    ///                    during calculation.
+    /// \param val_3d      Temporary 2D array used for storing intermediate 3D 
+    ///                    basis values.
+    /// \param Dval_1d     Temporary array used for storing 1D derivative 
+    ///                    values during calculation.
+    /// \param Dval_3d     Temporary 2D array used for storing intermediate 3D 
+    ///                    derivative values.
+    /// \param point       Input array representing the coordinates (xi, eta, zeta)
+    ///                    at which to evaluate the derivative.
     ///
     /// \return void
     ///
@@ -1165,63 +1191,63 @@ namespace elements
             
             // surface of 3D volume element
             if(elem_dims==3){                
-                size_t side;
+                size_t face;
 
                 // xi-minus has coords (-1, eta, mu)
-                side = 0;
+                face = 0;
                 FOR_ALL_CLASS(k, 0, num_qpts_1d,
                               j, 0, num_qpts_1d, {
 
                     const size_t rid=get_qpt_rid(j, k, num_qpts_1d);
 
-                    qpt_positions(side, rid, 0) = -1.;
-                    qpt_positions(side, rid, 1) = qpt_positions_1d(j);
-                    qpt_positions(side, rid, 2) = qpt_positions_1d(k);
+                    qpt_positions(face, rid, 0) = -1.;
+                    qpt_positions(face, rid, 1) = qpt_positions_1d(j);
+                    qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
                     qpt_weights(rid) = qpt_weights_1d(j) * qpt_weights_1d(k);
 
                 }); // end for
                 
                 // xi-plus has coords (+1, eta, mu)
-                side = 1;
+                face = 1;
                 FOR_ALL_CLASS(k, 0, num_qpts_1d,
                               j, 0, num_qpts_1d, {
 
                     const size_t rid=get_qpt_rid(j, k, num_qpts_1d);
 
-                    qpt_positions(side, rid, 0) = 1.;
-                    qpt_positions(side, rid, 1) = qpt_positions_1d(j);
-                    qpt_positions(side, rid, 2) = qpt_positions_1d(k);
+                    qpt_positions(face, rid, 0) = 1.;
+                    qpt_positions(face, rid, 1) = qpt_positions_1d(j);
+                    qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
                     qpt_weights(rid) = qpt_weights_1d(j) * qpt_weights_1d(k);
 
                 }); // end for
 
                 // eta-minus has coords (xi, -1, mu)
-                side = 2;
+                face = 2;
                 FOR_ALL_CLASS(k, 0, num_qpts_1d,
                               i, 0, num_qpts_1d, {
 
                     const size_t rid=get_qpt_rid(i, k, num_qpts_1d);
 
-                    qpt_positions(side, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(side, rid, 1) = -1.;
-                    qpt_positions(side, rid, 2) = qpt_positions_1d(k);
+                    qpt_positions(face, rid, 0) = qpt_positions_1d(i);
+                    qpt_positions(face, rid, 1) = -1.;
+                    qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
                     qpt_weights(rid) = qpt_weights_1d(i) * qpt_weights_1d(k);
 
                 }); // end for
 
                 // eta-plus has coords (xi,+1, mu)
-                side = 3;
+                face = 3;
                 FOR_ALL_CLASS(k, 0, num_qpts_1d,
                               i, 0, num_qpts_1d, {
 
                     const size_t rid=get_qpt_rid(i, k, num_qpts_1d);
 
-                    qpt_positions(side, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(side, rid, 1) = 1.;
-                    qpt_positions(side, rid, 2) = qpt_positions_1d(k);
+                    qpt_positions(face, rid, 0) = qpt_positions_1d(i);
+                    qpt_positions(face, rid, 1) = 1.;
+                    qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
                     qpt_weights(rid) = qpt_weights_1d(i) * qpt_weights_1d(k);
 
@@ -1229,30 +1255,30 @@ namespace elements
 
                 
                 // mu-minus has coords (xi, eta, -1)
-                side = 4;
+                face = 4;
                 FOR_ALL_CLASS(j, 0, num_qpts_1d,
                               i, 0, num_qpts_1d, {
 
                     const size_t rid=get_qpt_rid(i, j, num_qpts_1d);
 
-                    qpt_positions(side, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(side, rid, 1) = qpt_positions_1d(j);
-                    qpt_positions(side, rid, 2) = -1.;
+                    qpt_positions(face, rid, 0) = qpt_positions_1d(i);
+                    qpt_positions(face, rid, 1) = qpt_positions_1d(j);
+                    qpt_positions(face, rid, 2) = -1.;
 
                     qpt_weights(rid) = qpt_weights_1d(i) * qpt_weights_1d(j);
 
                 }); // end for
 
                 // mu-plus has coords (xi, eta, +1)
-                side = 5;
+                face = 5;
                 FOR_ALL_CLASS(j, 0, num_qpts_1d,
                               i, 0, num_qpts_1d, {
 
                     const size_t rid=get_qpt_rid(i, j, num_qpts_1d);
 
-                    qpt_positions(side, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(side, rid, 1) = qpt_positions_1d(j);
-                    qpt_positions(side, rid, 2) = 1.;
+                    qpt_positions(face, rid, 0) = qpt_positions_1d(i);
+                    qpt_positions(face, rid, 1) = qpt_positions_1d(j);
+                    qpt_positions(face, rid, 2) = 1.;
 
                     qpt_weights(rid) = qpt_weights_1d(i) * qpt_weights_1d(j);
 
@@ -1262,39 +1288,39 @@ namespace elements
             // surface of 2D element (line)
             else if (elem_dims==2){
 
-                size_t side;
+                size_t face;
 
                 // xi-minus has coords (-1, eta)
-                side = 0;
+                face = 0;
                 FOR_ALL_CLASS(j, 0, num_qpts_1d, {
                     const size_t rid=j;
 
-                    qpt_positions(side, rid, 0) = -1.;
-                    qpt_positions(side, rid, 1) = qpt_positions_1d(j);
+                    qpt_positions(face, rid, 0) = -1.;
+                    qpt_positions(face, rid, 1) = qpt_positions_1d(j);
 
                     qpt_weights(rid) = qpt_weights_1d(j);
 
                 }); // end for
                 
                 // xi-plus has coords (+1, eta)
-                side = 1;
+                face = 1;
                 FOR_ALL_CLASS(j, 0, num_qpts_1d, {
                     const size_t rid=j;
 
-                    qpt_positions(side, rid, 0) = 1.;
-                    qpt_positions(side, rid, 1) = qpt_positions_1d(j);
+                    qpt_positions(face, rid, 0) = 1.;
+                    qpt_positions(face, rid, 1) = qpt_positions_1d(j);
 
                     qpt_weights(rid) = qpt_weights_1d(j);
 
                 }); // end for
 
                 // eta-minus has coords (xi, -1)
-                side = 2;
+                face = 2;
                 FOR_ALL_CLASS(i, 0, num_qpts_1d, {
                     const size_t rid=i;
 
-                    qpt_positions(side, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(side, rid, 1) = -1.;
+                    qpt_positions(face, rid, 0) = qpt_positions_1d(i);
+                    qpt_positions(face, rid, 1) = -1.;
 
                     qpt_weights(rid) = qpt_weights_1d(i);
 
@@ -1302,12 +1328,12 @@ namespace elements
 
 
                 // eta-plus has coords (xi,+1)
-                side = 3;
+                face = 3;
                 FOR_ALL_CLASS(i, 0, num_qpts_1d, {
                     const size_t rid=i;
 
-                    qpt_positions(side, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(side, rid, 1) = 1.;
+                    qpt_positions(face, rid, 0) = qpt_positions_1d(i);
+                    qpt_positions(face, rid, 1) = 1.;
 
                     qpt_weights(rid) = qpt_weights_1d(i);
 
@@ -1316,13 +1342,13 @@ namespace elements
             }
             // surface of 1D element is a point 
             else if (elem_dims==1) {
-                    size_t side = 0;
+                    size_t face = 0;
                     const size_t rid = 0;
-                    qpt_positions(side, rid, 0) = -1.;
+                    qpt_positions(face, rid, 0) = -1.;
                     qpt_weights(rid) = 1.0;
 
-                    side = 1;
-                    qpt_positions(side, rid, 0) = 1.;
+                    face = 1;
+                    qpt_positions(face, rid, 0) = 1.;
                     qpt_weights(rid) = 1.0;
             }
             else{
@@ -1340,8 +1366,8 @@ namespace elements
         size_t elem_dims = 0;
     
         // Basis evaluation at quadrature points on surface
-        CArrayKokkos<double> qpt_basis;      // access as (sides, surf_qpts, dofs)
-        CArrayKokkos<double> qpt_grad_basis; // access as (sides, surf_qpts, dofs, dims)
+        CArrayKokkos<double> qpt_basis;      // access as (faces, surf_qpts, dofs)
+        CArrayKokkos<double> qpt_grad_basis; // access as (faces, surf_qpts, dofs, dims)
 
         CArrayKokkos<double> outward_sign;
 
@@ -1366,12 +1392,12 @@ namespace elements
             // the sign for outward normal relative to the reference element
             outward_sign = CArrayKokkos<double>(num_ref_surfs, "surf_outward_sign");
 
-            //side 0 (xi=-1):  sign = -1
-            //side 1 (xi=+1):  sign = +1
-            //side 2 (eta=-1): sign = -1
-            //side 3 (eta=+1): sign = +1
-            //side 4 (mu=-1):  sign = -1
-            //side 5 (mu=+1):  sign = +1
+            //face 0 (xi=-1):  sign = -1
+            //face 1 (xi=+1):  sign = +1
+            //face 2 (eta=-1): sign = -1
+            //face 3 (eta=+1): sign = +1
+            //face 4 (mu=-1):  sign = -1
+            //face 5 (mu=+1):  sign = +1
             outward_sign(0) = -1.;
             outward_sign(1) =  1.;
             if(elem_dims>1){
@@ -1385,25 +1411,25 @@ namespace elements
 
 
             // get the basis and grad basis functions for each surfaces of the element
-            for(size_t side=0; side<num_ref_surfs; side++){
+            for(size_t face=0; face<num_ref_surfs; face++){
                 // build basis and grad basis in the reference element
 
                 // Notes on arrays to make views of
                 //   RS.qpt_basis      = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem); 
                 //   RS.qpt_grad_basis = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem, elem_dims); 
                 //   SQ.qpt_positions  = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, elem_dims);
-                ViewCArrayKokkos <double> side_qpt_basis     (&qpt_basis(side,0,0), num_qpts_in_surf, num_dofs_in_elem); 
-                ViewCArrayKokkos <double> side_qpt_grad_basis(&qpt_grad_basis(side,0,0,0), num_qpts_in_surf, num_dofs_in_elem, elem_dims);  
-                ViewCArrayKokkos <double> side_qpt_positions (&SurfQuadrature.qpt_positions(side,0,0), num_qpts_in_surf, elem_dims);
+                ViewCArrayKokkos <double> face_qpt_basis     (&qpt_basis(face,0,0), num_qpts_in_surf, num_dofs_in_elem); 
+                ViewCArrayKokkos <double> face_qpt_grad_basis(&qpt_grad_basis(face,0,0,0), num_qpts_in_surf, num_dofs_in_elem, elem_dims);  
+                ViewCArrayKokkos <double> face_qpt_positions (&SurfQuadrature.qpt_positions(face,0,0), num_qpts_in_surf, elem_dims);
 
-                get_basis_and_grad_basis(side_qpt_basis,
-                                         side_qpt_grad_basis,
-                                         side_qpt_positions,
+                get_basis_and_grad_basis(face_qpt_basis,
+                                         face_qpt_grad_basis,
+                                         face_qpt_positions,
                                          ReferenceElement.dof_positions_1d);
 
-               // the side qpt_basis were saved to member arrays using the views above here
+               // the face qpt_basis were saved to member arrays using the views above here
 
-            } // end for sides
+            } // end for faces
 
 
         } // end member function

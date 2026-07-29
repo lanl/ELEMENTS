@@ -655,11 +655,11 @@ void test_manufactured_solution() {
         
         // Determinant
         auto det_analytical = J_analytical[0][0]*(J_analytical[1][1]*J_analytical[2][2] - 
-                                                   J_analytical[1][2]*J_analytical[2][1])
+                                                  J_analytical[1][2]*J_analytical[2][1])
                             - J_analytical[0][1]*(J_analytical[1][0]*J_analytical[2][2] - 
-                                                   J_analytical[1][2]*J_analytical[2][0])
+                                                  J_analytical[1][2]*J_analytical[2][0])
                             + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
-                                                   J_analytical[1][1]*J_analytical[2][0]);
+                                                  J_analytical[1][1]*J_analytical[2][0]);
         
         double det_numerical = det_3x3(jac);
         double det_error = fabs(det_analytical - det_numerical);
@@ -790,11 +790,11 @@ void test_manufactured_solution() {
             
             // Determinant
             auto det_analytical = J_analytical[0][0]*(J_analytical[1][1]*J_analytical[2][2] - 
-                                                    J_analytical[1][2]*J_analytical[2][1])
+                                                      J_analytical[1][2]*J_analytical[2][1])
                                 - J_analytical[0][1]*(J_analytical[1][0]*J_analytical[2][2] - 
-                                                    J_analytical[1][2]*J_analytical[2][0])
+                                                      J_analytical[1][2]*J_analytical[2][0])
                                 + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
-                                                    J_analytical[1][1]*J_analytical[2][0]);
+                                                      J_analytical[1][1]*J_analytical[2][0]);
             
             double det_numerical = det_3x3(jac);
             double det_error = fabs(det_analytical - det_numerical);
@@ -846,6 +846,8 @@ MATAR_INITIALIZE(argc, argv);
     // ============================================
     // Create quadrature and reference element
 
+    std::cout<<"Building reference elements and quadrature \n"<<std::endl;
+
     // create quadrature
     Quad.initialize_quadrature(reference_space::GaussLegendre,
                                num_qpts_1d,
@@ -864,9 +866,10 @@ MATAR_INITIALIZE(argc, argv);
                                   Quad,
                                   elem_order-1); 
 
-
     // ==========================================
     // Build the unstructured mesh structure
+
+    std::cout<<"Building unstructed mesh \n"<<std::endl;
 
     const size_t num_elems    = num_elems_1D*num_elems_1D*num_elems_1D;
     const size_t num_nodes_1D = elem_order*num_elems_1D + 1;  // number of nodes
@@ -880,6 +883,7 @@ MATAR_INITIALIZE(argc, argv);
     const double h = 1.0/((double)num_nodes_1D);
 
     // create indexing for a Pn order mesh
+    /*
     FOR_ALL(i,0,num_elems_1D,
             j,0,num_elems_1D,
             k,0,num_elems_1D,{
@@ -902,10 +906,40 @@ MATAR_INITIALIZE(argc, argv);
         } // end for 
 
     }); // end parallel for
+    */
+
+    // Step 1: Initialize ALL node coordinates once (no race condition)
+    FOR_ALL(kc, 0, num_nodes_1D,
+            jc, 0, num_nodes_1D,
+            ic, 0, num_nodes_1D, {
+        
+        size_t node_gid = ic + (jc + kc*num_nodes_1D)*num_nodes_1D;
+        
+        node_coords(node_gid, 0) = (double)ic * h;
+        node_coords(node_gid, 1) = (double)jc * h;
+        node_coords(node_gid, 2) = (double)kc * h;
+    });
+
+    // Step 2: Build element connectivity (no coordinate writes)
+    FOR_ALL(i, 0, num_elems_1D,
+            j, 0, num_elems_1D,
+            k, 0, num_elems_1D, {
+        
+        size_t elem_gid = i + (j + k*num_elems_1D)*num_elems_1D;
+        size_t node_lid = 0;
+        
+        for(size_t kc=k; kc<=k+elem_order; kc++)
+        for(size_t jc=j; jc<=j+elem_order; jc++)
+        for(size_t ic=i; ic<=i+elem_order; ic++){
+            size_t node_gid = ic + (jc + kc*num_nodes_1D)*num_nodes_1D;
+            Mesh.nodes_in_elem(elem_gid, node_lid) = node_gid;
+            node_lid++;
+        }
+    });
 
     Mesh.build_corner_connectivity();
     Mesh.build_elem_elem_connectivity();
-    Mesh.build_patch_connectivity();
+    Mesh.build_surf_connectivity();
 
     // check mesh index sizes
     if(Mesh.num_nodes!=num_nodes){
@@ -915,6 +949,45 @@ MATAR_INITIALIZE(argc, argv);
     if(Mesh.num_gauss_in_elem!=Quad.num_qpts_in_elem){
         Kokkos::abort("ERROR: wrong number of Gauss points in elem");
     }
+
+    /*
+    // check surfaces
+    FOR_ALL(elem_gid, 0, Mesh.num_elems, {
+            
+            printf("Num patches in elem = %zu \n", Mesh.num_patches_in_elem);
+
+            for(size_t patch_lid=0; patch_lid<Mesh.num_patches_in_elem; patch_lid++){
+
+                const size_t patch_gid = Mesh.patches_in_elem(elem_gid, patch_lid);  
+                printf("Elem = %d : patch_lid = %zu has patch_gid is = %zu \n", elem_gid, patch_lid, patch_gid);
+                for(size_t node_lid=0; node_lid<4; node_lid++){
+                    const size_t node_gid = Mesh.nodes_in_patch(patch_gid, node_lid);
+                    printf("   node %zu = (%f, %f, %f) \n", node_gid, node_coords(node_gid,0),node_coords(node_gid,1),node_coords(node_gid,2));
+                } // end for
+            } // end for
+    });
+
+    FOR_ALL(surf_gid, 0, Mesh.num_surfs, {
+        
+        for(size_t side=0; side<1; side++){
+            const size_t elem_gid = Mesh.elems_in_surf(surf_gid,side);
+            const size_t side_lid = Mesh.elem_sides_in_surf(surf_gid,side);
+
+            //const size_t patch_lid = side_lid * Mesh.num_patches_in_surf;
+            //const size_t patch_gid = Mesh.patches_in_elem(elem_gid, patch_lid);  // first patch on this surface
+            //printf("Patch_gid in elem on this side = %zu\n", patch_gid);
+
+
+            // verify reverse map in element, it must have surf gid using side_lid 
+            printf("surf = %d on side = %zu has elem_gid = %zu, this surf is on elem_side = %zu, but the elem has the surf = %zu \n",
+                   surf_gid, side, elem_gid, side_lid, Mesh.surfs_in_elem(elem_gid,side_lid));
+            
+
+            if(Mesh.surfs_in_elem(elem_gid,side_lid)!=surf_gid) Kokkos::abort("failed to match surf_gid using surf_lid \n");
+        } // looping over the 2 sides of the surface ()
+    });
+
+    */
 
     // ==========================================
     // Create state on the unstructured mesh structure

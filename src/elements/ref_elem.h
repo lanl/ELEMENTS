@@ -1156,8 +1156,10 @@ namespace elements
 
             num_qpts_in_surf = 1;
             num_ref_surfs = 0;
+            for(size_t dim=0; dim<elem_dims-1; dim++){
+                num_qpts_in_surf *= num_qpts_1d; // tensor product in 2D and 3D
+            }
             for(size_t dim=0; dim<elem_dims; dim++){
-                num_qpts_in_surf *= num_qpts_1d;
                 num_ref_surfs+=2;
             }
 
@@ -1204,7 +1206,7 @@ namespace elements
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
-                    qpt_weights(rid) = qpt_weights_1d(j) * qpt_weights_1d(k);
+                    qpt_weights(face,rid) = qpt_weights_1d(j) * qpt_weights_1d(k);
 
                 }); // end for
                 
@@ -1219,7 +1221,7 @@ namespace elements
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
-                    qpt_weights(rid) = qpt_weights_1d(j) * qpt_weights_1d(k);
+                    qpt_weights(face,rid) = qpt_weights_1d(j) * qpt_weights_1d(k);
 
                 }); // end for
 
@@ -1234,7 +1236,7 @@ namespace elements
                     qpt_positions(face, rid, 1) = -1.;
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
-                    qpt_weights(rid) = qpt_weights_1d(i) * qpt_weights_1d(k);
+                    qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(k);
 
                 }); // end for
 
@@ -1249,7 +1251,7 @@ namespace elements
                     qpt_positions(face, rid, 1) = 1.;
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
-                    qpt_weights(rid) = qpt_weights_1d(i) * qpt_weights_1d(k);
+                    qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(k);
 
                 }); // end for
 
@@ -1265,7 +1267,7 @@ namespace elements
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
                     qpt_positions(face, rid, 2) = -1.;
 
-                    qpt_weights(rid) = qpt_weights_1d(i) * qpt_weights_1d(j);
+                    qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(j);
 
                 }); // end for
 
@@ -1280,7 +1282,7 @@ namespace elements
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
                     qpt_positions(face, rid, 2) = 1.;
 
-                    qpt_weights(rid) = qpt_weights_1d(i) * qpt_weights_1d(j);
+                    qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(j);
 
                 }); // end for
                     
@@ -1298,7 +1300,7 @@ namespace elements
                     qpt_positions(face, rid, 0) = -1.;
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
 
-                    qpt_weights(rid) = qpt_weights_1d(j);
+                    qpt_weights(face,rid) = qpt_weights_1d(j);
 
                 }); // end for
                 
@@ -1310,7 +1312,7 @@ namespace elements
                     qpt_positions(face, rid, 0) = 1.;
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
 
-                    qpt_weights(rid) = qpt_weights_1d(j);
+                    qpt_weights(face,rid) = qpt_weights_1d(j);
 
                 }); // end for
 
@@ -1322,7 +1324,7 @@ namespace elements
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
                     qpt_positions(face, rid, 1) = -1.;
 
-                    qpt_weights(rid) = qpt_weights_1d(i);
+                    qpt_weights(face,rid) = qpt_weights_1d(i);
 
                 }); // end for
 
@@ -1335,7 +1337,7 @@ namespace elements
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
                     qpt_positions(face, rid, 1) = 1.;
 
-                    qpt_weights(rid) = qpt_weights_1d(i);
+                    qpt_weights(face,rid) = qpt_weights_1d(i);
 
                 }); // end for
 
@@ -1345,11 +1347,11 @@ namespace elements
                     size_t face = 0;
                     const size_t rid = 0;
                     qpt_positions(face, rid, 0) = -1.;
-                    qpt_weights(rid) = 1.0;
+                    qpt_weights(face,rid) = 1.0;
 
                     face = 1;
                     qpt_positions(face, rid, 0) = 1.;
-                    qpt_weights(rid) = 1.0;
+                    qpt_weights(face,rid) = 1.0;
             }
             else{
                 throw std::runtime_error("ERROR: unsupported quadrature surface dims \n");

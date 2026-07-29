@@ -557,9 +557,9 @@ void test_manufactured_solution() {
     DCArrayKokkos<double> jac(3, 3);
 
     for(size_t n = 0; n < 8; n++) {
+        node_in_elem_dual.host(n) = n;
         for(size_t i = 0; i < 3; i++) {
             node_coords_dual.host(n,i) = node_coords_ijk[n][i];  // Already in IJK order!
-            node_in_elem_dual.host(n) = n;
         }
     }
     node_coords_dual.update_device();
@@ -569,7 +569,8 @@ void test_manufactured_solution() {
     Quadrature_t Quad;
     ReferenceElement_t RefElem; 
 
-    Quad.initialize_quadrature(reference_space::GaussLegendre, 3, 3);
+    Quad.initialize_quadrature(reference_space::GaussLegendre, 3, 3); //(type,num_qpts_1d,elem_dims)
+
     RefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
                                 reference_space::LagrangeLobatto,
                                 Quad,
@@ -579,7 +580,8 @@ void test_manufactured_solution() {
     SurfaceQuadrature_t SurfQuad;
     ReferenceSurface_t RefSurf;
 
-    SurfQuad.initialize_quadrature(reference_space::GaussLegendre, 3, 3);
+    SurfQuad.initialize_quadrature(reference_space::GaussLegendre, 3, 3); //(type,num_qpts_1d,elem_dims)
+
     RefSurf.initialize_ref_surf(SurfQuad,
                                 RefElem);
 
@@ -994,7 +996,7 @@ MATAR_INITIALIZE(argc, argv);
     FOR_ALL(surf_gid, 0, Mesh.num_surfs, {
         
         const size_t num_elems_in_surf = Mesh.num_elems_in_surf(surf_gid);
-        if(num_elems_in_surf==1) bdy_surf_counter(0)++;
+        if(num_elems_in_surf==1) Kokkos::atomic_add(&bdy_surf_counter(0),1);
         
         // Test should work for both boundary (1 elem) and interior (2 elems) surfaces
         for(size_t side_lid = 0; side_lid < num_elems_in_surf; side_lid++) {
@@ -1033,7 +1035,9 @@ MATAR_INITIALIZE(argc, argv);
     bdy_surf_counter.update_host();
     printf("Surface-Element bidirectional mapping test PASSED!\n");
 
-    if(Mesh.num_bdy_surfs!=bdy_surf_counter.host(0)) Kokkos::abort("Failed to find correct number of boundary surfaces\n");
+    if(Mesh.num_bdy_surfs!=bdy_surf_counter.host(0)){
+        Kokkos::abort("Failed to find correct number of boundary surfaces\n");
+    } 
     if(Mesh.num_bdy_patches!=bdy_surf_counter.host(0)*Mesh.num_patches_in_surf) Kokkos::abort("Failed to find correct number of boundary patches\n");
     printf("Boundary surfaces and patches test PASSED!\n");
 

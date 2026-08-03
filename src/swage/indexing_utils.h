@@ -270,7 +270,7 @@ struct patches_in_surf_t
 /// \return void
 ///
 ///////////////////////////////////////////////////////////////////////////////////
-void get_surf_node_lids(DCArrayKokkos<size_t>& surf_node_ordering_in_elem, 
+void get_surf_node_lids(CArrayKokkos<size_t>& surf_node_ordering_in_elem, 
                         const size_t num_1D, 
                         const size_t num_dims){
     
@@ -342,7 +342,7 @@ void get_surf_node_lids(DCArrayKokkos<size_t>& surf_node_ordering_in_elem,
     {
         Kokkos::abort("Bad Bad Bad: Mesh class is only supported in 2D and 3D \n");
     }
-    surf_node_ordering_in_elem.update_device();
+    Kokkos::fence();
 
     return;
 
@@ -702,6 +702,7 @@ void get_patch_node_lids(DCArrayKokkos<size_t> &patch_node_ordering_in_elem,
         if(face_lid!=4) Kokkos::abort("ERROR: wrong number of element faces in 2D when building patches.\n");
 
     } // end if 2D arbitrary-order element
+    Kokkos::fence();
 
 
 } // end function

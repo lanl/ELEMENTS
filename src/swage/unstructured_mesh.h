@@ -598,7 +598,7 @@ struct Mesh_t
         // -----------------------------------------------------------------------
 
         // get the elem nodes on the surface
-        DCArrayKokkos<size_t> surf_node_ordering_in_elem(num_surfs_in_elem, num_nodes_in_surf);
+        CArrayKokkos<size_t> surf_node_ordering_in_elem(num_surfs_in_elem, num_nodes_in_surf);
         get_surf_node_lids(surf_node_ordering_in_elem, num_1D, num_dims);
         
         // sort the nodes on each elem face from smallest to largest, these are the hash keys 
@@ -609,9 +609,10 @@ struct Mesh_t
                       node_lid, 0, num_nodes_in_surf, {
                     
             const size_t elem_node_lid = surf_node_ordering_in_elem(face_lid,node_lid); // elem nodes on face 
-            const size_t node_gid = nodes_in_elem(elem_gid,elem_node_lid); // all nodes in element
+            const size_t node_gid      = nodes_in_elem(elem_gid,elem_node_lid); // all nodes in element
             face_hash_keys(elem_gid,face_lid,node_lid) = node_gid;  // save the gid
         });
+        Kokkos::fence();
 
         FOR_ALL_CLASS(elem_gid, 0, num_elems,
                       face_lid, 0, num_surfs_in_elem, {
@@ -620,6 +621,7 @@ struct Mesh_t
 
             // remember that sorted_face_nodes are in order of smallest to largest now
         });
+        Kokkos::fence();
 
         DCArrayKokkos <size_t> surf_counter(1);
         surf_counter.set_values(0);
@@ -644,7 +646,7 @@ struct Mesh_t
         // -----------------------------------------------------------------------
 
         for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
-            
+
             
             FOR_ALL_CLASS(face_lid, 0, num_surfs_in_elem, {
 
@@ -662,6 +664,10 @@ struct Mesh_t
                         // loop faces of nbr elem
                         for(size_t nbr_face_lid=0; nbr_face_lid<num_surfs_in_elem; nbr_face_lid++){
 
+                            // skip over the neighboring faces if they are tagged with an ID
+                            if(face_elems_in_elem(nbr_elem_gid,nbr_face_lid) >= 0) continue;
+
+
                             // loop over the nodes in the hash and compare
                             size_t tally = 0; // if tally = num_nodes_in_surf it is a match
                             for(size_t node_lid=0; node_lid<num_nodes_in_surf; node_lid++){
@@ -671,6 +677,7 @@ struct Mesh_t
                             }
 
                             if(tally==num_nodes_in_surf){
+
                                 // its a match! Yah, this face has a soul mate!
                                 const size_t surf_gid = Kokkos::atomic_fetch_add(&surf_counter(0), 1);
                                 surfs_in_elem(elem_gid,face_lid)         = surf_gid;

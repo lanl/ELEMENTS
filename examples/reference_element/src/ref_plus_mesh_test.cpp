@@ -957,6 +957,7 @@ MATAR_INITIALIZE(argc, argv);
                 
                 // Validate surface ID
                 if(surf_gid > 5) {
+                    printf("ERROR: should be <= 5, but surf_gid = %d \n", (int)surf_gid);
                     Kokkos::abort("Surface gid is out of bounds\n");
                 }
                 

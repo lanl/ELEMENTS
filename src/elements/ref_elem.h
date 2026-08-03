@@ -1400,39 +1400,58 @@ namespace elements
             //face 3 (eta=+1): sign = +1
             //face 4 (mu=-1):  sign = -1
             //face 5 (mu=+1):  sign = +1
-            outward_sign(0) = -1.;
-            outward_sign(1) =  1.;
-            if(elem_dims>1){
-                outward_sign(2) = -1.;
-                outward_sign(3) =  1.;
-            }
-            if(elem_dims>2){
-                outward_sign(4) = -1.;
-                outward_sign(5) =  1.;
-            }
+            RUN({
+                outward_sign(0) = -1.;
+                outward_sign(1) =  1.;
+                if(elem_dims>1){
+                    outward_sign(2) = -1.;
+                    outward_sign(3) =  1.;
+                }
+                if(elem_dims>2){
+                    outward_sign(4) = -1.;
+                    outward_sign(5) =  1.;
+                }
+            }); // end serial RUN on GPU
 
+            // Notes on arrays
+            //   RS.qpt_basis      = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem); 
+            //   RS.qpt_grad_basis = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem, elem_dims); 
+            //   SQ.qpt_positions  = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, elem_dims);
+
+            // The face qpt values  
+            CArrayKokkos <double> face_qpt_basis(num_qpts_in_surf, num_dofs_in_elem);                  
+            CArrayKokkos <double> face_qpt_grad_basis(num_qpts_in_surf, num_dofs_in_elem, elem_dims);  
+            CArrayKokkos <double> face_qpt_positions(num_qpts_in_surf, elem_dims);
 
             // get the basis and grad basis functions for each surfaces of the element
             for(size_t face=0; face<num_ref_surfs; face++){
+
                 // build basis and grad basis in the reference element
+                FOR_ALL(qpt, 0, num_qpts_in_surf, {
+                    for(size_t dim=0; dim<elem_dims; dim++){
+                        face_qpt_positions(qpt, dim) = SurfQuadrature.qpt_positions(face,qpt,dim);
+                    }
+                });
 
-                // Notes on arrays to make views of
-                //   RS.qpt_basis      = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem); 
-                //   RS.qpt_grad_basis = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem, elem_dims); 
-                //   SQ.qpt_positions  = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, elem_dims);
-                ViewCArrayKokkos <double> face_qpt_basis     (&qpt_basis(face,0,0), num_qpts_in_surf, num_dofs_in_elem); 
-                ViewCArrayKokkos <double> face_qpt_grad_basis(&qpt_grad_basis(face,0,0,0), num_qpts_in_surf, num_dofs_in_elem, elem_dims);  
-                ViewCArrayKokkos <double> face_qpt_positions (&SurfQuadrature.qpt_positions(face,0,0), num_qpts_in_surf, elem_dims);
-
+                // this is a CPU function and routines inside run on GPUs
                 get_basis_and_grad_basis(face_qpt_basis,
                                          face_qpt_grad_basis,
                                          face_qpt_positions,
                                          ReferenceElement.dof_positions_1d);
 
-               // the face qpt_basis were saved to member arrays using the views above here
+               // save the face qpt_basis and there gradients
+                FOR_ALL(qpt, 0, num_qpts_in_surf,
+                        dof, 0, num_dofs_in_elem, {
+
+                    qpt_basis(face, qpt, dof) = face_qpt_basis(qpt, dof); 
+                    for(size_t dim=0; dim<elem_dims; dim++){
+                        qpt_grad_basis(face, qpt, dof, dim) = face_qpt_grad_basis(qpt, dof,dim);
+                    }
+                });
+                Kokkos::fence();
 
             } // end for faces
-
+            
 
         } // end member function
 

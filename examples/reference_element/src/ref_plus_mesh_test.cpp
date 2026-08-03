@@ -663,29 +663,28 @@ void test_manufactured_solution() {
                             + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
                                                   J_analytical[1][1]*J_analytical[2][0]);
         
-        DCArrayKokkos <bool> passed_dual(1);
+        DCArrayKokkos <double> det_numerical(1);
         RUN({
-            double det_numerical = det_3x3(jac);
-            double det_error = fabs(det_analytical - det_numerical);
-            
-            printf("\n  Determinant:\n");
-            printf("    Analytical: %12.8f\n", det_analytical);
-            printf("    Numerical:  %12.8f\n", det_numerical);
-            printf("    Error:      %12.2e\n", det_error);
-            
-            const double tol = 1e-10;
-            bool passed = (max_error < tol) && (det_error < tol);
-            passed_dual(0) = passed;
-
-            printf("\n  Max Error: %12.2e\n", max_error);
-            printf("  Result: %s\n", passed ? " PASSED" : "X FAILED");
-
-            if(passed==false)Kokkos::abort("test failed \n");
-
+            det_numerical(0) = det_3x3(jac);
         });
-        passed_dual.update_host();
+        det_numerical.update_host();
 
-        if(!passed_dual.host(0)) all_passed = false;
+        double det_error = fabs(det_analytical - det_numerical(0));
+        
+        printf("\n  Determinant:\n");
+        printf("    Analytical: %12.8f\n", det_analytical);
+        printf("    Numerical:  %12.8f\n", det_numerical(0));
+        printf("    Error:      %12.2e\n", det_error);
+        
+        const double tol = 1e-10;
+        bool passed = (max_error < tol) && (det_error < tol);
+
+        printf("\n  Max Error: %12.2e\n", max_error);
+        printf("  Result: %s\n", passed ? " PASSED" : "X FAILED");
+
+        if(passed==false)Kokkos::abort("test failed \n");
+
+        if(!passed) all_passed = false;
 
         
         qpt_id += 13;
@@ -805,12 +804,16 @@ void test_manufactured_solution() {
                                 + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
                                                       J_analytical[1][1]*J_analytical[2][0]);
             
-            double det_numerical = det_3x3(jac);
-            double det_error = fabs(det_analytical - det_numerical);
+            DCArrayKokkos <double> det_numerical(1);
+            RUN({
+                det_numerical(0) = det_3x3(jac);
+            });
+            det_numerical.update_host();
+            double det_error = fabs(det_analytical - det_numerical(0));
             
             printf("\n  Determinant:\n");
             printf("    Analytical: %12.8f\n", det_analytical);
-            printf("    Numerical:  %12.8f\n", det_numerical);
+            printf("    Numerical:  %12.8f\n", det_numerical(0));
             printf("    Error:      %12.2e\n", det_error);
             
             const double tol = 1e-10;

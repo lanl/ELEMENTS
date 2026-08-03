@@ -552,9 +552,9 @@ void test_manufactured_solution() {
     };
     
     // Setup Kokkos arrays with IJK ordering
-    DCArrayKokkos<double> node_coords_dual(8,3);
-    DCArrayKokkos<double> node_in_elem_dual(8);
-    DCArrayKokkos<double> jac(3, 3);
+    DCArrayKokkos<double> node_coords_dual(8,3, "node coords dual");
+    DCArrayKokkos<double> node_in_elem_dual(8, "nodes in elem dual");
+    DCArrayKokkos<double> jac(3, 3, "jacobian");
 
     for(size_t n = 0; n < 8; n++) {
         node_in_elem_dual.host(n) = n;
@@ -663,17 +663,17 @@ void test_manufactured_solution() {
                             + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
                                                   J_analytical[1][1]*J_analytical[2][0]);
         
-        DCArrayKokkos <double> det_numerical(1);
+        DCArrayKokkos <double> det_numerical(1, "det_numerical dual");
         RUN({
             det_numerical(0) = det_3x3(jac);
         });
         det_numerical.update_host();
 
-        double det_error = fabs(det_analytical - det_numerical(0));
+        double det_error = fabs(det_analytical - det_numerical.host(0));
         
         printf("\n  Determinant:\n");
         printf("    Analytical: %12.8f\n", det_analytical);
-        printf("    Numerical:  %12.8f\n", det_numerical(0));
+        printf("    Numerical:  %12.8f\n", det_numerical.host(0));
         printf("    Error:      %12.2e\n", det_error);
         
         const double tol = 1e-10;
@@ -804,16 +804,16 @@ void test_manufactured_solution() {
                                 + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
                                                       J_analytical[1][1]*J_analytical[2][0]);
             
-            DCArrayKokkos <double> det_numerical(1);
+            DCArrayKokkos <double> det_numerical(1, "det_numerical");
             RUN({
                 det_numerical(0) = det_3x3(jac);
             });
             det_numerical.update_host();
-            double det_error = fabs(det_analytical - det_numerical(0));
+            double det_error = fabs(det_analytical - det_numerical.host(0));
             
             printf("\n  Determinant:\n");
             printf("    Analytical: %12.8f\n", det_analytical);
-            printf("    Numerical:  %12.8f\n", det_numerical(0));
+            printf("    Numerical:  %12.8f\n", det_numerical.host(0));
             printf("    Error:      %12.2e\n", det_error);
             
             const double tol = 1e-10;

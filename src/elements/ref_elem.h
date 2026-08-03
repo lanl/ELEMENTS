@@ -1400,7 +1400,7 @@ namespace elements
             //face 3 (eta=+1): sign = +1
             //face 4 (mu=-1):  sign = -1
             //face 5 (mu=+1):  sign = +1
-            RUN({
+            RUN_CLASS({
                 outward_sign(0) = -1.;
                 outward_sign(1) =  1.;
                 if(elem_dims>1){
@@ -1427,11 +1427,12 @@ namespace elements
             for(size_t face=0; face<num_ref_surfs; face++){
 
                 // build basis and grad basis in the reference element
-                FOR_ALL(qpt, 0, num_qpts_in_surf, {
+                FOR_ALL_CLASS(qpt, 0, num_qpts_in_surf, {
                     for(size_t dim=0; dim<elem_dims; dim++){
-                        face_qpt_positions(qpt, dim) = SurfQuadrature.qpt_positions(face,qpt,dim);
+                        face_qpt_positions(qpt,dim) = SurfQuadrature.qpt_positions(face,qpt,dim);
                     }
                 });
+                Kokkos::fence();
 
                 // this is a CPU function and routines inside run on GPUs
                 get_basis_and_grad_basis(face_qpt_basis,
@@ -1439,13 +1440,13 @@ namespace elements
                                          face_qpt_positions,
                                          ReferenceElement.dof_positions_1d);
 
-               // save the face qpt_basis and there gradients
-                FOR_ALL(qpt, 0, num_qpts_in_surf,
+                // save the face qpt_basis and there gradients
+                FOR_ALL_CLASS(qpt, 0, num_qpts_in_surf,
                         dof, 0, num_dofs_in_elem, {
 
-                    qpt_basis(face, qpt, dof) = face_qpt_basis(qpt, dof); 
+                    qpt_basis(face,qpt,dof) = face_qpt_basis(qpt,dof); 
                     for(size_t dim=0; dim<elem_dims; dim++){
-                        qpt_grad_basis(face, qpt, dof, dim) = face_qpt_grad_basis(qpt, dof,dim);
+                        qpt_grad_basis(face, qpt, dof, dim) = face_qpt_grad_basis(qpt,dof,dim);
                     }
                 });
                 Kokkos::fence();

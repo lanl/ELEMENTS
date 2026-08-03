@@ -493,6 +493,9 @@ struct Mesh_t
         if (num_dims == 0) {
             Kokkos::abort("Error: mesh.num_dims is not set. Exiting at build_elem_elem_connectivity().");
         }
+        if (num_corners_in_node.size() == 0) {
+            Kokkos::abort("Error: build_corner_connectivity must be called first. Exiting at build_elem_elem_connectivity().");
+        }
    
         // find the max number of elems around a node
         size_t max_num_elems_in_node;
@@ -586,6 +589,11 @@ struct Mesh_t
     ///
     /////////////////////////////////////////////////////////////////////////////
     void build_surf_connectivity() {
+
+        if(num_dims==0) Kokkos::abort("Error: mesh.num_dims is not set. Exiting at build_surf_connectivity \n");
+        if(num_elems_in_elem.size()==0) Kokkos::abort("Error: build_elem_elem_connectivity must be called first.  Existing build_surf_connectivity(). \n");
+        if(num_corners_in_node.size() == 0) Kokkos::abort("Error: build_corner_connectivity must be called first. Exiting at build_surf_connectivity().");
+        
 
         //const bool mk_sides = false; // not built at this time to save memory, their need is unknown
 

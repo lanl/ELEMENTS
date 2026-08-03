@@ -663,23 +663,30 @@ void test_manufactured_solution() {
                             + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
                                                   J_analytical[1][1]*J_analytical[2][0]);
         
-        double det_numerical = det_3x3(jac);
-        double det_error = fabs(det_analytical - det_numerical);
-        
-        printf("\n  Determinant:\n");
-        printf("    Analytical: %12.8f\n", det_analytical);
-        printf("    Numerical:  %12.8f\n", det_numerical);
-        printf("    Error:      %12.2e\n", det_error);
-        
-        const double tol = 1e-10;
-        bool passed = (max_error < tol) && (det_error < tol);
-        
-        printf("\n  Max Error: %12.2e\n", max_error);
-        printf("  Result: %s\n", passed ? " PASSED" : "X FAILED");
+        DCArrayKokkos <bool> passed_dual(1);
+        RUN({
+            double det_numerical = det_3x3(jac);
+            double det_error = fabs(det_analytical - det_numerical);
+            
+            printf("\n  Determinant:\n");
+            printf("    Analytical: %12.8f\n", det_analytical);
+            printf("    Numerical:  %12.8f\n", det_numerical);
+            printf("    Error:      %12.2e\n", det_error);
+            
+            const double tol = 1e-10;
+            bool passed = (max_error < tol) && (det_error < tol);
+            passed_dual(0) = passed;
 
-        if(passed==false)Kokkos::abort("test failed \n");
-        
-        if(!passed) all_passed = false;
+            printf("\n  Max Error: %12.2e\n", max_error);
+            printf("  Result: %s\n", passed ? " PASSED" : "X FAILED");
+
+            if(passed==false)Kokkos::abort("test failed \n");
+
+        });
+        passed_dual.update_host();
+
+        if(!passed_dual.host(0)) all_passed = false;
+
         
         qpt_id += 13;
     } // end for qpt loop
@@ -848,7 +855,7 @@ MATAR_INITIALIZE(argc, argv);
     // ============================================
     // Create quadrature and reference element
 
-    std::cout<<"Building reference elements and quadrature \n"<<std::endl;
+    std::cout<<"Building reference elements and quadrature \n";
 
     // create quadrature
     Quad.initialize_quadrature(reference_space::GaussLegendre,
@@ -871,7 +878,7 @@ MATAR_INITIALIZE(argc, argv);
     // ==========================================
     // Build the unstructured mesh structure
 
-    std::cout<<"Building unstructed mesh \n"<<std::endl;
+    std::cout<<"Building unstructured mesh \n";
 
     const size_t num_elems    = num_elems_1D*num_elems_1D*num_elems_1D;
     const size_t num_nodes_1D = elem_order*num_elems_1D + 1;  // number of nodes
@@ -916,8 +923,11 @@ MATAR_INITIALIZE(argc, argv);
         }
     });
 
+    std::cout<<"Building corner connectivity \n";
     Mesh.build_corner_connectivity();
+    std::cout<<"Building element element connectivity \n";
     Mesh.build_elem_elem_connectivity();
+    std::cout<<"Building surface connectivity connectivity \n";
     Mesh.build_surf_connectivity();
 
     // check mesh index sizes
@@ -985,6 +995,7 @@ MATAR_INITIALIZE(argc, argv);
             
         } // end face loop
     });
+    Kokkos::fence();
 
     printf("Face matching test PASSED!\n\n");
 

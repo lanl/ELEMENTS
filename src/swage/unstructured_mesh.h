@@ -606,11 +606,11 @@ struct Mesh_t
         // -----------------------------------------------------------------------
 
         // get the elem nodes on the surface
-        CArrayKokkos<size_t> surf_node_ordering_in_elem(num_surfs_in_elem, num_nodes_in_surf);
+        CArrayKokkos<size_t> surf_node_ordering_in_elem(num_surfs_in_elem, num_nodes_in_surf,"surf_node_ordering_in_elem");
         get_surf_node_lids(surf_node_ordering_in_elem, num_1D, num_dims);
         
         // sort the nodes on each elem face from smallest to largest, these are the hash keys 
-        CArrayKokkos <size_t> face_hash_keys(num_elems,num_surfs_in_elem,num_nodes_in_surf);
+        CArrayKokkos <size_t> face_hash_keys(num_elems,num_surfs_in_elem,num_nodes_in_surf,"face_hash_keys");
 
         FOR_ALL_CLASS(elem_gid, 0, num_elems,
                       face_lid, 0, num_surfs_in_elem,
@@ -636,18 +636,18 @@ struct Mesh_t
         DCArrayKokkos <size_t> bdy_surf_counter(1);
         bdy_surf_counter.set_values(0);
 
-        CArrayKokkos<int> face_elems_in_elem(num_elems, num_surfs_in_elem);
+        CArrayKokkos<int> face_elems_in_elem(num_elems, num_surfs_in_elem,"face_elems_in_elem");
         face_elems_in_elem.set_values(-1);
 
-        surfs_in_elem = CArrayKokkos<size_t>(num_elems, num_surfs_in_elem);
+        surfs_in_elem = CArrayKokkos<size_t>(num_elems, num_surfs_in_elem,"mesh.surfs_in_elem");
         //if(mk_sides) sides_in_elem = CArrayKokkos<size_t>(num_elems*num_surfs_in_elem);
 
         // helper variables for temporary storage, its sized larger than num_surfs
-        CArrayKokkos<int>    elems_in_surf_helper(num_elems*num_surfs_in_elem,2); 
-        CArrayKokkos<size_t> faces_in_surf_helper(num_elems*num_surfs_in_elem,2); 
-        CArrayKokkos<size_t> num_elems_in_surf_helper(num_elems*num_surfs_in_elem); 
+        CArrayKokkos<int>    elems_in_surf_helper(num_elems*num_surfs_in_elem,2,"elems_in_surf_helper"); 
+        CArrayKokkos<size_t> faces_in_surf_helper(num_elems*num_surfs_in_elem,2,"faces_in_surf_helper"); 
+        CArrayKokkos<size_t> num_elems_in_surf_helper(num_elems*num_surfs_in_elem, "num_elems_in_surf_helper"); 
         //if(mk_sides) CArrayKokkos<size_t> sides_in_surf_helper(num_elems*num_surfs_in_elem,2); 
-        CArrayKokkos<size_t> bdy_surfs_helper(num_elems*num_surfs_in_elem); 
+        CArrayKokkos<size_t> bdy_surfs_helper(num_elems*num_surfs_in_elem,"bdy_surfs_helper"); 
 
         // -----------------------------------------------------------------------
         // 1b. Build Surfaces
@@ -772,7 +772,7 @@ struct Mesh_t
         // 1c. Finish populating values in surface data structures
         // -----------------------------------------------------------------------
 
-        nodes_in_surf     = CArrayKokkos<size_t>(num_surfs,num_nodes_in_surf);
+        nodes_in_surf     = CArrayKokkos<size_t>(num_surfs,num_nodes_in_surf, "mesh.nodes_in_surf");
         elems_in_surf     = CArrayKokkos<int>(num_surfs, 2, "mesh.elems_in_surf");
         num_elems_in_surf = CArrayKokkos<size_t>(num_surfs, "mesh.num_elems_in_surf");
         faces_in_surf     = CArrayKokkos<int>(num_surfs, 2, "mesh.elem_faces_in_surf");
@@ -937,7 +937,7 @@ struct Mesh_t
         // -----------------------------------------------------------------------
         
         num_bdy_patches = num_bdy_surfs*num_patches_in_surf;
-        bdy_patches = CArrayKokkos<size_t> (num_bdy_patches);
+        bdy_patches = CArrayKokkos<size_t> (num_bdy_patches, "mesh.bdy_patches");
 
         FOR_ALL_CLASS(bdy_surf_gid, 0, num_bdy_surfs,{
 

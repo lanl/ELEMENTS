@@ -1372,6 +1372,7 @@ namespace elements
         CArrayKokkos<double> qpt_grad_basis; // access as (faces, surf_qpts, dofs, dims)
 
         CArrayKokkos<double> outward_sign;
+        CArrayKokkos<double> outward_normal;
 
         
         void initialize_ref_surf(const struct SurfaceQuadrature_t& SurfQuadrature,
@@ -1393,6 +1394,7 @@ namespace elements
 
             // the sign for outward normal relative to the reference element
             outward_sign = CArrayKokkos<double>(num_ref_surfs, "surf_outward_sign");
+            outward_normal = CArrayKokkos<double>(num_ref_surfs, elem_dims, "surf_outward_normal");
 
             //face 0 (xi=-1):  sign = -1
             //face 1 (xi=+1):  sign = +1
@@ -1403,6 +1405,7 @@ namespace elements
             RUN_CLASS({
                 outward_sign(0) = -1.;
                 outward_sign(1) =  1.;
+
                 if(elem_dims>1){
                     outward_sign(2) = -1.;
                     outward_sign(3) =  1.;
@@ -1411,6 +1414,50 @@ namespace elements
                     outward_sign(4) = -1.;
                     outward_sign(5) =  1.;
                 }
+                
+                if(elem_dims==1){
+                    outward_normal(0,0) = -1.; // face 0 xi-
+                    outward_normal(1,0) =  1.; // face 1 xi+
+                }
+                if(elem_dims==2){
+                    outward_normal(0,0) = -1.; // face 0 xi-
+                    outward_normal(0,1) =  0.; // face 0 xi-
+
+                    outward_normal(1,0) =  1.; // face 1 xi+
+                    outward_normal(1,1) =  0.; // face 1 xi+
+
+                    outward_normal(2,0) =  0.; // face 2 eta-
+                    outward_normal(2,1) = -1.; // face 2 eta-
+
+                    outward_normal(3,0) =  0.; // face 3 eta+
+                    outward_normal(3,1) =  1.; // face 3 eta+
+                }
+                if(elem_dims==3){
+                    outward_normal(0,0) = -1.; // face 0 xi-
+                    outward_normal(0,1) =  0.; // face 0 xi-
+                    outward_normal(0,2) =  0.; // face 0 xi-
+                    
+                    outward_normal(1,0) =  1.; // face 1 xi+
+                    outward_normal(1,1) =  0.; // face 1 xi+
+                    outward_normal(1,2) =  0.; // face 1 xi+
+
+                    outward_normal(2,0) =  0.; // face 2 eta-
+                    outward_normal(2,1) = -1.; // face 2 eta-
+                    outward_normal(2,2) =  0.; // face 2 eta-
+
+                    outward_normal(3,0) =  0.; // face 3 eta+
+                    outward_normal(3,1) =  1.; // face 3 eta+
+                    outward_normal(3,2) =  0.; // face 3 eta+
+                    
+                    outward_normal(4,0) =  0.; // face 4 mu-
+                    outward_normal(4,1) =  0.; // face 4 mu-
+                    outward_normal(4,2) = -1.; // face 4 mu-
+
+                    outward_normal(5,0) =  0.; // face 5 mu+
+                    outward_normal(5,1) =  0.; // face 5 mu+
+                    outward_normal(5,2) =  1.; // face 5 mu+ 
+                }
+
             }); // end serial RUN on GPU
 
             // Notes on arrays

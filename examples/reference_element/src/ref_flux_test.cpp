@@ -177,6 +177,8 @@ MATAR_INITIALIZE(argc, argv);
 
 
     // State arrays for this test
+    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
+
     const size_t num_surfs = Mesh.num_surfs;
     const size_t num_qpts_in_surf = SurfQuad.num_qpts_in_surf;
 
@@ -185,6 +187,7 @@ MATAR_INITIALIZE(argc, argv);
 
     if(num_nodes_in_elem != FERefElem.num_dofs_in_elem) Kokkos::abort("ERROR: mismatch in DOFs and num nodes in elem \n");
 
+    DCArrayKokkos<double> elem_jac(num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
     DCArrayKokkos<double> surf_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_jacobian");
     DCArrayKokkos<double> surf_inv_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_inv_jacobian");
     DCArrayKokkos<double> surf_flux(num_surfs, num_qpts_in_surf, elem_dims, "surf_flux");
@@ -197,6 +200,40 @@ MATAR_INITIALIZE(argc, argv);
     
 
     FOR_ALL(elem_gid, 0, num_elems, {
+
+        double elem_vol = 0.0; 
+
+        ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
+
+        // calculate volume
+        for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
+            // extract the grad_basis at a single quadrature point (qpt,dof,3D)
+            ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
+                                                  num_nodes_in_elem, 3);
+
+            // extract the basis at a single quadrature point (qpt,dof)    
+            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
+                                             num_nodes_in_elem);
+            
+            // jacobian matrix
+            ViewCArrayKokkos<double> jac(&elem_jac(qpt_lid,0,0),3,3);
+
+            jacobian(jac, 
+                    node_coords, 
+                    nodes_in_elem,
+                    a_grad_basis);
+
+            const double det_jac = det_3x3(jac);
+            
+            elem_vol += det_jac*Quad.qpt_weights(qpt_lid);
+
+        } // end for
+
+        if(fabs(elem_vol-pow(h,elem_dims))>1.0e-12){
+            printf("wrong elem volume using gauss quadrature, error = %.15f \n", fabs(elem_vol-pow(h,elem_dims)) );
+            Kokkos::abort("ERROR: wrong volume \n");
+        }
+
 
         double tally_div=0;    
         double tally_flux[3][3];
@@ -214,8 +251,6 @@ MATAR_INITIALIZE(argc, argv);
         for(size_t j=0; j<elem_dims; j++){
             eye[j][j] = 1.0;
         }    
-
-        ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
 
         for(size_t face_lid=0; face_lid<num_surfs_in_elem; face_lid++){
 
@@ -304,7 +339,7 @@ MATAR_INITIALIZE(argc, argv);
             } // end for qpt
         } // end for face_lid
 
-        
+
         // Test: check normals sum to zero over the element
         for(size_t dim=0; dim<elem_dims; dim++){
             if(fabs(tally_normal[dim]) >= 1.e-12){
@@ -312,8 +347,6 @@ MATAR_INITIALIZE(argc, argv);
                 Kokkos::abort("ERROR: no conservation of surface normals \n");
             } // end check on tally_normal
         } // end for dim
-        
-        const double elem_vol = pow(h,elem_dims);
 
 
         // Test: check grad x = eye

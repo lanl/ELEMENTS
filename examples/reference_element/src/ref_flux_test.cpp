@@ -187,21 +187,19 @@ MATAR_INITIALIZE(argc, argv);
 
     if(num_nodes_in_elem != FERefElem.num_dofs_in_elem) Kokkos::abort("ERROR: mismatch in DOFs and num nodes in elem \n");
 
-    DCArrayKokkos<double> elem_jac(num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
+    DCArrayKokkos<double> elem_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
+    DCArrayKokkos<double> elem_vol(num_elems, "elem_vol");
+    
+    
     DCArrayKokkos<double> surf_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_jacobian");
     DCArrayKokkos<double> surf_inv_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_inv_jacobian");
-    DCArrayKokkos<double> surf_flux(num_surfs, num_qpts_in_surf, elem_dims, "surf_flux");
-    DCArrayKokkos<double> field(num_elems, "elem_field"); //elem_order-1 = 1 so it is a P0 element
-    DCArrayKokkos<double> mesh_velocity(num_surfs, num_qpts_in_surf, elem_dims, "surf_mesh_velocity");
-    mesh_velocity.set_values(0.0);
-    
-    printf("\n=== TEST: Surface Integration ===\n");
 
-    
+
+    printf("\n=== TEST: Surface Integration ===\n");
 
     FOR_ALL(elem_gid, 0, num_elems, {
 
-        double elem_vol = 0.0; 
+        elem_vol(elem_gid) = 0.0; 
 
         ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
 
@@ -216,7 +214,7 @@ MATAR_INITIALIZE(argc, argv);
                                              num_nodes_in_elem);
             
             // jacobian matrix
-            ViewCArrayKokkos<double> jac(&elem_jac(qpt_lid,0,0),3,3);
+            ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
 
             jacobian(jac, 
                     node_coords, 
@@ -225,12 +223,16 @@ MATAR_INITIALIZE(argc, argv);
 
             const double det_jac = det_3x3(jac);
             
-            elem_vol += det_jac*Quad.qpt_weights(qpt_lid);
+            elem_vol(elem_gid) += det_jac*Quad.qpt_weights(qpt_lid);
 
         } // end for
 
-        if(fabs(elem_vol-pow(h,elem_dims))>1.0e-12){
-            printf("wrong elem volume using gauss quadrature, error = %.15f \n", fabs(elem_vol-pow(h,elem_dims)) );
+        const double vol_q = elem_vol(elem_gid);
+        double vol_h = 1.0;
+        for(size_t dim=0; dim<elem_dims; dim++) vol_h *= h;
+
+        if( fabs(vol_q-vol_h) > 1.0e-12){
+            printf("wrong elem volume using gauss quadrature, error = %.15f \n", vol_q-vol_h );
             Kokkos::abort("ERROR: wrong volume \n");
         }
 
@@ -353,14 +355,14 @@ MATAR_INITIALIZE(argc, argv);
         bool passed = true;
         for(size_t i=0; i<elem_dims; i++) 
         for(size_t j=0; j<elem_dims; j++) {
-            if(fabs((tally_flux[i][j]/elem_vol) - eye[i][j]) >= 1.e-12) passed = false;
+            if(fabs((tally_flux[i][j]/elem_vol(elem_gid)) - eye[i][j]) >= 1.e-12) passed = false;
         }
         if(!passed){
             printf("\n");
             printf("eye = gradx = \n ");
             for(size_t i=0; i<elem_dims; i++) {
                 for(size_t j=0; j<elem_dims; j++) {
-                    printf("%f, ", tally_flux[i][j]/elem_vol);
+                    printf("%f, ", tally_flux[i][j]/elem_vol(elem_gid));
                 }
                 printf("\n");
             }
@@ -369,30 +371,12 @@ MATAR_INITIALIZE(argc, argv);
         }
 
         // Test: divergence is = 3, for some reason, tol needs to be 1e-10
-        if(fabs((tally_div/elem_vol) - 3.0) >= 1.e-10){
-            printf("Tally_div = %.15f \n",tally_div/elem_vol-3.0);
+        if(fabs((tally_div/elem_vol(elem_gid)) - 3.0) >= 1.e-10){
+            printf("Tally_div = %.15f \n",tally_div/elem_vol(elem_gid)-3.0);
             Kokkos::abort("ERROR: divergence of Gradx should be equal to 3 \n");
         }
 
     }); // end parallel for elements
-
-
-
-    FOR_ALL(surf_gid, 0, Mesh.num_surfs, {
-        
-        const size_t num_elems_in_surf = Mesh.num_elems_in_surf(surf_gid);
-        for(size_t side_lid = 0; side_lid < num_elems_in_surf; side_lid++) {
-            
-            const int elem_gid = Mesh.elems_in_surf(surf_gid, side_lid);
-            const int face_lid = Mesh.faces_in_surf(surf_gid, side_lid);
-            
-            
-        } // end side_lid loop
-        
-    }); // end surf loop
-    Kokkos::fence();
-
-    
 
 
     printf("\n Surface flux test finished.\n");

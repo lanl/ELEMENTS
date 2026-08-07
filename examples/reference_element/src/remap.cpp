@@ -449,7 +449,7 @@ MATAR_INITIALIZE(argc, argv);
                     nbr_face_lid = Mesh.faces_in_surf(surf_gid, 1); // second elem
                 }    
                 
-                // testing 
+                // Rusanov flux with cell averages gives upwind flux
                 surf_flux(surf_gid) += 
                     -0.5*(elem_field(elem_gid)+elem_field(nbr_elem_gid))*normal_dot_vel 
                     +0.5*fabs(normal_dot_vel)*(elem_field(elem_gid)-elem_field(nbr_elem_gid));

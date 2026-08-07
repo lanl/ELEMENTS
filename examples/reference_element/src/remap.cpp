@@ -35,6 +35,13 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
+// for VTU writing
+#include <fstream>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <cmath>
+
 // This pulls in kokkos, matar, mesh, ref_elem stuff, and PT-Scotch
 #include "ELEMENTS.h"
 #include "cramers_rule.hpp" // det and solvers
@@ -44,12 +51,42 @@ using namespace swage;    // unstructured mesh and point cloud
 using namespace elements; // reference element space
 
 
+void write_lagrange_hex_mesh(
+    const std::string& filename,
+    const DCArrayKokkos<double>& node_coords,       // All node coordinates [num_nodes][3]
+    const size_t num_nodes,
+    const DCArrayKokkos<size_t>& nodes_in_elem,     // Connectivity
+    const size_t num_elems,
+    const size_t order,
+    const DCArrayKokkos<double>& node_data,         // Nodal data
+    const std::string& node_data_name,
+    const DCArrayKokkos<double>& elem_data,         // Element center data (NEW)
+    const std::string& elem_data_name);             // Element data name (NEW)
+
+
+void write_lagrange_cells(std::ofstream& file, 
+                        const DCArrayKokkos<size_t>& nodes_in_elem,
+                        size_t num_elems, 
+                        size_t order,
+                        const DCArrayKokkos<double>& elem_data,    // Element data
+                        const std::string& elem_data_name);        // Element data name
+
+void write_points(std::ofstream& file, 
+                  const DCArrayKokkos<double>& coords, 
+                  size_t num_nodes);
+
+
+void write_point_data(std::ofstream& file, 
+                      const DCArrayKokkos<double>& data, 
+                      size_t num_nodes,
+                      const std::string& name);
+
+void reorder_ijk_to_vtk_lagrange(const DCArrayKokkos<size_t>& nodes_in_elem, 
+                                 CArray<size_t>& vtk_nodes,
+                                 const size_t elem_gid, 
+                                 const size_t order);
+
 inline int PointIndexFromIJK(int i, int j, int k, const int* order);
-void write_vtk(const char* filename, 
-               Mesh_t& Mesh,
-               DCArrayKokkos<double>& node_coords,
-               DCArrayKokkos<double>& elem_field,
-               int elem_order);
 
 int main(int argc, char** argv) {
 
@@ -67,8 +104,12 @@ MATAR_INITIALIZE(argc, argv);
     Mesh_t Mesh; // unstructured mesh
 
     const size_t elem_dims = 3;
-    const size_t elem_order = 1;  
-    const size_t num_elems_1D = 8;
+    const size_t elem_order = 3;  
+    const size_t num_elems_1D = 16;
+
+    const size_t max_cycles = 1000;
+    const double max_time   = 0.5;
+    const double graphics_dt = 0.1;
 
     // the minimum quadrature for FE hydrodynamics based on elem order
     const size_t num_DOFs_1d = elem_order + 1; // 
@@ -200,7 +241,6 @@ MATAR_INITIALIZE(argc, argv);
 
 
     const double max_vel = 1.0;
-    const size_t max_cycles = 10;
     double h_cfl = h;
     double dt = 0.2*h_cfl/max_vel;  // dt from CFL at start, this time is psuedo time
 
@@ -262,8 +302,13 @@ MATAR_INITIALIZE(argc, argv);
 
 
     ////--------///
+    double time = 0;
+    double time_output = graphics_dt;
+    size_t output_id = 0;
 
     for(size_t cycle=0; cycle<max_cycles; cycle++){
+        
+        if(cycle%10 == 0) printf(" time = %.4f \n", time);
 
         // Step 1a: store level n state
         FOR_ALL(elem_gid, 0, num_elems, {
@@ -449,27 +494,38 @@ MATAR_INITIALIZE(argc, argv);
             
         });
 
-        // After your cycle loop ends, add:
-        char filename[100];
-        sprintf(filename, "output_cycle_%04zu.vtk", cycle); // Inside cycle loop
-        // OR
-        //sprintf(filename, "output_final.vtk"); // After all cycles
+        time += dt;
 
-        write_vtk(filename, Mesh, node_coords, elem_field, elem_order);
+        if( time-time_output >= -1.e-8 ){
+
+            printf(" writing output at time = %.4f ", time);
+
+            // After your cycle loop ends, add:
+            char filename[100];
+            snprintf(filename, sizeof(filename), "output_time_%04zu.vtu", output_id);
+
+            // Write the mesh state
+            write_lagrange_hex_mesh(
+                filename,
+                node_coords,           
+                Mesh.num_nodes,
+                Mesh.nodes_in_elem,    
+                Mesh.num_elems,
+                elem_order,            
+                node_velocity,       // only x-comp of vel written
+                "Vel",
+                elem_field,          // element center data
+                "Density"            // element data name                  
+            );
+            time_output += graphics_dt;
+            output_id += 1;
+
+        } // end if
+
+        if (time >= max_time  ) break;
 
     } // end loop over cycle
-
-
-/*
-    FOR_ALL(elem_gid, 0, num_elems,{
-        printf("%.4f\n", elem_field(elem_gid));
-    });
-    Kokkos::fence();
-
-    FOR_ALL(node_gid, 0, num_nodes,{
-        printf("%.4f, %.4f \n", node_coords(node_gid, 0), node_coords(node_gid, 1));
-    });
-*/
+    printf(" time = %.4f ", time);
 
     printf("\n Remap test finished.\n");
 
@@ -481,159 +537,228 @@ return 0;
 } // end function
 
 
-/////////////////////////////////////////////////////////////////////////////
-///
-/// \fn PointIndexFromIJK
-///
-/// \brief Given (i,j,k) coordinates within the Lagrange hex, return an 
-/// offset into the local connectivity (PointIds) array. The order parameter
-/// must point to an array of 3 integers specifying the order along each 
-/// axis of the hexahedron.
-///
-/////////////////////////////////////////////////////////////////////////////
+
+// 
+void write_lagrange_hex_mesh(
+    const std::string& filename,
+    const DCArrayKokkos<double>& node_coords,       // All node coordinates [num_nodes][3]
+    const size_t num_nodes,
+    const DCArrayKokkos<size_t>& nodes_in_elem,     // Connectivity
+    const size_t num_elems,
+    const size_t order,
+    const DCArrayKokkos<double>& node_data,         // Nodal data
+    const std::string& node_data_name,
+    const DCArrayKokkos<double>& elem_data,         // Element center data (NEW)
+    const std::string& elem_data_name)              // Element data name (NEW)
+{
+    std::ofstream vtu_file(filename);
+    if (!vtu_file.is_open()) {
+        std::cerr << "Error: Cannot open file " << filename << std::endl;
+        return;
+    }
+
+    vtu_file << std::fixed << std::setprecision(8);
+
+    // Header
+    vtu_file << "<?xml version=\"1.0\"?>\n";
+    vtu_file << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">\n";
+    vtu_file << "  <UnstructuredGrid>\n";
+    vtu_file << "    <Piece NumberOfPoints=\"" << num_nodes 
+             << "\" NumberOfCells=\"" << num_elems << "\">\n";
+
+    // Write Points
+    write_points(vtu_file, node_coords, num_nodes);
+
+    // Write Cells (connectivity, types, AND cell data)
+    write_lagrange_cells(vtu_file, nodes_in_elem, num_elems, order, 
+                        elem_data, elem_data_name);  // Pass element data
+
+    // Write Point Data
+    write_point_data(vtu_file, node_data, num_nodes, node_data_name);
+
+    // Footer
+    vtu_file << "    </Piece>\n";
+    vtu_file << "  </UnstructuredGrid>\n";
+    vtu_file << "</VTKFile>\n";
+
+    vtu_file.close();
+    std::cout << "Wrote VTU file: " << filename << std::endl;
+}
+
+void write_points(std::ofstream& file, const DCArrayKokkos<double>& coords, size_t num_nodes)
+{
+    file << "      <Points>\n";
+    file << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+    
+    for (size_t i = 0; i < num_nodes; i++) {
+        file << "          " << coords.host(i, 0) << " " 
+             << coords.host(i, 1) << " " 
+             << coords.host(i, 2) << "\n";
+    }
+    
+    file << "        </DataArray>\n";
+    file << "      </Points>\n";
+}
+
+void write_lagrange_cells(std::ofstream& file, 
+                          const DCArrayKokkos<size_t>& nodes_in_elem,
+                          size_t num_elems, 
+                          size_t order,
+                          const DCArrayKokkos<double>& elem_data,    // Element data
+                          const std::string& elem_data_name)         // Element data name
+{
+    const size_t nodes_per_elem = (order + 1) * (order + 1) * (order + 1);
+    const int VTK_LAGRANGE_HEXAHEDRON = 72;
+
+    file << "      <Cells>\n";
+    
+    // Connectivity
+    file << "        <DataArray type=\"Int64\" Name=\"connectivity\" format=\"ascii\">\n";
+    
+    CArray<size_t> vtk_nodes(nodes_per_elem);
+    
+    for (size_t elem = 0; elem < num_elems; elem++) {
+        // Convert to VTK ordering
+        reorder_ijk_to_vtk_lagrange(nodes_in_elem, vtk_nodes, elem, order);
+        
+        file << "          ";
+        for (size_t i = 0; i < nodes_per_elem; i++) {
+            file << vtk_nodes(i) << " ";
+        }
+        file << "\n";
+    }
+    
+    file << "        </DataArray>\n";
+
+    // Offsets
+    file << "        <DataArray type=\"Int64\" Name=\"offsets\" format=\"ascii\">\n";
+    file << "          ";
+    for (size_t elem = 0; elem < num_elems; elem++) {
+        file << (elem + 1) * nodes_per_elem << " ";
+    }
+    file << "\n        </DataArray>\n";
+
+    // Cell types
+    file << "        <DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">\n";
+    file << "          ";
+    for (size_t elem = 0; elem < num_elems; elem++) {
+        file << VTK_LAGRANGE_HEXAHEDRON << " ";
+    }
+    file << "\n        </DataArray>\n";
+
+    file << "      </Cells>\n";
+
+    // CellData section with HigherOrderDegrees AND user data
+    file << "      <CellData Scalars=\"" << elem_data_name << "\">\n";
+    
+    // HigherOrderDegrees (CRITICAL for Lagrange elements!)
+    file << "        <DataArray type=\"Int32\" Name=\"HigherOrderDegrees\" NumberOfComponents=\"3\" format=\"ascii\">\n";
+    file << "          ";
+    for (size_t elem = 0; elem < num_elems; elem++) {
+        file << order << " " << order << " " << order << " ";
+    }
+    file << "\n        </DataArray>\n";
+    
+    // User-provided element center data
+    file << "        <DataArray type=\"Float64\" Name=\"" << elem_data_name << "\" format=\"ascii\">\n";
+    file << "          ";
+    for (size_t elem = 0; elem < num_elems; elem++) {
+        file << elem_data.host(elem) << " ";
+    }
+    file << "\n        </DataArray>\n";
+    
+    file << "      </CellData>\n";
+}
+
+void write_point_data(std::ofstream& file, 
+                      const DCArrayKokkos<double>& data, 
+                      size_t num_nodes,
+                      const std::string& name)
+{
+    file << "      <PointData Scalars=\"" << name << "\">\n";
+    file << "        <DataArray type=\"Float64\" Name=\"" << name << "\" format=\"ascii\">\n";
+    
+    // writing X-component of node data
+    for (size_t i = 0; i < num_nodes; i++) {
+        file << "          " << data.host(i, 0) << "\n";
+    }
+    
+    file << "        </DataArray>\n";
+    file << "      </PointData>\n";
+}
+
+// Keep your existing helper functions unchanged
+void reorder_ijk_to_vtk_lagrange(const DCArrayKokkos<size_t>& nodes_in_elem, 
+                                 CArray<size_t>& vtk_nodes,
+                                 const size_t elem_gid, 
+                                 const size_t order)
+{
+    const int n = order + 1;
+    int ord[3] = {(int)order, (int)order, (int)order};
+    
+    std::vector<std::pair<int, size_t>> vtk_to_ijk;
+    
+    for(int k = 0; k < n; k++){
+        for(int j = 0; j < n; j++){
+            for(int i = 0; i < n; i++){
+                int vtk_pos = PointIndexFromIJK(i, j, k, ord);
+                size_t ijk_linear = i + j*n + k*n*n;
+                vtk_to_ijk.push_back({vtk_pos, ijk_linear});
+            }
+        }
+    }
+    
+    std::sort(vtk_to_ijk.begin(), vtk_to_ijk.end());
+    
+    for(size_t v = 0; v < vtk_to_ijk.size(); v++){
+        size_t ijk_linear = vtk_to_ijk[v].second;
+        vtk_nodes(v) = nodes_in_elem.host(elem_gid, ijk_linear);
+    }
+}
+
 inline int PointIndexFromIJK(int i, int j, int k, const int* order)
 {
     bool ibdy = (i == 0 || i == order[0]);
     bool jbdy = (j == 0 || j == order[1]);
     bool kbdy = (k == 0 || k == order[2]);
-    // How many boundaries do we lie on at once?
     int nbdy = (ibdy ? 1 : 0) + (jbdy ? 1 : 0) + (kbdy ? 1 : 0);
 
     if (nbdy == 3) { // Vertex DOF
-        // ijk is a corner node. Return the proper index (somewhere in [0,7]):
         return (i ? (j ? 2 : 1) : (j ? 3 : 0)) + (k ? 4 : 0);
     }
 
     int offset = 8;
     if (nbdy == 2) { // Edge DOF
-        if (!ibdy) { // On i axis
-            return (i - 1) + (j ? order[0] - 1 + order[1] - 1 : 0) + (k ? 2 * (order[0] - 1 + order[1] - 1) : 0) + offset;
+        if (!ibdy) {
+            return (i - 1) + (j ? order[0] - 1 + order[1] - 1 : 0) + 
+                   (k ? 2 * (order[0] - 1 + order[1] - 1) : 0) + offset;
         }
-        if (!jbdy) { // On j axis
-            return (j - 1) + (i ? order[0] - 1 : 2 * (order[0] - 1) + order[1] - 1) + (k ? 2 * (order[0] - 1 + order[1] - 1) : 0) + offset;
+        if (!jbdy) {
+            return (j - 1) + (i ? order[0] - 1 : 2 * (order[0] - 1) + order[1] - 1) + 
+                   (k ? 2 * (order[0] - 1 + order[1] - 1) : 0) + offset;
         }
-        // !kbdy, On k axis
         offset += 4 * (order[0] - 1) + 4 * (order[1] - 1);
         return (k - 1) + (order[2] - 1) * (i ? (j ? 3 : 1) : (j ? 2 : 0)) + offset;
     }
 
     offset += 4 * (order[0] - 1 + order[1] - 1 + order[2] - 1);
     if (nbdy == 1) { // Face DOF
-        if (ibdy) { // On i-normal face
-            return (j - 1) + ((order[1] - 1) * (k - 1)) + (i ? (order[1] - 1) * (order[2] - 1) : 0) + offset;
+        if (ibdy) {
+            return (j - 1) + ((order[1] - 1) * (k - 1)) + 
+                   (i ? (order[1] - 1) * (order[2] - 1) : 0) + offset;
         }
         offset += 2 * (order[1] - 1) * (order[2] - 1);
-        if (jbdy) { // On j-normal face
-            return (i - 1) + ((order[0] - 1) * (k - 1)) + (j ? (order[2] - 1) * (order[0] - 1) : 0) + offset;
+        if (jbdy) {
+            return (i - 1) + ((order[0] - 1) * (k - 1)) + 
+                   (j ? (order[2] - 1) * (order[0] - 1) : 0) + offset;
         }
         offset += 2 * (order[2] - 1) * (order[0] - 1);
-        // kbdy, On k-normal face
-        return (i - 1) + ((order[0] - 1) * (j - 1)) + (k ? (order[0] - 1) * (order[1] - 1) : 0) + offset;
+        return (i - 1) + ((order[0] - 1) * (j - 1)) + 
+               (k ? (order[0] - 1) * (order[1] - 1) : 0) + offset;
     }
 
-    // nbdy == 0: Body DOF
-    offset += 2 * ( (order[1] - 1) * (order[2] - 1) + (order[2] - 1) * (order[0] - 1) + (order[0] - 1) * (order[1] - 1));
-    return offset + (i - 1) + (order[0] - 1) * ( (j - 1) + (order[1] - 1) * ( (k - 1)));
-}
-
-void write_vtk(const char* filename, 
-               Mesh_t& Mesh,
-               DCArrayKokkos<double>& node_coords,
-               DCArrayKokkos<double>& elem_field,
-               int elem_order)
-{
-    // Update host side data
-    node_coords.update_host();
-    elem_field.update_host();
-    Mesh.nodes_in_elem.update_host();
-    
-    
-    FILE* vtk_file = fopen(filename, "w");
-    if (vtk_file == NULL) {
-        printf("Error: Could not open VTK file %s\n", filename);
-        return;
-    }
-    
-    // Write VTK header
-    fprintf(vtk_file, "# vtk DataFile Version 3.0\n");
-    fprintf(vtk_file, "Remap Test Output\n");
-    fprintf(vtk_file, "ASCII\n");
-    fprintf(vtk_file, "DATASET UNSTRUCTURED_GRID\n");
-    
-    // Write points (nodes)
-    fprintf(vtk_file, "POINTS %lu double\n", Mesh.num_nodes);
-    for (size_t node_gid = 0; node_gid < Mesh.num_nodes; node_gid++) {
-        fprintf(vtk_file, "%.8e %.8e %.8e\n",
-                node_coords.host(node_gid, 0),
-                node_coords.host(node_gid, 1),
-                node_coords.host(node_gid, 2));
-    }
-    
-    // Write cells (elements)
-    size_t num_nodes_in_elem = Mesh.num_nodes_in_elem;
-    
-    // For VTK, we need to specify: number of cells, and total size
-    // size = num_elems * (1 + num_nodes_in_elem) where 1 is for the count
-    size_t total_size = Mesh.num_elems * (1 + num_nodes_in_elem);
-    fprintf(vtk_file, "CELLS %lu %lu\n", Mesh.num_elems, total_size);
-    
-    int order[3]   = { elem_order, elem_order, elem_order };
-    for (size_t elem_gid = 0; elem_gid < Mesh.num_elems; elem_gid++) {
-        fprintf(vtk_file, "%lu", num_nodes_in_elem);
-        //for (int k = 0; k <= elem_order; k++) {
-        //    for (int j = 0; j <= elem_order; j++) {
-        //        for (int i = 0; i <= elem_order; i++) {
-        //            size_t node_lid = PointIndexFromIJK(i, j, k, order);
-        //            fprintf(vtk_file, "%lu ", Mesh.nodes_in_elem.host(elem_gid, node_lid));
-        //        }
-        //    }
-        //}
-        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
-            fprintf(vtk_file, " %lu", Mesh.nodes_in_elem.host(elem_gid, node_lid));
-        }
-        fprintf(vtk_file, "\n");
-    }
-    
-    // Write cell types
-    fprintf(vtk_file, "CELL_TYPES %lu\n", Mesh.num_elems);
-    
-    // Determine VTK cell type based on element order and dimension
-    int vtk_cell_type;
-    //if (elem_order == 1 && Mesh.num_dims == 3) {
-    //    vtk_cell_type = 12; // VTK_HEXAHEDRON (linear hex)
-    //} else if (elem_order == 2 && Mesh.num_dims == 3) {
-    //    vtk_cell_type = 29; // VTK_TRIQUADRATIC_HEXAHEDRON
-    //} else {
-        // Default to higher order hex
-        vtk_cell_type = 72; // VTK_LAGRANGE_HEXAHEDRON
-    //}
-    vtk_cell_type = 11;
-    
-    for (size_t elem_gid = 0; elem_gid < Mesh.num_elems; elem_gid++) {
-        fprintf(vtk_file, "%d\n", vtk_cell_type);
-    }
-    
-    // Write cell data (element field)
-    fprintf(vtk_file, "CELL_DATA %lu\n", Mesh.num_elems);
-    fprintf(vtk_file, "SCALARS elem_field double 1\n");
-    fprintf(vtk_file, "LOOKUP_TABLE default\n");
-    for (size_t elem_gid = 0; elem_gid < Mesh.num_elems; elem_gid++) {
-        fprintf(vtk_file, "%.8e\n", elem_field.host(elem_gid));
-    }
-
-    /*
-    fprintf(vtk_file, "POINT_DATA %lu\n", Mesh.num_nodes);
-    fprintf(vtk_file, "VECTORS node_velocity double\n");
-
-    node_velocity.update_host();
-    for (size_t node_gid = 0; node_gid < Mesh.num_nodes; node_gid++) {
-        fprintf(vtk_file, "%.8e %.8e %.8e\n",
-                node_velocity.host(node_gid, 0),
-                node_velocity.host(node_gid, 1),
-                node_velocity.host(node_gid, 2));
-    }
-    */
-    
-    fclose(vtk_file);
-    printf("VTK file written to: %s\n", filename);
+    // Interior DOF
+    offset += 2 * ((order[1] - 1) * (order[2] - 1) + (order[2] - 1) * (order[0] - 1) + 
+                   (order[0] - 1) * (order[1] - 1));
+    return offset + (i - 1) + (order[0] - 1) * ((j - 1) + (order[1] - 1) * (k - 1));
 }

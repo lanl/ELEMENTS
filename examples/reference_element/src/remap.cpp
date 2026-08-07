@@ -498,7 +498,7 @@ MATAR_INITIALIZE(argc, argv);
 
         if( time-time_output >= -1.e-8 ){
 
-            printf(" writing output at time = %.4f ", time);
+            printf(" Writing output at time = %.4f. ", time);
 
             // After your cycle loop ends, add:
             char filename[100];

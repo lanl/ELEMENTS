@@ -309,6 +309,37 @@ MATAR_INITIALIZE(argc, argv);
     double time_output = graphics_dt;
     size_t output_id = 0;
 
+
+    {
+        // writing the initial mesh and state
+        node_velocity.set_values(0.0);
+
+        node_coords.update_host();
+        node_velocity.update_host();
+        elem_field.update_host();
+
+        printf(" Writing output at time = %.4f. ", time);
+
+        char filename[100];
+        snprintf(filename, sizeof(filename), "output_time_%04zu.vtu", output_id);
+
+        // Write the mesh state
+        write_lagrange_hex_mesh(
+            filename,
+            node_coords,           
+            Mesh.num_nodes,
+            Mesh.nodes_in_elem,    
+            Mesh.num_elems,
+            elem_order,            
+            node_velocity,       // only x-comp of vel written
+            "Vel",
+            elem_field,          // element center data
+            "Density"            // element data name                  
+        );
+        output_id += 1;
+    } // end graphics dump scope
+
+
     for(size_t cycle=0; cycle<max_cycles; cycle++){
         
         if(cycle%10 == 0) printf(" time = %.4f \n", time);
@@ -417,7 +448,8 @@ MATAR_INITIALIZE(argc, argv);
                     nbr_elem_gid = Mesh.elems_in_surf(surf_gid, 1); // second elem
                     nbr_face_lid = Mesh.faces_in_surf(surf_gid, 1); // second elem
                 }    
-                    
+                
+                // testing 
                 surf_flux(surf_gid) += 
                     -0.5*(elem_field(elem_gid)+elem_field(nbr_elem_gid))*normal_dot_vel 
                     +0.5*fabs(normal_dot_vel)*(elem_field(elem_gid)-elem_field(nbr_elem_gid));
@@ -500,6 +532,7 @@ MATAR_INITIALIZE(argc, argv);
         time += dt;
 
         if( time-time_output >= -1.e-8 ){
+
             node_coords.update_host();
             node_velocity.update_host();
             elem_field.update_host();

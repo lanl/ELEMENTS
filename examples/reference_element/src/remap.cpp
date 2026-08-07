@@ -196,6 +196,9 @@ MATAR_INITIALIZE(argc, argv);
             node_lid++;
         }
     });
+    Kokkos::fence();
+    Mesh.nodes_in_elem.update_host();
+
 
     std::cout<<"Building corner connectivity \n";
     Mesh.build_corner_connectivity();
@@ -497,6 +500,10 @@ MATAR_INITIALIZE(argc, argv);
         time += dt;
 
         if( time-time_output >= -1.e-8 ){
+            node_coords.update_host();
+            node_velocity.update_host();
+            elem_field.update_host();
+
 
             printf(" Writing output at time = %.4f. ", time);
 

@@ -255,7 +255,7 @@ MATAR_INITIALIZE(argc, argv);
     
     // Calculate RHS_surf_flux
     CArrayKokkos <double> RHS_surf_flux(num_elems, num_surfs_in_elem, num_qpts_in_surf, "RHS_surf_flux"); // used to build RHS vector 
-    CArrayKokkos <double> RHS_elem_flux(num_elems, num_nodes_in_elem, "RHS_elem_flux"); // RHS vector 
+    CArrayKokkos <double> RHS_elem(num_elems, num_nodes_in_elem, "RHS_elem"); // RHS vector 
 
 
     // ================================================================
@@ -350,6 +350,7 @@ MATAR_INITIALIZE(argc, argv);
     // Step 1: build the volume matrix for nodal DG at t=0
 
     elem_vol.set_values(0.0);
+    elem_vol_matrix.set_values(0.0);
     FOR_ALL(elem_gid, 0, num_elems, {
 
         ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
@@ -487,7 +488,6 @@ MATAR_INITIALIZE(argc, argv);
             for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++)
             for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
                 elem_vol_matrix_n(elem_gid, dof_lid, node_lid)   = elem_vol_matrix(elem_gid, dof_lid, node_lid);
-                elem_inv_vol_matrix(elem_gid, dof_lid, node_lid) = elem_vol_matrix(elem_gid, dof_lid, node_lid);
             }
         });
 
@@ -544,7 +544,6 @@ MATAR_INITIALIZE(argc, argv);
             // Step 3: Calculate the surface fluxes at quadrature points
 
             RHS_surf_flux.set_values(0.0);
-            RHS_elem_flux.set_values(0.0); 
             FOR_ALL(surf_gid, 0, num_surfs, {
                 
                 const size_t num_elems_in_surf = Mesh.num_elems_in_surf(surf_gid);
@@ -651,20 +650,20 @@ MATAR_INITIALIZE(argc, argv);
             Kokkos::fence();
 
             // -------------------------------------------------
-            // Step 4: Solve DG equations in the element
+            // Step 4: Build RHS of DG equations in the element
 
+            RHS_elem.set_values(0.0); 
             FOR_ALL(elem_gid, 0, num_elems,{
                 
                 // ----------------------------------------------
                 // 4a. Initialize RHS = M*u^n
                 
                 for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
-                    RHS_elem_flux(elem_gid, dof_lid) = 0.0;
                     
                     // Add M * u^n term
                     for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
                         const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
-                        RHS_elem_flux(elem_gid, dof_lid) += 
+                        RHS_elem(elem_gid, dof_lid) += 
                             elem_vol_matrix_n(elem_gid, dof_lid, node_lid) * corner_field_n(corner_gid);
                     }
                 }
@@ -676,9 +675,9 @@ MATAR_INITIALIZE(argc, argv);
                 for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
                     
                     ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
-                                                        num_nodes_in_elem, 3);
+                                                          num_nodes_in_elem, 3);
                     ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
-                                                    num_nodes_in_elem);
+                                                     num_nodes_in_elem);
                     
                     // Reconstruct field at quadrature point
                     double qpt_field = 0.0;
@@ -707,7 +706,7 @@ MATAR_INITIALIZE(argc, argv);
                     }
                     
                     const double vol_qpt = elem_det_jac(elem_gid, qpt_lid) * Quad.qpt_weights(qpt_lid);
-                    RHS_elem_flux(elem_gid, dof_lid) -= rk_alpha * dt * grad_dot_flux * vol_qpt;
+                    RHS_elem(elem_gid, dof_lid) -= rk_alpha * dt * grad_dot_flux * vol_qpt;
                 }
                 
                 // ----------------------------------------------
@@ -721,55 +720,13 @@ MATAR_INITIALIZE(argc, argv);
                                                     num_nodes_in_elem);
                     
                     // surface flux (note: RHS_surf_flux already has correct sign)
-                    RHS_elem_flux(elem_gid, dof_lid) += 
+                    RHS_elem(elem_gid, dof_lid) += 
                         rk_alpha * dt * RHS_surf_flux(elem_gid, face_lid, qpt_lid) * a_basis(dof_lid);
                 }
-                
-                // -----------------------------------------------------
-                // 4d. Solve M * u^{n+1} = RHS using LU decomposition
 
-                int singular = 0; 
-                int parity = 0;
 
-                ViewCArrayKokkos<size_t> perm(&perm_elem(elem_gid,0), num_nodes_in_elem);
-                ViewCArrayKokkos<double> vv(&vv_elem(elem_gid,0), num_nodes_in_elem);
-
-                ViewCArrayKokkos<double> A(&elem_inv_vol_matrix(elem_gid, 0, 0), 
-                                        num_nodes_in_elem, num_nodes_in_elem); 
-                ViewCArrayKokkos<double> b(&RHS_elem_flux(elem_gid,0), num_nodes_in_elem);
-
-                singular = LU_decompose(A, perm, vv, parity);
-                if(singular == 0){
-                    Kokkos::abort("ERROR: matrix is singular \n");
-                }
-
-                //printf("\nA = \n");
-                //for(size_t i=0; i<elem_dims; i++){
-                //    for(size_t j=0; j<elem_dims; j++){   
-                //        printf(" %f, ", A(i,j));
-                //    }
-                //    printf("\n");
-                //}
-                //printf("\nb = \n");
-                //for(size_t i=0; i<elem_dims; i++){
-                //    printf("   %f\n", b(i));
-                //}
-
-                LU_backsub(A, perm, b); // answer sent back in b
-
-                //printf("\nx = \n");
-                //for(size_t i=0; i<elem_dims; i++){
-                //    printf("   %f\n", b(i));
-                //}
-
-                // -----------------------------------------------------
-                // 4e. Save the new corner DOFs
-                for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
-                    const size_t corner_gid = Mesh.corners_in_elem(elem_gid, dof_lid);
-                    corner_field(corner_gid) = b(dof_lid);
-                }
-
-            }); // end parallel for elems
+            });
+            Kokkos::fence();
 
 
 
@@ -785,8 +742,9 @@ MATAR_INITIALIZE(argc, argv);
 
 
             // ================================================================
-            // Step 6: build the volume matrix for nodal DG
+            // Step 6: build the volume matrix for nodal DG after the mesh moved
             elem_vol.set_values(0.0);
+            elem_vol_matrix.set_values(0.0);
             FOR_ALL(elem_gid, 0, num_elems, {
 
                 ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
@@ -826,7 +784,76 @@ MATAR_INITIALIZE(argc, argv);
             }); // end parallel for
             Kokkos::fence();
 
+
+            // -----------------------------------------------------
+            // 7. Solve M * u^{n+1} = RHS using LU decomposition
+
+            FOR_ALL(elem_gid, 0, num_elems,{
+                
+                // populate the matrix to invert
+                for(size_t dof_lid=0; dof_lid<num_nodes_in_elem; dof_lid++)
+                for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
+                    elem_inv_vol_matrix(elem_gid, dof_lid, node_lid) = elem_vol_matrix(elem_gid, dof_lid, node_lid);
+                }
+
+                int singular = 0; 
+                int parity = 0;
+
+                ViewCArrayKokkos<size_t> perm(&perm_elem(elem_gid,0), num_nodes_in_elem);
+                ViewCArrayKokkos<double> vv(&vv_elem(elem_gid,0), num_nodes_in_elem);
+
+                ViewCArrayKokkos<double> A(&elem_inv_vol_matrix(elem_gid, 0, 0), 
+                                        num_nodes_in_elem, num_nodes_in_elem); 
+                ViewCArrayKokkos<double> b(&RHS_elem(elem_gid,0), num_nodes_in_elem);
+
+                singular = LU_decompose(A, perm, vv, parity);
+                if(singular == 0){
+                    Kokkos::abort("ERROR: matrix is singular \n");
+                }
+
+                //printf("\nA = \n");
+                //for(size_t i=0; i<elem_dims; i++){
+                //    for(size_t j=0; j<elem_dims; j++){   
+                //        printf(" %f, ", A(i,j));
+                //    }
+                //    printf("\n");
+                //}
+                //printf("\nb = \n");
+                //for(size_t i=0; i<elem_dims; i++){
+                //    printf("   %f\n", b(i));
+                //}
+
+                LU_backsub(A, perm, b); // answer sent back in b
+
+                //printf("\nx = \n");
+                //for(size_t i=0; i<elem_dims; i++){
+                //    printf("   %f\n", b(i));
+                //}
+
+                // -----------------------------------------------------
+                // 4e. Save the new corner DOFs
+                for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
+                    const size_t corner_gid = Mesh.corners_in_elem(elem_gid, dof_lid);
+                    corner_field(corner_gid) = b(dof_lid);
+                }
+
+            }); // end parallel for elems
+            Kokkos::fence();
+
         } // end Runge Kutta time level loop
+
+        double sum_elem = 0.0;
+        double elem_conserve_check = 0.0;
+        FOR_REDUCE_SUM(elem_gid, 0, num_elems, sum_elem, {
+
+            for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++)
+            for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
+                const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
+                sum_elem += elem_vol_matrix(elem_gid, dof_lid, node_lid)*corner_field(corner_gid);
+            }
+        }, elem_conserve_check);
+
+        printf("elem_conserve_check = %f \n", elem_conserve_check);
 
 
         // ================================================================

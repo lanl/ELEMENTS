@@ -242,6 +242,7 @@ MATAR_INITIALIZE(argc, argv);
     DCArrayKokkos<double> elem_field(num_elems, "elem_field");
     DCArrayKokkos<double> node_field(num_nodes, "node_field");     // for displaying field results
     DCArrayKokkos<double> node_velocity(num_nodes, elem_dims, "node_velocity");
+    DCArrayKokkos<double> node_coords_n(num_nodes, elem_dims, "node_coords_n");
 
     DCArrayKokkos<double> corner_field(num_corners, "corner_field");
     DCArrayKokkos<double> corner_field_n(num_corners, "corner_field_n");
@@ -390,15 +391,16 @@ MATAR_INITIALIZE(argc, argv);
 
 
     // -----------------------------------------------------
-    const double max_vel = 1.0;
-    double h_cfl = h/(double)num_nodes_1D;
-    double dt = 0.2*h_cfl/max_vel;  // dt from CFL at start, this time is psuedo time
+    const double max_vel = 1.0;             // the CFL velocity used for calculating dt
+    double h_cfl = h/(double)num_nodes_1D;  // the CFL length scale for calculating dt
+    double dt = 0.2*h_cfl/max_vel;          // dt from CFL at start, this time is psuedo time
 
 
     // -----------------------------------------------------
-    double time = 0;
-    double time_output = graphics_dt;
-    size_t output_id = 0;
+    double time = 0;                    // the time 
+    double time_output = graphics_dt;   // the time for graphics outputs
+    size_t output_id = 0;               // the file id for the outputs
+    size_t rk_num_stages = 2;           // runge kutta time integration levels
 
 
     // ================================================================
@@ -492,324 +494,339 @@ MATAR_INITIALIZE(argc, argv);
         FOR_ALL(corner_gid, 0, num_corners, {
             corner_field_n(corner_gid) = corner_field(corner_gid);
         });
-        Kokkos::fence();
 
-
-        // ------------------------------------------------------
-        // Step 1b: calculate the mesh velocity at time level n
-
-        FOR_ALL(node_gid, 0, num_nodes,{
-            // new velocity, it is Taylor-Green vortex
-            // PI is defined in mesh class
-            node_velocity(node_gid, 0) = sin(PI*node_coords(node_gid, 0))*cos(PI*node_coords(node_gid, 1));
-            node_velocity(node_gid, 1) = -cos(PI*node_coords(node_gid, 0))*sin(PI*node_coords(node_gid, 1));
-            node_velocity(node_gid, 2) = 0.0;
-        });
-
-
-        // ------------------------------------------------------
-        // Step 2: get CFL time step for moving mesh
-        double min_h_loc;
-        FOR_REDUCE_MIN(elem_gid, 0, num_elems, 
-                       min_h_loc, { 
-            
-            for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
-                const double vol_qpt= Quad.qpt_weights(qpt_lid)*elem_det_jac(elem_gid, qpt_lid);
-                const double h_qpt = pow(vol_qpt,0.3333333);
-                if(h_qpt < min_h_loc) min_h_loc = h_qpt;
+        FOR_ALL(node_gid, 0, num_nodes, {
+            for(size_t dim=0; dim<elem_dims; dim++){
+                node_coords_n(node_gid, dim) = node_coords(node_gid, dim);
             }
-
-        }, h_cfl);
-        Kokkos::fence();
-
-        dt = 0.1*h_cfl/max_vel; // pseudo time step
-
-
-        // ----------------------------------------------------------
-        // Step 3: Calculate the surface fluxes at quadrature points
-
-        RHS_surf_flux.set_values(0.0);
-        RHS_elem_flux.set_values(0.0); 
-        FOR_ALL(surf_gid, 0, num_surfs, {
-            
-            const size_t num_elems_in_surf = Mesh.num_elems_in_surf(surf_gid);
-
-            // get the first elem id and face in this surf
-            const size_t elem_gid = Mesh.elems_in_surf(surf_gid, 0);
-            const size_t face_lid = Mesh.faces_in_surf(surf_gid, 0);
-
-            ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
-
-            for(size_t dof_lid=0; dof_lid<num_nodes_in_elem; dof_lid++)
-            for(size_t qpt_lid=0; qpt_lid<num_qpts_in_surf; qpt_lid++){
-              
-                // extract the grad_basis at a single quadrature point (surf,qpt,dof,3D)
-                ViewCArrayKokkos<double> a_grad_basis(&RefSurf.qpt_grad_basis(face_lid,qpt_lid,0,0),
-                                                    num_nodes_in_elem, 3);
-
-                // extract the basis at a single quadrature point (surf,qpt,dof)    
-                ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0),
-                                                num_nodes_in_elem);
-                
-                ViewCArrayKokkos<double> jac(&surf_jac(surf_gid,qpt_lid,0,0),3,3);
-                ViewCArrayKokkos<double> inv_jac(&surf_inv_jac(surf_gid,qpt_lid,0,0),3,3);
-
-                jacobian(jac, 
-                        node_coords, 
-                        nodes_in_elem,
-                        a_grad_basis);
-
-                const double det_jac_qpt = det_3x3(jac);
-
-                invert_3x3(jac, inv_jac, det_jac_qpt);
-
-                // Nanson's formula: s*J^-1*j*f*w
-                double area_normal[3];
-                area_normal[0] = 0.;
-                area_normal[1] = 0.;
-                area_normal[2] = 0.;
-                for(size_t j=0; j<elem_dims; j++){ 
-                    for(size_t i=0; i<elem_dims; i++){
-                        area_normal[j] += RefSurf.outward_normal(face_lid,i)*inv_jac(i,j);
-                    } // end i
-                    area_normal[j] *= det_jac_qpt*SurfQuad.qpt_weights(face_lid,qpt_lid);
-                } // end j
-
-                double qpt_vel[3];
-                for(size_t dim=0; dim<elem_dims; dim++){
-                    qpt_vel[dim] = 0.0;
-                }
-
-                for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++)
-                for(size_t dim=0; dim<elem_dims; dim++){
-                    const size_t node_gid = nodes_in_elem(node_lid);
-                    qpt_vel[dim] += a_basis(node_lid)*node_velocity(node_gid,dim);
-                } // end for
-
-                double normal_dot_vel = 0.0;
-                for(size_t dim=0; dim<elem_dims; dim++){
-                    normal_dot_vel += area_normal[dim]*qpt_vel[dim];
-                }
-                
-                size_t nbr_elem_gid = elem_gid;
-                size_t nbr_face_lid = face_lid;
-                if(num_elems_in_surf==2){
-                    nbr_elem_gid = Mesh.elems_in_surf(surf_gid, 1); // second elem
-                    nbr_face_lid = Mesh.faces_in_surf(surf_gid, 1); // second elem face
-                }    
-
-                const size_t nbr_qpt_lid = surf_qpt_qpt_map(surf_gid,0,qpt_lid); // matching qpt
-
-                ViewCArrayKokkos<double> a_nbr_basis(&RefSurf.qpt_basis(nbr_face_lid,nbr_qpt_lid,0),
-                                                    num_nodes_in_elem);
-
-                // reconstruct the fields
-                double qpt_field     = 0.0;
-                double nbr_qpt_field = 0.0;
-
-                for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
-
-                    // Note: corner_lid = node_lid inside the element
-
-                    const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
-                    qpt_field += a_basis(node_lid)*corner_field(corner_gid);
-
-                    const size_t nbr_corner_gid = Mesh.corners_in_elem(nbr_elem_gid,node_lid);
-                    nbr_qpt_field += a_nbr_basis(node_lid)*corner_field(nbr_corner_gid);  
-                } // end for
-
-                //
-                // Rusanov flux at the quadrature point
-                //
-                
-                // if normal_dot_vel<0 advection is out of first elem in the surf
-                const double flux_val = 0.5*(qpt_field+nbr_qpt_field)*normal_dot_vel 
-                                        -0.5*fabs(normal_dot_vel)*(qpt_field-nbr_qpt_field);
-
-                // save flux value to the quadrature points on either side of the element
-                RHS_surf_flux(elem_gid, face_lid, qpt_lid) = flux_val;
-                if(num_elems_in_surf==2) RHS_surf_flux(nbr_elem_gid, nbr_face_lid, nbr_qpt_lid) = -flux_val;
-
-            } // end for qpt
-       
-        }); // end surf loop
-        Kokkos::fence();
-
-        // -------------------------------------------------
-        // Step 4: Solve DG equations in the element
-
-        FOR_ALL(elem_gid, 0, num_elems,{
-            
-            // ----------------------------------------------
-            // 4a. Initialize RHS = M*u^n
-            
-            for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
-                RHS_elem_flux(elem_gid, dof_lid) = 0.0;
-                
-                // Add M * u^n term
-                for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
-                    const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
-                    RHS_elem_flux(elem_gid, dof_lid) += 
-                        elem_vol_matrix_n(elem_gid, dof_lid, node_lid) * corner_field_n(corner_gid);
-                }
-            }
-            
-            // ----------------------------------------------
-            // 4b. Add VOLUME integral: \int (\nabal phi_q)*(v*U) dV
-            
-            for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++)
-            for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
-                
-                ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
-                                                     num_nodes_in_elem, 3);
-                ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
-                                                 num_nodes_in_elem);
-                
-                // Reconstruct field at quadrature point
-                double qpt_field = 0.0;
-                for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
-                    const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
-                    qpt_field += a_basis(node_lid) * corner_field(corner_gid);
-                }
-                
-                // Reconstruct velocity at quadrature point (FIXED syntax)
-                double qpt_vel[3];
-                qpt_vel[0] = 0.0;
-                qpt_vel[1] = 0.0; 
-                qpt_vel[2] = 0.0;
-                
-                for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
-                    const size_t node_gid = Mesh.nodes_in_elem(elem_gid, node_lid);
-                    for(size_t dim = 0; dim < elem_dims; dim++){
-                        qpt_vel[dim] += a_basis(node_lid) * node_velocity(node_gid, dim);
-                    }
-                }
-                
-                // Compute (\nabal phi_q)*(v*U)
-                double grad_dot_flux = 0.0;
-                for(size_t dim = 0; dim < elem_dims; dim++){
-                    grad_dot_flux += a_grad_basis(dof_lid, dim) * qpt_vel[dim] * qpt_field;
-                }
-                
-                const double vol_qpt = elem_det_jac(elem_gid, qpt_lid) * Quad.qpt_weights(qpt_lid);
-                RHS_elem_flux(elem_gid, dof_lid) -= dt * grad_dot_flux * vol_qpt;
-            }
-            
-            // ----------------------------------------------
-            // 4c. Add SURFACE flux contribution
-            
-            for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++)
-            for(size_t face_lid = 0; face_lid < num_surfs_in_elem; face_lid++)
-            for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_surf; qpt_lid++){
-                
-                ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid, qpt_lid, 0),
-                                                num_nodes_in_elem);
-                
-                // surface flux (note: RHS_surf_flux already has correct sign)
-                RHS_elem_flux(elem_gid, dof_lid) += 
-                    dt * RHS_surf_flux(elem_gid, face_lid, qpt_lid) * a_basis(dof_lid);
-            }
-            
-            // -----------------------------------------------------
-            // 4d. Solve M * u^{n+1} = RHS using LU decomposition
-
-            int singular = 0; 
-            int parity = 0;
-
-            ViewCArrayKokkos<size_t> perm(&perm_elem(elem_gid,0), num_nodes_in_elem);
-            ViewCArrayKokkos<double> vv(&vv_elem(elem_gid,0), num_nodes_in_elem);
-
-            ViewCArrayKokkos<double> A(&elem_inv_vol_matrix(elem_gid, 0, 0), 
-                                       num_nodes_in_elem, num_nodes_in_elem); 
-            ViewCArrayKokkos<double> b(&RHS_elem_flux(elem_gid,0), num_nodes_in_elem);
-
-            singular = LU_decompose(A, perm, vv, parity);
-            if(singular == 0){
-                Kokkos::abort("ERROR: matrix is singular \n");
-            }
-
-            //printf("\nA = \n");
-            //for(size_t i=0; i<elem_dims; i++){
-            //    for(size_t j=0; j<elem_dims; j++){   
-            //        printf(" %f, ", A(i,j));
-            //    }
-            //    printf("\n");
-            //}
-            //printf("\nb = \n");
-            //for(size_t i=0; i<elem_dims; i++){
-            //    printf("   %f\n", b(i));
-            //}
-
-            LU_backsub(A, perm, b); // answer sent back in b
-
-            //printf("\nx = \n");
-            //for(size_t i=0; i<elem_dims; i++){
-            //    printf("   %f\n", b(i));
-            //}
-
-            // -----------------------------------------------------
-            // 4e. Save the new corner DOFs
-            for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
-                const size_t corner_gid = Mesh.corners_in_elem(elem_gid, dof_lid);
-                corner_field(corner_gid) = b(dof_lid);
-            }
-
-        }); // end parallel for elems
-
-
-
-        // ================================================================
-        // Step 5: Move the mesh to the new location
-        FOR_ALL(node_gid, 0, num_nodes,{
-            // new position of the mesh
-            node_coords(node_gid, 0) += node_velocity(node_gid, 0)*dt; 
-            node_coords(node_gid, 1) += node_velocity(node_gid, 1)*dt;
-            // z-coords never change
         });
         Kokkos::fence();
 
 
-        // ================================================================
-        // Step 6: build the volume matrix for nodal DG
-        elem_vol.set_values(0.0);
-        FOR_ALL(elem_gid, 0, num_elems, {
+        // Runge Kutta time integration levels
+        for(size_t rk_stage=0; rk_stage<rk_num_stages; rk_stage++){
 
-            ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
+            // ---- RK coefficient ----
+            const double rk_alpha = 1.0 / ((double)rk_num_stages - (double)rk_stage);
 
-            // Vol_matrix = \int (phi_q \phi_p j w)
-            for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++)
-            for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++)
-            for(size_t qpt_lid=0;  qpt_lid<num_qpts_in_elem;   qpt_lid++){
 
-                    // extract the grad_basis at a single quadrature point (qpt,dof,3D)
-                    ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
+            // ------------------------------------------------------
+            // Step 1b: calculate the mesh velocity at time level k
+
+            FOR_ALL(node_gid, 0, num_nodes,{
+                // new velocity, it is Taylor-Green vortex
+                // PI is defined in mesh class
+                node_velocity(node_gid, 0) =  sin(PI*node_coords(node_gid, 0))*cos(PI*node_coords(node_gid, 1));
+                node_velocity(node_gid, 1) = -cos(PI*node_coords(node_gid, 0))*sin(PI*node_coords(node_gid, 1));
+                node_velocity(node_gid, 2) = 0.0;
+            });
+
+
+            // ------------------------------------------------------
+            // Step 2: get CFL time step for moving mesh
+            double min_h_loc;
+            FOR_REDUCE_MIN(elem_gid, 0, num_elems, 
+                        min_h_loc, { 
+                
+                for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
+                    const double vol_qpt= Quad.qpt_weights(qpt_lid)*elem_det_jac(elem_gid, qpt_lid);
+                    const double h_qpt = pow(vol_qpt,0.3333333);
+                    if(h_qpt < min_h_loc) min_h_loc = h_qpt;
+                }
+
+            }, h_cfl);
+            Kokkos::fence();
+
+            dt = 0.1*h_cfl/max_vel; // pseudo time step used for the remap
+
+
+            // ----------------------------------------------------------
+            // Step 3: Calculate the surface fluxes at quadrature points
+
+            RHS_surf_flux.set_values(0.0);
+            RHS_elem_flux.set_values(0.0); 
+            FOR_ALL(surf_gid, 0, num_surfs, {
+                
+                const size_t num_elems_in_surf = Mesh.num_elems_in_surf(surf_gid);
+
+                // get the first elem id and face in this surf
+                const size_t elem_gid = Mesh.elems_in_surf(surf_gid, 0);
+                const size_t face_lid = Mesh.faces_in_surf(surf_gid, 0);
+
+                ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
+
+                for(size_t dof_lid=0; dof_lid<num_nodes_in_elem; dof_lid++)
+                for(size_t qpt_lid=0; qpt_lid<num_qpts_in_surf; qpt_lid++){
+                
+                    // extract the grad_basis at a single quadrature point (surf,qpt,dof,3D)
+                    ViewCArrayKokkos<double> a_grad_basis(&RefSurf.qpt_grad_basis(face_lid,qpt_lid,0,0),
                                                         num_nodes_in_elem, 3);
 
-                    // extract the basis at a single quadrature point (qpt,dof)    
-                    ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
+                    // extract the basis at a single quadrature point (surf,qpt,dof)    
+                    ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0),
                                                     num_nodes_in_elem);
                     
-                    // jacobian matrix
-                    ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
-                    
+                    ViewCArrayKokkos<double> jac(&surf_jac(surf_gid,qpt_lid,0,0),3,3);
+                    ViewCArrayKokkos<double> inv_jac(&surf_inv_jac(surf_gid,qpt_lid,0,0),3,3);
+
                     jacobian(jac, 
                             node_coords, 
                             nodes_in_elem,
                             a_grad_basis);
 
-                    // calculate det_J 
-                    elem_det_jac(elem_gid, qpt_lid) = det_3x3(jac);
-                    
-                    // volume contribution from qpt
-                    const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+                    const double det_jac_qpt = det_3x3(jac);
 
-                    elem_vol(elem_gid) += vol_qpt;
-                    
-                    elem_vol_matrix(elem_gid, dof_lid, node_lid) += a_basis(dof_lid)*a_basis(node_lid)*vol_qpt;
-            } // end for 
+                    invert_3x3(jac, inv_jac, det_jac_qpt);
 
-        }); // end parallel for
-        Kokkos::fence();
+                    // Nanson's formula: s*J^-1*j*f*w
+                    double area_normal[3];
+                    area_normal[0] = 0.;
+                    area_normal[1] = 0.;
+                    area_normal[2] = 0.;
+                    for(size_t j=0; j<elem_dims; j++){ 
+                        for(size_t i=0; i<elem_dims; i++){
+                            area_normal[j] += RefSurf.outward_normal(face_lid,i)*inv_jac(i,j);
+                        } // end i
+                        area_normal[j] *= det_jac_qpt*SurfQuad.qpt_weights(face_lid,qpt_lid);
+                    } // end j
+
+                    double qpt_vel[3];
+                    for(size_t dim=0; dim<elem_dims; dim++){
+                        qpt_vel[dim] = 0.0;
+                    }
+
+                    for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++)
+                    for(size_t dim=0; dim<elem_dims; dim++){
+                        const size_t node_gid = nodes_in_elem(node_lid);
+                        qpt_vel[dim] += a_basis(node_lid)*node_velocity(node_gid,dim);
+                    } // end for
+
+                    double normal_dot_vel = 0.0;
+                    for(size_t dim=0; dim<elem_dims; dim++){
+                        normal_dot_vel += area_normal[dim]*qpt_vel[dim];
+                    }
+                    
+                    size_t nbr_elem_gid = elem_gid;
+                    size_t nbr_face_lid = face_lid;
+                    if(num_elems_in_surf==2){
+                        nbr_elem_gid = Mesh.elems_in_surf(surf_gid, 1); // second elem
+                        nbr_face_lid = Mesh.faces_in_surf(surf_gid, 1); // second elem face
+                    }    
+
+                    const size_t nbr_qpt_lid = surf_qpt_qpt_map(surf_gid,0,qpt_lid); // matching qpt
+
+                    ViewCArrayKokkos<double> a_nbr_basis(&RefSurf.qpt_basis(nbr_face_lid,nbr_qpt_lid,0),
+                                                         num_nodes_in_elem);
+
+                    // reconstruct the fields
+                    double qpt_field     = 0.0;
+                    double nbr_qpt_field = 0.0;
+
+                    for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
+
+                        // Note: corner_lid = node_lid inside the element
+
+                        const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
+                        qpt_field += a_basis(node_lid)*corner_field(corner_gid);
+
+                        const size_t nbr_corner_gid = Mesh.corners_in_elem(nbr_elem_gid,node_lid);
+                        nbr_qpt_field += a_nbr_basis(node_lid)*corner_field(nbr_corner_gid);  
+                    } // end for
+
+                    //
+                    // Rusanov flux at the quadrature point
+                    //
+                    
+                    // if normal_dot_vel<0 advection is out of first elem in the surf
+                    const double flux_val = 0.5*(qpt_field+nbr_qpt_field)*normal_dot_vel 
+                                           -0.5*fabs(normal_dot_vel)*(qpt_field-nbr_qpt_field);
+
+                    // save flux value to the quadrature points on either side of the element
+                    RHS_surf_flux(elem_gid, face_lid, qpt_lid) = flux_val;
+                    if(num_elems_in_surf==2) RHS_surf_flux(nbr_elem_gid, nbr_face_lid, nbr_qpt_lid) = -flux_val;
+
+                } // end for qpt
+        
+            }); // end surf loop
+            Kokkos::fence();
+
+            // -------------------------------------------------
+            // Step 4: Solve DG equations in the element
+
+            FOR_ALL(elem_gid, 0, num_elems,{
+                
+                // ----------------------------------------------
+                // 4a. Initialize RHS = M*u^n
+                
+                for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
+                    RHS_elem_flux(elem_gid, dof_lid) = 0.0;
+                    
+                    // Add M * u^n term
+                    for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
+                        const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
+                        RHS_elem_flux(elem_gid, dof_lid) += 
+                            elem_vol_matrix_n(elem_gid, dof_lid, node_lid) * corner_field_n(corner_gid);
+                    }
+                }
+                
+                // ----------------------------------------------
+                // 4b. Add VOLUME integral: \int (\nabal phi_q)*(v*U) dV
+                
+                for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++)
+                for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
+                    
+                    ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
+                                                        num_nodes_in_elem, 3);
+                    ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
+                                                    num_nodes_in_elem);
+                    
+                    // Reconstruct field at quadrature point
+                    double qpt_field = 0.0;
+                    for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
+                        const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
+                        qpt_field += a_basis(node_lid) * corner_field(corner_gid);
+                    }
+                    
+                    // Reconstruct velocity at quadrature point (FIXED syntax)
+                    double qpt_vel[3];
+                    qpt_vel[0] = 0.0;
+                    qpt_vel[1] = 0.0; 
+                    qpt_vel[2] = 0.0;
+                    
+                    for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
+                        const size_t node_gid = Mesh.nodes_in_elem(elem_gid, node_lid);
+                        for(size_t dim = 0; dim < elem_dims; dim++){
+                            qpt_vel[dim] += a_basis(node_lid) * node_velocity(node_gid, dim);
+                        }
+                    }
+                    
+                    // Compute (\nabal phi_q)*(v*U)
+                    double grad_dot_flux = 0.0;
+                    for(size_t dim = 0; dim < elem_dims; dim++){
+                        grad_dot_flux += a_grad_basis(dof_lid, dim) * qpt_vel[dim] * qpt_field;
+                    }
+                    
+                    const double vol_qpt = elem_det_jac(elem_gid, qpt_lid) * Quad.qpt_weights(qpt_lid);
+                    RHS_elem_flux(elem_gid, dof_lid) -= rk_alpha * dt * grad_dot_flux * vol_qpt;
+                }
+                
+                // ----------------------------------------------
+                // 4c. Add SURFACE flux contribution
+                
+                for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++)
+                for(size_t face_lid = 0; face_lid < num_surfs_in_elem; face_lid++)
+                for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_surf; qpt_lid++){
+                    
+                    ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid, qpt_lid, 0),
+                                                    num_nodes_in_elem);
+                    
+                    // surface flux (note: RHS_surf_flux already has correct sign)
+                    RHS_elem_flux(elem_gid, dof_lid) += 
+                        rk_alpha * dt * RHS_surf_flux(elem_gid, face_lid, qpt_lid) * a_basis(dof_lid);
+                }
+                
+                // -----------------------------------------------------
+                // 4d. Solve M * u^{n+1} = RHS using LU decomposition
+
+                int singular = 0; 
+                int parity = 0;
+
+                ViewCArrayKokkos<size_t> perm(&perm_elem(elem_gid,0), num_nodes_in_elem);
+                ViewCArrayKokkos<double> vv(&vv_elem(elem_gid,0), num_nodes_in_elem);
+
+                ViewCArrayKokkos<double> A(&elem_inv_vol_matrix(elem_gid, 0, 0), 
+                                        num_nodes_in_elem, num_nodes_in_elem); 
+                ViewCArrayKokkos<double> b(&RHS_elem_flux(elem_gid,0), num_nodes_in_elem);
+
+                singular = LU_decompose(A, perm, vv, parity);
+                if(singular == 0){
+                    Kokkos::abort("ERROR: matrix is singular \n");
+                }
+
+                //printf("\nA = \n");
+                //for(size_t i=0; i<elem_dims; i++){
+                //    for(size_t j=0; j<elem_dims; j++){   
+                //        printf(" %f, ", A(i,j));
+                //    }
+                //    printf("\n");
+                //}
+                //printf("\nb = \n");
+                //for(size_t i=0; i<elem_dims; i++){
+                //    printf("   %f\n", b(i));
+                //}
+
+                LU_backsub(A, perm, b); // answer sent back in b
+
+                //printf("\nx = \n");
+                //for(size_t i=0; i<elem_dims; i++){
+                //    printf("   %f\n", b(i));
+                //}
+
+                // -----------------------------------------------------
+                // 4e. Save the new corner DOFs
+                for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
+                    const size_t corner_gid = Mesh.corners_in_elem(elem_gid, dof_lid);
+                    corner_field(corner_gid) = b(dof_lid);
+                }
+
+            }); // end parallel for elems
+
+
+
+            // ================================================================
+            // Step 5: Move the mesh to the new location
+            FOR_ALL(node_gid, 0, num_nodes,{
+                // new position of the mesh
+                node_coords(node_gid, 0) = node_coords_n(node_gid, 0) + node_velocity(node_gid, 0) * rk_alpha * dt; 
+                node_coords(node_gid, 1) = node_coords_n(node_gid, 1) + node_velocity(node_gid, 1) * rk_alpha * dt;
+                // z-coords never change
+            });
+            Kokkos::fence();
+
+
+            // ================================================================
+            // Step 6: build the volume matrix for nodal DG
+            elem_vol.set_values(0.0);
+            FOR_ALL(elem_gid, 0, num_elems, {
+
+                ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
+
+                // Vol_matrix = \int (phi_q \phi_p j w)
+                for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++)
+                for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++)
+                for(size_t qpt_lid=0;  qpt_lid<num_qpts_in_elem;   qpt_lid++){
+
+                        // extract the grad_basis at a single quadrature point (qpt,dof,3D)
+                        ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
+                                                            num_nodes_in_elem, 3);
+
+                        // extract the basis at a single quadrature point (qpt,dof)    
+                        ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
+                                                        num_nodes_in_elem);
+                        
+                        // jacobian matrix
+                        ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
+                        
+                        jacobian(jac, 
+                                node_coords, 
+                                nodes_in_elem,
+                                a_grad_basis);
+
+                        // calculate det_J 
+                        elem_det_jac(elem_gid, qpt_lid) = det_3x3(jac);
+                        
+                        // volume contribution from qpt
+                        const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+
+                        elem_vol(elem_gid) += vol_qpt;
+                        
+                        elem_vol_matrix(elem_gid, dof_lid, node_lid) += a_basis(dof_lid)*a_basis(node_lid)*vol_qpt;
+                } // end for 
+
+            }); // end parallel for
+            Kokkos::fence();
+
+        } // end Runge Kutta time level loop
 
 
         // ================================================================

@@ -2,7 +2,8 @@
 
 # 1. Define the executable
 #    Point directly to the source file inside 'src/'
-add_executable(remap src/remap.cpp)
+add_executable(remap_fv_test src/remap_fv_test.cpp)
+add_executable(remap_dg_test src/remap_dg_test.cpp)
 add_executable(ref_flux_test src/ref_flux_test.cpp)
 add_executable(ref_plus_mesh_test src/ref_plus_mesh_test.cpp)
 add_executable(integration_test src/integration_test.cpp)
@@ -13,7 +14,8 @@ add_executable(partition_unity_test src/partition_unity_test.cpp)
 
 # 2. Add this example's specific include path
 #    This allows main.cpp to find headers in examples/point_connectivity/include/
-target_include_directories(remap PRIVATE include)
+target_include_directories(remap_fv_test PRIVATE include)
+target_include_directories(remap_dg_test PRIVATE include)
 target_include_directories(ref_flux_test PRIVATE include)
 target_include_directories(ref_plus_mesh_test PRIVATE include)
 target_include_directories(integration_test PRIVATE include)
@@ -24,7 +26,8 @@ target_include_directories(partition_unity_test PRIVATE include)
 
 # 3. Link against the main library (ELEMENTS)
 #    This pulls in Kokkos, MATAR, and the main library headers automatically.
-target_link_libraries(remap PRIVATE ELEMENTS)
+target_link_libraries(remap_fv_test PRIVATE ELEMENTS)
+target_link_libraries(remap_dg_test PRIVATE ELEMENTS)
 target_link_libraries(ref_flux_test PRIVATE ELEMENTS)
 target_link_libraries(ref_plus_mesh_test PRIVATE ELEMENTS)
 target_link_libraries(integration_test PRIVATE ELEMENTS)

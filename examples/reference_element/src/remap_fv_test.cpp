@@ -238,8 +238,8 @@ MATAR_INITIALIZE(argc, argv);
     DCArrayKokkos<double> surf_inv_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_inv_jacobian");
     DCArrayKokkos<double> surf_flux(num_surfs, "surf_flux");
     
-    DCArrayKokkos<double> elem_field(num_elems, "elem_field"); //elem_order-1 = 1 so it is a P0 element
-    DCArrayKokkos<double> elem_field_n(num_elems, "elem_field_n"); //elem_order-1 = 1 so it is a P0 element
+    DCArrayKokkos<double> elem_field(num_elems, "elem_field");     // P0 field in the element, this is a FV method on high-order meshes
+    DCArrayKokkos<double> elem_field_n(num_elems, "elem_field_n"); // P0 field in the element, this is a FV method on high-order meshes
     DCArrayKokkos<double> node_velocity(num_nodes, elem_dims, "node_velocity");
 
 
@@ -248,8 +248,6 @@ MATAR_INITIALIZE(argc, argv);
     double dt = 0.2*h_cfl/max_vel;  // dt from CFL at start, this time is psuedo time
 
     FOR_ALL(elem_gid, 0, num_elems, {
-
-        elem_field(elem_gid) = 1.0; // constant field
 
         ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
 

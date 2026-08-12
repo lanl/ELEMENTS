@@ -413,7 +413,7 @@ MATAR_INITIALIZE(argc, argv);
             const size_t dim = 0;  // x-coord
             const size_t corner_gid = Mesh.corners_in_elem(elem_gid,corner_lid);
 
-            corner_field(corner_gid) = 1.0; // sin(PI*node_coords(node_gid,dim));
+            corner_field(corner_gid) = sin(PI*node_coords(node_gid,dim));
         }
 
     });  // end parallel for

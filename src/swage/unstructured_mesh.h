@@ -1169,7 +1169,12 @@ struct Mesh_t
         return;
     } // end of initialize_bdy_sets method
 
-    
+
+
+    // remember that build_quadrature_point_connectivity() is located in geometry.h
+    // the reason for this location is that it requires the mesh and reference
+    // spaces.
+
 }; // end Mesh_t
 
 } // end namespace swage

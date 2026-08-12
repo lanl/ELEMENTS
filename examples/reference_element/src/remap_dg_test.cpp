@@ -134,13 +134,6 @@ MATAR_INITIALIZE(argc, argv);
                                   Quad,
                                   elem_order);    
 
-
-    // for thermal DOFs, we use p_order-1 for the basis order of the Lagrange polynomial, it is DG
-    DGRefElem.initialize_ref_elem(reference_space::arbitraryOrderElement,
-                                  reference_space::LagrangeLegendre,
-                                  Quad,
-                                  elem_order-1); 
-
     // ---- reference surface ----
     SurfQuad.initialize_quadrature(reference_space::GaussLegendre, 
                                    num_qpts_1d, 
@@ -232,6 +225,7 @@ MATAR_INITIALIZE(argc, argv);
     if(num_nodes_in_elem != FERefElem.num_dofs_in_elem) Kokkos::abort("ERROR: mismatch in DOFs and num nodes in elem \n");
 
     DCArrayKokkos<double> elem_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
+    DCArrayKokkos<double> elem_inv_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
     DCArrayKokkos<double> elem_det_jac(num_elems, num_qpts_in_elem, "elem_det_jacobian");
     DCArrayKokkos<double> elem_vol(num_elems, "elem_vol");    
     
@@ -242,6 +236,7 @@ MATAR_INITIALIZE(argc, argv);
     DCArrayKokkos<double> elem_field(num_elems, "elem_field");
     DCArrayKokkos<double> node_field(num_nodes, "node_field");     // for displaying field results
     DCArrayKokkos<double> node_velocity(num_nodes, elem_dims, "node_velocity");
+    DCArrayKokkos<double> node_velocity_n(num_nodes, elem_dims, "node_velocity_n");
     DCArrayKokkos<double> node_coords_n(num_nodes, elem_dims, "node_coords_n");
 
     DCArrayKokkos<double> corner_field(num_corners, "corner_field");
@@ -401,7 +396,7 @@ MATAR_INITIALIZE(argc, argv);
     double time = 0;                    // the time 
     double time_output = graphics_dt;   // the time for graphics outputs
     size_t output_id = 0;               // the file id for the outputs
-    size_t rk_num_stages = 2;           // runge kutta time integration levels
+    size_t rk_num_stages = 1;           // runge kutta time integration levels
 
 
     // ================================================================
@@ -413,16 +408,39 @@ MATAR_INITIALIZE(argc, argv);
         ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
 
         for(size_t corner_lid=0; corner_lid<num_nodes_in_elem; corner_lid++){
-            // remembe: corner_lid = node_lid
+            // remember: corner_lid = node_lid
             const size_t node_gid = nodes_in_elem(corner_lid);
             const size_t dim = 0;  // x-coord
             const size_t corner_gid = Mesh.corners_in_elem(elem_gid,corner_lid);
 
-            corner_field(corner_gid) = sin(PI*node_coords(node_gid,dim));
+            corner_field(corner_gid) = 1.0; // sin(PI*node_coords(node_gid,dim));
         }
 
     });  // end parallel for
+
+    FOR_ALL(node_gid, 0, num_nodes,{
+        // new velocity, it is Taylor-Green vortex
+        // PI is defined in mesh class
+        node_velocity(node_gid, 0) =  sin(PI*node_coords(node_gid, 0))*cos(PI*node_coords(node_gid, 1));
+        node_velocity(node_gid, 1) = -cos(PI*node_coords(node_gid, 0))*sin(PI*node_coords(node_gid, 1));
+        node_velocity(node_gid, 2) = 0.0;
+    });
     Kokkos::fence();
+
+
+    // Conservation Check
+    double sum_elem = 0.0;
+    double domain_mass_t0 = 0.0;
+    FOR_REDUCE_SUM(elem_gid, 0, num_elems, sum_elem, {
+
+        for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++)
+        for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
+            const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
+            sum_elem += elem_vol_matrix(elem_gid, dof_lid, node_lid)*corner_field(corner_gid);
+        }
+    }, domain_mass_t0);
+
+    printf("Domain Mass t=0: %f \n", domain_mass_t0);
 
 
     // export results to Paraview graphics file
@@ -481,13 +499,14 @@ MATAR_INITIALIZE(argc, argv);
         
         if(cycle%10 == 0) printf(" time = %.4f \n", time);
 
+
         // --------------------------------------------------
         // Step 1a: Store time level n state
 
         FOR_ALL(elem_gid, 0, num_elems, {
             for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++)
             for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
-                elem_vol_matrix_n(elem_gid, dof_lid, node_lid)   = elem_vol_matrix(elem_gid, dof_lid, node_lid);
+                elem_vol_matrix_n(elem_gid, dof_lid, node_lid) = elem_vol_matrix(elem_gid, dof_lid, node_lid);
             }
         });
 
@@ -497,7 +516,8 @@ MATAR_INITIALIZE(argc, argv);
 
         FOR_ALL(node_gid, 0, num_nodes, {
             for(size_t dim=0; dim<elem_dims; dim++){
-                node_coords_n(node_gid, dim) = node_coords(node_gid, dim);
+                node_coords_n(node_gid, dim)   = node_coords(node_gid, dim);
+                node_velocity_n(node_gid, dim) = node_velocity(node_gid, dim);
             }
         });
         Kokkos::fence();
@@ -600,6 +620,7 @@ MATAR_INITIALIZE(argc, argv);
                         qpt_vel[dim] += a_basis(node_lid)*node_velocity(node_gid,dim);
                     } // end for
 
+
                     double normal_dot_vel = 0.0;
                     for(size_t dim=0; dim<elem_dims; dim++){
                         normal_dot_vel += area_normal[dim]*qpt_vel[dim];
@@ -654,6 +675,8 @@ MATAR_INITIALIZE(argc, argv);
 
             RHS_elem.set_values(0.0); 
             FOR_ALL(elem_gid, 0, num_elems,{
+
+                ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
                 
                 // ----------------------------------------------
                 // 4a. Initialize RHS = M*u^n
@@ -669,7 +692,7 @@ MATAR_INITIALIZE(argc, argv);
                 }
                 
                 // ----------------------------------------------
-                // 4b. Add VOLUME integral: \int (\nabal phi_q)*(v*U) dV
+                // 4b. Subtract the VOLUME integral: \int (\nabal phi_q)J^{-1}*(v*U) dV
                 
                 for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++)
                 for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
@@ -679,6 +702,19 @@ MATAR_INITIALIZE(argc, argv);
                     ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
                                                      num_nodes_in_elem);
                     
+                    // jacobian matrix and inver
+                    ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
+                    ViewCArrayKokkos<double> inv_jac(&elem_inv_jac(elem_gid,qpt_lid,0,0),3,3);
+
+                    jacobian(jac, 
+                            node_coords, 
+                            nodes_in_elem,
+                            a_grad_basis);
+
+                    elem_det_jac(elem_gid,qpt_lid) = det_3x3(jac);
+
+                    invert_3x3(jac, inv_jac, elem_det_jac(elem_gid,qpt_lid));
+
                     // Reconstruct field at quadrature point
                     double qpt_field = 0.0;
                     for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
@@ -686,7 +722,7 @@ MATAR_INITIALIZE(argc, argv);
                         qpt_field += a_basis(node_lid) * corner_field(corner_gid);
                     }
                     
-                    // Reconstruct velocity at quadrature point (FIXED syntax)
+                    // Reconstruct velocity at quadrature point 
                     double qpt_vel[3];
                     qpt_vel[0] = 0.0;
                     qpt_vel[1] = 0.0; 
@@ -698,16 +734,27 @@ MATAR_INITIALIZE(argc, argv);
                             qpt_vel[dim] += a_basis(node_lid) * node_velocity(node_gid, dim);
                         }
                     }
-                    
-                    // Compute (\nabal phi_q)*(v*U)
-                    double grad_dot_flux = 0.0;
-                    for(size_t dim = 0; dim < elem_dims; dim++){
-                        grad_dot_flux += a_grad_basis(dof_lid, dim) * qpt_vel[dim] * qpt_field;
+
+                    // transform the gradient to the physical space
+                    double physical_grad[3]; 
+                    physical_grad[0] = 0.0;
+                    physical_grad[1] = 0.0; 
+                    physical_grad[2] = 0.0;
+                    for(size_t i = 0; i < elem_dims; i++)
+                    for(size_t j = 0; j < elem_dims; j++){
+                        physical_grad[i] += a_grad_basis(dof_lid, j)*inv_jac(j,i);
                     }
                     
-                    const double vol_qpt = elem_det_jac(elem_gid, qpt_lid) * Quad.qpt_weights(qpt_lid);
+                    // Compute (\nabal phi_q)*J^-1*(v*U)
+                    // From Anderson et. al. paper
+                    double grad_dot_flux = 0.0;
+                    for(size_t dim = 0; dim < elem_dims; dim++){
+                        grad_dot_flux += physical_grad[dim] * qpt_vel[dim] * qpt_field;
+                    }
+                    
+                    const double vol_qpt = elem_det_jac(elem_gid,qpt_lid) * Quad.qpt_weights(qpt_lid);
                     RHS_elem(elem_gid, dof_lid) -= rk_alpha * dt * grad_dot_flux * vol_qpt;
-                }
+                } // end for dof_lid and qpt
                 
                 // ----------------------------------------------
                 // 4c. Add SURFACE flux contribution
@@ -717,13 +764,12 @@ MATAR_INITIALIZE(argc, argv);
                 for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_surf; qpt_lid++){
                     
                     ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid, qpt_lid, 0),
-                                                    num_nodes_in_elem);
+                                                     num_nodes_in_elem);
                     
                     // surface flux (note: RHS_surf_flux already has correct sign)
                     RHS_elem(elem_gid, dof_lid) += 
                         rk_alpha * dt * RHS_surf_flux(elem_gid, face_lid, qpt_lid) * a_basis(dof_lid);
                 }
-
 
             });
             Kokkos::fence();
@@ -734,8 +780,8 @@ MATAR_INITIALIZE(argc, argv);
             // Step 5: Move the mesh to the new location
             FOR_ALL(node_gid, 0, num_nodes,{
                 // new position of the mesh
-                node_coords(node_gid, 0) = node_coords_n(node_gid, 0) + node_velocity(node_gid, 0) * rk_alpha * dt; 
-                node_coords(node_gid, 1) = node_coords_n(node_gid, 1) + node_velocity(node_gid, 1) * rk_alpha * dt;
+                node_coords(node_gid, 0) = node_coords_n(node_gid, 0) + 0.5*(node_velocity(node_gid, 0)+node_velocity_n(node_gid, 0)) * rk_alpha * dt; 
+                node_coords(node_gid, 1) = node_coords_n(node_gid, 1) + 0.5*(node_velocity(node_gid, 1)+node_velocity_n(node_gid, 1)) * rk_alpha * dt;
                 // z-coords never change
             });
             Kokkos::fence();
@@ -842,8 +888,14 @@ MATAR_INITIALIZE(argc, argv);
 
         } // end Runge Kutta time level loop
 
+
+        // ================================================================
+        // Step 7: update time
+        time += dt;
+
+        // Conservation Check
         double sum_elem = 0.0;
-        double elem_conserve_check = 0.0;
+        double domain_mass_time = 0.0;
         FOR_REDUCE_SUM(elem_gid, 0, num_elems, sum_elem, {
 
             for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++)
@@ -851,14 +903,10 @@ MATAR_INITIALIZE(argc, argv);
                 const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
                 sum_elem += elem_vol_matrix(elem_gid, dof_lid, node_lid)*corner_field(corner_gid);
             }
-        }, elem_conserve_check);
+        }, domain_mass_time);
 
-        printf("elem_conserve_check = %f \n", elem_conserve_check);
-
-
-        // ================================================================
-        // Step 7: update time
-        time += dt;
+        printf("Domain mass error= %f \n", domain_mass_time-domain_mass_t0);
+        if(fabs(domain_mass_time-domain_mass_t0)>1.e-12) Kokkos::abort("ERROR: Mass is not conserved");
 
 
         // ================================================================
@@ -913,7 +961,10 @@ MATAR_INITIALIZE(argc, argv);
 
         } // end if
 
-        if (time >= max_time  ) break;
+        if (time >= max_time  ){
+            printf("Domain mass at time=%f: %f \n", time, domain_mass_time);
+            break;
+        }
 
     } // end loop over cycle
     printf(" time = %.4f ", time);

@@ -738,7 +738,7 @@ namespace elements
     /// reference element or reference surface.
     ///
     /// The DOF's are the volume element and can be the Lagrange basis can be at 
-    /// Lobatto or Legendra points, those points are in most cases are spatially 
+    /// Lobatto or Legendre points, those points are in most cases are spatially 
     /// different from the quadrature points. 
     ///
     /// \param qpt_basis quadrature point basis, 2DArray(qpts,dofs)
@@ -874,7 +874,7 @@ namespace elements
         ///
         /// \brief Set up quadrature in a volume element
         ///
-        /// \param TypeInp The type of quadrature (e.g., Lobatto or Legendra)
+        /// \param TypeInp The type of quadrature (e.g., Lobatto or Legendre)
         /// \param num_qpts_1d_inp The number of quadrature in 1D, applied to each direction.
         /// \param elem_dims_in The number dimensions 
         ///
@@ -1010,7 +1010,7 @@ namespace elements
         /// space.  For that case, user must create multiple reference elements, one 
         /// that defines the position and one for the discontinous fields.
         ///
-        /// The DOF's for the Lagrange basis can be at Lobatto or Legendra points, 
+        /// The DOF's for the Lagrange basis can be at Lobatto or Legendre points, 
         /// those points are in most cases are spatially different from the quadrature
         /// points. 
         ///
@@ -1139,7 +1139,7 @@ namespace elements
         ///
         /// \brief Set up quadrature for surface elements
         ///
-        /// \param TypeInp The type of quadrature (e.g., Lobatto or Legendra)
+        /// \param TypeInp The type of quadrature (e.g., Lobatto or Legendre)
         /// \param num_qpts_1d_inp The number of quadrature in 1D, applied to each direction.
         /// \param elem_dims_in The number dimensions 
         ///

@@ -105,8 +105,8 @@ MATAR_INITIALIZE(argc, argv);
     Mesh_t Mesh; // unstructured mesh
 
     const size_t elem_dims = 3;
-    const size_t elem_order = 1;  
-    const size_t num_elems_1D = 16;
+    const size_t elem_order = 3;  
+    const size_t num_elems_1D = 4;
 
     const size_t max_cycles = 100000;
     const double max_time   = 0.5;

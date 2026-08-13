@@ -7,9 +7,6 @@
 #include "matar.h"
 #include "shapes.h"
 
-// using namespace mtr;
-//using namespace swage; // unstructured mesh and hash
-//using namespace elements; // reference element space
 
 /////////////////////////////////////////////////////////////////////////////
 ///

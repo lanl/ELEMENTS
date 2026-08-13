@@ -44,9 +44,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "state.h"
 
 
-using namespace mtr;
-using namespace swage;    // unstructured mesh and point cloud
-using namespace elements; // reference element space
 
 int main(int argc, char** argv) {
 

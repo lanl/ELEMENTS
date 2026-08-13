@@ -7,9 +7,9 @@
 #include "matar.h"
 #include "shapes.h"
 
-using namespace mtr;
-using namespace swage; // unstructured mesh and hash
-using namespace elements; // reference element space
+// using namespace mtr;
+//using namespace swage; // unstructured mesh and hash
+//using namespace elements; // reference element space
 
 /////////////////////////////////////////////////////////////////////////////
 ///
@@ -78,8 +78,8 @@ void jacobian(
 /// \return void
 ///
 /////////////////////////////////////////////////////////////////////////////
-void build_quadrature_point_connectivity(const Mesh_t& Mesh,
-                                         const ReferenceSurface_t& RefSurf,
+void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
+                                         const elements::ReferenceSurface_t& RefSurf,
                                          CArrayKokkos<int>& surf_qpt_qpt_map,
                                          const DCArrayKokkos<double>& node_coords){
 

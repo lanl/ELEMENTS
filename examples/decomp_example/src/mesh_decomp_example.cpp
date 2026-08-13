@@ -60,10 +60,12 @@ int main(int argc, char** argv) {
 
     // Initial mesh built on rank zero
     swage::Mesh_t initial_mesh;
+    initial_mesh.num_dims = num_dims;
     MPICArrayKokkos<double> initial_node_coords;
 
     // Mesh partitioned by pt-scotch, including ghost
     swage::Mesh_t final_mesh;
+    final_mesh.num_dims = num_dims;
     node_t final_node;
     MPICArrayKokkos<double> final_node_coords;
 

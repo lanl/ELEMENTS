@@ -31,8 +31,8 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **********************************************************************************************/
-#ifndef REF_ELEM_NEW_H
-#define REF_ELEM_NEW_H
+#ifndef REF_ELEM_H
+#define REF_ELEM_H
 
 #include <cmath>
 #include "matar.h"

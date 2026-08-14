@@ -40,8 +40,8 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int num_dims = 2;
-    int Pn_order = 1;
+    int num_dims = 3;
+    int Pn_order = 2;
 
     double t_main_start = MPI_Wtime();
 

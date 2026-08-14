@@ -270,7 +270,7 @@ struct patches_in_surf_t
 /// \return void
 ///
 ///////////////////////////////////////////////////////////////////////////////////
-void get_surf_node_lids(CArrayKokkos<size_t>& surf_node_ordering_in_elem, 
+inline void get_surf_node_lids(CArrayKokkos<size_t>& surf_node_ordering_in_elem, 
                         const size_t num_1D, 
                         const size_t num_dims){
     
@@ -378,7 +378,7 @@ void get_surf_node_lids(CArrayKokkos<size_t>& surf_node_ordering_in_elem,
 /// \return void
 ///
 ///////////////////////////////////////////////////////////////////////////////////
-void get_patch_node_lids(DCArrayKokkos<size_t> &patch_node_ordering_in_elem,
+inline void get_patch_node_lids(DCArrayKokkos<size_t> &patch_node_ordering_in_elem,
                          const size_t num_1D, 
                          const size_t num_dims){
 

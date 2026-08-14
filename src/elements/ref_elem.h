@@ -193,7 +193,7 @@ namespace elements
     ///
     /////////////////////////////////////////////////////////////////////////////
 
-    KOKKOS_FUNCTION
+    KOKKOS_INLINE_FUNCTION
     void lagrange_basis_1D(
         const CArrayKokkos<double>& interp,           // interpolant from each basis
         const CArrayKokkos<double>& dof_positions_1d, // location of basis DOFs in ref elem 
@@ -311,7 +311,7 @@ namespace elements
     /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
-    KOKKOS_FUNCTION
+    KOKKOS_INLINE_FUNCTION
     void get_basis(const CArrayKokkos<double>& basis,
         const CArrayKokkos<double>& dof_positions_1d,
         const CArrayKokkos<double>& val_1d,
@@ -406,7 +406,7 @@ namespace elements
     /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
-    KOKKOS_FUNCTION
+    KOKKOS_INLINE_FUNCTION
     void partial_xi_basis(const CArrayKokkos<double>& partial_xi,
                           const CArrayKokkos<double>& dof_positions_1d,
                           const CArrayKokkos<double>& val_1d,
@@ -543,7 +543,7 @@ namespace elements
     /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
-    KOKKOS_FUNCTION
+    KOKKOS_INLINE_FUNCTION
     void partial_eta_basis(const CArrayKokkos<double>& partial_eta,
                             const CArrayKokkos<double>& dof_positions_1d,
                             const CArrayKokkos<double>& val_1d,
@@ -659,7 +659,7 @@ namespace elements
     /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
-    KOKKOS_FUNCTION
+    KOKKOS_INLINE_FUNCTION
     void partial_mu_basis(const CArrayKokkos<double>& partial_mu,
                             const CArrayKokkos<double>& dof_positions_1d,
                             const CArrayKokkos<double>& val_1d,
@@ -750,10 +750,10 @@ namespace elements
     ///
     /////////////////////////////////////////////////////////////////////////////
     template <typename T1, typename T2, typename T3, typename T4>
-    void get_basis_and_grad_basis(T1& qpt_basis,
-                                  T2& qpt_grad_basis,
-                                  const T3& qpt_positions,
-                                  const T4& dof_positions_1d)
+    static void get_basis_and_grad_basis(T1& qpt_basis,
+                                         T2& qpt_grad_basis,
+                                         const T3& qpt_positions,
+                                         const T4& dof_positions_1d)
     {
         
         const size_t num_dofs_1d = dof_positions_1d.dims(0);

@@ -104,7 +104,7 @@ void bubble_sort(size_t arr[], const size_t num)
     for (size_t i = 0; i < (num - 1); i++) {
         for (size_t j = 0; j < (num - i - 1); j++) {
             if (arr[j] > arr[j + 1]) {
-                size_t temp = arr[j];
+                auto temp = arr[j];
                 arr[j]     = arr[j + 1];
                 arr[j + 1] = temp;
             } // end if
@@ -122,7 +122,7 @@ void bubble_sort(T arr)
     for (size_t i = 0; i < (num - 1); i++) {
         for (size_t j = 0; j < (num - i - 1); j++) {
             if (arr(j) > arr(j + 1)) {
-                size_t temp = arr(j);
+                auto temp = arr(j);
                 arr(j)     = arr(j + 1);
                 arr(j + 1) = temp;
             } // end if

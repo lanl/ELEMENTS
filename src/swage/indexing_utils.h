@@ -75,7 +75,7 @@ using namespace mtr;
     patch 2: [0,1,5,4]  eta-minus dir
     patch 3: [3,2,6,7]  eta-plus  dir
     patch 4: [0,2,3,1]  zeta-minus dir
-    patch 6: [4,5,7,6]  zeta-plus  dir
+    patch 5: [4,5,7,6]  zeta-plus  dir
 
 
     2D:

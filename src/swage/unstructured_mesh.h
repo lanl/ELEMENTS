@@ -299,7 +299,7 @@ struct Mesh_t
 
         // --- Set element details ---
         Pn = elem_Pn_order; // Note: element Pn_order = dofs_1D-1, where dofs are the element nodes
-        if (Pn == 0) {
+        if (elem_Pn_order == 0) {
             Kokkos::abort("Error: Pn must be greater than 0. Exiting at initialize_elems_Pn().");
         }
 

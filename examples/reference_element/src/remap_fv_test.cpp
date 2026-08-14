@@ -207,6 +207,14 @@ MATAR_INITIALIZE(argc, argv);
     std::cout<<"Building surface connectivity \n";
     Mesh.build_surf_connectivity();
 
+
+    // surfaces, exact number:
+    // Total Internal = (NI-1)*NJ*NK + NI*(NJ-1)*NK + NI*NJ*(NK-1)
+    // Total Boundary = 2*(NI*NJ + NI*NK + NJ*NK)
+    
+
+
+    
     // check mesh index sizes
     if(Mesh.num_nodes!=num_nodes){
         printf("num nodes = %zu and mesh.num_nodes = %zu", num_nodes, Mesh.num_nodes);

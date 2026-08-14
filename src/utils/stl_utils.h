@@ -608,7 +608,7 @@ struct stl_data{
 // ==============================================================
 
 // BINARY STL READER - (Note: it can ONLY read binary stl files)
-void binary_stl_reader(std::string stl_file_path, stl_data& stl_data){
+inline void binary_stl_reader(std::string stl_file_path, stl_data& stl_data){
     // Open the binary file
     std::string filename = stl_file_path;
     auto input = std::ifstream{filename, std::ifstream::in | std::ifstream::binary};

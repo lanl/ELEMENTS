@@ -75,10 +75,10 @@ void jacobian(
 /// \return void
 ///
 /////////////////////////////////////////////////////////////////////////////
-void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
-                                         const elements::ReferenceSurface_t& RefSurf,
-                                         CArrayKokkos<int>& surf_qpt_qpt_map,
-                                         const DCArrayKokkos<double>& node_coords){
+inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
+                                                const elements::ReferenceSurface_t& RefSurf,
+                                                CArrayKokkos<int>& surf_qpt_qpt_map,
+                                                const DCArrayKokkos<double>& node_coords){
 
     const size_t elem_dims = RefSurf.elem_dims;
     const size_t num_surfs = surf_qpt_qpt_map.dims(0);

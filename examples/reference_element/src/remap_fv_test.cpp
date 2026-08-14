@@ -120,6 +120,8 @@ MATAR_INITIALIZE(argc, argv);
 
     std::cout<<"Building reference elements and quadrature \n";
 
+    if(elem_dims!=3) Kokkos::abort("ERROR: elem_dims must be equal to 3\n");
+
     // ---- reference element ----
 
     // create quadrature
@@ -211,10 +213,34 @@ MATAR_INITIALIZE(argc, argv);
     // surfaces, exact number:
     // Total Internal = (NI-1)*NJ*NK + NI*(NJ-1)*NK + NI*NJ*(NK-1)
     // Total Boundary = 2*(NI*NJ + NI*NK + NJ*NK)
-    
+    const size_t NI = num_elems_1D; // Number of elements in I direction
+    const size_t NJ = num_elems_1D; // Number of elements in J direction
+    const size_t NK = num_elems_1D; // Number of elements in K direction
+    const size_t exact_num_internal_surfs = (NI-1)*NJ*NK + NI*(NJ-1)*NK + NI*NJ*(NK-1);
+    const size_t exact_num_bdy_surfs = 2*(NI*NJ + NI*NK + NJ*NK);
+    const size_t exact_num_internal_patches = exact_num_internal_surfs*elem_order*elem_order;
+    const size_t exact_num_bdy_patches = exact_num_bdy_surfs*elem_order*elem_order;
+
+    printf("num bdy surfs = %lu, vs. exact = %lu \n", Mesh.num_bdy_surfs, exact_num_bdy_surfs);
+    if(Mesh.num_bdy_surfs != exact_num_bdy_surfs){
+        Kokkos::abort("Failed to find correct number of bdy surfaces \n");
+    }
+    printf("num surfs = %lu, vs. exact = %lu \n", Mesh.num_surfs, exact_num_bdy_surfs+exact_num_internal_surfs);
+    if(Mesh.num_surfs != exact_num_bdy_surfs+exact_num_internal_surfs){
+        Kokkos::abort("Failed to find correct number of total surfaces \n");
+    }
+
+    printf("num bdy patches = %lu, vs. exact = %lu \n", Mesh.num_bdy_patches, exact_num_bdy_patches);
+    if(Mesh.num_bdy_patches != exact_num_bdy_patches){
+        Kokkos::abort("Failed to find correct number of bdy patches \n");
+    }
+    printf("num surfs = %lu, vs. exact = %lu \n", Mesh.num_patches, exact_num_bdy_patches+exact_num_internal_patches);
+    if(Mesh.num_patches != exact_num_bdy_patches+exact_num_internal_patches){
+        Kokkos::abort("Failed to find correct number of total patches \n");
+    }
 
 
-    
+
     // check mesh index sizes
     if(Mesh.num_nodes!=num_nodes){
         printf("num nodes = %zu and mesh.num_nodes = %zu", num_nodes, Mesh.num_nodes);

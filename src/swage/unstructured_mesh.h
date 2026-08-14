@@ -864,7 +864,8 @@ struct Mesh_t
 
         num_bdy_nodes = bdy_node_counter.host(0);
 
-        CArrayKokkos<size_t> bdy_nodes(num_bdy_nodes, "mesh.bdy_nodes");
+        // allocate the boundy nodes array
+        bdy_nodes = CArrayKokkos<size_t> (num_bdy_nodes, "mesh.bdy_nodes");
 
         // compress the storage of boundary nodes
         FOR_ALL_CLASS(bdy_node_gid, 0, num_bdy_nodes,{

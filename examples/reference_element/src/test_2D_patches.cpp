@@ -413,4 +413,8 @@ int main(int argc, char** argv) {
 
     } // end MATAR scope
 
+    MATAR_FINALIZE();
+    
+    return 1;
+
 } // end main

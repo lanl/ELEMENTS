@@ -104,7 +104,7 @@ MATAR_INITIALIZE(argc, argv);
     Mesh_t Mesh; // unstructured mesh
 
     const size_t elem_dims = 2;  // MUST be 2D!!!!
-    const size_t elem_order = 4;  
+    const size_t elem_order = 2;  
     const size_t num_elems_1D = 8;
 
     const size_t max_cycles = 1000;
@@ -753,29 +753,33 @@ void write_point_data(std::ofstream& file,
 
 // NEW: 2D version of the reordering function
 void reorder_ij_to_vtk_lagrange(const DCArrayKokkos<size_t>& nodes_in_elem, 
-                                   CArray<size_t>& vtk_nodes,
-                                   const size_t elem_gid, 
-                                   const size_t order)
+                                CArray<size_t>& vtk_nodes,
+                                const size_t elem_gid, 
+                                const size_t order)
 {
     const int n = order + 1;
     int ord[2] = {(int)order, (int)order};
     
-    std::vector<std::pair<int, size_t>> vtk_to_ij;
+    std::vector<std::pair<int, size_t>> vtk_to_node_lid;
     
-    // Loop over j (rows) and i (columns)
+    size_t node_lid = 0;
+    // CRITICAL: Loop in same order as mesh building!
     for(int j = 0; j < n; j++){
         for(int i = 0; i < n; i++){
             int vtk_pos = PointIndexFromIJ(i, j, ord);
-            size_t ij_linear = i + j * n;  // Row-major ordering
-            vtk_to_ij.push_back({vtk_pos, ij_linear});
+            // node_lid is the sequential local ID (0,1,2,3,...)
+            vtk_to_node_lid.push_back({vtk_pos, node_lid});
+            node_lid++;
         }
     }
     
-    std::sort(vtk_to_ij.begin(), vtk_to_ij.end());
+    // Sort by VTK position
+    std::sort(vtk_to_node_lid.begin(), vtk_to_node_lid.end());
     
-    for(size_t v = 0; v < vtk_to_ij.size(); v++){
-        size_t ij_linear = vtk_to_ij[v].second;
-        vtk_nodes(v) = nodes_in_elem.host(elem_gid, ij_linear);
+    // Map to global node IDs using sequential local IDs
+    for(size_t v = 0; v < vtk_to_node_lid.size(); v++){
+        size_t local_node_lid = vtk_to_node_lid[v].second;
+        vtk_nodes(v) = nodes_in_elem.host(elem_gid, local_node_lid);
     }
 }
 
@@ -787,12 +791,11 @@ inline int PointIndexFromIJ(int i, int j, const int* order)
     int nbdy = (ibdy ? 1 : 0) + (jbdy ? 1 : 0);
 
     // Corner vertices - VTK expects counter-clockwise: 0(BL), 1(BR), 2(TR), 3(TL)
-    // Your mesh has row-major: 0(BL), 1(BR), 2(TL), 3(TR)
     if (nbdy == 2) { 
-        if (i == 0 && j == 0) return 0;      // Bottom-left
-        if (i == order[0] && j == 0) return 1;  // Bottom-right
-        if (i == order[0] && j == order[1]) return 2;  // Top-right
-        if (i == 0 && j == order[1]) return 3;  // Top-left
+        if (i == 0 && j == 0) return 0;           // Bottom-left
+        if (i == order[0] && j == 0) return 1;    // Bottom-right
+        if (i == order[0] && j == order[1]) return 2;  // Top-right ← CHANGED from 3
+        if (i == 0 && j == order[1]) return 3;    // Top-left ← CHANGED from 2
     }
 
     int offset = 4;

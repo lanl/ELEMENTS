@@ -208,6 +208,8 @@ MATAR_INITIALIZE(argc, argv);
     Mesh.build_elem_elem_connectivity();
     std::cout<<"Building surface connectivity \n";
     Mesh.build_surf_connectivity();
+    std::cout<<"build_node_node_connectivity \n";
+    Mesh.build_node_node_connectivity();  // not used in this test, though
 
 
     // surfaces, exact number:

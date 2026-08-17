@@ -42,17 +42,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace mtr;
 
-namespace mesh_init
-{
-    // element mesh types
-    enum ElementNameType
-    {
-        linearTensorElement = 1,   // single quadrature point element
-        arbitraryTensorElement = 2 // fully integrated arbitrary-order element
-    };
-
-    // other enums could go here on the mesh
-} // end namespace
 
 namespace swage
 {
@@ -252,6 +241,9 @@ struct Mesh_t
 
         // initializes a linear element with a single gauss point for saving results
         Pn = 1;
+
+        //Note: elem_kind is set to this type by default
+
 
         // --- Derived sizes ---
         num_nodes_in_elem = (size_t)std::pow(2, num_dims); 
@@ -607,7 +599,7 @@ struct Mesh_t
 
         // get the elem nodes on the surface
         CArrayKokkos<size_t> surf_node_ordering_in_elem(num_surfs_in_elem, num_nodes_in_surf,"surf_node_ordering_in_elem");
-        get_surf_node_lids(surf_node_ordering_in_elem, num_1D, num_dims);
+        get_surf_node_lids(elem_kind, surf_node_ordering_in_elem, num_1D, num_dims);
         
         // sort the nodes on each elem face from smallest to largest, these are the hash keys 
         CArrayKokkos <size_t> face_hash_keys(num_elems,num_surfs_in_elem,num_nodes_in_surf,"face_hash_keys");
@@ -892,7 +884,7 @@ struct Mesh_t
         
 
         DCArrayKokkos<size_t> patch_node_ordering_in_elem (num_surfs_in_elem, num_patches_in_surf, num_nodes_in_patch);
-        get_patch_node_lids(patch_node_ordering_in_elem, num_1D, num_dims); // R-hand rule node convention for patch nodes
+        get_patch_node_lids(elem_kind,patch_node_ordering_in_elem, num_1D, num_dims); // R-hand rule node convention for patch nodes
 
 
         // now break up the surface into patches

@@ -322,18 +322,21 @@ inline void get_surf_node_lids(mesh_init::ElementNameType elem_kind,
             // |   |  -- I
             // 0---1
             //
-            size_t temp_node_lids[8] =
+            const size_t temp_node_lids[8] =
             { 0, 3,
               1, 2,
               0, 1,
               3, 2 };
 
-            int count = 0;
-            for (size_t face_lid = 0; face_lid < num_faces_in_elem; face_lid++) 
-            for (size_t node_lid = 0; node_lid < num_nodes_in_face; node_lid++) {
-                    surf_node_ordering_in_elem(face_lid, node_lid) = temp_node_lids[count];
-                    count++;
-            } // end for 
+            RUN({
+                int count = 0;
+                for (size_t face_lid = 0; face_lid < num_faces_in_elem; face_lid++) 
+                for (size_t node_lid = 0; node_lid < num_nodes_in_face; node_lid++) {
+                        surf_node_ordering_in_elem(face_lid, node_lid) = temp_node_lids[count];
+                        count++;
+                } // end for 
+            });
+            
         } // end if on dims
 
 

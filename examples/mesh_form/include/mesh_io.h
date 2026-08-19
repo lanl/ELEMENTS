@@ -164,7 +164,7 @@ int PointIndexFromIJK(int i, int j, int k, const int* order)
 ///
 /////////////////////////////////////////////////////////////////////////////
 void build_3d_box(
-    swage::Mesh& mesh,
+    swage::Mesh_t& mesh,
     DCArrayKokkos<double>& node_coords,
     double origin[3],
     double length[3],
@@ -251,9 +251,9 @@ void build_3d_box(
 
     // initialize elem variables
     if (is_linear){
-        mesh.initialize_elems(num_elems, num_dim); 
+        mesh.initialize_elems(num_elems); 
     } else {
-        mesh.initialize_elems_Pn(num_elems, num_dim, Pn_order);
+        mesh.initialize_elems_Pn(num_elems, Pn_order, 2*Pn_order);
     }
 
     // populate the point data structures
@@ -310,8 +310,9 @@ void build_3d_box(
 
     // initialize corner variables (corner = element-node pair)
     // used for per-corner data like corner_delta in mesh_mold.cpp
-    int num_corners = num_elems * mesh.num_nodes_in_elem;
-    mesh.initialize_corners(num_corners);
+    // the corners are initialized in initialize_elems
+    //int num_corners = num_elems * mesh.num_nodes_in_elem;
+    //mesh.initialize_corners(num_corners);
 
     // Build connectivity
     mesh.build_connectivity();
@@ -332,7 +333,7 @@ void build_3d_box(
 ///
 /////////////////////////////////////////////////////////////////////////////
 void build_2d_polar(
-    swage::Mesh& mesh,
+    swage::Mesh_t& mesh,
     MPICArrayKokkos<double>& node_coords,
     double& inner_radius,
     double& outer_radius,
@@ -409,7 +410,7 @@ void build_2d_polar(
     node_coords.update_device();
 
     // initialize elem variables
-    mesh.initialize_elems(num_elems, num_dim);
+    mesh.initialize_elems(num_elems);
 
     // populate the elem center data structures
     for (int j = 0; j < num_elems_j; j++) {
@@ -444,8 +445,9 @@ void build_2d_polar(
     mesh.nodes_in_elem.update_device();
 
     // intialize corner variables
-    int num_corners = num_elems * mesh.num_nodes_in_elem;
-    mesh.initialize_corners(num_corners);
+    // this is initialized in initialize_elems
+    //int num_corners = num_elems * mesh.num_nodes_in_elem;
+    //mesh.initialize_corners(num_corners);
     // corner.initialize(num_corners, num_dim);
 
     // Build connectivity
@@ -466,7 +468,7 @@ void build_2d_polar(
 /// \param comm MPI communicator
 ///
 /////////////////////////////////////////////////////////////////////////////
-void write_vtu(swage::Mesh& mesh,
+void write_vtu(swage::Mesh_t& mesh,
                node_t& node,
                GaussPoint_t& gauss_point,
                int rank,
@@ -864,7 +866,7 @@ void write_vtu(swage::Mesh& mesh,
 /// \param Number of dimensions
 ///
 /////////////////////////////////////////////////////////////////////////////
-void read_vtk_mesh(swage::Mesh& mesh,
+void read_vtk_mesh(swage::Mesh_t& mesh,
     DCArrayKokkos<double>& node_coords,
     int num_dims,
     std::string mesh_file_)
@@ -964,7 +966,7 @@ found=false;
                     throw std::invalid_argument("Failed to parse CELLS header line: \"" + line + "\"");
                 }
                 printf("Number of elements read in %zu\n", num_elem);
-                mesh.initialize_elems(num_elem, num_dims);
+                mesh.initialize_elems(num_elem);
                 found = true;
                 break;
             }
@@ -1097,8 +1099,9 @@ mesh.nodes_in_elem.update_device();
 
 
 // initialize corner variables
-size_t num_corners = num_elem * num_nodes_in_elem;
-mesh.initialize_corners(num_corners);
+// this is initialized in initialize_elems
+//size_t num_corners = num_elem * num_nodes_in_elem;
+//mesh.initialize_corners(num_corners);
 
 
 // Build connectivity

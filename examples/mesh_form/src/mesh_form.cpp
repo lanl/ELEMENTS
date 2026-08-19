@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
     
 
     // Initial mesh built on rank zero
-    swage::Mesh mesh;
+    swage::Mesh_t mesh;
     node_t node;
     DCArrayKokkos<double> node_coords;
 

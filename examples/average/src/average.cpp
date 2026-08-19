@@ -44,11 +44,15 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "state.h"
 
 
+
 int main(int argc, char** argv) {
 
 MATAR_INITIALIZE(argc, argv);
 { // MATAR scope
     std::cout<<"Hello, Average Example!"<<std::endl;
+    
+
+    printf("\nAverage test finished.\n");
     
 } // end MATAR scope
 MATAR_FINALIZE();

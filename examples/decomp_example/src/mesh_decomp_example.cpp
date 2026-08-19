@@ -40,8 +40,8 @@ int main(int argc, char** argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int num_dims = 2;
-    int Pn_order = 1;
+    int num_dims = 3;
+    int Pn_order = 2;
 
     double t_main_start = MPI_Wtime();
 
@@ -59,11 +59,13 @@ int main(int argc, char** argv) {
     int num_elems_j = 40;
 
     // Initial mesh built on rank zero
-    swage::Mesh initial_mesh;
+    swage::Mesh_t initial_mesh;
+    initial_mesh.num_dims = num_dims;
     MPICArrayKokkos<double> initial_node_coords;
 
     // Mesh partitioned by pt-scotch, including ghost
-    swage::Mesh final_mesh;
+    swage::Mesh_t final_mesh;
+    final_mesh.num_dims = num_dims;
     node_t final_node;
     MPICArrayKokkos<double> final_node_coords;
 

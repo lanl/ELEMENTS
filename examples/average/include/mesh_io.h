@@ -142,7 +142,7 @@ inline int PointIndexFromIJK(int i, int j, int k, const int* order)
 ///
 /////////////////////////////////////////////////////////////////////////////
 void build_3d_box(
-    swage::Mesh& mesh,
+    swage::Mesh_t& mesh,
     node_t&   node,
     double origin[3],
     double length[3],
@@ -212,7 +212,7 @@ void build_3d_box(
     node.coords.update_host();
 
     // initialize elem variables
-    mesh.initialize_elems(num_elems, num_dim);
+    mesh.initialize_elems(num_elems);
 
     // populate the point data structures
     FOR_ALL(k, 0, num_elems_k,
@@ -268,7 +268,7 @@ void build_3d_box(
 /// \param rank rank
 ///
 /////////////////////////////////////////////////////////////////////////////
-    void write_vtk(swage::Mesh& mesh,
+    void write_vtk(swage::Mesh_t& mesh,
         node_t& node,
         int rank)
     {
@@ -526,7 +526,7 @@ void build_3d_box(
 /// \param comm MPI communicator
 ///
 /////////////////////////////////////////////////////////////////////////////
-void write_vtu(swage::Mesh& mesh,
+void write_vtu(swage::Mesh_t& mesh,
                node_t& node,
                GaussPoint_t& gauss_point,
                int rank,
@@ -843,7 +843,7 @@ void write_vtu(swage::Mesh& mesh,
     /// \param Number of dimensions
     ///
     /////////////////////////////////////////////////////////////////////////////
-    void read_vtk_mesh(swage::Mesh& mesh,
+    void read_vtk_mesh(swage::Mesh_t& mesh,
         node_t&   node,
         int num_dims,
         std::string mesh_file_)
@@ -942,7 +942,7 @@ void write_vtu(swage::Mesh& mesh,
         printf("Number of elements read in %zu\n", num_elem);
 
         // initialize elem variables
-        mesh.initialize_elems(num_elem, num_dims);
+        mesh.initialize_elems(num_elem);
         
         found=true;
     } // end if
@@ -1001,9 +1001,9 @@ void write_vtu(swage::Mesh& mesh,
     mesh.nodes_in_elem.update_device();
 
 
-    // initialize corner variables
-    size_t num_corners = num_elem * num_nodes_in_elem;
-    mesh.initialize_corners(num_corners);
+    // initialize corner variables (it is set in the elems initialization)
+    //size_t num_corners = num_elem * num_nodes_in_elem;
+    //mesh.initialize_corners(num_corners);
 
 
     // Build connectivity

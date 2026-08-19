@@ -8,7 +8,6 @@
 #include "swage/unstructured_mesh.h"
 #include "swage/point_cloud.h"
 #include "elements/ref_elem.h"
-#include "elements/ref_surf_elem.h"
 #include "elements/ref_quadrature.h"
 
 

@@ -845,7 +845,7 @@ struct Mesh_t
                 // when the storage_bin==0, it is the first surface to have this node
                 if (bdy_surf_node_storage_bin(bdy_surf_gid,node_lid)==0){
                     const size_t bdy_node_gid = Kokkos::atomic_fetch_add(&bdy_node_counter(0), 1);
-                    const size_t node_gid = face_hash_keys(elem_gid,face_lid,node_lid); // sorted nodes on elem face small...big
+                    const size_t node_gid = nodes_in_surf(surf_gid,node_lid);
                     bdy_node_helper(bdy_node_gid) = node_gid;
                 } 
 

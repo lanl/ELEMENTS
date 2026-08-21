@@ -80,6 +80,8 @@ inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
                                                 CArrayKokkos<int>& surf_qpt_qpt_map,
                                                 const DCArrayKokkos<double>& node_coords){
 
+    surf_qpt_qpt_map.set_values(-1);
+                                                    
     const size_t elem_dims = RefSurf.elem_dims;
     const size_t num_surfs = surf_qpt_qpt_map.dims(0);
     const size_t num_nodes_in_elem = Mesh.num_nodes_in_elem;

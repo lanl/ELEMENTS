@@ -52,6 +52,15 @@ using namespace swage;    // unstructured mesh and point cloud
 using namespace elements; // reference element space
 
 
+#define USE_NOTCHED_CIRCLE
+//#define USE_SIN_FUNCTION
+// #define USE_GAUSSIAN
+
+KOKKOS_INLINE_FUNCTION
+double test_function(const double x, 
+                     const double y);
+
+
 void write_lagrange_hex_mesh(
     const std::string& filename,
     const DCArrayKokkos<double>& node_coords,       // All node coordinates [num_nodes][3]
@@ -120,8 +129,8 @@ MATAR_INITIALIZE(argc, argv);
     const double L_x = 1.;
     const double L_y = 1.;
     const double L_z = 0.0625;  // 0.5, 0.25, 0.125, 0.0625
-    const size_t num_elems_x = 16;
-    const size_t num_elems_y = 16;
+    const size_t num_elems_x = 2;
+    const size_t num_elems_y = 2;
     const size_t num_elems_z = 1;
 
     const size_t rk_num_stages = 2;    // number of runge kutta time integration levels
@@ -287,7 +296,7 @@ MATAR_INITIALIZE(argc, argv);
     DCArrayKokkos<double> corner_field(num_corners, "corner_field");
     DCArrayKokkos<double> corner_field_n(num_corners, "corner_field_n");
     DCArrayKokkos<double> elem_corner_vol(num_elems, num_nodes_in_elem, "elem_corner_vol");
-    DCArrayKokkos<double> elem_corner_vol_n(num_elems, num_nodes_in_elem, num_nodes_in_elem, "elem_corner_vol_n");
+    DCArrayKokkos<double> elem_corner_vol_n(num_elems, num_nodes_in_elem, "elem_corner_vol_n");
 
     // Calculate RHS_surf_flux
     CArrayKokkos <double> RHS_surf_flux(num_elems, num_surfs_in_elem, num_qpts_in_surf, "RHS_surf_flux"); // used to build RHS vector 
@@ -385,10 +394,10 @@ MATAR_INITIALIZE(argc, argv);
         for(size_t corner_lid=0; corner_lid<num_nodes_in_elem; corner_lid++){
             // remember: corner_lid = node_lid
             const size_t node_gid = nodes_in_elem(corner_lid);
-            const size_t dim = 0;  // x-coord
             const size_t corner_gid = Mesh.corners_in_elem(elem_gid,corner_lid);
 
-            corner_field(corner_gid) = sin(PI*node_coords(node_gid,dim));
+            //the function, e.g., sin(PI*node_coords(node_gid,dim));
+            corner_field(corner_gid) = test_function(node_coords(node_gid,0),node_coords(node_gid,1));
         }
 
     });  // end parallel for
@@ -876,6 +885,7 @@ MATAR_INITIALIZE(argc, argv);
                         
                         double val_qpt = 0.0;
                         double x_qpt   = 0.0;
+                        double y_qpt   = 0.0;
 
                         for(size_t corner_lid=0; corner_lid<num_nodes_in_elem; corner_lid++) {
                             
@@ -885,10 +895,11 @@ MATAR_INITIALIZE(argc, argv);
                             
                             val_qpt += corner_field(corner_gid)*FERefElem.qpt_basis(qpt_lid,corner_lid); 
                             x_qpt   += node_coords(node_gid,0)*FERefElem.qpt_basis(qpt_lid,corner_lid);
+                            y_qpt   += node_coords(node_gid,1)*FERefElem.qpt_basis(qpt_lid,corner_lid);
                                 
                         } // loop over corners of the element
 
-                        L1_lcl += fabs(val_qpt - sin(PI*x_qpt))*vol_qpt;
+                        L1_lcl += fabs(val_qpt - test_function(x_qpt,y_qpt))*vol_qpt;
                         
                 } // end for dof_lid and qpt_lid
 
@@ -905,6 +916,7 @@ MATAR_INITIALIZE(argc, argv);
                         
                         double val_qpt = 0.0;
                         double x_qpt   = 0.0;
+                        double y_qpt   = 0.0;
 
                         for(size_t corner_lid=0; corner_lid<num_nodes_in_elem; corner_lid++) {
                             
@@ -914,10 +926,11 @@ MATAR_INITIALIZE(argc, argv);
                             
                             val_qpt += corner_field(corner_gid)*FERefElem.qpt_basis(qpt_lid,corner_lid); 
                             x_qpt   += node_coords(node_gid,0)*FERefElem.qpt_basis(qpt_lid,corner_lid);
-                                
+                            y_qpt   += node_coords(node_gid,1)*FERefElem.qpt_basis(qpt_lid,corner_lid);
+
                         } // loop over corners of the element
 
-                        L2_lcl += (val_qpt - sin(PI*x_qpt))*(val_qpt - sin(PI*x_qpt))*vol_qpt;
+                        L2_lcl += (val_qpt - test_function(x_qpt,y_qpt))*(val_qpt - test_function(x_qpt,y_qpt))*vol_qpt;
                         
                 } // end for dof_lid and qpt_lid
 
@@ -1304,6 +1317,100 @@ void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
 } // end function
 
 
+// ============================================================================
+// Notched CIRCLE FUNCTION IMPLEMENTATION
+// ============================================================================
+//
+// Create a notched circle characteristic function.
+//    
+//    Parameters:
+//    -----------
+//    x, y : array-like
+//        Coordinate arrays
+//    center : float 
+//        Circle center (cx, cy)
+//    radius : float
+//        Circle radius
+//    notch_width : float
+//        Width of the notch
+//    notch_height : float
+//        Height of the notch extending from edge
+//    
+//    Returns:
+//    --------
+//    field : array
+//        1 inside notched circle, 0 outside
+//
+// ============================================================================
+#ifdef USE_NOTCHED_CIRCLE 
+
+KOKKOS_INLINE_FUNCTION
+double test_function(const double x, 
+                     const double y){
+
+
+    const double cx = 0.5;
+    const double cy = 0.5;
+    const double radius = 0.22;
+    const double notch_width = 0.11;
+    const double notch_depth = 0.13;  // How far the notch cuts INTO the circle
+
+    // Check if inside circle
+    const double dx = x - cx;
+    const double dy = y - cy;
+    const double r_squared = dx*dx + dy*dy;
+    
+    if (r_squared > radius*radius) {
+        return 0.0;  // Outside circle
+    }
+    
+    // Check if inside top notch
+    // Notch cuts DOWN from the top of the circle
+    bool in_notch_x = fabs(dx) <= notch_width / 2.0;
+    bool in_notch_y = (y >= (cy + radius - notch_depth)) && (y <= (cy + radius));
+    
+    if (in_notch_x && in_notch_y) {
+        return 0.0;  // Inside notch
+    }
+    
+    return 1.0;  // Inside circle, outside notch
+    
+} // end function
+
+#endif // USE_NOTCHED_CIRCLE
 
 
 
+// ============================================================================
+// SIN FUNCTION IMPLEMENTATION
+// ============================================================================
+#ifdef USE_SIN_FUNCTION
+
+KOKKOS_INLINE_FUNCTION
+double test_function(double x, double y) {
+    return sin(PI*x);
+}
+
+#endif // USE_SIN_FUNCTION
+
+
+
+// ============================================================================
+// GAUSSIAN FUNCTION IMPLEMENTATION
+// ============================================================================
+#ifdef USE_GAUSSIAN
+
+KOKKOS_INLINE_FUNCTION
+double test_function(double x, double y) {
+    const double cx = 0.5;
+    const double cy = 0.5;
+    const double sigma = 0.1;
+    
+    double dx = x - cx;
+    double dy = y - cy;
+    double r2 = dx*dx + dy*dy;
+    
+    return exp(-r2 / (2.0 * sigma * sigma));
+}
+
+#endif // USE_GAUSSIAN

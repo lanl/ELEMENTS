@@ -129,12 +129,12 @@ MATAR_INITIALIZE(argc, argv);
     const double L_x = 1.;
     const double L_y = 1.;
     const double L_z = 0.0625;  // 0.5, 0.25, 0.125, 0.0625
-    const size_t num_elems_x = 2;
-    const size_t num_elems_y = 2;
+    const size_t num_elems_x = 8;
+    const size_t num_elems_y = 8;
     const size_t num_elems_z = 1;
 
     const size_t rk_num_stages = 2;    // number of runge kutta time integration levels
-    const size_t max_cycles = 100000;
+    const size_t max_cycles = 10000000;
     const double max_time   = 0.5;
     const double graphics_dt = 0.1;
 
@@ -1328,7 +1328,7 @@ void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
 //    x, y : array-like
 //        Coordinate arrays
 //    center : float 
-//        Circle center (cx, cy)
+//        Circle center (x0, y0)
 //    radius : float
 //        Circle radius
 //    notch_width : float
@@ -1349,31 +1349,35 @@ double test_function(const double x,
                      const double y){
 
 
-    const double cx = 0.5;
-    const double cy = 0.5;
-    const double radius = 0.22;
-    const double notch_width = 0.11;
-    const double notch_depth = 0.13;  // How far the notch cuts INTO the circle
+    const double x0 = 0.5;
+    const double y0 = 0.5;
+    const double radius = 0.25;
+    const double notch_width = 0.15;
+    const double notch_depth = 0.4-radius;  // How far the notch cuts INTO the circle
+    const double smoothing = 0.01;   // Smoothing width, 
+    const double eps = 1e-10;
+
 
     // Check if inside circle
-    const double dx = x - cx;
-    const double dy = y - cy;
-    const double r_squared = dx*dx + dy*dy;
+    const double dx = x - x0;
+    const double dy = y - y0;
+    const double r = sqrt(dx*dx + dy*dy);
+
+
+    // Smooth circle
+    double circle = 0.5 * (1.0 - tanh((r - radius) / smoothing));
     
-    if (r_squared > radius*radius) {
-        return 0.0;  // Outside circle
+    // Smooth notch
+    //if(x > x0 && fabs(y - y0) < notch_width/2.0){ // right notch
+    //double notch = 0.5 * (1.0 + tanh((x - x0) / smoothing)); // right notch
+
+    // Deep notch from TOP, extending PAST center
+    if(fabs(x - x0) < notch_width/2.0){  // Remove y > y0 condition!
+        double notch = 0.5 * (1.0 + tanh((y - (y0 - notch_depth)) / smoothing));
+        circle *= (1.0 - notch);
     }
     
-    // Check if inside top notch
-    // Notch cuts DOWN from the top of the circle
-    bool in_notch_x = fabs(dx) <= notch_width / 2.0;
-    bool in_notch_y = (y >= (cy + radius - notch_depth)) && (y <= (cy + radius));
-    
-    if (in_notch_x && in_notch_y) {
-        return 0.0;  // Inside notch
-    }
-    
-    return 1.0;  // Inside circle, outside notch
+    return circle;  // Inside circle, outside notch
     
 } // end function
 

@@ -52,7 +52,7 @@ using namespace swage;    // unstructured mesh and point cloud
 using namespace elements; // reference element space
 
 
-using real_t = double; // real_t precision
+using REAL_t = double; // REAL_t precision
 
 
 #define USE_NOTCHED_CIRCLE
@@ -60,20 +60,20 @@ using real_t = double; // real_t precision
 // #define USE_GAUSSIAN
 
 KOKKOS_INLINE_FUNCTION
-real_t test_function(const real_t x, 
-                     const real_t y);
+REAL_t test_function(const REAL_t x, 
+                     const REAL_t y);
 
 
 void write_lagrange_hex_mesh(
     const std::string& filename,
-    const DCArrayKokkos<real_t>& node_coords,       // All node coordinates [num_nodes][3]
+    const DCArrayKokkos<REAL_t>& node_coords,       // All node coordinates [num_nodes][3]
     const size_t num_nodes,
     const DCArrayKokkos<size_t>& nodes_in_elem,     // Connectivity
     const size_t num_elems,
     const size_t order,
-    const DCArrayKokkos<real_t>& node_data,         // Nodal data
+    const DCArrayKokkos<REAL_t>& node_data,         // Nodal data
     const std::string& node_data_name,
-    const DCArrayKokkos<real_t>& elem_data,         // Element center data (NEW)
+    const DCArrayKokkos<REAL_t>& elem_data,         // Element center data (NEW)
     const std::string& elem_data_name);             // Element data name (NEW)
 
 
@@ -81,16 +81,16 @@ void write_lagrange_cells(std::ofstream& file,
                         const DCArrayKokkos<size_t>& nodes_in_elem,
                         size_t num_elems, 
                         size_t order,
-                        const DCArrayKokkos<real_t>& elem_data,    // Element data
+                        const DCArrayKokkos<REAL_t>& elem_data,    // Element data
                         const std::string& elem_data_name);        // Element data name
 
 void write_points(std::ofstream& file, 
-                  const DCArrayKokkos<real_t>& coords, 
+                  const DCArrayKokkos<REAL_t>& coords, 
                   size_t num_nodes);
 
 
 void write_point_data(std::ofstream& file, 
-                      const DCArrayKokkos<real_t>& data, 
+                      const DCArrayKokkos<REAL_t>& data, 
                       size_t num_nodes,
                       const std::string& name);
 
@@ -102,11 +102,11 @@ void reorder_ijk_to_vtk_lagrange(const DCArrayKokkos<size_t>& nodes_in_elem,
 inline int PointIndexFromIJK(int i, int j, int k, const int* order);
 
 
-real_t lagrange_basis(const real_t xi, const size_t i, const CArrayKokkos<real_t>& nodes);
+REAL_t lagrange_basis(const REAL_t xi, const size_t i, const CArrayKokkos<REAL_t>& nodes);
 void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
-                            const CArrayKokkos<real_t>& lob_nodes_1D,
-                            const DCArrayKokkos<real_t>& node_coords_lob,  // Lobatto node positions
-                            DCArrayKokkos<real_t>& node_coords_uniform,   // Output uniform positions 
+                            const CArrayKokkos<REAL_t>& lob_nodes_1D,
+                            const DCArrayKokkos<REAL_t>& node_coords_lob,  // Lobatto node positions
+                            DCArrayKokkos<REAL_t>& node_coords_uniform,   // Output uniform positions 
                             const size_t num_elems); 
 
 
@@ -129,17 +129,17 @@ MATAR_INITIALIZE(argc, argv);
     const size_t elem_dims = 3;
     const size_t elem_order = 3; 
     
-    const real_t L_x = 1.;
-    const real_t L_y = 1.;
-    const real_t L_z = 0.0625;  // 0.5, 0.25, 0.125, 0.0625
+    const REAL_t L_x = 1.;
+    const REAL_t L_y = 1.;
+    const REAL_t L_z = 0.0625;  // 0.5, 0.25, 0.125, 0.0625
     const size_t num_elems_x = 8;
     const size_t num_elems_y = 8;
     const size_t num_elems_z = 1;
 
     const size_t rk_num_stages = 2;    // number of runge kutta time integration levels
     const size_t max_cycles = 10000000;
-    const real_t max_time   = 0.5;
-    const real_t graphics_dt = 0.1;
+    const REAL_t max_time   = 0.5;
+    const REAL_t graphics_dt = 0.1;
 
 
     // ================================================================
@@ -190,22 +190,22 @@ MATAR_INITIALIZE(argc, argv);
     Mesh.initialize_elems_Pn(num_elems, elem_order, Quad.num_qpts_1d);
     Mesh.initialize_nodes(num_nodes);
     
-    DCArrayKokkos <real_t> node_coords(Mesh.num_nodes, Mesh.num_dims);
+    DCArrayKokkos <REAL_t> node_coords(Mesh.num_nodes, Mesh.num_dims);
 
     // Physical element sizes
-    const real_t h_x = L_x / (real_t)num_elems_x;
-    const real_t h_y = L_y / (real_t)num_elems_y;
-    const real_t h_z = L_z / (real_t)num_elems_z;
+    const REAL_t h_x = L_x / (REAL_t)num_elems_x;
+    const REAL_t h_y = L_y / (REAL_t)num_elems_y;
+    const REAL_t h_z = L_z / (REAL_t)num_elems_z;
 
 
 
     // create indexing for a Pn order mesh
 
-    CArrayKokkos <real_t> lob_nodes_1D(num_DOFs_1d);
+    CArrayKokkos <REAL_t> lob_nodes_1D(num_DOFs_1d);
     RUN({
         get_lobatto_nodes_1D(lob_nodes_1D,num_DOFs_1d); 
     });
-    const real_t ref_length = 2.0;
+    const REAL_t ref_length = 2.0;
 
 
     // Step 1: Initialize ALL node coordinates once
@@ -282,28 +282,28 @@ MATAR_INITIALIZE(argc, argv);
 
     if(num_nodes_in_elem != FERefElem.num_dofs_in_elem) Kokkos::abort("ERROR: mismatch in DOFs and num nodes in elem \n");
 
-    DCArrayKokkos<real_t> elem_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
-    DCArrayKokkos<real_t> elem_det_jac(num_elems, num_qpts_in_elem, "elem_det_jacobian");
-    DCArrayKokkos<real_t> elem_inv_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_inv_jacobian");
+    DCArrayKokkos<REAL_t> elem_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
+    DCArrayKokkos<REAL_t> elem_det_jac(num_elems, num_qpts_in_elem, "elem_det_jacobian");
+    DCArrayKokkos<REAL_t> elem_inv_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_inv_jacobian");
     
 
-    DCArrayKokkos<real_t> surf_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_jacobian");
-    DCArrayKokkos<real_t> surf_flux(num_surfs, "surf_flux");
+    DCArrayKokkos<REAL_t> surf_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_jacobian");
+    DCArrayKokkos<REAL_t> surf_flux(num_surfs, "surf_flux");
     
-    DCArrayKokkos<real_t> elem_field(num_elems, "elem_field");
-    DCArrayKokkos<real_t> node_field(num_nodes, "node_field");     // for displaying field results
-    DCArrayKokkos<real_t> node_velocity(num_nodes, elem_dims, "node_velocity");
-    DCArrayKokkos<real_t> node_velocity_n(num_nodes, elem_dims, "node_velocity_n");
-    DCArrayKokkos<real_t> node_coords_n(num_nodes, elem_dims, "node_coords_n");
+    DCArrayKokkos<REAL_t> elem_field(num_elems, "elem_field");
+    DCArrayKokkos<REAL_t> node_field(num_nodes, "node_field");     // for displaying field results
+    DCArrayKokkos<REAL_t> node_velocity(num_nodes, elem_dims, "node_velocity");
+    DCArrayKokkos<REAL_t> node_velocity_n(num_nodes, elem_dims, "node_velocity_n");
+    DCArrayKokkos<REAL_t> node_coords_n(num_nodes, elem_dims, "node_coords_n");
 
-    DCArrayKokkos<real_t> corner_field(num_corners, "corner_field");
-    DCArrayKokkos<real_t> corner_field_n(num_corners, "corner_field_n");
-    DCArrayKokkos<real_t> elem_corner_vol(num_elems, num_nodes_in_elem, "elem_corner_vol");
-    DCArrayKokkos<real_t> elem_corner_vol_n(num_elems, num_nodes_in_elem, "elem_corner_vol_n");
+    DCArrayKokkos<REAL_t> corner_field(num_corners, "corner_field");
+    DCArrayKokkos<REAL_t> corner_field_n(num_corners, "corner_field_n");
+    DCArrayKokkos<REAL_t> elem_corner_vol(num_elems, num_nodes_in_elem, "elem_corner_vol");
+    DCArrayKokkos<REAL_t> elem_corner_vol_n(num_elems, num_nodes_in_elem, "elem_corner_vol_n");
 
     // Calculate RHS_surf_flux
-    CArrayKokkos <real_t> RHS_surf_flux(num_elems, num_surfs_in_elem, num_qpts_in_surf, "RHS_surf_flux"); // used to build RHS vector 
-    CArrayKokkos <real_t> RHS_elem(num_elems, num_nodes_in_elem, "RHS_elem"); // RHS vector 
+    CArrayKokkos <REAL_t> RHS_surf_flux(num_elems, num_surfs_in_elem, num_qpts_in_surf, "RHS_surf_flux"); // used to build RHS vector 
+    CArrayKokkos <REAL_t> RHS_elem(num_elems, num_nodes_in_elem, "RHS_elem"); // RHS vector 
 
 
     // ================================================================
@@ -332,16 +332,16 @@ MATAR_INITIALIZE(argc, argv);
             for(size_t qpt_lid=0;  qpt_lid<num_qpts_in_elem;   qpt_lid++){
 
                     // extract the grad_basis at a single quadrature point (qpt,dof,3D)
-                    ViewCArrayKokkos<real_t> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
+                    ViewCArrayKokkos<REAL_t> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
                                                         num_nodes_in_elem, 3);
 
                     // extract the basis at a single quadrature point (qpt,dof)    
-                    ViewCArrayKokkos<real_t> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
+                    ViewCArrayKokkos<REAL_t> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
                                                     num_nodes_in_elem);
                     
                     // jacobian matrix and inverse
-                    ViewCArrayKokkos<real_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
-                    ViewCArrayKokkos<real_t> inv_jac(&elem_inv_jac(elem_gid,qpt_lid,0,0),3,3);
+                    ViewCArrayKokkos<REAL_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
+                    ViewCArrayKokkos<REAL_t> inv_jac(&elem_inv_jac(elem_gid,qpt_lid,0,0),3,3);
                     
                     jacobian(jac, 
                              node_coords, 
@@ -353,7 +353,7 @@ MATAR_INITIALIZE(argc, argv);
                     invert_3x3(jac, inv_jac, elem_det_jac(elem_gid,qpt_lid));
                     
                     // volume contribution from qpt
-                    const real_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+                    const REAL_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
                     
                     for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++){
                         elem_corner_vol(elem_gid, node_lid) += a_basis(dof_lid)*a_basis(node_lid)*vol_qpt;
@@ -367,14 +367,14 @@ MATAR_INITIALIZE(argc, argv);
 
 
     // -----------------------------------------------------
-    const real_t max_vel = 1.0; // the CFL velocity used for calculating dt
-    real_t h_cfl = 1.e-6;       // the CFL length scale for calculating dt
-    real_t dt = 1.e-6;          // dt from CFL at start, this time is psuedo time
+    const REAL_t max_vel = 1.0; // the CFL velocity used for calculating dt
+    REAL_t h_cfl = 1.e-6;       // the CFL length scale for calculating dt
+    REAL_t dt = 1.e-6;          // dt from CFL at start, this time is psuedo time
 
 
     // -----------------------------------------------------
-    real_t time = 0;                    // the time 
-    real_t time_output = graphics_dt;   // the time for graphics outputs
+    REAL_t time = 0;                    // the time 
+    REAL_t time_output = graphics_dt;   // the time for graphics outputs
     size_t output_id = 0;               // the file id for the outputs
     
     std::ofstream err_file("ErrorNorms.txt");
@@ -416,8 +416,8 @@ MATAR_INITIALIZE(argc, argv);
 
 
     // Conservation Check
-    real_t sum_elem = 0.0;
-    real_t domain_mass_t0 = 0.0;
+    REAL_t sum_elem = 0.0;
+    REAL_t domain_mass_t0 = 0.0;
     FOR_REDUCE_SUM(elem_gid, 0, num_elems, sum_elem, {
 
         for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
@@ -429,7 +429,7 @@ MATAR_INITIALIZE(argc, argv);
 
     printf("Domain Mass t=0: %f \n", domain_mass_t0);
 
-    DCArrayKokkos <real_t> output_node_coords(num_nodes,3);
+    DCArrayKokkos <REAL_t> output_node_coords(num_nodes,3);
     
 
     // export results to Paraview graphics file
@@ -442,7 +442,7 @@ MATAR_INITIALIZE(argc, argv);
                 const size_t corner_gid = Mesh.corners_in_elem(elem_gid, corner_lid);
                 elem_field(elem_gid) += corner_field(corner_gid);
             } 
-            elem_field(elem_gid) /= (real_t)Mesh.num_nodes_in_elem;
+            elem_field(elem_gid) /= (REAL_t)Mesh.num_nodes_in_elem;
         });
 
         // save corner field to the nodes for graphics outputs
@@ -452,7 +452,7 @@ MATAR_INITIALIZE(argc, argv);
                 const size_t corner_gid = Mesh.corners_in_node(node_gid, corner_lid);
                 node_field(node_gid) += corner_field(corner_gid);
             } 
-            node_field(node_gid) /= (real_t)Mesh.num_corners_in_node(node_gid);
+            node_field(node_gid) /= (REAL_t)Mesh.num_corners_in_node(node_gid);
         });
 
         // map nodes to uniform locations
@@ -522,20 +522,20 @@ MATAR_INITIALIZE(argc, argv);
         // ------------------------------------------------------
         // Step 1b: get CFL time step for moving mesh
 
-        real_t min_h_loc;
+        REAL_t min_h_loc;
         FOR_REDUCE_MIN(elem_gid, 0, num_elems, 
                         min_h_loc, { 
             
             for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
 
                 // jacobian matrix was already calculated in corner volume vector
-                ViewCArrayKokkos<real_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
+                ViewCArrayKokkos<REAL_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
 
                 // calculate det_J 
-                real_t det = det_3x3(jac);
+                REAL_t det = det_3x3(jac);
 
-                const real_t vol_qpt= Quad.qpt_weights(qpt_lid)*det;
-                const real_t h_qpt = pow(vol_qpt,0.3333333);
+                const REAL_t vol_qpt= Quad.qpt_weights(qpt_lid)*det;
+                const REAL_t h_qpt = pow(vol_qpt,0.3333333);
                 if(h_qpt < min_h_loc) min_h_loc = h_qpt;
             }
 
@@ -549,7 +549,7 @@ MATAR_INITIALIZE(argc, argv);
         for(size_t rk_stage=0; rk_stage<rk_num_stages; rk_stage++){
 
             // RK coefficient
-            const real_t rk_alpha = 1.0 / ((real_t)rk_num_stages - (real_t)rk_stage);
+            const REAL_t rk_alpha = 1.0 / ((REAL_t)rk_num_stages - (REAL_t)rk_stage);
 
 
             // ------------------------------------------------------
@@ -582,29 +582,29 @@ MATAR_INITIALIZE(argc, argv);
                 FOR_SECOND(qpt_lid, 0, num_qpts_in_surf, {
                 
                     // extract the grad_basis at a single quadrature point (surf,qpt,dof,3D)
-                    ViewCArrayKokkos<real_t> a_grad_basis(&RefSurf.qpt_grad_basis(face_lid,qpt_lid,0,0),
+                    ViewCArrayKokkos<REAL_t> a_grad_basis(&RefSurf.qpt_grad_basis(face_lid,qpt_lid,0,0),
                                                         num_nodes_in_elem, 3);
 
                     // extract the basis at a single quadrature point (surf,qpt,dof)    
-                    ViewCArrayKokkos<real_t> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0),
+                    ViewCArrayKokkos<REAL_t> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0),
                                                     num_nodes_in_elem);
                     
-                    ViewCArrayKokkos<real_t> jac(&surf_jac(surf_gid,qpt_lid,0,0),3,3);
+                    ViewCArrayKokkos<REAL_t> jac(&surf_jac(surf_gid,qpt_lid,0,0),3,3);
                     
-                    real_t surf_inv_jac_1D[9];
-                    ViewCArrayKokkos<real_t> inv_jac(&surf_inv_jac_1D[0],3,3);
+                    REAL_t surf_inv_jac_1D[9];
+                    ViewCArrayKokkos<REAL_t> inv_jac(&surf_inv_jac_1D[0],3,3);
 
                     jacobian(jac, 
                             node_coords, 
                             nodes_in_elem,
                             a_grad_basis);
 
-                    const real_t det_jac_qpt = det_3x3(jac);
+                    const REAL_t det_jac_qpt = det_3x3(jac);
 
                     invert_3x3(jac, inv_jac, det_jac_qpt);
 
                     // Nanson's formula: s*J^-1*j*f*w
-                    real_t area_normal[3];
+                    REAL_t area_normal[3];
                     area_normal[0] = 0.;
                     area_normal[1] = 0.;
                     area_normal[2] = 0.;
@@ -615,7 +615,7 @@ MATAR_INITIALIZE(argc, argv);
                         area_normal[j] *= det_jac_qpt*SurfQuad.qpt_weights(face_lid,qpt_lid);
                     } // end j
 
-                    real_t qpt_vel[3];
+                    REAL_t qpt_vel[3];
                     for(size_t dim=0; dim<elem_dims; dim++){
                         qpt_vel[dim] = 0.0;
                     }
@@ -627,7 +627,7 @@ MATAR_INITIALIZE(argc, argv);
                     } // end for
 
 
-                    real_t normal_dot_vel = 0.0;
+                    REAL_t normal_dot_vel = 0.0;
                     for(size_t dim=0; dim<elem_dims; dim++){
                         normal_dot_vel += area_normal[dim]*qpt_vel[dim];
                     }
@@ -641,12 +641,12 @@ MATAR_INITIALIZE(argc, argv);
 
                     const size_t nbr_qpt_lid = surf_qpt_qpt_map(surf_gid,0,qpt_lid); // matching qpt
 
-                    ViewCArrayKokkos<real_t> a_nbr_basis(&RefSurf.qpt_basis(nbr_face_lid,nbr_qpt_lid,0),
+                    ViewCArrayKokkos<REAL_t> a_nbr_basis(&RefSurf.qpt_basis(nbr_face_lid,nbr_qpt_lid,0),
                                                          num_nodes_in_elem);
 
                     // reconstruct the fields
-                    real_t qpt_field     = 0.0;
-                    real_t nbr_qpt_field = 0.0;
+                    REAL_t qpt_field     = 0.0;
+                    REAL_t nbr_qpt_field = 0.0;
 
                     for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
 
@@ -664,7 +664,7 @@ MATAR_INITIALIZE(argc, argv);
                     //
                     
                     // if normal_dot_vel<0 advection is out of first elem in the surf
-                    const real_t flux_val = 0.5*(qpt_field+nbr_qpt_field)*normal_dot_vel 
+                    const REAL_t flux_val = 0.5*(qpt_field+nbr_qpt_field)*normal_dot_vel 
                                            -0.5*fabs(normal_dot_vel)*(qpt_field-nbr_qpt_field);
 
                     // save flux value to the quadrature points on either side of the element
@@ -701,27 +701,27 @@ MATAR_INITIALIZE(argc, argv);
                     for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
                         
                         // extract the grad_basis at a single quadrature point (qpt,dof,3D)
-                        ViewCArrayKokkos<real_t> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
+                        ViewCArrayKokkos<REAL_t> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
                                                             num_nodes_in_elem, 3);
 
                         // extract the basis at a single quadrature point (qpt,dof)    
-                        ViewCArrayKokkos<real_t> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
+                        ViewCArrayKokkos<REAL_t> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
                                                         num_nodes_in_elem);
                         
 
                         // jacobian matrix and inverse; jacobian was calculated already when building volume vector
-                        ViewCArrayKokkos<real_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
-                        ViewCArrayKokkos<real_t> inv_jac(&elem_inv_jac(elem_gid,qpt_lid,0,0),3,3);
+                        ViewCArrayKokkos<REAL_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
+                        ViewCArrayKokkos<REAL_t> inv_jac(&elem_inv_jac(elem_gid,qpt_lid,0,0),3,3);
 
                         // Reconstruct field at quadrature point
-                        real_t qpt_field = 0.0;
+                        REAL_t qpt_field = 0.0;
                         for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
                             const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
                             qpt_field += a_basis(node_lid) * corner_field(corner_gid);
                         }
                         
                         // Reconstruct velocity at quadrature point 
-                        real_t qpt_vel[3];
+                        REAL_t qpt_vel[3];
                         qpt_vel[0] = 0.0;
                         qpt_vel[1] = 0.0; 
                         qpt_vel[2] = 0.0;
@@ -734,7 +734,7 @@ MATAR_INITIALIZE(argc, argv);
                         }
 
                         // transform the gradient to the physical space
-                        real_t physical_grad[3]; 
+                        REAL_t physical_grad[3]; 
                         physical_grad[0] = 0.0;
                         physical_grad[1] = 0.0; 
                         physical_grad[2] = 0.0;
@@ -745,12 +745,12 @@ MATAR_INITIALIZE(argc, argv);
                         
                         // Compute (\nabal phi_q)*J^-1*(v*U)
                         // From Anderson et. al. paper
-                        real_t grad_dot_flux = 0.0;
+                        REAL_t grad_dot_flux = 0.0;
                         for(size_t dim = 0; dim < elem_dims; dim++){
                             grad_dot_flux += physical_grad[dim] * qpt_vel[dim] * qpt_field;
                         }
                         
-                        const real_t vol_qpt = elem_det_jac(elem_gid, qpt_lid) * Quad.qpt_weights(qpt_lid);
+                        const REAL_t vol_qpt = elem_det_jac(elem_gid, qpt_lid) * Quad.qpt_weights(qpt_lid);
                         RHS_elem(elem_gid, dof_lid) -= rk_alpha * dt * grad_dot_flux * vol_qpt;
                     } // end for qpt
                 
@@ -761,7 +761,7 @@ MATAR_INITIALIZE(argc, argv);
                     for(size_t face_lid = 0; face_lid < num_surfs_in_elem; face_lid++)
                     for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_surf; qpt_lid++){
                         
-                        ViewCArrayKokkos<real_t> a_basis(&RefSurf.qpt_basis(face_lid, qpt_lid, 0),
+                        ViewCArrayKokkos<REAL_t> a_basis(&RefSurf.qpt_basis(face_lid, qpt_lid, 0),
                                                         num_nodes_in_elem);
                         
                         // surface flux (note: RHS_surf_flux already has correct sign)
@@ -798,16 +798,16 @@ MATAR_INITIALIZE(argc, argv);
                     for(size_t qpt_lid=0;  qpt_lid<num_qpts_in_elem;   qpt_lid++){
 
                             // extract the grad_basis at a single quadrature point (qpt,dof,3D)
-                            ViewCArrayKokkos<real_t> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
+                            ViewCArrayKokkos<REAL_t> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
                                                                 num_nodes_in_elem, 3);
 
                             // extract the basis at a single quadrature point (qpt,dof)    
-                            ViewCArrayKokkos<real_t> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
+                            ViewCArrayKokkos<REAL_t> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
                                                             num_nodes_in_elem);
                             
                             // jacobian matrix and inverse
-                            ViewCArrayKokkos<real_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
-                            ViewCArrayKokkos<real_t> inv_jac(&elem_inv_jac(elem_gid,qpt_lid,0,0),3,3);
+                            ViewCArrayKokkos<REAL_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
+                            ViewCArrayKokkos<REAL_t> inv_jac(&elem_inv_jac(elem_gid,qpt_lid,0,0),3,3);
                             
                             jacobian(jac, 
                                     node_coords, 
@@ -819,7 +819,7 @@ MATAR_INITIALIZE(argc, argv);
                             invert_3x3(jac, inv_jac, elem_det_jac(elem_gid,qpt_lid));
                             
                             // volume contribution from qpt
-                            const real_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+                            const REAL_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
                             
                             for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++){
                                 elem_corner_vol(elem_gid, node_lid) += a_basis(dof_lid)*a_basis(node_lid)*vol_qpt;
@@ -857,8 +857,8 @@ MATAR_INITIALIZE(argc, argv);
         time += dt;
 
         // Conservation Check
-        real_t sum_elem = 0.0;
-        real_t domain_mass_time = 0.0;
+        REAL_t sum_elem = 0.0;
+        REAL_t domain_mass_time = 0.0;
         FOR_REDUCE_SUM(elem_gid, 0, num_elems, sum_elem, {
 
             for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
@@ -877,18 +877,18 @@ MATAR_INITIALIZE(argc, argv);
 
 
             //// L1 and L2 error norms
-            real_t L1;
-            real_t L1_lcl;
+            REAL_t L1;
+            REAL_t L1_lcl;
             FOR_REDUCE_SUM(elem_gid, 0, num_elems,  L1_lcl, {
 
                 for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
 
                         // volume contribution from qpt
-                        const real_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+                        const REAL_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
                         
-                        real_t val_qpt = 0.0;
-                        real_t x_qpt   = 0.0;
-                        real_t y_qpt   = 0.0;
+                        REAL_t val_qpt = 0.0;
+                        REAL_t x_qpt   = 0.0;
+                        REAL_t y_qpt   = 0.0;
 
                         for(size_t corner_lid=0; corner_lid<num_nodes_in_elem; corner_lid++) {
                             
@@ -908,18 +908,18 @@ MATAR_INITIALIZE(argc, argv);
 
             }, L1); // end parallel for
 
-            real_t L2;
-            real_t L2_lcl;
+            REAL_t L2;
+            REAL_t L2_lcl;
             FOR_REDUCE_SUM(elem_gid, 0, num_elems, L2_lcl, {
 
                 for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
 
                         // volume contribution from qpt
-                        const real_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+                        const REAL_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
                         
-                        real_t val_qpt = 0.0;
-                        real_t x_qpt   = 0.0;
-                        real_t y_qpt   = 0.0;
+                        REAL_t val_qpt = 0.0;
+                        REAL_t x_qpt   = 0.0;
+                        REAL_t y_qpt   = 0.0;
 
                         for(size_t corner_lid=0; corner_lid<num_nodes_in_elem; corner_lid++) {
                             
@@ -955,7 +955,7 @@ MATAR_INITIALIZE(argc, argv);
                     const size_t corner_gid = Mesh.corners_in_elem(elem_gid, corner_lid);
                     elem_field(elem_gid) += corner_field(corner_gid);
                 } 
-                elem_field(elem_gid) /= (real_t)Mesh.num_nodes_in_elem;
+                elem_field(elem_gid) /= (REAL_t)Mesh.num_nodes_in_elem;
             });
 
             // save corner field to the nodes for graphics outputs
@@ -965,7 +965,7 @@ MATAR_INITIALIZE(argc, argv);
                     const size_t corner_gid = Mesh.corners_in_node(node_gid, corner_lid);
                     node_field(node_gid) += corner_field(corner_gid);
                 } 
-                node_field(node_gid) /= (real_t)Mesh.num_corners_in_node(node_gid);
+                node_field(node_gid) /= (REAL_t)Mesh.num_corners_in_node(node_gid);
             });
 
             // map nodes to uniform locations
@@ -1028,14 +1028,14 @@ return 0;
 // 
 void write_lagrange_hex_mesh(
     const std::string& filename,
-    const DCArrayKokkos<real_t>& node_coords,       // All node coordinates [num_nodes][3]
+    const DCArrayKokkos<REAL_t>& node_coords,       // All node coordinates [num_nodes][3]
     const size_t num_nodes,
     const DCArrayKokkos<size_t>& nodes_in_elem,     // Connectivity
     const size_t num_elems,
     const size_t order,
-    const DCArrayKokkos<real_t>& node_data,         // Nodal data
+    const DCArrayKokkos<REAL_t>& node_data,         // Nodal data
     const std::string& node_data_name,
-    const DCArrayKokkos<real_t>& elem_data,         // Element center data (NEW)
+    const DCArrayKokkos<REAL_t>& elem_data,         // Element center data (NEW)
     const std::string& elem_data_name)              // Element data name (NEW)
 {
     std::ofstream vtu_file(filename);
@@ -1072,7 +1072,7 @@ void write_lagrange_hex_mesh(
     std::cout << "Wrote VTU file: " << filename << std::endl;
 }
 
-void write_points(std::ofstream& file, const DCArrayKokkos<real_t>& coords, size_t num_nodes)
+void write_points(std::ofstream& file, const DCArrayKokkos<REAL_t>& coords, size_t num_nodes)
 {
     file << "      <Points>\n";
     file << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
@@ -1091,7 +1091,7 @@ void write_lagrange_cells(std::ofstream& file,
                           const DCArrayKokkos<size_t>& nodes_in_elem,
                           size_t num_elems, 
                           size_t order,
-                          const DCArrayKokkos<real_t>& elem_data,    // Element data
+                          const DCArrayKokkos<REAL_t>& elem_data,    // Element data
                           const std::string& elem_data_name)         // Element data name
 {
     const size_t nodes_per_elem = (order + 1) * (order + 1) * (order + 1);
@@ -1158,7 +1158,7 @@ void write_lagrange_cells(std::ofstream& file,
 }
 
 void write_point_data(std::ofstream& file, 
-                      const DCArrayKokkos<real_t>& data, 
+                      const DCArrayKokkos<REAL_t>& data, 
                       size_t num_nodes,
                       const std::string& name)
 {
@@ -1253,8 +1253,8 @@ inline int PointIndexFromIJK(int i, int j, int k, const int* order)
 
 // Lagrange basis function
 KOKKOS_INLINE_FUNCTION
-real_t lagrange_basis(const real_t xi, const size_t i, const CArrayKokkos<real_t>& nodes) {
-    real_t L = 1.0;
+REAL_t lagrange_basis(const REAL_t xi, const size_t i, const CArrayKokkos<REAL_t>& nodes) {
+    REAL_t L = 1.0;
     for (size_t j = 0; j < nodes.dims(0); j++) {
         if (j != i) {
             L *= (xi - nodes(j)) / (nodes(i) - nodes(j));
@@ -1265,9 +1265,9 @@ real_t lagrange_basis(const real_t xi, const size_t i, const CArrayKokkos<real_t
 
 
 void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
-                            const CArrayKokkos<real_t>& lob_nodes_1D,
-                            const DCArrayKokkos<real_t>& node_coords_lob,  // Lobatto node positions
-                            DCArrayKokkos<real_t>& node_coords_uniform,   // Output uniform positions 
+                            const CArrayKokkos<REAL_t>& lob_nodes_1D,
+                            const DCArrayKokkos<REAL_t>& node_coords_lob,  // Lobatto node positions
+                            DCArrayKokkos<REAL_t>& node_coords_uniform,   // Output uniform positions 
                             const size_t num_elems)   
 {
 
@@ -1281,24 +1281,24 @@ void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
                 i,0,num_DOFs_1d, {
                     
             // Uniform parametric coordinates in [-1, 1]
-            real_t xi   = -1.0 + 2.0 * (real_t)i / ((real_t)(num_DOFs_1d - 1));
-            real_t eta  = -1.0 + 2.0 * (real_t)j / ((real_t)(num_DOFs_1d - 1));
-            real_t zeta = -1.0 + 2.0 * (real_t)k / ((real_t)(num_DOFs_1d - 1));
+            REAL_t xi   = -1.0 + 2.0 * (REAL_t)i / ((REAL_t)(num_DOFs_1d - 1));
+            REAL_t eta  = -1.0 + 2.0 * (REAL_t)j / ((REAL_t)(num_DOFs_1d - 1));
+            REAL_t zeta = -1.0 + 2.0 * (REAL_t)k / ((REAL_t)(num_DOFs_1d - 1));
             
             // Interpolate using Lagrange basis at Lobatto nodes
-            real_t x = 0.0;
-            real_t y = 0.0; 
-            real_t z = 0.0;
+            REAL_t x = 0.0;
+            REAL_t y = 0.0; 
+            REAL_t z = 0.0;
             for (size_t kk = 0; kk < num_DOFs_1d; kk++) {
-                real_t Lk = lagrange_basis(zeta, kk, lob_nodes_1D);
+                REAL_t Lk = lagrange_basis(zeta, kk, lob_nodes_1D);
                 for (size_t jj = 0; jj < num_DOFs_1d; jj++) {
-                    real_t Lj = lagrange_basis(eta, jj, lob_nodes_1D);
+                    REAL_t Lj = lagrange_basis(eta, jj, lob_nodes_1D);
                     for (size_t ii = 0; ii < num_DOFs_1d; ii++) {
-                        real_t Li = lagrange_basis(xi, ii, lob_nodes_1D);
+                        REAL_t Li = lagrange_basis(xi, ii, lob_nodes_1D);
                         
                         size_t node_lid = ii + (jj + kk*num_DOFs_1d)*num_DOFs_1d;
                         size_t node = nodes_in_elem(elem_gid, node_lid);
-                        real_t basis = Li * Lj * Lk;
+                        REAL_t basis = Li * Lj * Lk;
                         
                         x += basis * node_coords_lob(node, 0);
                         y += basis * node_coords_lob(node, 1);
@@ -1348,35 +1348,35 @@ void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
 #ifdef USE_NOTCHED_CIRCLE 
 
 KOKKOS_INLINE_FUNCTION
-real_t test_function(const real_t x, 
-                     const real_t y){
+REAL_t test_function(const REAL_t x, 
+                     const REAL_t y){
 
 
-    const real_t x0 = 0.5;
-    const real_t y0 = 0.5;
-    const real_t radius = 0.25;
-    const real_t notch_width = 0.15;
-    const real_t notch_depth = 0.4-radius;  // How far the notch cuts INTO the circle
-    const real_t smoothing = 0.01;   // Smoothing width, 
-    const real_t eps = 1e-10;
+    const REAL_t x0 = 0.5;
+    const REAL_t y0 = 0.5;
+    const REAL_t radius = 0.25;
+    const REAL_t notch_width = 0.15;
+    const REAL_t notch_depth = 0.4-radius;  // How far the notch cuts INTO the circle
+    const REAL_t smoothing = 0.01;   // Smoothing width, 
+    const REAL_t eps = 1e-10;
 
 
     // Check if inside circle
-    const real_t dx = x - x0;
-    const real_t dy = y - y0;
-    const real_t r = sqrt(dx*dx + dy*dy);
+    const REAL_t dx = x - x0;
+    const REAL_t dy = y - y0;
+    const REAL_t r = sqrt(dx*dx + dy*dy);
 
 
     // Smooth circle
-    real_t circle = 0.5 * (1.0 - tanh((r - radius) / smoothing));
+    REAL_t circle = 0.5 * (1.0 - tanh((r - radius) / smoothing));
     
     // Smooth notch
     //if(x > x0 && fabs(y - y0) < notch_width/2.0){ // right notch
-    //real_t notch = 0.5 * (1.0 + tanh((x - x0) / smoothing)); // right notch
+    //REAL_t notch = 0.5 * (1.0 + tanh((x - x0) / smoothing)); // right notch
 
     // Deep notch from TOP, extending PAST center
     if(fabs(x - x0) < notch_width/2.0){  // Remove y > y0 condition!
-        real_t notch = 0.5 * (1.0 + tanh((y - (y0 - notch_depth)) / smoothing));
+        REAL_t notch = 0.5 * (1.0 + tanh((y - (y0 - notch_depth)) / smoothing));
         circle *= (1.0 - notch);
     }
     
@@ -1394,7 +1394,7 @@ real_t test_function(const real_t x,
 #ifdef USE_SIN_FUNCTION
 
 KOKKOS_INLINE_FUNCTION
-real_t test_function(real_t x, real_t y) {
+REAL_t test_function(REAL_t x, REAL_t y) {
     return sin(PI*x);
 }
 
@@ -1408,14 +1408,14 @@ real_t test_function(real_t x, real_t y) {
 #ifdef USE_GAUSSIAN
 
 KOKKOS_INLINE_FUNCTION
-real_t test_function(real_t x, real_t y) {
-    const real_t cx = 0.5;
-    const real_t cy = 0.5;
-    const real_t sigma = 0.1;
+REAL_t test_function(REAL_t x, REAL_t y) {
+    const REAL_t cx = 0.5;
+    const REAL_t cy = 0.5;
+    const REAL_t sigma = 0.1;
     
-    real_t dx = x - cx;
-    real_t dy = y - cy;
-    real_t r2 = dx*dx + dy*dy;
+    REAL_t dx = x - cx;
+    REAL_t dy = y - cy;
+    REAL_t r2 = dx*dx + dy*dy;
     
     return exp(-r2 / (2.0 * sigma * sigma));
 }

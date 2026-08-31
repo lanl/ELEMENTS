@@ -15,6 +15,9 @@ The C++ **ELEMENTS** library (LANL open-source code number C20058) is a collecti
 
 
 # Cloning the code
+ELEMENTS carries MATAR as a git submodule, and MATAR in turn carries Kokkos 5.2.1 as its own
+nested submodule, so a recursive clone is required.
+
 If the user has set up ssh keys with GitHub, type
 ```
 git clone --recursive ssh://git@github.com/lanl/ELEMENTS.git
@@ -23,7 +26,15 @@ The code can also be cloned using
 ```
 git clone --recursive https://github.com/lanl/ELEMENTS.git
 ```
+If you already have a non-recursive clone, populate the submodules with:
+```
+git submodule update --init --recursive
+```
 
+## Requirements
+- CMake >= 3.22 (>= 3.25.2 if building a CUDA backend, for C++20 support in the CUDA language)
+- A C++20 compiler (required transitively by Kokkos 5, via MATAR)
+- MPI (required)
 
 ## Getting started
 
@@ -39,20 +50,57 @@ cmake ..
 make -j<num_cores>
 ```
 
+Or, using the provided presets, which also select a Kokkos backend:
+```
+cmake --preset serial
+cmake --build --preset serial
+```
+Other presets: `openmp`, `pthreads`, `cuda`, `hip`, and their `-debug` variants, plus
+`cuda-hostomp` (CUDA device backend with a concurrent OpenMP host backend). See
+`CMakePresets.json`.
+
 Key CMake options (defaults in parentheses):
 - `CMAKE_BUILD_TYPE` (`RelWithDebInfo` if unset)
 - `ELEMENTS_BUILD_DOCS` (`OFF`)
 - `ELEMENTS_BUILD_EXAMPLES` (`ON` when ELEMENTS is the top-level project, otherwise `OFF`)
 - `ELEMENTS_BUILD_TESTS` (`OFF`)
-- `ELEMENTS_ENABLE_SERIAL` (`ON`)
-- `ELEMENTS_ENABLE_OPENMP` (`ON`)
-- `ELEMENTS_ENABLE_PTHREADS` (`OFF`)
-- `ELEMENTS_ENABLE_CUDA` (`OFF`)
-- `ELEMENTS_ENABLE_HIP` (`OFF`)
- 
+- `ELEMENTS_HOST_BACKEND` (unset): host-side Kokkos backend for the `_HOST` macros — `serial`, `openmp`, or `pthreads`
+- `ELEMENTS_DEVICE_BACKEND` (unset, defaults to `serial` if nothing else is specified): device-side backend — `serial`, `openmp`, `pthreads`, `cuda`, `hip`, or `sycl`
+- `ELEMENTS_ENABLE_GPU_AWARE_MPI` (`OFF`)
+- `ELEMENTS_REAL` / `ELEMENTS_HIGH_REAL` / `ELEMENTS_LOW_REAL` (`double`): precision tiers, forwarded to MATAR's `real_t` / `high_real_t` / `low_real_t`
+- `ELEMENTS_INSTALL` (`ON` when ELEMENTS is the top-level project, otherwise `OFF`)
+
+The older `ELEMENTS_ENABLE_SERIAL` / `ELEMENTS_ENABLE_OPENMP` / `ELEMENTS_ENABLE_PTHREADS` /
+`ELEMENTS_ENABLE_CUDA` / `ELEMENTS_ENABLE_HIP` booleans still work and map onto
+`ELEMENTS_DEVICE_BACKEND`, but emit a deprecation warning; prefer the backend options above.
+
 ## Using ELEMENTS from another CMake project
 
-You can add ELEMENTS to your own CMake build with `FetchContent`:
+### Option 1: git submodule (recommended)
+
+Vendor ELEMENTS into your repository as a submodule (which pulls in MATAR and Kokkos as nested
+submodules):
+```
+git submodule add https://github.com/lanl/ELEMENTS.git external/ELEMENTS
+git submodule update --init --recursive
+```
+
+```cmake
+cmake_minimum_required(VERSION 3.22)
+project(myapp LANGUAGES CXX)
+
+# Set backend/build options BEFORE ELEMENTS is added.
+set(ELEMENTS_DEVICE_BACKEND "openmp" CACHE STRING "" FORCE)
+set(ELEMENTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(ELEMENTS_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(external/ELEMENTS)
+
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE ELEMENTS)
+```
+
+### Option 2: FetchContent
 
 ```cmake
 include(FetchContent)
@@ -61,9 +109,8 @@ include(FetchContent)
 set(ELEMENTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(ELEMENTS_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
 set(ELEMENTS_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
-# Choose backends as needed; defaults are listed above
-# set(ELEMENTS_ENABLE_OPENMP ON  CACHE BOOL "" FORCE)
-# set(ELEMENTS_ENABLE_CUDA   ON  CACHE BOOL "" FORCE)
+# Choose a backend as needed; see the option table above
+set(ELEMENTS_DEVICE_BACKEND "openmp" CACHE STRING "" FORCE)
 
 FetchContent_Declare(ELEMENTS
   GIT_REPOSITORY https://github.com/lanl/ELEMENTS.git
@@ -74,8 +121,16 @@ FetchContent_MakeAvailable(ELEMENTS)
 add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE ELEMENTS)
 ```
+`FetchContent` updates submodules recursively by default, so MATAR and its bundled Kokkos are
+fetched and built automatically — nothing extra is needed.
 
-`ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). Set the options before `FetchContent_MakeAvailable` to control which backends build.
+`ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies
+(Kokkos and MATAR via `matar::matar`, MPI, and PT-Scotch in the build tree). Set the options before
+`add_subdirectory` / `FetchContent_MakeAvailable` to control which backend builds.
+
+Note: PT-Scotch is fetched at configure time and is a build-tree-only dependency — it is not
+re-exported by ELEMENTS' own install/export rules (`ELEMENTS_INSTALL`), so a consumer of an
+*installed* ELEMENTS must provide PT-Scotch itself if it needs `decomp_utilities`.
 
 To learn more about ELEMENTS and how to get started using it, please see the [ELEMENTS documentation](https://lanl.github.io/ELEMENTS/).
 

@@ -8,7 +8,8 @@
             "binaryDir": "${sourceDir}/build/${presetName}",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "ELEMENTS_BUILD_EXAMPLES": "ON"
+                "ELEMENTS_BUILD_EXAMPLES": "ON",
+                "ELEMENTS_BUILD_TESTS": "ON"
             }
         },
         {

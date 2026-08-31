@@ -17,11 +17,11 @@ jobs:
         build_type: [serial, openmp, debug]
         include:
           - build_type: serial
-            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_DEVICE_BACKEND=serial -DELEMENTS_INSTALL=ON
+            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_DEVICE_BACKEND=serial -DELEMENTS_INSTALL=ON -DELEMENTS_BUILD_TESTS=ON
           - build_type: openmp
-            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_DEVICE_BACKEND=openmp -DELEMENTS_INSTALL=ON
+            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_DEVICE_BACKEND=openmp -DELEMENTS_INSTALL=ON -DELEMENTS_BUILD_TESTS=ON
           - build_type: debug
-            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Debug -DELEMENTS_DEVICE_BACKEND=serial -DELEMENTS_INSTALL=ON
+            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Debug -DELEMENTS_DEVICE_BACKEND=serial -DELEMENTS_INSTALL=ON -DELEMENTS_BUILD_TESTS=ON
     runs-on: ${{matrix.os}}
 
     steps:
@@ -39,6 +39,11 @@ jobs:
     
     - name: Build (${{matrix.build_type}})
       run: cmake --build ${{github.workspace}}/build-${{matrix.build_type}}
-    
+
+    - name: Test (${{matrix.build_type}})
+      # Scoped to tests/test_cases so this runs only ELEMENTS' own tests,
+      # not the third-party PT-Scotch test suite pulled in by the build.
+      run: ctest --test-dir ${{github.workspace}}/build-${{matrix.build_type}}/tests/test_cases --output-on-failure
+
     - name: Install (${{matrix.build_type}})
       run: cmake --install ${{github.workspace}}/build-${{matrix.build_type}}

@@ -1,0 +1,88 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": { "major": 3, "minor": 22, "patch": 0 },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ELEMENTS_BUILD_EXAMPLES": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "hidden": true,
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+
+        {
+            "name": "serial",
+            "displayName": "Kokkos serial backend",
+            "inherits": "base",
+            "cacheVariables": { "ELEMENTS_DEVICE_BACKEND": "serial" }
+        },
+        {
+            "name": "openmp",
+            "displayName": "Kokkos OpenMP backend",
+            "inherits": "base",
+            "cacheVariables": { "ELEMENTS_DEVICE_BACKEND": "openmp" }
+        },
+        {
+            "name": "pthreads",
+            "displayName": "Kokkos std::threads backend",
+            "inherits": "base",
+            "cacheVariables": { "ELEMENTS_DEVICE_BACKEND": "pthreads" }
+        },
+        {
+            "name": "cuda",
+            "displayName": "Kokkos CUDA backend",
+            "inherits": "base",
+            "cacheVariables": {
+                "ELEMENTS_DEVICE_BACKEND": "cuda",
+                "Kokkos_ENABLE_CUDA_CONSTEXPR": "ON",
+                "Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE": "ON"
+            }
+        },
+        {
+            "name": "hip",
+            "displayName": "Kokkos HIP backend",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "hipcc",
+                "ELEMENTS_DEVICE_BACKEND": "hip",
+                "Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE": "ON"
+            }
+        },
+
+        { "name": "serial-debug", "inherits": ["debug", "serial"] },
+        { "name": "openmp-debug", "inherits": ["debug", "openmp"] },
+        { "name": "cuda-debug",   "inherits": ["debug", "cuda"] },
+        { "name": "hip-debug",    "inherits": ["debug", "hip"] },
+
+        {
+            "name": "cuda-hostomp",
+            "displayName": "CUDA device + OpenMP host: concurrent host/device execution",
+            "inherits": "base",
+            "cacheVariables": {
+                "ELEMENTS_HOST_BACKEND": "openmp",
+                "ELEMENTS_DEVICE_BACKEND": "cuda",
+                "Kokkos_ENABLE_CUDA_CONSTEXPR": "ON",
+                "Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        { "name": "serial",       "configurePreset": "serial" },
+        { "name": "openmp",       "configurePreset": "openmp" },
+        { "name": "pthreads",     "configurePreset": "pthreads" },
+        { "name": "cuda",         "configurePreset": "cuda" },
+        { "name": "hip",          "configurePreset": "hip" },
+        { "name": "serial-debug", "configurePreset": "serial-debug" },
+        { "name": "openmp-debug", "configurePreset": "openmp-debug" },
+        { "name": "cuda-debug",   "configurePreset": "cuda-debug" },
+        { "name": "hip-debug",    "configurePreset": "hip-debug" },
+        { "name": "cuda-hostomp", "configurePreset": "cuda-hostomp" }
+    ]
+}

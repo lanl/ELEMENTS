@@ -11,9 +11,9 @@ ELEMENTS is built on top of [MATAR](https://github.com/lanl/MATAR). **This docum
 1. [Purpose and Prerequisites](#1-purpose-and-prerequisites)
 2. [Setup and Boilerplate](#2-setup-and-boilerplate)
 3. [Data Type Taxonomy](#3-data-type-taxonomy)
-4. [Mesh Lifecycle (`swage::Mesh`)](#4-mesh-lifecycle-swagemesh)
+4. [Mesh Lifecycle (`swage::Mesh_t`)](#4-mesh-lifecycle-swagemesh_t)
 5. [Reference Elements and Quadrature](#5-reference-elements-and-quadrature)
-6. [Geometry Helpers (`shapes.h`)](#6-geometry-helpers-shapesh)
+6. [Geometry Helpers (`geometry.h` / `shapes.h`)](#6-geometry-helpers-geometryh--shapesh)
 7. [Mesh Decomposition Workflow](#7-mesh-decomposition-workflow)
 8. [State and Halo Communication](#8-state-and-halo-communication)
 9. [Mesh I/O Patterns](#9-mesh-io-patterns)
@@ -21,8 +21,9 @@ ELEMENTS is built on top of [MATAR](https://github.com/lanl/MATAR). **This docum
 11. [Common Pitfalls](#11-common-pitfalls)
 12. [Maintainer / Internals](#12-maintainer--internals)
 13. [Build and Configuration](#13-build-and-configuration)
-14. [Ground Truth Constraints for LLMs](#14-ground-truth-constraints-for-llms)
-15. [LLM Output Contract](#15-llm-output-contract)
+14. [Testing](#14-testing)
+15. [Ground Truth Constraints for LLMs](#15-ground-truth-constraints-for-llms)
+16. [LLM Output Contract](#16-llm-output-contract)
 
 ---
 
@@ -34,10 +35,11 @@ ELEMENTS is a collection of small, header-only C++ sub-libraries for implementin
 
 | Sub-library | Header | Role |
 |-------------|--------|------|
-| **elements** | [src/elements/ref_elem.h](src/elements/ref_elem.h), [ref_quadrature.h](src/elements/ref_quadrature.h), [ref_surf_elem.h](src/elements/ref_surf_elem.h) | Reference element math: tensor-product Lagrange basis on Gauss-Lobatto / Gauss-Legendre points |
-| **swage** | [src/swage/unstructured_mesh.h](src/swage/unstructured_mesh.h) | `swage::Mesh` — unstructured 2D/3D mesh of arbitrary order with full connectivity |
-| **geometry** | [src/geometry/geometry.h](src/geometry/geometry.h), [shapes.h](src/geometry/shapes.h) | Analytic primitives (`Plane`, `Circle`, `Sphere`) — **not** finite-element shape functions |
+| **elements** | [src/elements/ref_elem.h](src/elements/ref_elem.h), [ref_quadrature.h](src/elements/ref_quadrature.h) | Reference element math: tensor-product Lagrange basis and quadrature, 1D/2D/3D. Volume: `Quadrature_t`, `ReferenceElement_t`. Surface (of a volume element): `SurfaceQuadrature_t`, `ReferenceSurface_t`. All in `namespace elements`, Gauss-Lobatto / Gauss-Legendre points. |
+| **swage** | [src/swage/unstructured_mesh.h](src/swage/unstructured_mesh.h), [indexing_utils.h](src/swage/indexing_utils.h), [point_cloud.h](src/swage/point_cloud.h) | `swage::Mesh_t` — unstructured 2D/3D mesh of arbitrary order with full connectivity. `indexing_utils.h` supplies the local index-ordering helpers/functors (`zones_in_elem_t`, `gauss_in_elem_t`, `corners_in_elem_t`, `patches_in_surf_t`, `get_surf_node_lids`, `get_patch_node_lids`) and the `mesh_init::ElementNameType` enum. `point_cloud.h`'s `PointCloud_t` gives spatial-binning + neighbor connectivity for meshfree point clouds (SPH/RKPM). |
+| **geometry** | [src/geometry/geometry.h](src/geometry/geometry.h), [shapes.h](src/geometry/shapes.h) | `jacobian(...)` (element Jacobian from node coords + grad basis) and `build_quadrature_point_connectivity(...)` (matches quadrature points across a shared surface), plus analytic primitives (`Plane`, `Circle`, `Sphere`) — the primitives are **not** finite-element shape functions |
 | **decomp_utilities** | [src/decomp_utilities/decomp_utils.h](src/decomp_utilities/decomp_utils.h) | PT-Scotch mesh partitioning + ghost layers + MATAR `CommunicationPlan` setup |
+| **utils** | [src/utils/stl_utils.h](src/utils/stl_utils.h) | `stl_data` — binary STL mesh reader (`binary_stl_reader`) plus an AABB tree (`buildAABBTree`/`verifyAABBTree`/`query_nearest_facet`) for nearest-facet queries against an STL surface (used for e.g. computing point-in/out or nearest-surface distance) |
 
 The single umbrella header [src/ELEMENTS.h](src/ELEMENTS.h) pulls everything in.
 
@@ -51,30 +53,36 @@ flowchart TD
     Scotch[PT-Scotch]
 
     Quadrature[ref_quadrature.h]
-    RefElem[ref_elem.h]
-    RefSurf["ref_surf_elem.h<br/>(body in #if 0)"]
-    Swage[swage::Mesh]
+    RefElem["ref_elem.h<br/>Quadrature_t / ReferenceElement_t<br/>SurfaceQuadrature_t / ReferenceSurface_t"]
+    IndexingUtils[indexing_utils.h]
+    Swage[swage::Mesh_t]
+    PointCloud[point_cloud.h]
     Geometry[geometry / shapes]
     Decomp[decomp_utils]
+    StlUtils[stl_utils.h]
     ELEMENTS[ELEMENTS.h]
 
     Kokkos --> MATAR
     MATAR --> Quadrature
     MATAR --> RefElem
-    MATAR --> Swage
+    MATAR --> IndexingUtils
+    IndexingUtils --> Swage
+    MATAR --> PointCloud
     MATAR --> Geometry
     MATAR --> Decomp
+    MATAR --> StlUtils
     MPI --> MATAR
     MPI --> Decomp
     Scotch --> Decomp
     Quadrature --> RefElem
 
     RefElem --> ELEMENTS
-    RefSurf --> ELEMENTS
     Quadrature --> ELEMENTS
     Swage --> ELEMENTS
+    PointCloud --> ELEMENTS
     Geometry --> ELEMENTS
     Decomp --> ELEMENTS
+    StlUtils --> ELEMENTS
     Swage --> Decomp
 ```
 
@@ -89,10 +97,11 @@ flowchart TD
 | Namespace | Contents |
 |-----------|----------|
 | `mtr::` | All MATAR types and macros (brought in via `using namespace mtr;`) |
-| `swage::` | `Mesh` (the central mesh struct) and the small index functor structs |
-| `elements::` | `partition_mesh`, `naive_partition_mesh`, `build_ghost`; the free quadrature helpers in `ref_quadrature.h` |
+| `swage::` | `Mesh_t` (the central mesh struct) and the small index functor structs (`zones_in_elem_t`, `gauss_in_elem_t`, `corners_in_elem_t`, `patches_in_surf_t`) plus `PointCloud_t` |
+| `elements::` | `partition_mesh`, `naive_partition_mesh`, `build_ghost`; `Quadrature_t`, `ReferenceElement_t`, `SurfaceQuadrature_t`, `ReferenceSurface_t`; the free quadrature helpers in `ref_quadrature.h` |
+| `reference_space::` | `ElementType` (`linearElement`, `arbitraryOrderElement`), `BasisType` (`LagrangeLobatto`, `LagrangeLegendre`), `QuadratureType` (`GaussLobatto`, `GaussLegendre`) — used by `elements::Quadrature_t` / `ReferenceElement_t` |
 | `geometry::` | `Plane`, `Circle`, `Sphere` |
-| `mesh_init::` | `elem_name_tag` enum |
+| `mesh_init::` | `ElementNameType` enum (`linearTensorElement`, `arbitraryTensorElement`) |
 | `mesh_input::` | `source` and `type` enums (used by example `mesh_input_t`) |
 
 ---
@@ -107,7 +116,7 @@ flowchart TD
 
 This header includes MATAR plus every ELEMENTS sub-library header. See [src/ELEMENTS.h](src/ELEMENTS.h):
 
-```1:20:src/ELEMENTS.h
+```1:22:src/ELEMENTS.h
 #ifndef ELEMENTS_LIBRARY_H
 #define ELEMENTS_LIBRARY_H
 
@@ -116,8 +125,8 @@ This header includes MATAR plus every ELEMENTS sub-library header. See [src/ELEM
 
 // --- Swage Headers (Mesh & Core) ---
 #include "swage/unstructured_mesh.h"
+#include "swage/point_cloud.h"
 #include "elements/ref_elem.h"
-#include "elements/ref_surf_elem.h"
 #include "elements/ref_quadrature.h"
 
 
@@ -127,8 +136,13 @@ This header includes MATAR plus every ELEMENTS sub-library header. See [src/ELEM
 // --- Geometry Headers ---
 #include "geometry/geometry.h"
 
+// --- STL Utilities ---
+#include "utils/stl_utils.h"
+
 #endif // ELEMENTS_LIBRARY_H
 ```
+
+Note: `decomp_utilities/decomp_utils.h` pulls in `<mpi.h>`, `scotch.h`, and `ptscotch.h` — anything that includes the umbrella `ELEMENTS.h` needs MPI and PT-Scotch available at compile time. Most sub-headers (`elements/ref_elem.h`, `swage/unstructured_mesh.h`, `swage/point_cloud.h`, `utils/stl_utils.h`) are self-contained on top of MATAR and can be included directly for a narrower build that skips MPI/Scotch. **`geometry/geometry.h` is the one exception**: its own first include is `#include "ELEMENTS.h"` (guarded, so no infinite recursion, but it means including `geometry.h` alone still drags in the whole umbrella — `swage`, `decomp_utilities`, MPI, and PT-Scotch — because `ELEMENTS.h` in turn includes `geometry.h`). Do not assume including `geometry.h` narrows your dependency footprint.
 
 ### Initialization order is critical
 
@@ -145,7 +159,7 @@ using namespace mtr;
 int main(int argc, char** argv) {
     MATAR_INITIALIZE(argc, argv);
     { // MATAR scope
-        // Build a swage::Mesh, call build_connectivity, do work.
+        // Build a swage::Mesh_t, call build_connectivity, do work.
         // All MATAR/ELEMENTS objects must live INSIDE this scope.
     }
     MATAR_FINALIZE();
@@ -172,7 +186,7 @@ int main(int argc, char** argv) {
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-        swage::Mesh initial_mesh;
+        swage::Mesh_t initial_mesh;
         MPICArrayKokkos<double> initial_node_coords;
         // ... build on rank 0, partition, communicate ...
     }
@@ -214,7 +228,7 @@ ELEMENTS exposes a small set of user-facing types. Use this table to pick the ri
 
 | Type | Defined in | Role |
 |------|------------|------|
-| `swage::Mesh` | [src/swage/unstructured_mesh.h](src/swage/unstructured_mesh.h) | The mesh: counts, connectivity, MPI ownership metadata. Two mutually exclusive init paths (linear vs arbitrary-order tensor). |
+| `swage::Mesh_t` | [src/swage/unstructured_mesh.h](src/swage/unstructured_mesh.h) | The mesh: counts, connectivity, MPI ownership metadata. Two mutually exclusive init paths (linear vs arbitrary-order tensor). |
 | `node_t` | [examples/*/include/state.h](examples/decomp_example/include/state.h) | Per-node state wrapper holding `MPICArrayKokkos<double>` for `coords`, `coords_n0`, `scalar_field`, `vector_field`. |
 | `GaussPoint_t` | [examples/*/include/state.h](examples/decomp_example/include/state.h) | Per-cell/Gauss-point state: `MPICArrayKokkos<double>` for `fields` and `fields_vec`. |
 | `State_t` | [examples/*/include/state.h](examples/decomp_example/include/state.h) | Bundle: `node_t node;` + `GaussPoint_t GaussPoints;`. |
@@ -222,11 +236,27 @@ ELEMENTS exposes a small set of user-facing types. Use this table to pick the ri
 
 ### Reference element / quadrature
 
+All four types below live in `namespace elements` in [src/elements/ref_elem.h](src/elements/ref_elem.h) and support `elem_dims` (`num_dims`) of 1, 2, **or** 3 — there is no 3D-only restriction.
+
 | Type / function | Defined in | Role |
 |-----------------|------------|------|
-| `fe_ref_elem_t` | [src/elements/ref_elem.h](src/elements/ref_elem.h) | Reference **volume** element (3D-only `init` body today). Tensor-product Lagrange basis on Gauss-Lobatto + Gauss-Legendre grids; pre-tabulates basis values and gradients. |
-| `fe_ref_surf_t` | [src/elements/ref_surf_elem.h](src/elements/ref_surf_elem.h) | **Currently a placeholder.** The struct compiles to an empty type because lines 19-2118 are wrapped in `#if 0`. Do not call any methods on it. |
-| `elements::get_lobatto_nodes_1D`, `get_lobatto_weights_1D`, `get_legendre_nodes_1D`, `get_legendre_weights_1D` | [src/elements/ref_quadrature.h](src/elements/ref_quadrature.h) | Free `static KOKKOS_FUNCTION` helpers that fill a pre-allocated `CArrayKokkos<double>` with 1D quadrature data. Stateless. |
+| `elements::Quadrature_t` | [src/elements/ref_elem.h](src/elements/ref_elem.h) | Volume quadrature rule. `initialize_quadrature(reference_space::QuadratureType, size_t num_qpts_1d, size_t elem_dims)` builds `qpt_positions` `(num_qpts_in_elem, elem_dims)` and `qpt_weights` `(num_qpts_in_elem,)` as a tensor product of the 1D rule. |
+| `elements::ReferenceElement_t` | [src/elements/ref_elem.h](src/elements/ref_elem.h) | Volume reference element (DOF positions + basis/grad-basis at quadrature points). `initialize_ref_elem(reference_space::ElementType, reference_space::BasisType, const Quadrature_t&, size_t p_order)`. Populates `dof_positions`, `dof_positions_1d`, `qpt_basis` `(num_qpts_in_elem, num_dofs_in_elem)`, `qpt_grad_basis` `(num_qpts_in_elem, num_dofs_in_elem, elem_dims)`. |
+| `elements::SurfaceQuadrature_t` | [src/elements/ref_elem.h](src/elements/ref_elem.h) | Quadrature rule on each of the `2*elem_dims` reference-element faces. `initialize_quadrature(reference_space::QuadratureType, size_t num_qpts_1d, size_t elem_dims)`; `qpt_positions` `(num_ref_surfs, num_qpts_in_surf, elem_dims)`, `qpt_weights` `(num_ref_surfs, num_qpts_in_surf)`. |
+| `elements::ReferenceSurface_t` | [src/elements/ref_elem.h](src/elements/ref_elem.h) | Basis/grad-basis of the volume element evaluated at each face's quadrature points, plus outward normals. `initialize_ref_surf(const SurfaceQuadrature_t&, const ReferenceElement_t&)`. Populates `qpt_basis` `(faces, surf_qpts, dofs)`, `qpt_grad_basis` `(faces, surf_qpts, dofs, dims)`, `outward_sign`, `outward_normal`. Used by `build_quadrature_point_connectivity` in [src/geometry/geometry.h](src/geometry/geometry.h) to match quadrature points across a shared surface — this is live, working code (not a stub). |
+| `elements::get_lobatto_nodes_1D`, `get_lobatto_weights_1D`, `get_legendre_nodes_1D`, `get_legendre_weights_1D` | [src/elements/ref_quadrature.h](src/elements/ref_quadrature.h) | Free `static KOKKOS_FUNCTION` helpers that fill a pre-allocated `CArrayKokkos<double>` with 1D quadrature data. Stateless. Called internally by `Quadrature_t`/`ReferenceElement_t`/`SurfaceQuadrature_t`; rarely called directly by consumers. |
+
+### Point cloud / spatial binning
+
+| Type | Defined in | Role |
+|------|------------|------|
+| `swage::PointCloud_t` | [src/swage/point_cloud.h](src/swage/point_cloud.h) | Spatial-binning + point-to-point neighbor connectivity for meshfree methods (SPH, RKPM). `initialize_point_cloud_vars(search_radius, min_num_points_fit)` sets the kernel support radius; `build_bin_mesh(...)` builds a uniform structured bin grid over the point positions; `build_point_cloud_connectivity(point_positions)` fills `points_in_point` (ragged neighbor list within `search_radius`) and `points_num_neighbors`; `get_points_in_box(...)` queries points inside an AABB; `build_shared_node_connectivity(...)` detects coincident/overlapping points within `coincident_tol`. |
+
+### STL / geometry queries
+
+| Type | Defined in | Role |
+|------|------------|------|
+| `stl_data` | [src/utils/stl_utils.h](src/utils/stl_utils.h) | Loaded binary-STL surface mesh: `num_facets`, `normal`/`vertices`/`center` (`DCArrayKokkos<float>`), global bounding box, plus an AABB tree (`tree_nodes`, `sorted_facet_indices`, `root_idx`). Populate via `binary_stl_reader(std::string stl_file_path, stl_data& stl_data)`, then `buildAABBTree()` to accelerate queries; `verifyAABBTree()` sanity-checks the tree; `query_nearest_facet(const float p[3], ...)` finds the closest STL facet to an arbitrary point (nearest-surface distance / point classification queries). |
 
 ### Analytic geometry
 
@@ -262,224 +292,282 @@ The MATAR types most frequently used in ELEMENTS code (full reference in the MAT
 
 ---
 
-## 4. Mesh Lifecycle (`swage::Mesh`)
+## 4. Mesh Lifecycle (`swage::Mesh_t`)
 
-### The struct is `swage::Mesh` (not `mesh_t`)
+### The struct is `swage::Mesh_t`
 
-The closing comment in the header reads `}; // end Mesh_t` but the actual type is `swage::Mesh`. Always type `swage::Mesh`.
+The type is declared as `struct Mesh_t` inside `namespace swage`, and the closing comment (`}; // end Mesh_t`) now agrees with the type name — there is no separate `mesh_t` typedef and no naming mismatch to work around. Always type `swage::Mesh_t`.
 
-```217:226:src/swage/unstructured_mesh.h
-struct Mesh
+```70:88:src/swage/unstructured_mesh.h
+struct Mesh_t
 {
-    // ******* Entity Definitions **********//
-    // Element: A hexahedral volume
-    // Zone: A discretization of an element base on subdividing the element using the nodes
-    // Node: A kinematic degree of freedom
-    // Surface: The 2D surface of the element
-    // Patch: A discretization of a surface by subdividing the surface using the nodes
-    // Corner: A element-node pair
+
+    bool verbose = false;
+
+    // ---- Global Mesh Definitions ---- //
+    mesh_init::ElementNameType elem_kind = mesh_init::linearTensorElement; ///< The type of elements used in the mesh
+
+    size_t Pn = 1;       ///< Polynomial order of kinematic space defining element
+    size_t num_dims = 0; ///< Number of spatial dimension
+```
+
+The struct-level doc comment defines the entity vocabulary:
+
+```
+Mesh entity definitions:
+    Element: Aribtrary-order hexahedral or quadralateral volume
+    Zone:    A discretization of an element by subdividing it using the nodes
+             The zone has 8 nodes (3D) or 4 nodes (2D) for any order mesh
+    Node:    A kinematic degree of freedom
+    Corner:  A element-node pair
+    Surface: The surface of the element, it is one dimension lower than the volume
+    Patch:   A discretization of a surface by subdividing it using the nodes
+    Face:    The local surface entity of the Element, equal to 6 (3D) or 4 (2D)
+    Side:    A element-surface pair -- not in the mesh type at this time
 ```
 
 ### Entity vocabulary
 
 | Entity | Meaning | Notes |
 |--------|---------|-------|
-| **Element** | Volume cell (hex in 3D, quad in 2D) | Index variable: `elem_gid`. The primary volumetric unit. |
+| **Element** | Arbitrary-order hex (3D) or quad (2D) volume | Index variable: `elem_gid`. The primary volumetric unit. |
 | **Node** | Kinematic DOF | Index: `node_gid`. For high-order meshes there are many nodes per element, not just 8 vertices. `num_nodes_in_elem = (Pn+1)^num_dims` for arbitrary-order; `2^num_dims` for linear. |
-| **Zone** | Subcell partition of an element | `num_zones_in_elem = Pn^num_dims`. Each zone has `2^num_dims` nodes. Used in DG-style schemes. |
-| **Surface** | 2D interface (or 1D edge in 2D) of the element | `num_surfs_in_elem` is 4 (2D) or 6 (3D). |
-| **Patch** | Subdivision of a surface | `num_nodes_in_patch = 2*(num_dims - 1)` (2 in 2D, 4 in 3D). Interior patches are paired across adjacent elements; boundary patches are collected in `bdy_patches`. |
-| **Corner** | (element, local-node) pair | Global corner id = `node_lid + elem_gid * num_nodes_in_elem`. |
-| **Gauss point** | Volume quadrature point | `gauss_in_elem(elem_gid, gauss_lid) →` global Gauss id; populated via `gauss_in_elem_t` functor. |
-| **Lobatto point** | Material/interface point | `lobatto_in_elem` functor exists; some Lobatto wiring in `build_patch_connectivity` is incomplete (commented out). |
+| **Zone** | Subcell partition of an element, always 8 nodes (3D) / 4 nodes (2D) regardless of order | `num_zones_in_elem = Pn^num_dims`. Built by the separate, opt-in `build_zones()` method (not part of `build_connectivity()`). |
+| **Face** | Local surface entity of the element | Count `num_surfs_in_elem` = `2*num_dims` (4 in 2D, 6 in 3D); local index `face_lid`. |
+| **Surface** | The mesh-level (shared) instance of a face — one dimension lower than the volume | Built by `build_surf_connectivity()`; `nodes_in_surf`, `elems_in_surf`, `faces_in_surf`, `num_elems_in_surf` (1 on a boundary, 2 interior). |
+| **Patch** | Subdivision of a surface using the nodes | `num_nodes_in_patch` (2 in 2D, 4 in 3D). Built alongside surfaces inside `build_surf_connectivity()`. |
+| **Corner** | (element, local-node) pair | Global corner id = `elem_gid * num_nodes_in_elem + node_lid`, computed by the `corners_in_elem_t` functor (not a stored array). |
+| **Gauss point** | Volume quadrature point | `gauss_in_elem(elem_gid, gauss_lid) →` global Gauss id; populated via the `gauss_in_elem_t` functor. |
 
-The two element-formulation tags live in `mesh_init`:
+There is no `lobatto_in_elem` functor on `Mesh_t` today — Lobatto/DOF point bookkeeping lives on the reference-element types (`elements::ReferenceElement_t`, Section 5), not on the mesh.
 
-```44:55:src/swage/unstructured_mesh.h
+The element-formulation tag lives in `mesh_init` in [src/swage/indexing_utils.h](src/swage/indexing_utils.h) (not `unstructured_mesh.h`):
+
+```39:47:src/swage/indexing_utils.h
 namespace mesh_init
 {
-// element mesh types
-enum elem_name_tag
-{
-    linear_simplex_element = 0,
-    linear_tensor_element = 1,
-    arbitrary_tensor_element = 2
-};
+    // element mesh types
+    enum ElementNameType
+    {
+        linearTensorElement = 1,   // single quadrature point element
+        arbitraryTensorElement = 2 // fully integrated arbitrary-order element
+    };
 
-// other enums could go here on the mesh
+    // other enums could go here on the mesh
 } // end namespace
 ```
 
-`linear_simplex_element` is reserved but not actively used by the build routines today — the `build_patch_connectivity` switches between linear-tensor (hex/quad with fixed local-node tables) and arbitrary-tensor (Pn-order, tensor indexing).
+There is no simplex value — only `linearTensorElement` and `arbitraryTensorElement` exist. `Mesh_t::elem_kind` defaults to `mesh_init::linearTensorElement`; `initialize_elems_Pn` is the only method that switches it to `mesh_init::arbitraryTensorElement`. `build_surf_connectivity` (via `get_surf_node_lids`/`get_patch_node_lids` in `indexing_utils.h`) branches on `elem_kind` between linear-tensor (hex/quad with fixed local-node tables) and arbitrary-tensor (Pn-order, tensor indexing).
 
 ### Hex node ordering (linear, 0-7)
 
-For `linear_tensor_element` in 3D, the hex local-node ordering is documented at the top of [src/swage/unstructured_mesh.h](src/swage/unstructured_mesh.h):
+The hex/quad local-node-ordering diagram now lives in [src/swage/indexing_utils.h](src/swage/indexing_utils.h) (it moved out of `unstructured_mesh.h`):
 
-```57:94:src/swage/unstructured_mesh.h
-/*
-==========================
-Nodal indexing convention
-==========================
+```55:107:src/swage/indexing_utils.h
+    3D:
 
-              K
-              ^         J
-              |        /
-              |       /
-              |      /
-      6------------------7
-     /|                 /|
-    / |                / |
-   /  |               /  |
-  /   |              /   |
- /    |             /    |
-4------------------5     |
-|     |            |     | ----> I
-|     |            |     |
-|     |            |     |
-|     |            |     |
-|     2------------|-----3
-|    /             |    /
-|   /              |   /
-|  /               |  /
-| /                | /
-|/                 |/
-0------------------1
+                  K
+                  ^         J
+                  |        /
+                  |       /
+                  |      /
+          6------------------7
+         /|                 /|
+        / |                / |
+       /  |               /  |
+      /   |              /   |
+     /    |             /    |
+    4------------------5     |
+    |     |            |     | ----> I
+    |     |            |     |
+    |     |            |     |
+    |     |            |     |
+    |     2------------|-----3
+    |    /             |    /
+    |   /              |   /
+    |  /               |  /
+    | /                | /
+    |/                 |/
+    0------------------1
 
-nodes are ordered for outward normal
-patch 0: [0,4,6,2]  xi-minus dir
-patch 1: [1,3,7,5]  xi-plus  dir
-patch 2: [0,1,5,4]  eta-minus dir
-patch 3: [3,2,6,7]  eta-plus  dir
-patch 4: [0,2,3,1]  zeta-minus dir
-patch 6: [4,5,7,6]  zeta-plus  dir
-*/
+    nodes are ordered for outward normal
+    patch 0: [0,4,6,2]  xi-minus dir
+    patch 1: [1,3,7,5]  xi-plus  dir
+    patch 2: [0,1,5,4]  eta-minus dir
+    patch 3: [3,2,6,7]  eta-plus  dir
+    patch 4: [0,2,3,1]  zeta-minus dir
+    patch 5: [4,5,7,6]  zeta-plus  dir
+
+    2D linear element, 1 Quadrature Point:
+
+       J
+       ^
+       |
+     3---2
+     |   |  --> I
+     0---1
+
+    patch 0: [0, 3]  xi-minus dir
+    patch 1: [1, 2]  xi-plus  dir
+    patch 2: [0, 1]  eta-minus dir
+    patch 3: [3, 2]  eta-plus  dir
 ```
 
-This is **not** standard VTK or Ensight order. The `mesh_io.h` readers/writers in the examples include explicit reordering tables (e.g. an "Ensight to IJK" permutation in `read_vtk_mesh`).
+(This corrects a stale "patch 6" typo that used to appear in place of "patch 5" for the zeta-plus face — the current source numbers all six 3D patches 0-5.) This is **not** standard VTK or Ensight order. The `mesh_io.h` readers/writers in the examples include explicit reordering tables (e.g. an "Ensight to IJK" permutation in `read_vtk_mesh`).
 
 ### Mesh build protocol
 
 The lifecycle is a strict ordered protocol. You must:
 
-1. Set the node count.
-2. Choose **exactly one** of the two `initialize_elems*` paths and fill `nodes_in_elem` with **global** node IDs.
-3. Call `build_connectivity()`.
+1. Call `initialize_dims(num_dims)` **first** — nearly every other method (`initialize_nodes`, `initialize_elems*`, all `build_*`) calls `Kokkos::abort(...)` if `num_dims == 0`.
+2. Choose **exactly one** of `initialize_elems(num_elems)` or `initialize_elems_Pn(num_elems, Pn_order, num_gauss_1D)`.
+3. Call `initialize_nodes(num_nodes)`.
+4. Fill `nodes_in_elem` with **global** node IDs.
+5. Call `build_connectivity()` (or the individual `build_*` methods in order).
 
 ```mermaid
 flowchart TD
-    A[initialize_nodes&#40;N&#41;] --> B{High order?}
-    B -- "p_order == 1<br/>(linear hex/quad)" --> C[initialize_elems&#40;E, dim&#41;]
-    B -- "p_order > 1<br/>(arbitrary tensor)" --> D[initialize_elems_Pn&#40;E, dim, Pn&#41;]
-    C --> E[Fill nodes_in_elem&#40;elem_gid, node_lid&#41;<br/>with global node IDs]
-    D --> E
+    A[initialize_dims&#40;num_dims&#41;] --> B{Linear or arbitrary order?}
+    B -- "linear/one Gauss pt" --> C[initialize_elems&#40;num_elems&#41;]
+    B -- "arbitrary order Pn" --> D[initialize_elems_Pn&#40;num_elems, Pn_order, num_gauss_1D&#41;]
+    C --> N[initialize_nodes&#40;num_nodes&#41;]
+    D --> N
+    N --> E[Fill nodes_in_elem&#40;elem_gid, node_lid&#41;<br/>with global node IDs]
     E --> F[build_connectivity&#40;&#41;]
     F --> G[build_corner_connectivity]
-    F --> H[build_elem_elem_connectivity]
-    F --> I[build_patch_connectivity]
-    F --> J[build_node_node_connectivity]
-    G --> H
-    H --> I
-    I --> J
+    G --> H[build_elem_elem_connectivity]
+    H --> I[build_surf_connectivity]
+    I --> J[build_node_node_connectivity]
 ```
 
-`build_connectivity()` runs the four sub-builds in this fixed order:
+`build_connectivity()` runs four sub-builds in this fixed order (renamed from the old `build_patch_connectivity` to `build_surf_connectivity`, which now builds surfaces **and** patches together):
 
-```1468:1482:src/swage/unstructured_mesh.h
+```1121:1138:src/swage/unstructured_mesh.h
     void build_connectivity()
     {
-        verbose = true;
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at build_connectivity().");
+        }
         build_corner_connectivity();
         if (verbose) printf("Built corner connectivity \n");
 
         build_elem_elem_connectivity();
         if (verbose) printf("Built element-element connectivity \n");
 
-        build_patch_connectivity();
-        if (verbose) printf("Built patch connectivity \n");
+        build_surf_connectivity();
+        if (verbose) printf("Built surface and patch connectivity \n");
 
         build_node_node_connectivity();
         if (verbose) printf("Built node-node connectivity \n");
     }
 ```
 
-Always prefer `build_connectivity()` over calling the four `build_*` functions individually unless you have a specific reason. The functions have ordering dependencies (`elem_elem` requires `corner`; `patch` requires `elem_elem`; `node_node` requires `patch`).
+Always prefer `build_connectivity()` over calling the individual `build_*` functions unless you have a specific reason. The functions have ordering dependencies (`elem_elem` requires `corner`; `surf` requires `elem_elem`; `node_node` requires `surf`), and `build_surf_connectivity` / `build_node_node_connectivity` explicitly `Kokkos::abort` if you call them before their prerequisite has run.
 
-**`build_connectivity()` sets `verbose = true` as a side effect.** If you do not want the printf output, set `mesh.verbose = false` after calling it.
+**`build_connectivity()` no longer flips `verbose` as a side effect** — `verbose` defaults to `false` and stays whatever the caller set it to. (This differs from older builds of ELEMENTS, where `build_connectivity()` unconditionally set `verbose = true`; do not rely on that behavior any more.)
+
+`build_zones()` (fills `nodes_in_zone`) is a separate, opt-in call — it is **not** invoked by `build_connectivity()`. Call it yourself if your scheme needs zone-level bookkeeping.
 
 ### Linear vs arbitrary-order init
 
-```340:361:src/swage/unstructured_mesh.h
-    void initialize_elems(const size_t num_elems_inp, const size_t num_dims_inp)
+```232:265:src/swage/unstructured_mesh.h
+    void initialize_elems(const size_t num_elems_inp)
     {
-        num_dims = num_dims_inp;
-        num_nodes_in_elem = 1;
-        
-        for (int dim = 0; dim < num_dims; dim++) {
-            num_nodes_in_elem *= 2;
+
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at initialize_elems().");
         }
-        num_elems       = num_elems_inp;
-        nodes_in_elem   = DCArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.nodes_in_elem");
-        corners_in_elem = CArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.corners_in_elem");
 
-        // 1 Gauss point per element
-        num_gauss_in_elem = 1;
+        // --- Basic element bookkeeping ---
+        num_elems = num_elems_inp;
 
-        // 1 zone per element
-        num_zones_in_elem = 1;
+        // initializes a linear element with a single gauss point for saving results
+        Pn = 1;
 
-        gauss_in_elem = gauss_in_elem_t(num_gauss_in_elem);
+        //Note: elem_kind is set to this type by default
+
+        // --- Derived sizes ---
+        num_nodes_in_elem = (size_t)std::pow(2, num_dims);
+        num_nodes_in_zone = (size_t)std::pow(2, num_dims); // (4, or 8, always)
+        num_gauss_in_elem = 1;  // 1 Gauss point per element
+        num_zones_in_elem = 1;  // 1 zone per element
+        num_surfs_in_elem = num_dims == 2 ? 4 : 6; // 4 or 6 (always)
+        num_zones = num_zones_in_elem * num_elems;
+
+        num_corners = num_nodes_in_elem*num_elems;
+
+        // --- Allocations ---
+        nodes_in_elem    = DCArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.nodes_in_elem");
+        corners_in_elem  = corners_in_elem_t(num_nodes_in_elem);
+        gauss_in_elem    = gauss_in_elem_t(num_gauss_in_elem);
+        zones_in_elem    = zones_in_elem_t(num_zones_in_elem);
+        surfs_in_elem    = CArrayKokkos<size_t>(num_elems, num_surfs_in_elem, "mesh.surfs_in_zone");
 
         return;
     }; // end method
 ```
 
-```364:394:src/swage/unstructured_mesh.h
+```268:319:src/swage/unstructured_mesh.h
     void initialize_elems_Pn(
         const size_t num_elems_inp,
-        const size_t num_dims_inp, 
-        const size_t Pn_order)
+        const size_t elem_Pn_order,
+        const size_t num_gauss_1D)
     {
+        // Note: num_gauss_1D creates an index space that can be used to register state on
 
+        if (num_dims == 0) {
+            Kokkos::abort("Error: mesh.num_dims is not set. Exiting at initialize_elems_Pn().");
+        }
 
-        elem_kind = mesh_init::arbitrary_tensor_element;
-        
-        num_dims  = num_dims_inp;
-        num_elems = num_elems_inp;  
+        // --- Set element details ---
+        Pn = elem_Pn_order; // Note: element Pn_order = dofs_1D-1, where dofs are the element nodes
+        if (elem_Pn_order == 0) {
+            Kokkos::abort("Error: Pn must be greater than 0. Exiting at initialize_elems_Pn().");
+        }
 
-        Pn = Pn_order;
+        num_elems = num_elems_inp;
+        if (num_elems == 0) {
+            Kokkos::abort("Error: num_elems must be greater than 0. Exiting at initialize_elems_Pn().");
+        }
 
-        num_nodes_in_elem     = std::pow(Pn_order + 1, num_dims); //(Pn_order + 1)**num_dims; // (Pn +1)
-        num_nodes_in_zone     = std::pow(2, num_dims); // (4, or 8, always)
-        num_gauss_in_elem     = std::pow(2*Pn_order, num_dims); // = 2*Pn
-        num_zones_in_elem     = std::pow(Pn_order, num_dims);  // Pn
-        num_surfs_in_elem     = num_dims == 2 ? 4 : 6; // 4 or 6 (always)
+        elem_kind = mesh_init::arbitraryTensorElement;
 
+        // --- Derived sizes ---
+        num_gauss_in_elem = (size_t)std::pow(num_gauss_1D, num_dims); // Note: 2*Pn with Legendre is needed for solids mechanics
+        num_nodes_in_elem = (size_t)std::pow(Pn + 1, num_dims);
+        num_nodes_in_zone = (size_t)std::pow(2, num_dims);   // (4, or 8, always)
+        num_zones_in_elem = (size_t)std::pow(Pn, num_dims);  // Pn^dim
+        num_surfs_in_elem = num_dims == 2 ? 4 : 6;           // 4 or 6 (always)
         num_zones = num_zones_in_elem * num_elems;
 
+        num_corners = num_nodes_in_elem*num_elems;
+
+        // --- Allocations ---
         nodes_in_elem    = DCArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.nodes_in_elem");
-        corners_in_elem  = CArrayKokkos<size_t>(num_elems, num_nodes_in_elem, "mesh.corners_in_elem");
+        corners_in_elem  = corners_in_elem_t(num_nodes_in_elem);
         zones_in_elem    = zones_in_elem_t(num_zones_in_elem);
         surfs_in_elem    = CArrayKokkos<size_t>(num_elems, num_surfs_in_elem, "mesh.surfs_in_zone");
         nodes_in_zone    = CArrayKokkos<size_t>(num_zones, num_nodes_in_zone, "mesh.nodes_in_zone");
-        gauss_in_elem = gauss_in_elem_t(num_gauss_in_elem);
+        gauss_in_elem    = gauss_in_elem_t(num_gauss_in_elem);
 
         return;
     }; // end method
 ```
 
-Choose based on `Pn_order`: `1` → `initialize_elems`; `>= 2` → `initialize_elems_Pn`. Mixing the two on the same `Mesh` is undefined — `initialize_elems` does not set `elem_kind = arbitrary_tensor_element` and does not allocate `surfs_in_elem` / `nodes_in_zone`.
+**Both signatures changed from older ELEMENTS versions**: neither `initialize_elems` nor `initialize_elems_Pn` takes a `num_dims` argument any more — `num_dims` must already be set via `initialize_dims()` before either is called (both `Kokkos::abort` otherwise). `initialize_elems_Pn`'s third argument is `num_gauss_1D` (the number of Gauss points per direction — often `2*Pn_order` for solid mechanics, per the source comment), **not** a repeat of `Pn_order`. Choose based on whether the element is linear/single-Gauss-point (`initialize_elems`) or arbitrary order (`initialize_elems_Pn`). Mixing the two on the same `Mesh_t` is undefined — `initialize_elems` does not set `elem_kind = mesh_init::arbitraryTensorElement` and does not allocate `nodes_in_zone`.
+
+Also note `corners_in_elem` is constructed as a `corners_in_elem_t` **functor** (like `zones_in_elem_t` / `gauss_in_elem_t`), not a plain `CArrayKokkos` you index directly with stored data — see "Index functors" below.
 
 ### Filling `nodes_in_elem`
 
-After init, write into `nodes_in_elem` on the host using `.host(elem_gid, node_lid) = node_gid` (it is a `DCArrayKokkos<size_t>`). Then push to device with `nodes_in_elem.update_device()` if you need device access. The example builders (`build_3d_box`, `build_2d_polar`) handle this for you — see the `mesh_io.h` reference in [examples/decomp_example/include/mesh_io.h](examples/decomp_example/include/mesh_io.h).
+After init, write into `nodes_in_elem` on the host using `.host(elem_gid, node_lid) = node_gid` (it is a `DCArrayKokkos<size_t>`), or fill it directly on device with a `FOR_ALL` (as `tests/test_cases/test_mesh_connectivity.cpp` does) followed by `nodes_in_elem.update_host()`. The example builders (`build_3d_box`, `build_2d_polar`) handle this for you — see the `mesh_io.h` reference in [examples/decomp_example/include/mesh_io.h](examples/decomp_example/include/mesh_io.h).
 
 ### Connectivity arrays (read-only after build)
 
 | Name | Type | Shape / meaning |
 |------|------|-----------------|
 | `nodes_in_elem` | `DCArrayKokkos<size_t>` | `(num_elems, num_nodes_in_elem)` — global node IDs |
-| `corners_in_elem` | `CArrayKokkos<size_t>` | `(num_elems, num_nodes_in_elem)` — corner IDs |
+| `corners_in_elem` | `corners_in_elem_t` (functor) | `(elem_gid, corner_lid) → elem_gid*num_nodes_in_elem + corner_lid` |
 | `corners_in_node` | `RaggedRightArrayKokkos<size_t>` | per node, list of corner GIDs |
 | `num_corners_in_node` | `CArrayKokkos<size_t>` | `(num_nodes,)` |
 | `elems_in_node` | `RaggedRightArrayKokkos<size_t>` | per node, elements touching it |
@@ -488,17 +576,18 @@ After init, write into `nodes_in_elem` on the host using `.host(elem_gid, node_l
 | `nodes_in_node` | `RaggedRightArrayKokkos<size_t>` | per node, neighbor nodes along edges |
 | `num_nodes_in_node` | `CArrayKokkos<size_t>` | per-node neighbor counts |
 | `patches_in_elem`, `surfs_in_elem` | `CArrayKokkos<size_t>` | element-side patch/surface tables |
-| `nodes_in_patch`, `elems_in_patch`, `surf_in_patch` | `CArrayKokkos<size_t>` | patch-side connectivity |
-| `nodes_in_surf`, `elems_in_surf`, `patches_in_surf` | `CArrayKokkos<size_t>` | surface-side connectivity |
-| `nodes_in_zone` | `CArrayKokkos<size_t>` | `(num_zones, num_nodes_in_zone)` — only valid after `initialize_elems_Pn` |
-| `bdy_patches`, `bdy_nodes` | `CArrayKokkos<size_t>` | flat boundary lists |
-| `bdy_patches_in_set`, `bdy_nodes_in_set` | `RaggedRightArrayKokkos<size_t>` | per boundary set; **populated by application code in `tag_bdys` (see comment in `init_bdy_sets`), not by `build_connectivity`** |
+| `nodes_in_patch`, `elems_in_patch`, `surf_in_patch` | `CArrayKokkos<size_t>` / `patches_in_surf_t` | patch-side connectivity |
+| `nodes_in_surf`, `faces_in_surf` | `CArrayKokkos<size_t>` / `CArrayKokkos<int>` | surface-side connectivity |
+| `elems_in_surf`, `num_elems_in_surf` | `CArrayKokkos<int>` / `CArrayKokkos<size_t>` | elements touching a surface (`num_elems_in_surf` is 1 on the boundary, 2 interior) |
+| `nodes_in_zone` | `CArrayKokkos<size_t>` | `(num_zones, num_nodes_in_zone)` — only filled by the separate `build_zones()` call |
+| `bdy_surfs`, `bdy_patches`, `bdy_nodes` | `CArrayKokkos<size_t>` | flat boundary lists |
+| `bdy_patches_in_set`, `bdy_nodes_in_set` | `RaggedRightArrayKokkos<size_t>` | per boundary set; **populated by application code (see comment in `initialize_bdy_sets`), not by `build_connectivity`** |
 
 ### Index functors
 
-`zones_in_elem`, `gauss_in_elem`, `lobatto_in_elem` are not arrays — they are tiny stride-flattening structs:
+`zones_in_elem`, `gauss_in_elem`, `corners_in_elem` (all `Mesh_t` members) and `patches_in_surf` are not arrays — they are tiny stride-flattening structs defined in [src/swage/indexing_utils.h](src/swage/indexing_utils.h):
 
-```115:139:src/swage/unstructured_mesh.h
+```148:172:src/swage/indexing_utils.h
 struct zones_in_elem_t
 {
     private:
@@ -526,19 +615,19 @@ struct zones_in_elem_t
 };
 ```
 
-Use them as `mesh.zones_in_elem(elem_gid, zone_lid)` inside device kernels and `mesh.zones_in_elem.host(elem_gid, zone_lid)` on the host. `gauss_in_elem_t` and `lobatto_in_elem_t` follow the same pattern.
+Use them as `mesh.zones_in_elem(elem_gid, zone_lid)` inside device kernels and `mesh.zones_in_elem.host(elem_gid, zone_lid)` on the host. `gauss_in_elem_t`, `corners_in_elem_t`, and `patches_in_surf_t` all follow the exact same `elem_gid/surf_gid * stride + local_id` pattern (see `src/swage/indexing_utils.h:175-254`).
 
 ### Boundary sets
 
 ```cpp
 // COMPILES_AS_IS (after building mesh)
-mesh.init_bdy_sets(num_bcs);
+mesh.initialize_bdy_sets(num_bcs);
 // At this point only num_bdy_sets and num_bdy_patches_in_set are allocated.
 // Filling bdy_patches_in_set and bdy_nodes_in_set is the application's job
 // (see geometry_new.cpp pattern in the legacy code).
 ```
 
-The header explicitly defers ragged boundary set construction to a `tag_bdys`-style function written outside `swage::Mesh`. Do not assume `build_connectivity` populates these.
+Note the method is `initialize_bdy_sets` (not `init_bdy_sets`). The header explicitly defers ragged boundary set construction to a `tag_bdys`-style function written outside `swage::Mesh_t`. Do not assume `build_connectivity` populates these.
 
 ### MPI ownership fields (filled by `decomp_utils`)
 
@@ -550,7 +639,8 @@ After a successful call to `elements::partition_mesh`, the `final_mesh` will hav
 | `local_to_global_elem_mapping` | `DCArrayKokkos<size_t>`, length `num_elems` |
 | `num_owned_elems` / `num_owned_nodes` | Count of owned (non-ghost) entities; ranks `[0, num_owned_*)` are owned, `[num_owned_*, num_*)` are ghost |
 | `num_boundary_elems` / `num_boundary_nodes` | Count of locally-owned entities that are sent to neighbors |
-| `boundary_elem_local_ids` / `boundary_node_local_ids` | `DCArrayKokkos<size_t>` of local IDs for entities that send data |
+| `boundary_elem_local_ids` | `DCArrayKokkos<size_t>` of local element IDs that send data. There is no `boundary_node_local_ids` field on `Mesh_t` today (the node analog is commented out in the header); node-side send lists live on the node `CommunicationPlan`/field, not on the mesh struct. |
+| `shared_tally_owned_nodes` | `DCArrayKokkos<bool>`, length `num_owned_nodes` — owned-node mask: `true` where this rank is the minimum MPI rank among the ranks that own the global node (i.e. this rank is the domain-tally contributor for that node). Use it to avoid double-counting shared nodes when reducing a nodal quantity across ranks. |
 | `num_ghost_elems` / `num_ghost_nodes` | Count of received entities |
 
 For a single-rank fallback (`world_size == 1`), set these manually:
@@ -566,94 +656,87 @@ For a single-rank fallback (`world_size == 1`), set these manually:
 
 ## 5. Reference Elements and Quadrature
 
-### `fe_ref_elem_t` (volume)
+There is no `fe_ref_elem_t` or `fe_ref_surf_t` type in this library. All reference-element/quadrature types are `elements::Quadrature_t`, `elements::ReferenceElement_t`, `elements::SurfaceQuadrature_t`, and `elements::ReferenceSurface_t`, all defined in [src/elements/ref_elem.h](src/elements/ref_elem.h). All four support `elem_dims` of 1, 2, **or** 3 — reference-element math is not restricted to 3D.
 
-Defined in [src/elements/ref_elem.h](src/elements/ref_elem.h) as a plain struct of `size_t` counts plus `CArrayKokkos<double>` / `CArrayKokkos<size_t>` tables. Construct with default constructor, then call `init(p_order, num_dim_inp)` exactly once:
+### `elements::Quadrature_t` (volume quadrature)
 
-```cpp
-// PSEUDOCODE_PATTERN
-fe_ref_elem_t ref_elem;
-ref_elem.init(p_order, 3);  // 3D today
-```
-
-**Important caveat:** the body of `init` that fills the 3D tensor-product point/weight/basis tables is guarded by `if (num_dim == 3)`. Calling `init(p_order, 2)` will set the 1D counts and allocate arrays but will leave the 3D tables un-populated. **Treat `fe_ref_elem_t` as 3D-only for now.**
-
-#### Counts (after `init`)
-
-| Field | Meaning (for `p > 0`) |
-|-------|-----------------------|
-| `num_dofs_1d` | `p_order + 1` (CG kinematic DOFs in 1D) |
-| `num_dg_dofs_1d` | `p_order` (DG / "thermo" DOFs in 1D) |
-| `num_lobotto_1d` | `2*p_order + 1` (Gauss-Lobatto points in 1D) |
-| `num_dual_lobotto_1d` | `2*p_order - 1` |
-| `num_gauss_1d` | `2*p_order` (Gauss-Legendre in 1D) |
-| `num_zones_1d` | `p_order` |
-| `num_dofs_in_elem`, `num_lobotto_in_elem`, `num_gauss_in_elem`, `num_zones_in_elem`, ... | Each = corresponding 1D count to the power `num_dim`. |
-
-For `p_order == 0` the special case is `num_lobotto_1d = 2`, `num_dofs_1d = 2`, `num_zones_1d = 1`, `num_gauss_1d = 1`.
-
-#### Pre-tabulated arrays (read after `init`)
-
-| Field | Shape | Contents |
-|-------|-------|----------|
-| `lob_points_1D`, `dual_lob_points_1D`, `leg_nodes_1D` | `(num_*_1d,)` | 1D abscissas |
-| `lob_weights_1D`, `leg_weights_1D` | `(num_*_1d,)` | 1D weights |
-| `lobotto_point_positions`, `gauss_point_positions` | `(num_*_in_elem, num_dim)` | 3D quadrature points |
-| `lobotto_point_weights`, `gauss_point_weights` | `(num_*_in_elem,)` | 3D quadrature weights |
-| `dof_positions`, `dof_positions_1d` | DOF coordinates (CG basis) |
-| `dg_dof_positions`, `dg_dof_positions_1d` | DOF coordinates (DG basis) |
-| `lobotto_point_basis`, `gauss_point_basis` | `(num_*_in_elem, num_basis)` | CG basis values at quadrature points |
-| `lobotto_point_dg_basis`, `gauss_point_dg_basis` | `(num_*_in_elem, num_dg_basis)` | DG basis values |
-| `lobotto_point_grad_basis`, `gauss_point_grad_basis` | gradients in reference coords |
-| `dof_lobatto_map`, `dual_dof_lobatto_map` | `CArrayKokkos<size_t>` | Maps from DOF to Lobatto-grid index |
-
-#### Index helpers (KOKKOS_INLINE_FUNCTION)
-
-Defined inside `fe_ref_elem_t`:
-
-| Method | Returns |
-|--------|---------|
-| `dof_rid(i, j, k)` | Flat CG DOF index from i,j,k tensor coordinates |
-| `elem_dof_rid(i, j, k)` | Flat DG DOF index |
-| `lobatto_rid(i, j, k)` | Flat Lobatto quadrature point index |
-| `dual_lobatto_rid(i, j, k)` | Flat dual Lobatto index |
-| `legendre_rid(i, j, k)` | Flat Gauss-Legendre point index |
-| `legendre_rid_2D(i, j)` | 2D legendre index helper |
-
-#### On-the-fly basis evaluation
-
-For evaluating the basis (or its gradient) at an arbitrary reference point, call:
-
-| Method | Purpose |
-|--------|---------|
-| `get_basis(basis, val_1d, val_3d, point)` | CG basis at `point` |
-| `get_elem_basis(basis, val_1d, val_3d, point)` | DG basis at `point` |
-| `partial_xi_basis(partial_xi, val_1d, val_3d, Dval_1d, Dval_3d, point)` | ∂/∂ξ of CG basis |
-| `partial_eta_basis(...)` | ∂/∂η |
-| `partial_mu_basis(...)` | ∂/∂μ (the third reference coord) |
-| `lagrange_basis_1D(interp, x_point)` | 1D Lagrange interpolant at `x_point` (CG nodes) |
-| `lagrange_elem_basis_1D(interp, x_point)` | 1D Lagrange interpolant at `x_point` (DG nodes) |
-| `lagrange_derivative_1D(derivative, x_point)` | 1D Lagrange derivative |
-
-The caller supplies workspace buffers as `CArrayKokkos<double>`:
-- `val_1d` length `num_dofs_1d`
-- `val_3d` shape `(num_dofs_1d, 3)`
-- `Dval_1d`, `Dval_3d` for derivatives, same shapes
-- `point` length 3
-- `basis` length `num_basis`
-
-### `fe_ref_surf_t` is currently inactive
+Default-construct, then call `initialize_quadrature` exactly once:
 
 ```cpp
-// File: src/elements/ref_surf_elem.h
-// Lines 17-18: struct opens
-// Line 19:    #if 0     // ENTIRE BODY DISABLED
-// ...
-// Line 2118: #endif
-// Line 2120: };         // empty struct closes
+// COMPILES_AS_IS (assuming MATAR scope)
+using namespace elements;
+
+Quadrature_t quadrature;
+quadrature.initialize_quadrature(reference_space::GaussLegendre, /*num_qpts_1d=*/3, /*elem_dims=*/3);
+// quadrature.qpt_positions : CArrayKokkos<double> (num_qpts_in_elem, elem_dims)
+// quadrature.qpt_weights   : CArrayKokkos<double> (num_qpts_in_elem,)
 ```
 
-The compiled type `fe_ref_surf_t` has **no data members and no methods**. It still compiles into [src/ELEMENTS.h](src/ELEMENTS.h), but instantiating it gives you an empty struct. **Do not generate code that calls any method on `fe_ref_surf_t`.** If a 2D surface basis is required, either (a) use the 1D / 2D parts of `fe_ref_elem_t` directly, or (b) flag this as a known gap to the user.
+`num_qpts_in_elem = num_qpts_1d ^ elem_dims` (tensor product of the 1D rule built by `ref_quadrature.h`'s `get_legendre_*`/`get_lobatto_*` helpers). `QuadratureType` is `reference_space::GaussLegendre` or `reference_space::GaussLobatto`; any other value, or `num_qpts_1d == 0`, or `elem_dims` outside `{1,2,3}` throws `std::runtime_error`.
+
+### `elements::ReferenceElement_t` (volume basis)
+
+Companion structure for `swage::Mesh_t`. Default-construct, then call `initialize_ref_elem` once, passing in an already-initialized `Quadrature_t`:
+
+```cpp
+// COMPILES_AS_IS (assuming MATAR scope, `quadrature` from above)
+using namespace elements;
+
+ReferenceElement_t ref_elem;
+ref_elem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                             reference_space::LagrangeLobatto,
+                             quadrature,
+                             /*p_order=*/3);
+// ref_elem.elem_dims taken from quadrature.elem_dims
+// ref_elem.num_dofs_in_elem = (p_order+1)^elem_dims
+// ref_elem.dof_positions       : CArrayKokkos<double> (num_dofs_in_elem, elem_dims)
+// ref_elem.dof_positions_1d    : CArrayKokkos<double> (num_dofs_1d,)
+// ref_elem.qpt_basis           : CArrayKokkos<double> (Quadrature.num_qpts_in_elem, num_dofs_in_elem)
+// ref_elem.qpt_grad_basis      : CArrayKokkos<double> (Quadrature.num_qpts_in_elem, num_dofs_in_elem, elem_dims)
+```
+
+`BasisType` (`reference_space::LagrangeLobatto` or `reference_space::LagrangeLegendre`) picks where the DOFs sit; `ElementType` (`reference_space::linearElement` or `reference_space::arbitraryOrderElement`) is stored but does not itself change the fill logic. `initialize_ref_elem` throws if `Quadrature.elem_dims == 0` or `> 3`.
+
+#### Free basis-evaluation helpers (`namespace elements`, in `ref_elem.h`)
+
+These are the actual on-the-fly basis routines — they are free functions, not methods on `ReferenceElement_t`:
+
+| Function | Purpose |
+|----------|---------|
+| `get_basis(basis, dof_positions_1d, val_1d, val_Nd, point)` | Tensor-product Lagrange basis value at an arbitrary `point`, for `elem_dims` 1/2/3 |
+| `partial_xi_basis(partial_xi, dof_positions_1d, val_1d, val_Nd, Dval_1d, Dval_Nd, point)` | ∂/∂ξ of the basis |
+| `partial_eta_basis(...)` | ∂/∂η (2D and 3D only) |
+| `partial_mu_basis(...)` | ∂/∂μ (3D only) |
+| `lagrange_basis_1D(interp, dof_positions_1d, x_point)` | 1D Lagrange interpolant at `x_point` |
+| `lagrange_derivative_1D(derivative, dof_positions_1d, x_point)` | 1D Lagrange derivative at `x_point` |
+| `get_basis_and_grad_basis(qpt_basis, qpt_grad_basis, qpt_positions, dof_positions_1d)` | Fills basis + grad-basis at every quadrature point in one call — this is what `ReferenceElement_t::initialize_ref_elem` and `ReferenceSurface_t::initialize_ref_surf` call internally |
+| `get_qpt_rid(i, j, k, num_qpts_1d)` / `get_dof_rid(i, j, k, num_dofs_1d)` | Flat row-major index from tensor `(i,j,k)` (or `(i,j)` 2D overloads) |
+
+The caller supplies workspace as `CArrayKokkos<double>`: `val_1d`/`Dval_1d` length `num_dofs_1d`; `val_Nd`/`Dval_Nd` shape `(num_dofs_1d, elem_dims)`; `point` length `elem_dims`; `basis`/`partial_xi`/etc. length `num_dofs_in_elem`.
+
+### `elements::SurfaceQuadrature_t` and `elements::ReferenceSurface_t` (surface of a volume element)
+
+Surface support is **fully implemented and actively used** — it is not a stub. `build_quadrature_point_connectivity` in [src/geometry/geometry.h](src/geometry/geometry.h) is a real, working consumer of `ReferenceSurface_t`.
+
+```cpp
+// COMPILES_AS_IS (assuming MATAR scope, `ref_elem` initialized above)
+using namespace elements;
+
+SurfaceQuadrature_t surf_quadrature;
+surf_quadrature.initialize_quadrature(reference_space::GaussLegendre, /*num_qpts_1d=*/3, /*elem_dims=*/3);
+// surf_quadrature.num_ref_surfs   = 2*elem_dims (6 in 3D, 4 in 2D)
+// surf_quadrature.qpt_positions   : CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, elem_dims)
+// surf_quadrature.qpt_weights     : CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf)
+
+ReferenceSurface_t ref_surf;
+ref_surf.initialize_ref_surf(surf_quadrature, ref_elem);
+// ref_surf.qpt_basis       : CArrayKokkos<double> (faces, surf_qpts, dofs)
+// ref_surf.qpt_grad_basis  : CArrayKokkos<double> (faces, surf_qpts, dofs, dims)
+// ref_surf.outward_sign    : CArrayKokkos<double> (num_ref_surfs,)   -1 on the "minus" face, +1 on "plus"
+// ref_surf.outward_normal  : CArrayKokkos<double> (num_ref_surfs, elem_dims)
+```
+
+Face ordering matches the mesh's face convention: face 0/1 = ξ minus/plus, 2/3 = η minus/plus, 4/5 = μ (ζ) minus/plus. `initialize_ref_surf` throws if `elem_dims == 0` or `> 3`.
 
 ### `ref_quadrature.h` — free helpers
 
@@ -676,7 +759,46 @@ These are large hard-coded if-cascades on `N`. Supported `N` values are bounded 
 
 ---
 
-## 6. Geometry Helpers (`shapes.h`)
+## 6. Geometry Helpers (`geometry.h` / `shapes.h`)
+
+[src/geometry/geometry.h](src/geometry/geometry.h) has two real functions in addition to the `shapes.h` primitives below: `jacobian(...)` and `build_quadrature_point_connectivity(...)`. Both are documented here first since older guidance for this library incorrectly claimed `jacobian()` did not exist — it does, and it is the standard way to get the element Jacobian from a `ReferenceElement_t`/`ReferenceSurface_t` grad-basis table.
+
+### `jacobian(...)` — element Jacobian matrix
+
+```23:49:src/geometry/geometry.h
+template <typename T1, typename T2, typename T3, typename T4>
+KOKKOS_INLINE_FUNCTION
+void jacobian(
+    const T1 &jacobian,         // e.g., ViewCArrayKokkos <double>
+    const T2 &node_coords,      // e.g., DCArrayKokkos    <double>
+    const T3 &nodes_in_an_elem, // e.g., ViewCArrayKokkos <size_t>
+    const T4 &a_grad_basis){    // e.g., ViewCArrayKokkos <double>
+
+    const size_t dims = a_grad_basis.dims(1);
+    const size_t num_dofs_in_elem = nodes_in_an_elem.size();
+
+    // Calculate Jacobian: J[i,j] = partial x_i/partial \xi_j
+    for(size_t i = 0; i < dims; i++)
+    for(size_t j = 0; j < dims; j++)
+    for(size_t node_lid = 0; node_lid < num_dofs_in_elem; node_lid++){
+        const size_t node_gid = nodes_in_an_elem(node_lid);
+        jacobian(i, j) += node_coords(node_gid, i)*a_grad_basis(node_lid, j);
+    }
+} // end of jacobian function
+```
+
+`jacobian` is a `KOKKOS_INLINE_FUNCTION` template — call it from inside a device kernel (`FOR_ALL`) for one element at a time. `jacobian` (the output, `dims x dims`) and `node_coords` (global mesh node coordinates) are caller-allocated; `nodes_in_an_elem` is a per-element view (e.g. `ViewCArrayKokkos<size_t>(&mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem)`); `a_grad_basis` is a single quadrature point's `(num_dofs_in_elem, dims)` slice out of `ReferenceElement_t::qpt_grad_basis` (or `ReferenceSurface_t::qpt_grad_basis` for a surface quadrature point). The function zeros `jacobian` itself before accumulating — you do not need to pre-zero it.
+
+### `build_quadrature_point_connectivity(...)` — match quadrature points across a shared surface
+
+```78:81:src/geometry/geometry.h
+inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
+                                                const elements::ReferenceSurface_t& RefSurf,
+                                                CArrayKokkos<int>& surf_qpt_qpt_map,
+                                                const DCArrayKokkos<double>& node_coords){
+```
+
+Given a built `swage::Mesh_t`, an initialized `elements::ReferenceSurface_t`, and the mesh node coordinates, this fills `surf_qpt_qpt_map(surf_gid, side, qpt_lid)` so that a quadrature point on one side of an interior surface can look up its physically-coincident quadrature point on the other side — the pattern a DG or cell-centered finite-volume Riemann solve needs. It `Kokkos::abort`s if it cannot find a matching point (physical coordinates equal to within `1e-16`), so both sides must share a consistent quadrature rule and node numbering.
 
 `geometry::Plane`, `geometry::Circle`, `geometry::Sphere` are analytic primitives, not FE shapes. Each constructor takes `ViewCArrayKokkos<double>` views of caller-owned position (and normal/radius) buffers. All predicate methods are `KOKKOS_INLINE_FUNCTION` and assume 1D views with extents matching `num_dims`.
 
@@ -712,7 +834,7 @@ The `Plane` and `Circle` constructors normalize the supplied normal in place; if
 
 ### What does NOT exist
 
-There is no `Hex8`, `Tet4`, `Quad4`, `evaluate_basis(xi, eta)`, `jacobian()`, or `node_coords()` API in `geometry/`. Do not invent them. For FE basis evaluation use `fe_ref_elem_t` (Section 5).
+There is no `Hex8`, `Tet4`, `Quad4`, `evaluate_basis(xi, eta)`, or `node_coords()` API in `geometry/`. Do not invent them. `jacobian(...)` and `build_quadrature_point_connectivity(...)` **do** exist (above) — do not claim otherwise. For FE basis evaluation use `elements::ReferenceElement_t` / `elements::ReferenceSurface_t` (Section 5).
 
 ---
 
@@ -730,16 +852,16 @@ There is no `Hex8`, `Tet4`, `Quad4`, `evaluate_basis(xi, eta)`, `jacobian()`, or
 
 ### `partition_mesh` signature
 
-```1712:1720:src/decomp_utilities/decomp_utils.h
+```1736:1744:src/decomp_utilities/decomp_utils.h
 inline void partition_mesh(
-    swage::Mesh& initial_mesh,
-    swage::Mesh& final_mesh,
+    swage::Mesh_t& initial_mesh,
+    swage::Mesh_t& final_mesh,
     MPICArrayKokkos<double>& initial_node_coords,
     MPICArrayKokkos<double>& final_node_coords,
     CommunicationPlan& element_communication_plan,
     CommunicationPlan& node_communication_plan,
     int world_size,
-    int rank){
+    int rank)
 ```
 
 - `initial_mesh` / `initial_node_coords`: must be valid on rank 0; can be empty/default on other ranks.
@@ -782,7 +904,7 @@ int main(int argc, char** argv) {
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-        swage::Mesh initial_mesh;
+        swage::Mesh_t initial_mesh;
         MPICArrayKokkos<double> initial_node_coords;
 
         if (rank == 0) {
@@ -799,7 +921,7 @@ int main(int argc, char** argv) {
         CommunicationPlan node_plan;
         node_plan.initialize(MPI_COMM_WORLD);
 
-        swage::Mesh final_mesh;
+        swage::Mesh_t final_mesh;
         MPICArrayKokkos<double> final_node_coords;
 
         if (world_size != 1) {
@@ -977,15 +1099,15 @@ These functions are part of the example infrastructure (`examples/*/include/mesh
 
 | Function | Defined in | Signature | Purpose |
 |----------|------------|-----------|---------|
-| `build_3d_box` | [examples/decomp_example/include/mesh_io.h](examples/decomp_example/include/mesh_io.h) | `(swage::Mesh&, MPICArrayKokkos<double>&, double origin[3], double length[3], int num_elems_dim[3], int Pn_order)` | Generate a 3D Cartesian box of arbitrary order on rank 0. Calls `initialize_nodes`, `initialize_elems_Pn`, fills `nodes_in_elem`, then `build_connectivity`. |
-| `build_2d_polar` | [examples/decomp_example/include/mesh_io.h](examples/decomp_example/include/mesh_io.h) | `(swage::Mesh&, MPICArrayKokkos<double>&, double& inner_radius, double& outer_radius, double& start_angle, double& end_angle, int num_elems_i, int num_elems_j)` | Generate an annular sector mesh in 2D. |
+| `build_3d_box` | [examples/decomp_example/include/mesh_io.h](examples/decomp_example/include/mesh_io.h) | `(swage::Mesh_t&, MPICArrayKokkos<double>&, double origin[3], double length[3], int num_elems_dim[3], int Pn_order)` | Generate a 3D Cartesian box of arbitrary order on rank 0. Calls `initialize_nodes`, `initialize_elems_Pn`, fills `nodes_in_elem`, then `build_connectivity`. |
+| `build_2d_polar` | [examples/decomp_example/include/mesh_io.h](examples/decomp_example/include/mesh_io.h) | `(swage::Mesh_t&, MPICArrayKokkos<double>&, double& inner_radius, double& outer_radius, double& start_angle, double& end_angle, int num_elems_i, int num_elems_j)` | Generate an annular sector mesh in 2D. |
 | `build_3d_box` (average variant) | [examples/average/include/mesh_io.h](examples/average/include/mesh_io.h) | Uses `node_t&` for coordinates instead of `MPICArrayKokkos<double>&`. | Equivalent behavior tied to the `node_t` state container. |
 
 ### Output
 
 | Function | Defined in | Notes |
 |----------|------------|-------|
-| `write_vtu(swage::Mesh&, node_t&, GaussPoint_t&, int rank, MPI_Comm comm)` | [examples/decomp_example/include/mesh_io.h](examples/decomp_example/include/mesh_io.h) | Per-rank `.vtu` file; rank 0 also writes `.pvtu`. Cell type 72 for high-order Lagrange hex, 9 for linear quad in 2D. Outputs to `vtk/` subdirectory. |
+| `write_vtu(swage::Mesh_t&, node_t&, GaussPoint_t&, int rank, MPI_Comm comm)` | [examples/decomp_example/include/mesh_io.h](examples/decomp_example/include/mesh_io.h) | Per-rank `.vtu` file; rank 0 also writes `.pvtu`. Cell type 72 for high-order Lagrange hex, 9 for linear quad in 2D. Outputs to `vtk/` subdirectory. |
 | `write_vtu` (average variant) | [examples/average/include/mesh_io.h](examples/average/include/mesh_io.h) | Same pattern, fields drawn from the average example's state. |
 | `write_vtk` | [examples/average/include/mesh_io.h](examples/average/include/mesh_io.h) only | Legacy ASCII `.vtk` per rank, plus a small JSON `Fierro.vtk.series` index. Cell type 72. |
 
@@ -1107,46 +1229,57 @@ The driver only prints a greeting. The interesting code is in the headers it inc
 
 ## 11. Common Pitfalls
 
-### 1. The mesh type is `swage::Mesh`, not `mesh_t`
+### 1. The mesh type is `swage::Mesh_t`, not a bare `mesh_t`
 
 ```cpp
 // WRONG
 mesh_t mesh;
 
 // RIGHT
-swage::Mesh mesh;
+swage::Mesh_t mesh;
 ```
 
-The closing comment in the header is misleading (`// end Mesh_t`).
+The struct is declared `struct Mesh_t` inside `namespace swage`; there is no lowercase `mesh_t` typedef anywhere in the library.
 
-### 2. Calling methods on `fe_ref_surf_t`
+### 2. Calling `init(p, dim)` on a reference element / inventing `fe_ref_elem_t` or `fe_ref_surf_t`
 
 ```cpp
-// WRONG — fe_ref_surf_t has NO methods or fields today (body is in #if 0)
-fe_ref_surf_t surf;
-surf.init(p, 3);          // does not compile
-surf.get_basis(...);      // does not compile
-
-// RIGHT — use fe_ref_elem_t for volume work; surface work is unimplemented
+// WRONG — these types do not exist in this library
 fe_ref_elem_t ref;
 ref.init(p, 3);
+fe_ref_surf_t surf;
+
+// RIGHT — the real volume/surface reference-element types and their real methods
+elements::Quadrature_t quadrature;
+quadrature.initialize_quadrature(reference_space::GaussLobatto, num_qpts_1d, elem_dims);
+
+elements::ReferenceElement_t ref_elem;
+ref_elem.initialize_ref_elem(reference_space::arbitraryOrderElement,
+                             reference_space::LagrangeLobatto,
+                             quadrature, p_order);
+
+elements::SurfaceQuadrature_t surf_quadrature;
+surf_quadrature.initialize_quadrature(reference_space::GaussLobatto, num_qpts_1d, elem_dims);
+
+elements::ReferenceSurface_t ref_surf;
+ref_surf.initialize_ref_surf(surf_quadrature, ref_elem);   // surface support is live, not a stub
 ```
 
 ### 3. Mixing `initialize_elems` and `initialize_elems_Pn`
 
-These two functions configure the mesh for **different element formulations**. `initialize_elems` does not allocate `surfs_in_elem`, `nodes_in_zone`, or set `elem_kind = arbitrary_tensor_element`; `initialize_elems_Pn` does. Calling both leaves the mesh in an inconsistent state. Pick one based on `Pn_order`.
+These two functions configure the mesh for **different element formulations**. `initialize_elems` does not allocate `nodes_in_zone` or set `elem_kind = mesh_init::arbitraryTensorElement`; `initialize_elems_Pn` does. Calling both leaves the mesh in an inconsistent state. Pick one based on whether the mesh is linear/single-Gauss-point or arbitrary order — and remember both now require `initialize_dims()` to have been called first (neither takes a `num_dims` argument any more).
 
 ### 4. Calling `build_*` out of order
 
 ```cpp
-// WRONG — patch build needs elems_in_elem from build_elem_elem_connectivity
-mesh.build_patch_connectivity();
+// WRONG — surface/patch build needs elems_in_elem from build_elem_elem_connectivity
+mesh.build_surf_connectivity();
 
 // RIGHT — let build_connectivity sequence them
 mesh.build_connectivity();
 ```
 
-If you must call them individually: corner → elem-elem → patch → node-node.
+If you must call them individually: corner → elem-elem → surf (builds surfaces and patches together) → node-node. There is no `build_patch_connectivity` method — that name was renamed to `build_surf_connectivity`.
 
 ### 5. Forgetting to fill `nodes_in_elem` before `build_connectivity`
 
@@ -1172,11 +1305,11 @@ MPI_Finalize();
 
 ### 7. Confusing `geometry/shapes.h` with FE shape functions
 
-`Plane`, `Circle`, `Sphere` are analytic predicates. There is no `Hex8::evaluate_basis(xi)` or similar in this library. For FE basis evaluation, use `fe_ref_elem_t`.
+`Plane`, `Circle`, `Sphere` are analytic predicates. There is no `Hex8::evaluate_basis(xi)` or similar in this library. For FE basis evaluation, use `elements::ReferenceElement_t` / `elements::ReferenceSurface_t`; for the element Jacobian, use the free `jacobian(...)` function in `geometry/geometry.h` (Section 6) — it does exist, do not tell a user it doesn't.
 
 ### 8. Using `[]` instead of `()` for MATAR types
 
-All MATAR arrays use `(i, j)` indexing, not `[i][j]`. This applies to every connectivity table on `swage::Mesh` and every state field. (Cross-reference the MATAR skill.)
+All MATAR arrays use `(i, j)` indexing, not `[i][j]`. This applies to every connectivity table on `swage::Mesh_t` and every state field. (Cross-reference the MATAR skill.)
 
 ### 9. Forgetting `field.communicate()` after device writes
 
@@ -1199,19 +1332,23 @@ if (world_size != 1) {
 
 ### 11. Assuming `boundary set` arrays are filled by `build_connectivity`
 
-`init_bdy_sets(num_bcs)` only allocates `num_bdy_patches_in_set`. The ragged `bdy_patches_in_set` and `bdy_nodes_in_set` arrays must be populated by application-side BC tagging code (the legacy `geometry_new.cpp` pattern).
+`initialize_bdy_sets(num_bcs)` (not `init_bdy_sets`) only allocates `num_bdy_patches_in_set`. The ragged `bdy_patches_in_set` and `bdy_nodes_in_set` arrays must be populated by application-side BC tagging code (the legacy `geometry_new.cpp` pattern).
 
 ### 12. Non-default MPI communicator
 
 `elements::partition_mesh`, `naive_partition_mesh`, and `build_ghost` all use `MPI_COMM_WORLD` internally regardless of any `MPI_Comm` argument. There is no public way to partition on a sub-communicator without modifying the source.
 
-### 13. `build_connectivity()` flips `verbose = true`
+### 13. Assuming `build_connectivity()` still flips `verbose = true`
 
-If you want silent operation, set `mesh.verbose = false` *after* calling `build_connectivity()`.
+Older ELEMENTS builds had `build_connectivity()` unconditionally set `verbose = true` as a side effect. **That is no longer true** — `verbose` defaults to `false` and `build_connectivity()` leaves it exactly as the caller set it. Do not tell a user to reset `mesh.verbose = false` after calling `build_connectivity()` expecting to silence output that was turned on for them; set `mesh.verbose = true` yourself first if you actually want the per-stage `printf`s.
 
 ### 14. `set_values()` is asynchronous
 
 `MPICArrayKokkos::set_values(val)` (inherited from MATAR) launches an async device `parallel_for`. It does not fence. Follow with `MATAR_FENCE()` if a different code path needs to read the values, or with `update_host()` if the host needs them.
+
+### 15. Kokkos 5 API renames
+
+MATAR's Kokkos submodule is now pinned to Kokkos 5.2.1 (via the `matar` git submodule). At least one Kokkos 5 rename has already bitten this codebase: `Kokkos::atomic_increment(...)` → `Kokkos::atomic_inc(...)` (fixed in [src/swage/point_cloud.h](src/swage/point_cloud.h)). If you see `Kokkos::atomic_increment` in older reference code or examples elsewhere, treat it as stale and use `Kokkos::atomic_inc` instead; be alert for other Kokkos 4→5 renames if you are porting code into this library.
 
 ---
 
@@ -1221,65 +1358,46 @@ This section is for agents editing files under [src/](src/). Skip if you are onl
 
 ### Sub-library boundaries
 
-- [src/elements/](src/elements/) is independent of `swage::Mesh`. It only knows about its own structs and MATAR. `ref_elem.h` includes `ref_quadrature.h`; `ref_surf_elem.h` is self-contained.
-- [src/swage/unstructured_mesh.h](src/swage/unstructured_mesh.h) does **not** include any `elements/` header. The mesh is purely connectivity; it does not know about reference-element math.
+- [src/elements/](src/elements/) is independent of `swage::Mesh_t`. It only knows about its own structs and MATAR. `ref_elem.h` includes `ref_quadrature.h`. There is no `ref_surf_elem.h` file — surface support (`SurfaceQuadrature_t`, `ReferenceSurface_t`) lives directly in `ref_elem.h` alongside the volume types.
+- [src/swage/unstructured_mesh.h](src/swage/unstructured_mesh.h) does **not** include any `elements/` header (it includes `matar.h`, `indexing_utils.h`, `<cmath>`). The mesh is purely connectivity; it does not know about reference-element math.
+- [src/swage/indexing_utils.h](src/swage/indexing_utils.h) holds the `mesh_init::ElementNameType` enum, the nodal-indexing-convention diagram, the index functors (`zones_in_elem_t`, `gauss_in_elem_t`, `corners_in_elem_t`, `patches_in_surf_t`), and the `get_surf_node_lids`/`get_patch_node_lids` local-node-table builders. `unstructured_mesh.h` includes it.
 - [src/decomp_utilities/decomp_utils.h](src/decomp_utilities/decomp_utils.h) includes `swage/unstructured_mesh.h` and PT-Scotch headers (`scotch.h`, `ptscotch.h`).
-- [src/geometry/](src/geometry/) is standalone: `geometry.h` includes only `matar.h` and `shapes.h`.
+- [src/geometry/geometry.h](src/geometry/geometry.h) is **not** standalone the way the other sub-headers are: its first include is `#include "ELEMENTS.h"` (guarded against recursion, but it means `geometry.h` transitively pulls in `swage`, `decomp_utilities`, MPI, and PT-Scotch even if you only wanted the `jacobian`/`shapes.h` primitives). `geometry/shapes.h` itself is standalone (only `matar.h`).
 
-This means changes to `elements/` cannot break `swage/`, and vice versa.
+This means changes to `elements/` cannot break `swage/`, and vice versa — but `geometry/geometry.h` is coupled to the whole library by its own umbrella include.
 
-### Disabled surface element
+### Reference element / quadrature types support 1D, 2D, and 3D
 
-[src/elements/ref_surf_elem.h](src/elements/ref_surf_elem.h) line layout:
+`Quadrature_t::initialize_quadrature`, `ReferenceElement_t::initialize_ref_elem`, `SurfaceQuadrature_t::initialize_quadrature`, and `ReferenceSurface_t::initialize_ref_surf` all branch explicitly on `elem_dims` (`if (elem_dims==3) ... else if (elem_dims==2) ... else if (elem_dims==1) ...`) and throw `std::runtime_error` for `elem_dims == 0` or `> 3`. There is no dimension restriction to work around — do not tell a user reference-element math is 3D-only in this codebase.
 
-| Lines | Content |
-|-------|---------|
-| 1-16 | License / `#ifndef` guard |
-| 17-18 | `struct fe_ref_surf_t {` opens |
-| 19 | `#if 0` — disables everything below |
-| 20-2117 | All members, `init`, basis methods, Bernstein helpers, 1D Lagrange helpers |
-| 2118 | `#endif` — closes the disabled block |
-| 2120 | `};` — closes the (now empty) struct |
-| 2124 | `#endif` — closes the include guard |
+### `mesh_init::ElementNameType`
 
-Known issues if `#if 0` is flipped on:
-- `legendre_rid_2D` is defined twice in the disabled block (compile error).
-- `partial_mu_basis` does not implement a true third-coordinate derivative — the body multiplies two 1D basis values rather than computing a μ-derivative. Either reimplement or document as "intentionally returns the surface basis × 1" before re-enabling.
-- The disabled block contains its own large hard-coded 1D Lobatto/Legendre tables (duplicating `ref_quadrature.h`). Prefer to delete those and call into `ref_quadrature.h` instead.
-
-### `fe_ref_elem_t::init` is 3D-only in practice
-
-The 3D tensor-product fill loop in `init` is gated by `if (num_dim == 3)`. Calling `init(p, 2)` allocates the 1D tables but leaves `lobotto_point_basis`, `gauss_point_basis`, gradient tables, and DOF positions un-filled. If you need 2D, you must extend `init` to add a `num_dim == 2` branch (or delegate to a separate 2D struct).
-
-### `mesh_init::elem_name_tag`
-
-```44:55:src/swage/unstructured_mesh.h
+```39:47:src/swage/indexing_utils.h
 namespace mesh_init
 {
-// element mesh types
-enum elem_name_tag
-{
-    linear_simplex_element = 0,
-    linear_tensor_element = 1,
-    arbitrary_tensor_element = 2
-};
+    // element mesh types
+    enum ElementNameType
+    {
+        linearTensorElement = 1,   // single quadrature point element
+        arbitraryTensorElement = 2 // fully integrated arbitrary-order element
+    };
 
-// other enums could go here on the mesh
+    // other enums could go here on the mesh
 } // end namespace
 ```
 
-`linear_simplex_element` is reserved but unused. To add a new element formulation:
+There is no simplex value (no `linear_simplex_element` or equivalent) — only `linearTensorElement` and `arbitraryTensorElement` exist today. To add a new element formulation:
 1. Add a new tag here.
-2. Add an `initialize_elems_*` method on `swage::Mesh` that sets `elem_kind` to the new tag and allocates the appropriate per-element arrays.
-3. Add a branch in `build_patch_connectivity` (and any other `build_*` that switches on element kind) that handles the new tag's local-node/patch tables. The existing branches are organized as `if (elem_kind == ...) { ... } else if (elem_kind == ...) { ... }` blocks switched further by `num_dims`.
+2. Add an `initialize_elems_*` method on `swage::Mesh_t` that sets `elem_kind` to the new tag and allocates the appropriate per-element arrays.
+3. Add a branch in `build_surf_connectivity` (and any other `build_*` that switches on element kind) that handles the new tag's local-node/patch tables — likely via a new case in `get_surf_node_lids`/`get_patch_node_lids` in `indexing_utils.h`. The existing branches are organized as `if (elem_kind == ...) { ... } else if (elem_kind == ...) { ... }` blocks switched further by `num_dims`.
 
-### `build_patch_connectivity` branches
+### `build_surf_connectivity` (renamed from `build_patch_connectivity`)
 
-This is the most complex routine in the file (`src/swage/unstructured_mesh.h:545`). It branches on:
-- `elem_kind` (`linear_tensor_element` uses fixed `temp_node_lids` tables for hex/quad; `arbitrary_tensor_element` uses Pn-tensor indexing).
-- `num_dims` (3D builds patches per face × faces per element, plus zone construction; 2D handles edges per face).
+This is the most complex routine in `unstructured_mesh.h` (`void build_surf_connectivity()`, `src/swage/unstructured_mesh.h:583`). It now builds **surfaces and patches together** in one method (previously two separate build steps). It branches on:
+- `elem_kind` via `get_surf_node_lids`/`get_patch_node_lids` in `indexing_utils.h` (`linearTensorElement` uses fixed local-node tables for hex/quad; `arbitraryTensorElement` uses Pn-tensor indexing).
+- `num_dims` (3D builds patches per face × faces per element; 2D handles edges per face).
 
-When modifying, preserve the patch ordering convention documented in the header comment (patches 0/1 = ξ ±, patches 2/3 = η ±, patches 4/5 = ζ ±).
+It requires `build_elem_elem_connectivity()` and `build_corner_connectivity()` to have already run (it `Kokkos::abort`s otherwise). When modifying, preserve the patch/face ordering convention documented in `indexing_utils.h` (faces/patches 0/1 = ξ ±, 2/3 = η ±, 4/5 = ζ ±).
 
 ### Decomp utilities are mostly host-side
 
@@ -1292,85 +1410,212 @@ Device kernels (`FOR_ALL`) appear sparingly — mostly to copy node coordinates 
 
 ### Kokkos / MATAR macros used
 
-- `FOR_ALL_CLASS` and `FOR_REDUCE_MAX_CLASS` inside `swage::Mesh` member functions (because they capture `*this`).
+- `FOR_ALL_CLASS` and `FOR_REDUCE_MAX_CLASS` inside `swage::Mesh_t` member functions (because they capture `*this`).
 - `FOR_ALL` and `MATAR_FENCE()` inside free functions.
 - `Kokkos::fence()` is also used directly in some places (functionally equivalent to `MATAR_FENCE()` when Kokkos is enabled).
 
 ### Naming inconsistencies to be aware of
 
-- `Mesh` struct closing comment says `Mesh_t`.
-- Field `lobotto_point_basis` (and several siblings in `ref_elem.h`) is a typo of "lobatto" but is part of the public API. Do not rename without checking downstream consumers.
-- `nodes_in_zone` is allocated as `(num_zones, num_nodes_in_zone)` in `initialize_elems_Pn` but is filled inside `build_patch_connectivity` (not in init).
+- `Mesh_t` struct name and its closing comment (`}; // end Mesh_t`) now agree — this used to be a mismatch (`struct Mesh` with a `Mesh_t` comment) but is no longer one.
+- The old `lobotto_point_basis`/`lobotto_point_grad_basis`-style typo (a misspelling of "lobatto") that existed on the earlier `fe_ref_elem_t` type is gone: `ref_elem.h`'s current helpers (`get_lobatto_nodes_1D`, `get_lobatto_weights_1D`, etc.) all spell it correctly.
+- `nodes_in_zone` is allocated as `(num_zones, num_nodes_in_zone)` in `initialize_elems_Pn` but is only filled by the separate, opt-in `build_zones()` method — not by `initialize_elems_Pn` itself, and not by `build_connectivity()`.
 
 ---
 
 ## 13. Build and Configuration
 
-### CMake options (from [CMakeLists.txt](CMakeLists.txt))
+**This section changed substantially on this branch.** The old `ELEMENTS_ENABLE_SERIAL`/`_OPENMP`/`_PTHREADS`/`_CUDA`/`_HIP` boolean toggles and Kokkos/MATAR-via-`FetchContent` setup described below no longer reflect how the build works. Do not generate CMake invocations using the old booleans as the primary knobs — they still exist but only as deprecated shims (see below).
+
+### Backend selection: `ELEMENTS_HOST_BACKEND` / `ELEMENTS_DEVICE_BACKEND`
 
 | Option | Default | Purpose |
 |--------|---------|---------|
-| `ELEMENTS_ENABLE_SERIAL` | `ON` | Serial Kokkos backend |
-| `ELEMENTS_ENABLE_OPENMP` | `ON` | OpenMP backend |
-| `ELEMENTS_ENABLE_PTHREADS` | `OFF` | Pthreads backend |
-| `ELEMENTS_ENABLE_CUDA` | `OFF` | CUDA backend |
-| `ELEMENTS_ENABLE_HIP` | `OFF` | HIP backend |
+| `ELEMENTS_HOST_BACKEND` | `""` (empty) | Host-side Kokkos backend: `serial`\|`openmp`\|`pthreads` |
+| `ELEMENTS_DEVICE_BACKEND` | `""` (empty; resolves to `serial` if nothing else is set) | Device-side Kokkos backend: `serial`\|`openmp`\|`pthreads`\|`cuda`\|`hip`\|`sycl` |
+| `ELEMENTS_ENABLE_GPU_AWARE_MPI` | `OFF` | Assume the MPI implementation is GPU-aware |
+| `ELEMENTS_REAL` | `double` | Precision of `real_t`: `double`\|`float`\|`half`\|`bfloat16`\|`quad` |
+| `ELEMENTS_HIGH_REAL` | `double` | Precision of `high_real_t`: `double`\|`float`\|`quad` |
+| `ELEMENTS_LOW_REAL` | `double` | Precision of `low_real_t`: `double`\|`float`\|`half`\|`bfloat16` |
+| `ELEMENTS_INSTALL` | `ON` if top-level, else `OFF` | Generate install/export rules |
 | `ELEMENTS_BUILD_EXAMPLES` | `ON` if top-level, else `OFF` | Build `examples/*` |
-| `ELEMENTS_BUILD_TESTS` | `OFF` | Build `tests/` |
+| `ELEMENTS_BUILD_TESTS` | `OFF` (but `ON` in every `CMakePresets.json` preset) | Build `tests/` (Section 14) |
 | `ELEMENTS_BUILD_DOCS` | `OFF` | Doxygen + Sphinx |
+
+These are forwarded straight through to MATAR's own `MATAR_HOST_BACKEND`/`MATAR_DEVICE_BACKEND`/`MATAR_REAL`/`MATAR_HIGH_REAL`/`MATAR_LOW_REAL`/`MATAR_ENABLE_GPU_AWARE_MPI` cache variables (forced via `add_subdirectory(matar)`, see below). Leaving both backend variables empty on a bare `cmake ..` resolves to `ELEMENTS_DEVICE_BACKEND=serial` (the historical default), unless the caller has already set one of the underlying `Kokkos_ENABLE_*` variables directly.
+
+The **old per-backend booleans are deprecated shims**, not the primary interface any more:
+
+```cmake
+# Still works, but fires message(DEPRECATION ...) and is mapped onto the
+# new variables internally — do not write new code against these.
+if(DEFINED ELEMENTS_ENABLE_SERIAL)   # -> ELEMENTS_DEVICE_BACKEND=serial
+if(DEFINED ELEMENTS_ENABLE_OPENMP)   # -> ELEMENTS_DEVICE_BACKEND=openmp
+if(DEFINED ELEMENTS_ENABLE_PTHREADS) # -> ELEMENTS_DEVICE_BACKEND=pthreads
+if(DEFINED ELEMENTS_ENABLE_CUDA)     # -> ELEMENTS_DEVICE_BACKEND=cuda
+if(DEFINED ELEMENTS_ENABLE_HIP)      # -> ELEMENTS_DEVICE_BACKEND=hip
+```
+
+They only fire (and only warn) if the caller explicitly sets them on the command line — `option()` is deliberately not used for them, so a build that never touches them sees no deprecation noise.
 
 ### Required dependencies
 
-ELEMENTS is wired with `FetchContent` for its core deps:
-- **Kokkos** at tag `4.3.00`
-- **MATAR** at `main` (compile-defined `HAVE_KOKKOS` and, when MPI is found, `HAVE_MPI`)
-- **PT-Scotch** at `v7.0.4` (with `SCOTCH_MPI=ON`, `BUILD_FORTRAN=OFF`)
-- **MPI** is `find_package`'d (required); MPI 3+ is preferred
+- **MATAR** is now a **git submodule** at `matar/` (see [.gitmodules](.gitmodules): `branch = Forest_fire`), pulled in via `add_subdirectory(matar)` — **not** `FetchContent`. MATAR itself bundles **Kokkos 5.2.1** as its own nested submodule. If `matar/CMakeLists.txt` is missing, the top-level `CMakeLists.txt` fails fast with a `FATAL_ERROR` telling you to run `git submodule update --init --recursive`.
+- Before `add_subdirectory(matar)`, ELEMENTS force-sets `MATAR_ENABLE_KOKKOS=ON`, `MATAR_ENABLE_MPI=ON`, `MATAR_ENABLE_GPU_AWARE_MPI`, `MATAR_HOST_BACKEND`/`MATAR_DEVICE_BACKEND`, `MATAR_REAL`/`MATAR_HIGH_REAL`/`MATAR_LOW_REAL`, and forces `MATAR_BUILD_EXAMPLES`/`MATAR_BUILD_TESTS`/`MATAR_BUILD_BENCHMARKS` off (so MATAR's own GoogleTest suite is not fetched — ELEMENTS' `tests/` fetches its own copy of GoogleTest instead, Section 14).
+- **PT-Scotch** is still `FetchContent`'d, pinned to `v7.0.4` (`SCOTCH_MPI=ON`, `SCOTCH_BUILD_TESTS=OFF`, `BUILD_FORTRAN=OFF`), with a `PatchScotch.cmake` patch step and GCC-15 warning suppressions on the Scotch C targets.
+- **MPI** is `find_package`'d (required); MPI 3+ is preferred.
+- A CUDA device backend requires CMake ≥ 3.25.2 (checked explicitly, `FATAL_ERROR` otherwise) for C++20 support in the CUDA language under Kokkos 5.
+
+### Configuring with `CMakePresets.json`
+
+The recommended way to configure a build is now the named presets in [CMakePresets.json](CMakePresets.json) at the repo root, rather than hand-rolled `-D` flags:
+
+| Preset | Backend |
+|--------|---------|
+| `serial` | `ELEMENTS_DEVICE_BACKEND=serial` |
+| `openmp` | `ELEMENTS_DEVICE_BACKEND=openmp` |
+| `pthreads` | `ELEMENTS_DEVICE_BACKEND=pthreads` |
+| `cuda` | `ELEMENTS_DEVICE_BACKEND=cuda` (+ `Kokkos_ENABLE_CUDA_CONSTEXPR`/`_RELOCATABLE_DEVICE_CODE`) |
+| `hip` | `ELEMENTS_DEVICE_BACKEND=hip`, `CMAKE_CXX_COMPILER=hipcc` |
+| `cuda-hostomp` | `ELEMENTS_HOST_BACKEND=openmp` + `ELEMENTS_DEVICE_BACKEND=cuda` (concurrent host/device execution) |
+| `<name>-debug` (e.g. `serial-debug`) | Same backend, `CMAKE_BUILD_TYPE=Debug` — exists for `serial`, `openmp`, `cuda`, `hip` |
+
+Every preset inherits a hidden `base` preset with `CMAKE_BUILD_TYPE=Release`, `ELEMENTS_BUILD_EXAMPLES=ON`, and **`ELEMENTS_BUILD_TESTS=ON`** — tests are on by default when using a preset, even though the raw CMake option default is `OFF`.
+
+```bash
+# COMPILES_AS_IS (assuming the matar submodule has been checked out)
+cmake --preset serial
+cmake --build build/serial
+mpirun -n 4 build/serial/examples/decomp_example/mesh_decomp
+```
+
+Binary directories follow `${sourceDir}/build/${presetName}` (e.g. `build/serial`, `build/cuda-hostomp`).
 
 ### Linking from another CMake project
 
 ```cmake
-include(FetchContent)
-
+# ELEMENTS is no longer FetchContent-friendly on its own the way it used to
+# be, because MATAR is a git submodule rather than a FetchContent dependency.
+# Cloning ELEMENTS with --recurse-submodules (or running
+# `git submodule update --init --recursive` afterward) and using
+# add_subdirectory is the supported path:
 set(ELEMENTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(ELEMENTS_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
-# set(ELEMENTS_ENABLE_CUDA   ON  CACHE BOOL "" FORCE)
+set(ELEMENTS_DEVICE_BACKEND "serial" CACHE STRING "" FORCE)
+# set(ELEMENTS_DEVICE_BACKEND "cuda" CACHE STRING "" FORCE)
 
-FetchContent_Declare(ELEMENTS
-  GIT_REPOSITORY https://github.com/lanl/ELEMENTS.git
-  GIT_TAG        main)
-FetchContent_MakeAvailable(ELEMENTS)
+add_subdirectory(path/to/ELEMENTS)
 
 add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE ELEMENTS)
 ```
 
-`ELEMENTS` is an INTERFACE target that propagates Kokkos, MATAR, MPI, and Scotch.
-
-### Building examples locally
-
-```bash
-mkdir build && cd build
-cmake ..
-make -j
-mpirun -n 4 examples/decomp_example/mesh_decomp
-```
+`ELEMENTS` is still an `INTERFACE` target (declared `add_library(ELEMENTS INTERFACE)` in [src/CMakeLists.txt](src/CMakeLists.txt)) that propagates Kokkos, MATAR, MPI, and Scotch; when `ELEMENTS_INSTALL` is on, it is exported under the `ELEMENTS::` namespace as `ElementsTargets`/`ElementsConfig.cmake`.
 
 ---
 
-## 14. Ground Truth Constraints for LLMs
+## 14. Testing
+
+ELEMENTS has a GoogleTest suite under [tests/](tests/), enabled by `ELEMENTS_BUILD_TESTS` (Section 13). It is off by default as a raw CMake option but **on by default in every `CMakePresets.json` preset**.
+
+### Build and run
+
+```bash
+# COMPILES_AS_IS
+cmake --preset serial          # ELEMENTS_BUILD_TESTS=ON is already the preset default
+cmake --build build/serial
+ctest --test-dir build/serial/tests/test_cases --output-on-failure
+```
+
+If configuring by hand instead of via a preset, add `-DELEMENTS_BUILD_TESTS=ON` explicitly (the raw option default is `OFF`):
+
+```bash
+cmake -S . -B build -DELEMENTS_BUILD_TESTS=ON -DELEMENTS_DEVICE_BACKEND=serial
+cmake --build build
+ctest --test-dir build/tests/test_cases --output-on-failure
+```
+
+**Point `--test-dir` at `tests/test_cases`, not the top-level build directory.** ELEMENTS depends on PT-Scotch (fetched via `FetchContent`), which registers its own large `check/` test suite with CTest even though the top-level `CMakeLists.txt` sets `SCOTCH_BUILD_TESTS OFF` — that flag doesn't actually suppress Scotch's test registration. Running `ctest` from the build root sweeps in ~140 unrelated Scotch tests alongside ELEMENTS' own ~70. `tests/test_cases/CTestTestfile.cmake` contains only the two ELEMENTS test binaries (`elements_tests`'s discovered cases and `elements_mpi_tests`), so scoping `--test-dir` there runs exactly ELEMENTS' tests and nothing else.
+
+### Structure
+
+- [tests/CMakeLists.txt](tests/CMakeLists.txt) fetches GoogleTest v1.14.0 via `FetchContent` (ELEMENTS' own top-level build forces `MATAR_BUILD_TESTS=OFF`, so MATAR does not already bring in a copy of GoogleTest).
+- [tests/test_cases/](tests/test_cases/) holds one `test_*.cpp` file per topic. All non-MPI ones are compiled into a single `elements_tests` binary together with [tests/test_cases/test_main.cpp](tests/test_cases/test_main.cpp), which provides `main()`:
+  ```cpp
+  int main(int argc, char** argv)
+  {
+      MATAR_INITIALIZE(argc, argv);
+      ::testing::InitGoogleTest(&argc, argv);
+      const int result = RUN_ALL_TESTS();
+      MATAR_FINALIZE();
+      return result;
+  }
+  ```
+  Registered via `gtest_discover_tests(elements_tests DISCOVERY_MODE PRE_TEST)` — tests are enumerated when `ctest` runs, not by executing the binary right after linking, which matters for CUDA/HIP backends (Kokkos must not be initialized at build/discovery time).
+- A separate `elements_mpi_tests` binary is built from [tests/test_cases/test_mpi_decomp.cpp](tests/test_cases/test_mpi_decomp.cpp) + [tests/test_cases/mpi_test_main.cpp](tests/test_cases/mpi_test_main.cpp) (which does `MPI_Init` **before** `MATAR_INITIALIZE`, matching Section 2's ordering rule). `tests/test_cases/CMakeLists.txt` explicitly excludes `test_mpi_decomp.cpp` from the `elements_tests` glob and instead registers it as its own `ctest` entry, run as `mpirun --oversubscribe -n 4 elements_mpi_tests` (`--oversubscribe` because CI/small VMs often expose fewer slots than ranks under Open MPI).
+
+### The CUDA-safety pattern every test file follows
+
+**Never put a MATAR parallel macro (`FOR_ALL`, `RUN`, `FOR_REDUCE_*`, etc.) directly inside a GoogleTest `TEST()` body.** nvcc's extended-lambda rules forbid an extended `__device__` lambda inside a function with internal linkage or inside a lambda created by the `TEST()` macro expansion. Instead, every test file puts the actual Kokkos work in a plain free function with **external linkage** that the `TEST()` then calls, reading results back to the host for assertions:
+
+```cpp
+// PSEUDOCODE_PATTERN — the shape every test_*.cpp in tests/test_cases/ follows
+double compute_something_on_device(/* plain args */)
+{
+    double result = 0.0;
+    // FOR_ALL / RUN / FOR_REDUCE_* goes here, not inside TEST()
+    return result;   // host-side value after MATAR_FENCE() / reduction completes
+}
+
+TEST(SomeSuite, SomeCase)
+{
+    const double result = compute_something_on_device(/* ... */);
+    EXPECT_NEAR(result, expected, tol);   // EXPECT_*/ASSERT_*, never Kokkos::abort() or bare assert()
+}
+```
+
+Do not use `Kokkos::abort()` or a bare `assert()` for pass/fail inside a test — those don't integrate with GoogleTest's reporting and can crash the whole binary on a CUDA/HIP backend. Use `EXPECT_*`/`ASSERT_*` on host-side values instead.
+
+### Test files (as of this writing, under `tests/test_cases/`)
+
+| File | Covers |
+|------|--------|
+| `test_quadrature.cpp` | Gauss-Legendre/Gauss-Lobatto weight-sum-to-volume checks; 1D table symmetry and endpoint checks |
+| `test_integration.cpp` | Legendre/Lobatto quadrature exactness for polynomials up to the expected degree bound |
+| `test_interpolation.cpp` / `test_gradient.cpp` | `ReferenceElement_t` basis/grad-basis correctness for Legendre and Lobatto quadrature+basis combinations |
+| `test_partition_unity.cpp` | Partition-of-unity of the tensor-product basis across Legendre/Lobatto quadrature × basis combinations |
+| `test_kronecker_delta.cpp` / `test_lagrange_1d.cpp` | Collocated-Lobatto Kronecker-delta property (1D/2D/3D) and 1D Lagrange basis/derivative sanity (Kronecker delta at DOF nodes, partition of unity, zero derivative sum) |
+| `test_jacobian.cpp` | `geometry::jacobian(...)` on affine, skewed, rotated/scaled, and manufactured-solution volume/surface cases |
+| `test_element_geometry.cpp` | Element-volume-via-quadrature, face-area-normal-sum-to-zero, outer-product/divergence-theorem geometric invariants |
+| `test_shapes.cpp` | `geometry::Plane`/`Circle`/`Sphere` analytic predicates |
+| `test_indexing_utils.cpp` | Bijectivity of the `rid(i,j[,k])` index functors over their full range |
+| `test_mesh_connectivity.cpp` | `swage::Mesh_t` surface/boundary-surface connectivity on a 2x2x2, order-3 hex mesh (ported from `examples/reference_element/src/ref_plus_mesh_test.cpp`) |
+| `test_mesh_counts.cpp` | Closed-form structured-mesh topology-count formulas (3D and 2D), ported from the `remap_fv_test`/`remap_2D_fv_test` examples |
+| `test_patches_2d.cpp` | 2D patch-connectivity checks ported from `examples/reference_element/src/test_2D_patches.cpp` (the example's broken `verify_patch_orientation` helper is intentionally not ported) |
+| `test_bin_mesh.cpp` | `PointCloud_t` bin-mesh spacing and bin-key computation |
+| `test_point_cloud.cpp` | `PointCloud_t` neighbor-list symmetry, reverse-neighbor round-trip, no self/duplicate neighbors, expected neighbor counts |
+| `test_points_in_box.cpp` | `PointCloud_t::get_points_in_box` — domain bounds padding and correctness of returned point indices |
+| `test_shared_nodes.cpp` | `PointCloud_t` coincident/shared-node detection |
+| `test_mpi_decomp.cpp` | MPI-only: builds a small box mesh on rank 0, partitions across `MPI_COMM_WORLD` via `elements::partition_mesh` (mirroring `examples/decomp_example/src/mesh_decomp_example.cpp` at a CI-sized scale); checks `shared_tally_owned_nodes` partition-of-unity, `local_to_global_*_mapping` consistency, and halo-communication correctness |
+
+If this directory listing has changed since this document was last refreshed, treat the table above as illustrative of the coverage pattern rather than exhaustive, and re-list `tests/test_cases/*.cpp` before relying on it.
+
+---
+
+## 15. Ground Truth Constraints for LLMs
 
 Hard rules when generating ELEMENTS code:
 
 1. **Use only symbols that exist in the headers.** Every type / function / method cited above is verified against the source. Do not invent:
-   - FE shape classes in `geometry/` (`Hex8`, `Tet4`, `Quad4`, `evaluate_basis`, `jacobian` — none of these exist).
-   - Methods on `fe_ref_surf_t` (the type is currently empty due to `#if 0`).
-   - A `mesh_t` typedef (the type is `swage::Mesh`).
-   - 2D support in `fe_ref_elem_t::init` (the body is gated on `num_dim == 3`).
+   - FE shape classes in `geometry/` (`Hex8`, `Tet4`, `Quad4`, `evaluate_basis` — none of these exist). `jacobian(...)` and `build_quadrature_point_connectivity(...)` **do** exist in `geometry/geometry.h` — do not claim otherwise.
+   - A `fe_ref_elem_t` or `fe_ref_surf_t` type — the real types are `elements::Quadrature_t`, `elements::ReferenceElement_t`, `elements::SurfaceQuadrature_t`, `elements::ReferenceSurface_t`, all in `src/elements/ref_elem.h`. Surface support is live, working code, not disabled or unimplemented.
+   - A lowercase `mesh_t` typedef (the type is `swage::Mesh_t`).
+   - A "3D-only" restriction on reference-element/quadrature init — `elem_dims` of 1, 2, or 3 are all supported by `Quadrature_t`/`ReferenceElement_t`/`SurfaceQuadrature_t`/`ReferenceSurface_t`.
    - A `partition_mesh` overload taking an arbitrary `MPI_Comm` (it always uses `MPI_COMM_WORLD`).
    - `read_vtk_mesh` in the decomp example's `mesh_io.h` (only the average example has it).
+   - A `mesh.build_patch_connectivity()` method — it was renamed `build_surf_connectivity()` (which now builds surfaces and patches together).
+   - `mesh_init::elem_name_tag` / `linear_simplex_element` / `linear_tensor_element` / `arbitrary_tensor_element` — the real enum is `mesh_init::ElementNameType` with values `linearTensorElement` and `arbitraryTensorElement` only (no simplex value), defined in `src/swage/indexing_utils.h`.
 
-2. **Mesh build order is fixed.** Always: `initialize_nodes` → one of (`initialize_elems` or `initialize_elems_Pn`) → fill `nodes_in_elem` → `build_connectivity()`. Never call `build_patch_connectivity` before `build_elem_elem_connectivity`.
+2. **Mesh build order is fixed.** Always: `initialize_dims(num_dims)` → one of (`initialize_elems(num_elems)` or `initialize_elems_Pn(num_elems, Pn_order, num_gauss_1D)`) → `initialize_nodes(num_nodes)` → fill `nodes_in_elem` → `build_connectivity()`. Neither `initialize_elems*` method takes a `num_dims` argument any more — `initialize_dims` must run first, or every one of these methods `Kokkos::abort`s. Never call `build_surf_connectivity` before `build_elem_elem_connectivity`.
 
 3. **MPI ordering is fixed.** `MPI_Init` before `MATAR_INITIALIZE`; `MATAR_FINALIZE` before `MPI_Finalize`. All MATAR-owned objects must live inside a `{ ... }` scope between the two.
 
@@ -1380,19 +1625,23 @@ Hard rules when generating ELEMENTS code:
 
 6. **MATAR types use `()` indexing.** Cross-reference the MATAR skill.
 
-7. **`fe_ref_surf_t` body is `#if 0`.** Generate code as if the type has no public API (which it currently does not).
+7. **Surface reference-element support is live.** `SurfaceQuadrature_t`/`ReferenceSurface_t` have real, working `initialize_quadrature`/`initialize_ref_surf` methods, actively used by `build_quadrature_point_connectivity` in `geometry.h`. Do not generate code (or advice) as if surface elements are unimplemented.
 
 8. **All MPI calls in `decomp_utils.h` use `MPI_COMM_WORLD`** regardless of arguments. There is no sub-communicator support today.
 
 9. **The example `mesh_io.h` files differ.** When citing `read_vtk_mesh` or `write_vtk`, use the path `[examples/average/include/mesh_io.h](examples/average/include/mesh_io.h)`. When citing `build_2d_polar` or the decomp variant of `write_vtu`, use the path `[examples/decomp_example/include/mesh_io.h](examples/decomp_example/include/mesh_io.h)`. The `state.h` and `mesh_inputs.h` files are byte-equivalent across the two examples.
 
-10. **`elem_kind` defaults to `linear_tensor_element`.** Only `initialize_elems_Pn` switches it to `arbitrary_tensor_element`. `linear_simplex_element` is reserved but unused.
+10. **`elem_kind` defaults to `mesh_init::linearTensorElement`.** Only `initialize_elems_Pn` switches it to `mesh_init::arbitraryTensorElement`. There is no reserved-but-unused simplex value in the current enum.
 
-11. **Boundary sets require post-`build` population.** `init_bdy_sets` allocates the count array only; ragged set membership is filled by application BC-tagging code.
+11. **Boundary sets require post-`build` population.** `initialize_bdy_sets` (not `init_bdy_sets`) allocates the count array only; ragged set membership is filled by application BC-tagging code.
+
+12. **`build_connectivity()` does not force `verbose = true` any more.** It defaults to `false` and stays whatever the caller set it to — do not tell a user to set `mesh.verbose = false` after `build_connectivity()` to silence output that was never turned on for them.
+
+13. **Building/testing has moved to `ELEMENTS_HOST_BACKEND`/`ELEMENTS_DEVICE_BACKEND` + `CMakePresets.json`.** Do not generate `-DELEMENTS_ENABLE_SERIAL=ON`-style invocations as the primary way to configure a build; use `cmake --preset <name>` (Section 13) and, for tests, `ctest --test-dir build/<preset>/tests/test_cases` (Section 14) — not the bare build directory, which also runs PT-Scotch's unrelated test suite.
 
 ---
 
-## 15. LLM Output Contract
+## 16. LLM Output Contract
 
 When producing ELEMENTS code, every output must:
 
@@ -1403,9 +1652,10 @@ When producing ELEMENTS code, every output must:
   - For serial programs: `MATAR_INITIALIZE` → MATAR scope braces → `MATAR_FINALIZE`
 
 - **Mesh setup**
-  - Always pick exactly one `initialize_elems*` path
+  - Always call `initialize_dims(num_dims)` before anything else on the mesh
+  - Always pick exactly one `initialize_elems*` path (neither takes a `num_dims` argument any more)
   - Always fill `nodes_in_elem` before `build_connectivity`
-  - Always use `swage::Mesh` (not `mesh_t`)
+  - Always use `swage::Mesh_t` (not `mesh_t`)
 
 - **Decomposition (multi-rank)**
   - Build mesh on rank 0, others empty
@@ -1419,10 +1669,11 @@ When producing ELEMENTS code, every output must:
   - `MATAR_FENCE()` after device kernels whose output is consumed by the next host or sync operation
 
 - **No invented APIs**
-  - No methods on `fe_ref_surf_t`
-  - No FE shape classes from `geometry/`
+  - No `fe_ref_elem_t`/`fe_ref_surf_t` — use `elements::Quadrature_t`/`ReferenceElement_t`/`SurfaceQuadrature_t`/`ReferenceSurface_t`
+  - No FE shape classes from `geometry/` (but `jacobian(...)` and `build_quadrature_point_connectivity(...)` are real — use them, don't avoid them)
   - No `mesh_t`, no `partition_mesh` on a sub-communicator
-  - No 2D `fe_ref_elem_t::init` (state the limitation if asked)
+  - No claiming reference-element/quadrature math is 3D-only, or that surface elements are unimplemented — both are false
+  - No `build_patch_connectivity` (renamed `build_surf_connectivity`), no `init_bdy_sets` (renamed `initialize_bdy_sets`)
 
 - **Snippet labels**
   - `COMPILES_AS_IS` — buildable as written (assuming declared variables and a `MATAR_INITIALIZE` scope)
@@ -1431,10 +1682,15 @@ When producing ELEMENTS code, every output must:
 - **Citations**
   - Cite a specific file path for every API used. When in doubt, point at one of:
     - [src/swage/unstructured_mesh.h](src/swage/unstructured_mesh.h)
+    - [src/swage/indexing_utils.h](src/swage/indexing_utils.h)
+    - [src/swage/point_cloud.h](src/swage/point_cloud.h)
     - [src/elements/ref_elem.h](src/elements/ref_elem.h)
     - [src/elements/ref_quadrature.h](src/elements/ref_quadrature.h)
     - [src/decomp_utilities/decomp_utils.h](src/decomp_utilities/decomp_utils.h)
+    - [src/geometry/geometry.h](src/geometry/geometry.h)
     - [src/geometry/shapes.h](src/geometry/shapes.h)
+    - [src/utils/stl_utils.h](src/utils/stl_utils.h)
     - [examples/decomp_example/src/mesh_decomp_example.cpp](examples/decomp_example/src/mesh_decomp_example.cpp)
     - [examples/decomp_example/include/state.h](examples/decomp_example/include/state.h)
     - [examples/decomp_example/include/mesh_io.h](examples/decomp_example/include/mesh_io.h)
+    - [CMakeLists.txt](CMakeLists.txt) / [CMakePresets.json](CMakePresets.json) / [tests/](tests/) for build and test questions

@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with: 
-        submodules: true
+        submodules: recursive
 
     - name: Install Fortran
       # Installs Intel oneAPI Fortran (ifx) which is compatible with MSVC
@@ -71,8 +71,7 @@ jobs:
               -DCOMMON_PTHREAD=OFF `
               -DSCOTCH_PTHREAD_MPI=OFF `
               -DTHREADS_PREFER_PTHREAD_FLAG=OFF `
-              -DELEMENTS_ENABLE_SERIAL=ON `
-              -DELEMENTS_ENABLE_OPENMP="${{ matrix.build_type == 'openmp' && 'ON' || 'OFF' }}" `
+              -DELEMENTS_DEVICE_BACKEND="${{ matrix.build_type }}" `
               -DBISON_EXECUTABLE="$bison" `
               -DFLEX_EXECUTABLE="$flex" `
               -DBUILD_FORTRAN=ON

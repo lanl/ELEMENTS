@@ -17,17 +17,17 @@ jobs:
         build_type: [serial, openmp, debug]
         include:
           - build_type: serial
-            extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF"
+            extra_flags: "-DELEMENTS_DEVICE_BACKEND=serial -DELEMENTS_INSTALL=ON"
           - build_type: openmp
-            extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=ON"
+            extra_flags: "-DELEMENTS_DEVICE_BACKEND=openmp -DELEMENTS_INSTALL=ON"
           - build_type: debug
-            extra_flags: "-DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF"
+            extra_flags: "-DELEMENTS_DEVICE_BACKEND=serial -DELEMENTS_INSTALL=ON"
     runs-on: ${{matrix.os}}
 
     steps:
     - uses: actions/checkout@v4 # Updated to v4 for latest node support
       with: 
-        submodules: true
+        submodules: recursive
 
     - name: Install Fortran
       uses: fortran-lang/setup-fortran@v1

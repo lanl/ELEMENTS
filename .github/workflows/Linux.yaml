@@ -17,17 +17,17 @@ jobs:
         build_type: [serial, openmp, debug]
         include:
           - build_type: serial
-            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF
+            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_DEVICE_BACKEND=serial -DELEMENTS_INSTALL=ON
           - build_type: openmp
-            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=ON
+            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_DEVICE_BACKEND=openmp -DELEMENTS_INSTALL=ON
           - build_type: debug
-            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Debug -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF
+            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Debug -DELEMENTS_DEVICE_BACKEND=serial -DELEMENTS_INSTALL=ON
     runs-on: ${{matrix.os}}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with: 
-        submodules: true
+        submodules: recursive
     
     - name: Install MPI
       run: |

@@ -625,7 +625,7 @@ struct PointCloud_t{
                         // nbr's own stencil walk won't find point_gid; reserve one slot now.
                         // Safe: only thread point_gid can decide nbr missed point_gid,
                         // so this increment happens exactly once per asymmetric pair.
-                        Kokkos::atomic_increment(&points_num_neighbors(nbr_gid));
+                        Kokkos::atomic_inc(&points_num_neighbors(nbr_gid));
                     }
 
                 } // end for storage_lid

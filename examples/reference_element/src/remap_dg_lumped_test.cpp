@@ -106,6 +106,40 @@ void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
                             DCArrayKokkos<double>& node_coords_uniform,   // Output uniform positions 
                             const size_t num_elems); 
 
+template <typename T1, typename T2, typename T3, typename T4>
+void get_elem_avg_nodal_scalar(const Mesh_t& Mesh,
+                               const ReferenceElement_t& FERefElem,
+                               const Quadrature_t& Quad,
+                               const T1& elem_vol,
+                               const T2& corner_field,
+                               const T3& elem_det_jac,
+                               T4& elem_avg);
+
+template <typename T1, typename T2, typename T3>
+void get_elem_integral_nodal_scalar(const Mesh_t& Mesh,
+                                    const ReferenceElement_t& FERefElem,
+                                    const Quadrature_t& Quad,
+                                    const T1& corner_field,
+                                    const T2& elem_det_jac,
+                                    T3& elem_integral);
+
+template <typename T1, typename T2>
+void get_elem_volumes(const Quadrature_t& Quad,
+                      const T1& elem_det_jac,
+                      T2& elem_vol);
+
+
+template <typename T1, typename T2, typename T3>
+void limit_corner_field(const ReferenceElement_t& FERefElem,
+                        const Quadrature_t& Quad,
+                        const Mesh_t& Mesh,
+                        const T1& elem_vol,
+                        const T2& elem_det_jac,
+                        T3& field,  // [num_corners]
+                        double epsilon=1.E-14);
+
+
+
 
 
 int main(int argc, char** argv) {
@@ -279,6 +313,7 @@ MATAR_INITIALIZE(argc, argv);
 
     if(num_nodes_in_elem != FERefElem.num_dofs_in_elem) Kokkos::abort("ERROR: mismatch in DOFs and num nodes in elem \n");
 
+    CArrayKokkos <double> elem_vol(num_elems);
     DCArrayKokkos<double> elem_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
     DCArrayKokkos<double> elem_det_jac(num_elems, num_qpts_in_elem, "elem_det_jacobian");
     DCArrayKokkos<double> elem_inv_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_inv_jacobian");
@@ -402,16 +437,6 @@ MATAR_INITIALIZE(argc, argv);
 
     });  // end parallel for
 
-    FOR_ALL(node_gid, 0, num_nodes,{
-        // new velocity, it is Taylor-Green vortex
-        // PI is defined in mesh class
-        node_velocity(node_gid, 0) =  sin(PI*node_coords(node_gid, 0))*cos(PI*node_coords(node_gid, 1));
-        node_velocity(node_gid, 1) = -cos(PI*node_coords(node_gid, 0))*sin(PI*node_coords(node_gid, 1));
-        node_velocity(node_gid, 2) = 0.0;
-    });
-    Kokkos::fence();
-
-
     // Conservation Check
     double sum_elem = 0.0;
     double domain_mass_t0 = 0.0;
@@ -424,7 +449,45 @@ MATAR_INITIALIZE(argc, argv);
 
     }, domain_mass_t0);
 
-    printf("Domain Mass t=0: %f \n", domain_mass_t0);
+    printf("Domain Mass t=0, before limiting: %f \n", domain_mass_t0);
+
+
+    // limit the initial corner fields
+    get_elem_volumes(Quad, elem_det_jac, elem_vol); 
+    double epsilon = 1.E-10;
+    limit_corner_field(FERefElem,
+                       Quad,
+                       Mesh,
+                       elem_vol,
+                       elem_det_jac,
+                       corner_field,
+                       epsilon);
+
+
+
+    FOR_ALL(node_gid, 0, num_nodes,{
+        // new velocity, it is Taylor-Green vortex
+        // PI is defined in mesh class
+        node_velocity(node_gid, 0) =  sin(PI*node_coords(node_gid, 0))*cos(PI*node_coords(node_gid, 1));
+        node_velocity(node_gid, 1) = -cos(PI*node_coords(node_gid, 0))*sin(PI*node_coords(node_gid, 1));
+        node_velocity(node_gid, 2) = 0.0;
+    });
+    Kokkos::fence();
+
+
+    // Conservation Check afer limiting initial fields
+    sum_elem = 0.0;
+    double domain_mass_t0b = 0.0;
+    FOR_REDUCE_SUM(elem_gid, 0, num_elems, sum_elem, {
+
+        for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
+            const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
+            sum_elem += elem_corner_vol(elem_gid, node_lid)*corner_field(corner_gid);
+        }
+
+    }, domain_mass_t0b);
+
+    printf("Domain Mass t=0, after limiting: %f \n", domain_mass_t0b);
 
     DCArrayKokkos <double> output_node_coords(num_nodes,3);
     
@@ -845,6 +908,19 @@ MATAR_INITIALIZE(argc, argv);
 
             }); // end parallel for elems
             Kokkos::fence();
+
+
+            // -----------------------------------------------------
+            // 8. Limit the fields to remain bounded by nieghbors
+            get_elem_volumes(Quad, elem_det_jac, elem_vol); 
+            limit_corner_field(FERefElem,
+                               Quad,
+                               Mesh,
+                               elem_vol,
+                               elem_det_jac,
+                               corner_field,
+                               epsilon);
+
 
         } // end Runge Kutta time level loop
 
@@ -1418,3 +1494,397 @@ double test_function(double x, double y) {
 }
 
 #endif // USE_GAUSSIAN
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Nodal Asymmetric Clip-and-Scale Limiter
+// 
+// Applies bound-preserving limiter to a DG scalar field while maintaining
+// element-wise conservation using asymmetric scaling.
+// 
+// @param mesh          Mesh object with neighbor access
+// @param field         Nodal scalar field [num_corners]
+// @param epsilon       Tolerance for floating point comparisons
+// 
+//////////////////////////////////////////////////////////////////////////////
+template <typename T1, typename T2, typename T3>
+void limit_corner_field(const ReferenceElement_t& FERefElem,
+                        const Quadrature_t& Quad,
+                        const Mesh_t& Mesh,
+                        const T1& elem_vol,
+                        const T2& elem_det_jac,
+                        T3& field,  // [num_corners]
+                        double epsilon) 
+{
+    // shorthand names
+    const size_t num_elems = Mesh.num_elems;
+    const size_t num_nodes_in_elem = Mesh.num_nodes_in_elem;
+    const size_t num_corners = Mesh.num_corners;
+
+    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
+    
+    // Temporary storage for limited values
+    CArrayKokkos<double> clipped_corner_field(num_corners);
+
+    CArrayKokkos<double> deviations(num_elems, num_nodes_in_elem);
+    CArrayKokkos<double> upper_indices(num_elems, num_nodes_in_elem);
+    CArrayKokkos<double> lower_indices(num_elems, num_nodes_in_elem);
+
+    CArrayKokkos<double> field_elem_avg(num_elems);
+    CArrayKokkos<double> clipped_field_elem_avg(num_elems);
+
+    CArrayKokkos<double> field_max(num_elems);
+    CArrayKokkos<double> field_min(num_elems);
+
+
+    // ====================================================================
+    // STEP 1: Compute original element average (to be preserved)
+    // ====================================================================
+
+    get_elem_avg_nodal_scalar(Mesh, FERefElem, Quad, elem_vol, field, elem_det_jac, field_elem_avg);
+
+
+    // Parallel loop over elems
+    FOR_ALL(elem_gid, 0, num_elems, {
+
+        // ====================================================================
+        // STEP 2: Compute element-wise bounds from neighbors
+        // ====================================================================
+        
+        double u_min;
+        double u_max;
+        
+        // Initialize with current element values
+        u_min = field_elem_avg(elem_gid);
+        u_max = field_elem_avg(elem_gid);
+    
+        // Expand bounds using neighbor cell averages
+        const size_t num_neighbors = Mesh.num_elems_in_elem(elem_gid);
+        for (size_t nbr = 0; nbr < num_neighbors; nbr++) {
+
+            const size_t neighbor_id = Mesh.elems_in_elem(elem_gid, nbr);
+
+            u_min = fmin(u_min, field_elem_avg(neighbor_id));
+            u_max = fmax(u_max, field_elem_avg(neighbor_id));
+        } // end for nbrs
+
+        // Add small tolerance to avoid numerical issues
+        u_min -= epsilon;
+        u_max += epsilon;
+        
+        field_max(elem_gid) = u_max;
+        field_min(elem_gid) = u_min;
+        
+        
+        // ====================================================================
+        // STEP 3: Clip nodal values to bounds
+        // ====================================================================
+        
+        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+            const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+            clipped_corner_field(corner_gid) = fmin(fmax(field(corner_gid), u_min), u_max);
+        }
+
+    }); // end parallel for over elems
+    Kokkos::fence();
+
+
+    get_elem_avg_nodal_scalar(Mesh, FERefElem, Quad, elem_vol, clipped_corner_field, elem_det_jac, clipped_field_elem_avg);
+
+
+    // Parallel loop over elems
+    FOR_ALL(elem_gid, 0, num_elems, {
+
+        // ====================================================================
+        // STEP 4: Check if scaling is needed
+        // ====================================================================
+        
+        //if (fabs(clipped_field_elem_avg(elem_gid) - field_elem_avg(elem_gid)) < epsilon) {
+        //
+        //    // Clipping preserved conservation, no scaling needed
+        //    for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+        //        const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+        //        limited_field(corner_gid) = clipped_corner_field(corner_gid);
+        //    }
+        //
+        //    continue;
+        //} // end if
+        
+        // ====================================================================
+        // STEP 5: Compute deviations from clipped average
+        // ====================================================================
+        
+        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+            const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+            deviations(elem_gid,node_lid) = clipped_corner_field(corner_gid) - clipped_field_elem_avg(elem_gid);
+        }
+        
+        // ====================================================================
+        // STEP 6: Classify nodes into upper/lower groups
+        // ====================================================================
+        
+        size_t num_upper = 0;
+        size_t num_lower = 0;
+
+        // First pass: Classify nodes (ONCE!)
+        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+            if(deviations(elem_gid, node_lid) > epsilon){
+                upper_indices(elem_gid, num_upper++) = node_lid;
+            }
+            else if(deviations(elem_gid, node_lid) < -epsilon){
+                lower_indices(elem_gid, num_lower++) = node_lid;
+            }
+        }
+
+        // Second pass: Integrate positive and negative deviations
+        double S_plus = 0.0;
+        double S_minus = 0.0;
+
+        for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
+            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0), num_nodes_in_elem);
+            const double vol_qpt = elem_det_jac(elem_gid, qpt_lid) * Quad.qpt_weights(qpt_lid);
+
+            for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+                if(deviations(elem_gid, node_lid) > epsilon){
+                    S_plus += deviations(elem_gid, node_lid) * a_basis(node_lid) * vol_qpt;
+                }
+                else if(deviations(elem_gid, node_lid) < -epsilon){
+                    S_minus += deviations(elem_gid, node_lid) * a_basis(node_lid) * vol_qpt;
+                }
+            }
+        }
+
+        
+        // ====================================================================
+        // STEP 7: Compute scaling factors (asymmetric or symmetric)
+        // ====================================================================
+        
+        double theta_plus = 1.0;
+        double theta_minus = 1.0;
+
+        // shorthand names
+        const double u_max = field_max(elem_gid); // bounds for this elem
+        const double u_min = field_min(elem_gid); // bounds for this elem
+        const double u_bar_original = field_elem_avg(elem_gid); 
+        
+        // Check if asymmetric scaling is applicable
+        bool use_asymmetric = (num_upper > 0 && num_lower > 0 && 
+                              fabs(S_plus) > epsilon && 
+                              fabs(S_minus) > epsilon);
+        
+        if (use_asymmetric) {
+            // Asymmetric scaling
+            
+            // Compute maximum theta_plus (upper bound constraint)
+            double theta_plus_max = 1.0e16;
+            for (size_t j = 0; j < num_upper; j++) {
+                size_t i = upper_indices(elem_gid,j);
+                if (deviations(elem_gid,i) > epsilon) {
+                    double theta_i = (u_max - u_bar_original) / deviations(elem_gid,i);
+                    theta_plus_max = fmin(theta_plus_max, theta_i);
+                }
+            }
+            
+            // Compute maximum theta_minus (lower bound constraint)
+            double theta_minus_max = 1.0e16;
+            for (size_t j = 0; j < num_lower; j++) {
+                size_t i = lower_indices(elem_gid,j);
+                if (deviations(elem_gid,i) < -epsilon) {
+                    double theta_i = (u_bar_original - u_min) / (-deviations(elem_gid,i));
+                    theta_minus_max = fmin(theta_minus_max, theta_i);
+                }
+            }
+            
+            // Conservation coupling: theta_plus = |S_minus|/S_plus * theta_minus
+            double coupling_ratio = fabs(S_minus) / S_plus;
+            
+            // Find optimal theta_minus
+            theta_minus = fmin(theta_minus_max, 
+                             S_plus / fabs(S_minus) * theta_plus_max);
+            theta_plus = coupling_ratio * theta_minus;
+            
+            // Clamp to [0, 1]
+            theta_plus = fmax(0.0, fmin(1.0, theta_plus));
+            theta_minus = fmax(0.0, fmin(1.0, theta_minus));
+            
+        } else {
+            // Symmetric scaling (fallback)
+            
+            double theta_max = 1.0e16;
+            
+            for (size_t i = 0; i < num_nodes_in_elem; i++) {
+                double dev = deviations(elem_gid,i);
+                
+                if (dev > epsilon) {
+                    double theta_i = (u_max - u_bar_original) / dev;
+                    theta_max = fmin(theta_max, theta_i);
+                }
+                else if (dev < -epsilon) {
+                    double theta_i = (u_bar_original - u_min) / (-dev);
+                    theta_max = fmin(theta_max, theta_i);
+                } // end if
+            }
+            
+            theta_plus = fmax(0.0, fmin(1.0, theta_max));
+            theta_minus = theta_plus;
+        }
+        
+        // ====================================================================
+        // STEP 8: Apply scaling to restore conservation
+        // ====================================================================
+        
+        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+            double theta = 1.0;
+            
+            // Select appropriate theta based on node classification
+            if (deviations(elem_gid,node_lid) > epsilon) {
+                theta = theta_plus;
+            } else if (deviations(elem_gid,node_lid) < -epsilon) {
+                theta = theta_minus;
+            } else {
+                theta = 1.0;  // Node value is at the average, it doesn't matter
+            }
+            
+            // Apply scaling: u_i* = u_bar + theta * (u_clipped_i - u_bar_clipped)
+            double u_limited = u_bar_original + theta * deviations(elem_gid,node_lid);
+            
+            // Safety clip (should be unnecessary if theta computed correctly)
+            u_limited = fmin(fmax(u_limited, u_min), u_max);
+            
+            const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+
+            field(corner_gid) = u_limited; // Copy limited values back to original field
+        } // end loop over corners in elem
+        
+    }); // END FOR_ALL
+    
+    Kokkos::fence();
+
+} // end limiter
+
+
+// ============================================================================
+// Calculate the element average of a scalar field for each element in the mesh
+// This function is for DG and FE fields whose DOFs are at the mesh nodes
+// ============================================================================
+template <typename T1, typename T2, typename T3, typename T4>
+void get_elem_avg_nodal_scalar(const Mesh_t& Mesh,
+                               const ReferenceElement_t& FERefElem,
+                               const Quadrature_t& Quad,
+                               const T1& elem_vol,
+                               const T2& corner_field,
+                               const T3& elem_det_jac,
+                               T4& elem_avg){
+
+    const size_t num_elems = elem_vol.dims(0);
+    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
+    const size_t num_nodes_in_elem = FERefElem.num_dofs_in_elem;
+
+    FOR_FIRST(elem_gid, 0, num_elems,{
+
+        elem_avg(elem_gid) = 0.0;
+        double sum_lcl = 0.0;
+
+
+        // loop quadrature points in the element
+        FOR_REDUCE_SUM_SECOND(qpt_lid, 0, num_qpts_in_elem, sum_lcl, {
+
+            // extract the basis at a single quadrature point (qpt,dof)    
+            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),num_nodes_in_elem);
+
+            // value at qpt
+            double val_qpt = 0.0;
+            for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+                const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+                val_qpt += corner_field(corner_gid)*a_basis(node_lid);
+            }
+
+            // volume contribution from qpt
+            const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+
+            sum_lcl += val_qpt*vol_qpt;
+            
+        }, elem_avg(elem_gid)); // end parallel over qpts in elem
+
+        elem_avg(elem_gid) /= elem_vol(elem_gid);
+
+    }); // end parallel over elems of the mesh
+
+} // end function
+
+
+// ============================================================================
+// Calculate the element integral of a scalar field in each element of the mesh
+// This function is for DG and FE fields whose DOFs are at the mesh nodes
+// ============================================================================
+template <typename T1, typename T2, typename T3>
+void get_elem_integral_nodal_scalar(const Mesh_t& Mesh,
+                                    const ReferenceElement_t& FERefElem,
+                                    const Quadrature_t& Quad,
+                                    const T1& corner_field,
+                                    const T2& elem_det_jac,
+                                    T3& elem_integral){
+
+    const size_t num_elems = elem_integral.dims(0);
+    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
+    const size_t num_nodes_in_elem = FERefElem.num_dofs_in_elem;
+
+
+    FOR_FIRST(elem_gid, 0, num_elems,{
+
+        elem_integral(elem_gid) = 0.0;
+        double sum_lcl = 0.0;
+
+        // loop quadrature points in the element
+        FOR_REDUCE_SUM_SECOND(qpt_lid, 0, num_qpts_in_elem, sum_lcl, {
+
+            // extract the basis at a single quadrature point (qpt,dof)    
+            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),num_nodes_in_elem);
+
+            // value at qpt
+            double val_qpt = 0.0;
+            for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+                const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+                val_qpt += corner_field(corner_gid)*a_basis(node_lid);
+            }
+
+            // volume contribution from qpt
+            const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+
+            sum_lcl += val_qpt*vol_qpt;
+            
+        }, elem_integral(elem_gid)); // end parallel over qpts in elem
+
+    }); // end parallel over elems of the mesh
+
+} // end function
+    
+
+// ============================================================================
+// Calculate the element volumes across the entire mesh
+// ============================================================================
+template <typename T1, typename T2>
+void get_elem_volumes(const Quadrature_t& Quad,
+                      const T1& elem_det_jac,
+                      T2& elem_vol){
+
+    const size_t num_elems = elem_vol.dims(0);
+    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
+
+    FOR_FIRST(elem_gid, 0, num_elems,{
+
+        elem_vol(elem_gid) = 0.0;
+        double vol_lcl = 0.0;
+        
+        // loop quadrature points in the element
+        FOR_REDUCE_SUM_SECOND(qpt_lid, 0, num_qpts_in_elem, vol_lcl, {
+
+            // volume contribution from qpt
+            vol_lcl += elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+            
+        }, elem_vol(elem_gid)); // end parallel over qpts in elem
+
+    }); // end parallel over elems of the mesh
+
+} // end function

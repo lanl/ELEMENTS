@@ -144,6 +144,16 @@ ELEMENTS has some small examples. Enable them at configure time (default when EL
 - Run (from the build directory): `mpirun -n <num_ranks> examples/decomp_example/mesh_decomp`.
 - Dependencies: MPI (required), Kokkos and MATAR (transitively provided), PT-Scotch for parallel partitioning.
 
+## Code formatting
+
+ELEMENTS uses MATAR's own clang-format style and macro-aware post-processor directly from the
+`matar/` submodule (no duplicated config). Format ELEMENTS' own source with:
+```
+formatting/format.sh            # format src/, examples/, tests/ in place
+formatting/format.sh --check    # report non-conforming files without modifying them
+```
+See [`formatting/README.md`](formatting/README.md) for details.
+
 ## How to cite
 
 If you use the ELEMENTS library in your work, please cite the following in any pursuant research papers.

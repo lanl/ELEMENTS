@@ -22,8 +22,9 @@ ELEMENTS is built on top of [MATAR](https://github.com/lanl/MATAR). **This docum
 12. [Maintainer / Internals](#12-maintainer--internals)
 13. [Build and Configuration](#13-build-and-configuration)
 14. [Testing](#14-testing)
-15. [Ground Truth Constraints for LLMs](#15-ground-truth-constraints-for-llms)
-16. [LLM Output Contract](#16-llm-output-contract)
+15. [Code Formatting](#15-code-formatting)
+16. [Ground Truth Constraints for LLMs](#16-ground-truth-constraints-for-llms)
+17. [LLM Output Contract](#17-llm-output-contract)
 
 ---
 
@@ -1601,7 +1602,35 @@ If this directory listing has changed since this document was last refreshed, tr
 
 ---
 
-## 15. Ground Truth Constraints for LLMs
+## 15. Code Formatting
+
+ELEMENTS delegates code formatting entirely to MATAR — `matar/.clang-format` (style config) and
+`matar/formatting/matar-format.py` (a post-processor that reflows `FOR_ALL`/`FOR_ALL_CLASS`/
+`FOR_REDUCE_*`/etc. calls into the canonical multi-line layout clang-format cannot produce on its
+own) are used directly from the submodule. ELEMENTS keeps **no copy** of either — do not propose
+creating `ELEMENTS/.clang-format` or duplicating the reflow script.
+
+```bash
+# COMPILES_AS_IS
+formatting/format.sh            # format src/, examples/, tests/ in place
+formatting/format.sh --check    # report non-conforming files; exits 1 if any, without modifying them
+```
+
+`formatting/format.sh` is the only file ELEMENTS owns for this — it resolves `matar/.clang-format`
+and `matar/formatting/matar-format.py` relative to its own location, so it works regardless of the
+caller's working directory. Scope: `src/`, `examples/`, `tests/` (the only trees under `.h`/`.cpp`
+ELEMENTS owns). `matar/`, `legacy/`, and any `build*/` directory are intentionally excluded — never
+suggest running the formatter over `matar/` (that is MATAR's own responsibility) or `legacy/`
+(unreferenced by the active build; reformatting it is pure diff noise).
+
+`--check` never touches the working tree: it runs the identical two-stage pipeline against scratch
+copies in a `mktemp -d` directory and diffs the result, rather than trying to infer non-conformance
+from `clang-format --dry-run` alone (which only covers stage 1 and would miss changes the reflow
+pass makes in stage 2).
+
+---
+
+## 16. Ground Truth Constraints for LLMs
 
 Hard rules when generating ELEMENTS code:
 
@@ -1639,9 +1668,11 @@ Hard rules when generating ELEMENTS code:
 
 13. **Building/testing has moved to `ELEMENTS_HOST_BACKEND`/`ELEMENTS_DEVICE_BACKEND` + `CMakePresets.json`.** Do not generate `-DELEMENTS_ENABLE_SERIAL=ON`-style invocations as the primary way to configure a build; use `cmake --preset <name>` (Section 13) and, for tests, `ctest --test-dir build/<preset>/tests/test_cases` (Section 14) — not the bare build directory, which also runs PT-Scotch's unrelated test suite.
 
+14. **There is no `ELEMENTS/.clang-format`.** Formatting config and the macro-reflow post-processor are MATAR's own (`matar/.clang-format`, `matar/formatting/matar-format.py`), used directly via `formatting/format.sh` (Section 15). Never propose adding a separate ELEMENTS-owned clang-format config.
+
 ---
 
-## 16. LLM Output Contract
+## 17. LLM Output Contract
 
 When producing ELEMENTS code, every output must:
 

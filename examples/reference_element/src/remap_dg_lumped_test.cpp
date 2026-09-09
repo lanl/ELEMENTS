@@ -1888,3 +1888,214 @@ void get_elem_volumes(const Quadrature_t& Quad,
     }); // end parallel over elems of the mesh
 
 } // end function
+
+//////////////////////////////////////////////////////////////////////////////////////
+//
+// Generic FCT flux correction for DG remap
+// 
+// Note: all fluxes include surf area
+//
+// @param Mesh          Mesh object containing connectivity
+// @param F_safe        Safe/monotone flux at each face (num_surfs)
+// @param F_accurate    Accurate flux at each face (num_surfs)
+// @param F_total       Output: limited total flux (num_surfs)
+// @param u_avg         Elem average values (num_elems)
+// @param elem_volume   Elem volumes (num_elems)
+// @param dt            Time step size
+//////////////////////////////////////////////////////////////////////////////////////
+void apply_fct_limiting(
+    Mesh_t Mesh,
+    const CArrayKokkos<double>& F_safe,
+    const CArrayKokkos<double>& F_accurate,
+    CArrayKokkos<double>& F_total,
+    const CArrayKokkos<double>& u_avg,
+    const CArrayKokkos<double>& elem_volume,
+    const double dt
+) {
+
+    const double eps = 1.0e-14;
+    
+    const size_t num_elems = Mesh.num_elems;
+    const size_t num_surfs = Mesh.num_surfs;
+
+    const size_t num_surfs_in_elem = Mesh.num_surfs_in_elem;
+
+
+    // =========================================================================
+    // Step 1: Compute raw anti-diffusive fluxes, all fluxes include surf area
+    // =========================================================================
+    CArrayKokkos<double> f_AD_raw(num_surfs);
+    
+    FOR_ALL(surf_gid, 0, num_surfs, {  
+        f_AD_raw(surf_gid) = F_accurate(surf_gid) - F_safe(surf_gid);
+    });
+    
+
+    // =========================================================================
+    // Step 2: Compute element bounds from neighbors
+    // =========================================================================
+    CArrayKokkos<double> u_max(num_elems);
+    CArrayKokkos<double> u_min(num_elems);
+    
+    FOR_ALL(elem_gid, 0, num_elems, {
+        double u_max_local = u_avg(elem_gid);
+        double u_min_local = u_avg(elem_gid);
+        
+        for (size_t nbr_lid = 0; nbr_lid < Mesh.num_elems_in_elem(elem_gid); nbr_lid++) {
+            size_t neighbor = Mesh.elems_in_elem(elem_gid, nbr_lid);
+            u_max_local = fmax(u_max_local, u_avg(neighbor));
+            u_min_local = fmin(u_min_local, u_avg(neighbor));
+        }
+        
+        u_max(elem_gid) = u_max_local;
+        u_min(elem_gid) = u_min_local;
+    });
+    Kokkos::fence();
+    
+
+    // =========================================================================
+    // Step 3: Compute allowable changes Q^+ and Q^-
+    // =========================================================================
+    CArrayKokkos<double> u_low(num_elems);
+    CArrayKokkos<double> RHS_LO(num_elems,num_surfs_in_elem);
+
+    FOR_ALL(surf_gid, 0, num_surfs, {
+                
+        const size_t num_elems_in_surf = Mesh.num_elems_in_surf(surf_gid);
+
+        // get the first elem id and face in this surf
+        const size_t elem_gid = Mesh.elems_in_surf(surf_gid, 0);
+        const size_t face_lid = Mesh.faces_in_surf(surf_gid, 0);
+        RHS_LO(elem_gid,face_lid) = F_safe(surf_gid);
+
+        if(num_elems_in_surf==2){
+            const size_t nbr_elem_gid = Mesh.elems_in_surf(surf_gid, 1); // second elem
+            const size_t nbr_face_lid = Mesh.faces_in_surf(surf_gid, 1); // second elem face
+            RHS_LO(nbr_elem_gid,nbr_face_lid) = -F_safe(surf_gid);
+        }    
+    });
+    Kokkos::fence();
+
+    FOR_ALL(elem_gid, 0, num_elems, {
+        double flux_sum = 0.0;
+        for (size_t face_lid = 0; face_lid < num_surfs_in_elem; face_lid++) {
+            size_t surf_gid = Mesh.surfs_in_elem(elem_gid, face_lid);
+            // apply with correct orientation sign for this element
+            flux_sum += RHS_LO(elem_gid,face_lid);
+        }
+        u_low(elem_gid) = u_avg(elem_gid) + (dt / elem_volume(elem_gid)) * flux_sum;
+    });
+    Kokkos::fence();
+
+    CArrayKokkos<double> Q_plus(num_elems);
+    CArrayKokkos<double> Q_minus(num_elems);
+    
+    FOR_ALL(elem_gid, 0, num_elems, {
+        Q_plus(elem_gid)  = (elem_volume(elem_gid) / dt) * (u_max(elem_gid) - u_low(elem_gid));
+        Q_minus(elem_gid) = (elem_volume(elem_gid) / dt) * (u_low(elem_gid) - u_min(elem_gid));
+    });
+    Kokkos::fence();
+    
+
+    // =========================================================================
+    // Step 4: Sum incoming/outgoing anti-diffusive fluxes P^+ and P^-
+    // =========================================================================
+    CArrayKokkos<double> P_plus(num_elems);
+    CArrayKokkos<double> P_minus(num_elems);
+    
+    FOR_ALL(elem_gid, 0, num_elems, {
+        P_plus(elem_gid) = 0.0;
+        P_minus(elem_gid) = 0.0;
+    });
+    Kokkos::fence();
+    
+
+    FOR_ALL(surf_gid, 0, num_surfs, {
+
+        double flux_contrib = f_AD_raw(surf_gid); // surface area is included in fluxes
+
+        // get the first elem id in this surf
+        const int elem_minus = Mesh.elems_in_surf(surf_gid, 0);
+        
+        // Contribution to minus-side elem
+        if (flux_contrib > 0.0) {
+            Kokkos::atomic_add(&P_plus(elem_minus), flux_contrib);
+        } else {
+            Kokkos::atomic_add(&P_minus(elem_minus), -flux_contrib);
+        }
+        
+        if (Mesh.num_elems_in_surf(surf_gid)==2){
+
+            // Contribution to plus-side elem
+            const int elem_plus  = Mesh.elems_in_surf(surf_gid, 1);
+
+            if (flux_contrib < 0.0) {
+                Kokkos::atomic_add(&P_plus(elem_plus), -flux_contrib);
+            } else {
+                Kokkos::atomic_add(&P_minus(elem_plus), flux_contrib);
+            }
+
+        } // end if
+
+    });
+    Kokkos::fence();
+    
+
+    // =========================================================================
+    // Step 5: Compute cell limiting ratios R^+ and R^-
+    // =========================================================================
+    CArrayKokkos<double> R_plus(num_elems);
+    CArrayKokkos<double> R_minus(num_elems);
+    
+    FOR_ALL(elem_gid, 0, num_elems, {
+        R_plus(elem_gid)  = fmin(1.0, Q_plus(elem_gid) / (P_plus(elem_gid) + eps));
+        R_minus(elem_gid) = fmin(1.0, Q_minus(elem_gid) / (P_minus(elem_gid) + eps));
+    });
+    Kokkos::fence();
+    
+    // =========================================================================
+    // Step 6: Compute face limiting coefficients beta
+    // =========================================================================
+    CArrayKokkos<double> beta(num_surfs);
+    
+    FOR_ALL(surf_gid, 0, num_surfs, {
+
+        double flux = f_AD_raw(surf_gid);
+        
+        // get the first elem id in this surf
+        const int elem_minus = Mesh.elems_in_surf(surf_gid, 0);
+
+        if (Mesh.num_elems_in_surf(surf_gid)==2){
+            const int elem_plus  = Mesh.elems_in_surf(surf_gid, 1);
+            if (flux > 0.0) {
+                beta(surf_gid) = fmin(R_plus(elem_minus), R_minus(elem_plus));
+            } else if (flux < 0.0) {
+                beta(surf_gid) = fmin(R_minus(elem_minus), R_plus(elem_plus));
+            } else {
+                beta(surf_gid) = 0.0;
+            }
+        }
+        else {
+            if (flux > 0.0) {
+                beta(surf_gid) = R_plus(elem_minus);
+            } else if (flux < 0.0) {
+                beta(surf_gid) = R_minus(elem_minus);
+            } else {
+                beta(surf_gid) = 0.0;
+            }
+        } // end if
+
+    }); // end parallel for
+    
+
+    // =========================================================================
+    // Step 7: Compute final limited flux
+    // =========================================================================
+    FOR_ALL(surf_gid, 0, num_surfs, {
+        F_total(surf_gid) = F_safe(surf_gid) + beta(surf_gid)*f_AD_raw(surf_gid);
+    });
+
+    // As an example, one can use these fluxes as follows here:
+    // m*(U^new - U^n) = dt*Sum(F_total)
+
+} // end function

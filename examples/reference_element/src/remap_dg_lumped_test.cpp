@@ -53,6 +53,7 @@ using namespace elements; // reference element space
 
 
 #define HEAVISIDE 0
+#define FCT 0
 
 #define USE_NOTCHED_CIRCLE
 //#define USE_SIN_FUNCTION
@@ -147,6 +148,7 @@ void apply_fct_limiting(
     const CArrayKokkos<double>& F_accurate,
     CArrayKokkos<double>& beta,
     const DCArrayKokkos<double>& u_avg,
+    const CArrayKokkos<double>& u_avg_n,
     const CArrayKokkos<double>& elem_volume,
     const double dt
 );
@@ -334,6 +336,7 @@ MATAR_INITIALIZE(argc, argv);
     DCArrayKokkos<double> surf_flux(num_surfs, "surf_flux");
     
     DCArrayKokkos<double> elem_field_avg(num_elems, "elem_field_avg");
+    CArrayKokkos<double>  elem_field_avg_n(num_elems, "elem_field_avg_n");
     DCArrayKokkos<double> node_field(num_nodes, "node_field");     // for displaying field results
     DCArrayKokkos<double> node_velocity(num_nodes, elem_dims, "node_velocity");
     DCArrayKokkos<double> node_velocity_n(num_nodes, elem_dims, "node_velocity_n");
@@ -578,6 +581,8 @@ MATAR_INITIALIZE(argc, argv);
                 const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
                 corner_field_n(corner_gid) = corner_field(corner_gid);
             });
+
+            elem_field_avg_n(elem_gid) = elem_field_avg(elem_gid);
             
         });
 
@@ -790,16 +795,19 @@ MATAR_INITIALIZE(argc, argv);
             // F_limited(surf_gid) = F_safe(surf_gid) + beta(surf_gid)*(F_accurate(surf_gid)-F_safe(surf_gid));
 
             CArrayKokkos<double> beta(num_surfs); 
-
+#if FCT==1
             // limit flux
             apply_fct_limiting(Mesh,
                                F_safe,
                                F_accurate,
                                beta,
                                elem_field_avg,
+                               elem_field_avg_n,
                                elem_vol,
-                               dt);
-
+                               rk_alpha*dt);
+#else
+            beta.set_values(1.0);
+#endif
 
             // -------------------------------------------------
             // Step 4: Build RHS of DG equations in the element
@@ -1596,7 +1604,7 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
                         const T1& elem_vol,
                         const T2& elem_det_jac,
                         const T3& elem_field_avg,
-                        T4& field,  // [num_corners]
+                        T4& field,  // corner_field[num_corners]
                         double epsilon) 
 {
     // shorthand names
@@ -1639,8 +1647,18 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
 
             const size_t neighbor_id = Mesh.elems_in_elem(elem_gid, nbr);
 
+            // nodal polynomial values define bounds
+            //for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
+            //    // Note: corner_lid = node_lid inside the element
+            //    const size_t nbr_corner_gid = Mesh.corners_in_elem(neighbor_id, node_lid);
+            //    u_min = fmin(u_min, field(nbr_corner_gid)); // corner_field in nbr defines bounds    
+            //    u_max = fmax(u_max, field(nbr_corner_gid)); // corner_field in nbr defines bounds  
+            //} // end node_lid
+
+            // element averages of neighbors define bounds
             u_min = fmin(u_min, elem_field_avg(neighbor_id));
             u_max = fmax(u_max, elem_field_avg(neighbor_id));
+
         } // end for nbrs
 
         // Add small tolerance to avoid numerical issues
@@ -1984,6 +2002,7 @@ void apply_fct_limiting(
     const CArrayKokkos<double>& F_accurate,
     CArrayKokkos<double>& beta,
     const DCArrayKokkos<double>& u_avg,
+    const CArrayKokkos<double>& u_avg_n,
     const CArrayKokkos<double>& elem_volume,
     const double dt
 ) {
@@ -2058,7 +2077,7 @@ void apply_fct_limiting(
             // apply with correct orientation sign for this element
             flux_sum += RHS_LO(elem_gid,face_lid);
         }
-        u_low(elem_gid) = u_avg(elem_gid) + (dt / elem_volume(elem_gid)) * flux_sum;
+        u_low(elem_gid) = u_avg_n(elem_gid) + (dt / elem_volume(elem_gid)) * flux_sum;
     });
     Kokkos::fence();
 
@@ -2123,8 +2142,8 @@ void apply_fct_limiting(
     CArrayKokkos<double> R_minus(num_elems);
     
     FOR_ALL(elem_gid, 0, num_elems, {
-        R_plus(elem_gid)  = fmin(1.0, Q_plus(elem_gid) / (P_plus(elem_gid) + eps));
-        R_minus(elem_gid) = fmin(1.0, Q_minus(elem_gid) / (P_minus(elem_gid) + eps));
+        R_plus(elem_gid)  = fmax(0.0, fmin(1.0, Q_plus(elem_gid) / (P_plus(elem_gid) + eps)));
+        R_minus(elem_gid) = fmax(0.0, fmin(1.0, Q_minus(elem_gid) / (P_minus(elem_gid) + eps)));
     });
     Kokkos::fence();
     

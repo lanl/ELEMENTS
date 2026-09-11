@@ -31,6 +31,31 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **********************************************************************************************/
+//
+// GPU-tuned lumped mass discontinuous Galerkin remap.
+//
+// This solves the same problem as remap_dg_lumped_test.cpp and reproduces its
+// results; it is organized for the GPU:
+//
+//   - kernels are launched over flat 1D index spaces rather than a team policy
+//   - the Jacobian, its determinate and its inverse are built once per volume
+//     quadrature point in their own pass, instead of once per DOF
+//   - the field and velocity reconstruction is hoisted out of the DOF loop, so
+//     each quadrature point is reconstructed once per element
+//   - the reference element tables are replicated in the layouts the kernels
+//     read, so a warp walks contiguous doubles
+//   - the surface Jacobian never leaves registers, and the L1 and L2 error
+//     norms are gathered in a single pass over the elements
+//   - consecutive kernels share the default execution space, so they are
+//     already stream ordered and the host only waits where it reads a result
+//
+// Optional arguments:
+//   num_elems_x num_elems_y [num_elems_z [max_time [graphics_dt]]]
+//
+
+#include <cstdlib>
+#include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,11 +70,13 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // This pulls in kokkos, matar, mesh, ref_elem stuff, and PT-Scotch
 #include "ELEMENTS.h"
 #include "cramers_rule.hpp" // det and solvers
-#include "lu_solver.hpp"
 
 using namespace mtr;
 using namespace swage;    // unstructured mesh and point cloud
 using namespace elements; // reference element space
+
+
+using REAL_t = double; // REAL_t precision
 
 
 #define USE_NOTCHED_CIRCLE
@@ -57,37 +84,37 @@ using namespace elements; // reference element space
 // #define USE_GAUSSIAN
 
 KOKKOS_INLINE_FUNCTION
-double test_function(const double x, 
-                     const double y);
+REAL_t test_function(const REAL_t x, 
+                     const REAL_t y);
 
 
 void write_lagrange_hex_mesh(
     const std::string& filename,
-    const DCArrayKokkos<double>& node_coords,       // All node coordinates [num_nodes][3]
+    const DCArrayKokkos<REAL_t>& node_coords,       // All node coordinates [num_nodes][3]
     const size_t num_nodes,
     const DCArrayKokkos<size_t>& nodes_in_elem,     // Connectivity
     const size_t num_elems,
     const size_t order,
-    const DCArrayKokkos<double>& node_data,         // Nodal data
+    const DCArrayKokkos<REAL_t>& node_data,         // Nodal data
     const std::string& node_data_name,
-    const DCArrayKokkos<double>& elem_data,         // Element center data (NEW)
-    const std::string& elem_data_name);             // Element data name (NEW)
+    const DCArrayKokkos<REAL_t>& elem_data,         // Element center data
+    const std::string& elem_data_name);             // Element data name
 
 
 void write_lagrange_cells(std::ofstream& file, 
                         const DCArrayKokkos<size_t>& nodes_in_elem,
                         size_t num_elems, 
                         size_t order,
-                        const DCArrayKokkos<double>& elem_data,    // Element data
-                        const std::string& elem_data_name);        // Element data name
+                        const DCArrayKokkos<REAL_t>& elem_data,
+                        const std::string& elem_data_name);
 
 void write_points(std::ofstream& file, 
-                  const DCArrayKokkos<double>& coords, 
+                  const DCArrayKokkos<REAL_t>& coords, 
                   size_t num_nodes);
 
 
 void write_point_data(std::ofstream& file, 
-                      const DCArrayKokkos<double>& data, 
+                      const DCArrayKokkos<REAL_t>& data, 
                       size_t num_nodes,
                       const std::string& name);
 
@@ -99,49 +126,320 @@ void reorder_ijk_to_vtk_lagrange(const DCArrayKokkos<size_t>& nodes_in_elem,
 inline int PointIndexFromIJK(int i, int j, int k, const int* order);
 
 
-double lagrange_basis(const double xi, const size_t i, const CArrayKokkos<double>& nodes);
+REAL_t lagrange_basis(const REAL_t xi, const size_t i, const CArrayKokkos<REAL_t>& nodes);
 void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
-                            const CArrayKokkos<double>& lob_nodes_1D,
-                            const DCArrayKokkos<double>& node_coords_lob,  // Lobatto node positions
-                            DCArrayKokkos<double>& node_coords_uniform,   // Output uniform positions 
+                            const CArrayKokkos<REAL_t>& lob_nodes_1D,
+                            const DCArrayKokkos<REAL_t>& node_coords_lob,  // Lobatto node positions
+                            DCArrayKokkos<REAL_t>& node_coords_uniform,   // Output uniform positions 
                             const size_t num_elems); 
 
 
+// ============================================================================
+// Reference-element tables replicated in the layouts the GPU kernels want.
+// Kernels threaded over quadrature points need qpt as the fastest index;
+// kernels threaded over DOFs need dof as the fastest index.
+// ============================================================================
+struct BasisTables_t
+{
+    CArrayKokkos<REAL_t> basis_dq;       // (dof, qpt)
+    CArrayKokkos<REAL_t> grad_basis_njq; // (dof, dim, qpt)
+    CArrayKokkos<REAL_t> grad_basis_qjd; // (qpt, dim, dof)
+    CArrayKokkos<REAL_t> basis_row_sum;  // (qpt) = sum over DOFs of the basis
 
-                            template <typename T1, typename T2, typename T3, typename T4>
-void get_elem_avg_nodal_scalar(const Mesh_t& Mesh,
-                               const ReferenceElement_t& FERefElem,
-                               const Quadrature_t& Quad,
-                               const T1& elem_vol,
-                               const T2& corner_field,
-                               const T3& elem_det_jac,
-                               T4& elem_avg);
+    CArrayKokkos<REAL_t> surf_basis_fdq; // (face, dof, surf qpt)
+    CArrayKokkos<REAL_t> surf_grad_fjdq; // (face, dim, dof, surf qpt)
+};
 
-template <typename T1, typename T2, typename T3>
-void get_elem_integral_nodal_scalar(const Mesh_t& Mesh,
-                                    const ReferenceElement_t& FERefElem,
-                                    const Quadrature_t& Quad,
-                                    const T1& corner_field,
-                                    const T2& elem_det_jac,
-                                    T3& elem_integral);
+// ============================================================================
+// Geometry of the moving mesh at every volume quadrature point.
+//
+// The Jacobian is accumulated in registers and only its determinate and its
+// inverse are written out.  The inverse is stored with the quadrature point as
+// the fastest index so the kernels that read it back are coalesced.
+// ============================================================================
+static void build_element_geometry(const Mesh_t& Mesh,
+                                   const BasisTables_t& tables,
+                                   const DCArrayKokkos<REAL_t>& node_coords,
+                                   const CArrayKokkos<REAL_t>& elem_det_jac,
+                                   const CArrayKokkos<REAL_t>& inv_jac_ijq,
+                                   const size_t num_elems,
+                                   const size_t num_qpts_in_elem,
+                                   const size_t num_nodes_in_elem)
+{
+    FOR_ALL(idx, 0, num_elems*num_qpts_in_elem, {
 
-template <typename T1, typename T2>
-void get_elem_volumes(const Quadrature_t& Quad,
-                      const T1& elem_det_jac,
-                      T2& elem_vol);
+        const size_t elem_gid = idx / num_qpts_in_elem;
+        const size_t qpt_lid  = idx % num_qpts_in_elem;
+
+        REAL_t j00 = 0.0; REAL_t j01 = 0.0; REAL_t j02 = 0.0;
+        REAL_t j10 = 0.0; REAL_t j11 = 0.0; REAL_t j12 = 0.0;
+        REAL_t j20 = 0.0; REAL_t j21 = 0.0; REAL_t j22 = 0.0;
+
+        for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
+            const size_t node_gid = Mesh.nodes_in_elem(elem_gid, dof_lid);
+            const REAL_t x0 = node_coords(node_gid, 0);
+            const REAL_t x1 = node_coords(node_gid, 1);
+            const REAL_t x2 = node_coords(node_gid, 2);
+            const REAL_t g0 = tables.grad_basis_njq(dof_lid, 0, qpt_lid);
+            const REAL_t g1 = tables.grad_basis_njq(dof_lid, 1, qpt_lid);
+            const REAL_t g2 = tables.grad_basis_njq(dof_lid, 2, qpt_lid);
+            j00 += x0*g0; j01 += x0*g1; j02 += x0*g2;
+            j10 += x1*g0; j11 += x1*g1; j12 += x1*g2;
+            j20 += x2*g0; j21 += x2*g1; j22 += x2*g2;
+        }
+
+        const REAL_t det = det_3x3(j00, j01, j02, j10, j11, j12, j20, j21, j22);
+        elem_det_jac(elem_gid, qpt_lid) = det;
+
+        REAL_t i00; REAL_t i01; REAL_t i02;
+        REAL_t i10; REAL_t i11; REAL_t i12;
+        REAL_t i20; REAL_t i21; REAL_t i22;
+        invert_3x3(det, j00, j01, j02, j10, j11, j12, j20, j21, j22,
+                   i00, i01, i02, i10, i11, i12, i20, i21, i22);
+
+        inv_jac_ijq(elem_gid, 0, 0, qpt_lid) = i00;
+        inv_jac_ijq(elem_gid, 0, 1, qpt_lid) = i01;
+        inv_jac_ijq(elem_gid, 0, 2, qpt_lid) = i02;
+        inv_jac_ijq(elem_gid, 1, 0, qpt_lid) = i10;
+        inv_jac_ijq(elem_gid, 1, 1, qpt_lid) = i11;
+        inv_jac_ijq(elem_gid, 1, 2, qpt_lid) = i12;
+        inv_jac_ijq(elem_gid, 2, 0, qpt_lid) = i20;
+        inv_jac_ijq(elem_gid, 2, 1, qpt_lid) = i21;
+        inv_jac_ijq(elem_gid, 2, 2, qpt_lid) = i22;
+    });
+} // end build_element_geometry
 
 
-template <typename T1, typename T2, typename T3>
-void limit_corner_field(const ReferenceElement_t& FERefElem,
-                        const Quadrature_t& Quad,
-                        const Mesh_t& Mesh,
-                        const T1& elem_vol,
-                        const T2& elem_det_jac,
-                        T3& field,  // [num_corners]
-                        double epsilon=1.E-14);
+// ============================================================================
+// Row-lumped volume (mass) vector, elem_corner_vol(elem, node).
+// ============================================================================
+static void build_lumped_volume(const ReferenceElement_t& FERefElem,
+                                const Quadrature_t& Quad,
+                                const BasisTables_t& tables,
+                                const CArrayKokkos<REAL_t>& elem_det_jac,
+                                DCArrayKokkos<REAL_t>& elem_corner_vol,
+                                const size_t num_elems,
+                                const size_t num_qpts_in_elem,
+                                const size_t num_nodes_in_elem)
+{
+    // The inner DOF loop of the original only contributes the row sum of the
+    // basis, which is the same at every element, so it is tabulated once.
+    FOR_ALL(idx, 0, num_elems*num_nodes_in_elem, {
+
+        const size_t elem_gid = idx / num_nodes_in_elem;
+        const size_t node_lid = idx % num_nodes_in_elem;
+
+        REAL_t vol = 0.0;
+        for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
+            const REAL_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+            vol += tables.basis_row_sum(qpt_lid)*FERefElem.qpt_basis(qpt_lid, node_lid)*vol_qpt;
+        }
+        elem_corner_vol(elem_gid, node_lid) = vol;
+    });
+} // end build_lumped_volume
 
 
+// ============================================================================
+// Rusanov flux at the surface quadrature points.
+// ============================================================================
+static void build_surface_flux(const Mesh_t& Mesh,
+                               const ReferenceSurface_t& RefSurf,
+                               const SurfaceQuadrature_t& SurfQuad,
+                               const BasisTables_t& tables,
+                               const DCArrayKokkos<REAL_t>& node_coords,
+                               const DCArrayKokkos<REAL_t>& node_velocity,
+                               const DCArrayKokkos<REAL_t>& corner_field,
+                               const CArrayKokkos<int>& surf_qpt_qpt_map,
+                               CArrayKokkos<REAL_t>& RHS_surf_flux,
+                               const size_t num_surfs,
+                               const size_t num_qpts_in_surf,
+                               const size_t num_nodes_in_elem)
+{
+    RHS_surf_flux.set_values(0.0);
 
+    // The reference tables are indexed with the surface quadrature point as the
+    // fastest axis so that a warp reads contiguous doubles, the surface
+    // Jacobian never leaves registers, and the geometry, the velocity and the
+    // field are all reconstructed in the same sweep over the DOFs.
+    FOR_ALL(idx, 0, num_surfs*num_qpts_in_surf, {
+
+        const size_t surf_gid = idx / num_qpts_in_surf;
+        const size_t qpt_lid  = idx % num_qpts_in_surf;
+
+        const size_t num_elems_in_surf = Mesh.num_elems_in_surf(surf_gid);
+        const size_t elem_gid = Mesh.elems_in_surf(surf_gid, 0);
+        const size_t face_lid = Mesh.faces_in_surf(surf_gid, 0);
+
+        REAL_t j00 = 0.0; REAL_t j01 = 0.0; REAL_t j02 = 0.0;
+        REAL_t j10 = 0.0; REAL_t j11 = 0.0; REAL_t j12 = 0.0;
+        REAL_t j20 = 0.0; REAL_t j21 = 0.0; REAL_t j22 = 0.0;
+
+        REAL_t qpt_vel0 = 0.0;
+        REAL_t qpt_vel1 = 0.0;
+        REAL_t qpt_vel2 = 0.0;
+        REAL_t qpt_field = 0.0;
+
+        for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
+
+            const size_t node_gid = Mesh.nodes_in_elem(elem_gid, node_lid);
+            const REAL_t x0 = node_coords(node_gid, 0);
+            const REAL_t x1 = node_coords(node_gid, 1);
+            const REAL_t x2 = node_coords(node_gid, 2);
+            const REAL_t g0 = tables.surf_grad_fjdq(face_lid, 0, node_lid, qpt_lid);
+            const REAL_t g1 = tables.surf_grad_fjdq(face_lid, 1, node_lid, qpt_lid);
+            const REAL_t g2 = tables.surf_grad_fjdq(face_lid, 2, node_lid, qpt_lid);
+            j00 += x0*g0; j01 += x0*g1; j02 += x0*g2;
+            j10 += x1*g0; j11 += x1*g1; j12 += x1*g2;
+            j20 += x2*g0; j21 += x2*g1; j22 += x2*g2;
+
+            const REAL_t phi = tables.surf_basis_fdq(face_lid, node_lid, qpt_lid);
+            qpt_vel0 += phi*node_velocity(node_gid, 0);
+            qpt_vel1 += phi*node_velocity(node_gid, 1);
+            qpt_vel2 += phi*node_velocity(node_gid, 2);
+
+            qpt_field += phi*corner_field(Mesh.corners_in_elem(elem_gid, node_lid));
+        }
+
+        const REAL_t det_jac_qpt = det_3x3(j00, j01, j02, j10, j11, j12, j20, j21, j22);
+
+        REAL_t i00; REAL_t i01; REAL_t i02;
+        REAL_t i10; REAL_t i11; REAL_t i12;
+        REAL_t i20; REAL_t i21; REAL_t i22;
+        invert_3x3(det_jac_qpt, j00, j01, j02, j10, j11, j12, j20, j21, j22,
+                   i00, i01, i02, i10, i11, i12, i20, i21, i22);
+
+        const REAL_t scale = det_jac_qpt*SurfQuad.qpt_weights(face_lid, qpt_lid);
+
+        REAL_t area_normal0; REAL_t area_normal1; REAL_t area_normal2;
+        nanson_area_normal(RefSurf.outward_normal(face_lid, 0),
+                           RefSurf.outward_normal(face_lid, 1),
+                           RefSurf.outward_normal(face_lid, 2),
+                           scale,
+                           i00, i01, i02, i10, i11, i12, i20, i21, i22,
+                           area_normal0, area_normal1, area_normal2);
+
+        const REAL_t normal_dot_vel = area_normal0*qpt_vel0
+                                    + area_normal1*qpt_vel1
+                                    + area_normal2*qpt_vel2;
+
+        size_t nbr_elem_gid = elem_gid;
+        size_t nbr_face_lid = face_lid;
+        if(num_elems_in_surf == 2){
+            nbr_elem_gid = Mesh.elems_in_surf(surf_gid, 1);
+            nbr_face_lid = Mesh.faces_in_surf(surf_gid, 1);
+        }
+
+        const size_t nbr_qpt_lid = surf_qpt_qpt_map(surf_gid, 0, qpt_lid);
+
+        REAL_t nbr_qpt_field = 0.0;
+        for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
+            nbr_qpt_field += tables.surf_basis_fdq(nbr_face_lid, node_lid, nbr_qpt_lid)
+                            *corner_field(Mesh.corners_in_elem(nbr_elem_gid, node_lid));
+        }
+
+        const REAL_t flux_val = rusanov_flux(qpt_field, nbr_qpt_field, normal_dot_vel);
+
+        RHS_surf_flux(elem_gid, face_lid, qpt_lid) = flux_val;
+        if(num_elems_in_surf == 2) RHS_surf_flux(nbr_elem_gid, nbr_face_lid, nbr_qpt_lid) = -flux_val;
+    });
+} // end build_surface_flux
+
+
+// ============================================================================
+// RHS of the DG equations.
+// ============================================================================
+static void assemble_rhs(const Mesh_t& Mesh,
+                         const ReferenceSurface_t& RefSurf,
+                         const Quadrature_t& Quad,
+                         const BasisTables_t& tables,
+                         const CArrayKokkos<REAL_t>& elem_det_jac,
+                         const CArrayKokkos<REAL_t>& inv_jac_ijq,
+                         const DCArrayKokkos<REAL_t>& corner_field,
+                         const DCArrayKokkos<REAL_t>& corner_field_n,
+                         const DCArrayKokkos<REAL_t>& node_velocity,
+                         const DCArrayKokkos<REAL_t>& elem_corner_vol_n,
+                         const CArrayKokkos<REAL_t>& RHS_surf_flux,
+                         CArrayKokkos<REAL_t>& RHS_elem,
+                         const CArrayKokkos<REAL_t>& qpt_vol_flux,
+                         const REAL_t rk_alpha,
+                         const REAL_t dt,
+                         const size_t num_elems,
+                         const size_t num_qpts_in_elem,
+                         const size_t num_nodes_in_elem,
+                         const size_t num_surfs_in_elem,
+                         const size_t num_qpts_in_surf,
+                         const size_t elem_dims)
+{
+    // Pass 1: the reconstruction at a quadrature point is shared by all DOFs
+    // of the element, so it is formed once instead of num_dofs times.
+    FOR_ALL(idx, 0, num_elems*num_qpts_in_elem, {
+
+        const size_t elem_gid = idx / num_qpts_in_elem;
+        const size_t qpt_lid  = idx % num_qpts_in_elem;
+
+        REAL_t qpt_field = 0.0;
+        REAL_t qpt_vel_0 = 0.0;
+        REAL_t qpt_vel_1 = 0.0;
+        REAL_t qpt_vel_2 = 0.0;
+
+        for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
+            const REAL_t basis_val = tables.basis_dq(node_lid, qpt_lid);
+            const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
+            qpt_field += basis_val*corner_field(corner_gid);
+        }
+
+        for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
+            const REAL_t basis_val = tables.basis_dq(node_lid, qpt_lid);
+            const size_t node_gid = Mesh.nodes_in_elem(elem_gid, node_lid);
+            qpt_vel_0 += basis_val*node_velocity(node_gid, 0);
+            qpt_vel_1 += basis_val*node_velocity(node_gid, 1);
+            qpt_vel_2 += basis_val*node_velocity(node_gid, 2);
+        }
+
+        // grad(phi).J^-1.(v U) = sum_j dphi/dxi_j * [ sum_i Jinv(j,i) v_i U ],
+        // so the DOF-independent bracket is tabulated here.
+        const REAL_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+        for(size_t j = 0; j < elem_dims; j++){
+            const REAL_t flux = inv_jac_ijq(elem_gid, j, 0, qpt_lid)*qpt_vel_0
+                              + inv_jac_ijq(elem_gid, j, 1, qpt_lid)*qpt_vel_1
+                              + inv_jac_ijq(elem_gid, j, 2, qpt_lid)*qpt_vel_2;
+            qpt_vol_flux(elem_gid, qpt_lid, j) = flux*qpt_field*vol_qpt;
+        }
+    });
+    // Pass 2 reads what pass 1 wrote into qpt_vol_flux.
+    Kokkos::fence();
+
+    // Pass 2: one thread per (element, DOF)
+    FOR_ALL(idx, 0, num_elems*num_nodes_in_elem, {
+
+        const size_t elem_gid = idx / num_nodes_in_elem;
+        const size_t dof_lid  = idx % num_nodes_in_elem;
+
+        // 4a. the M*u^n term; remember node_lid = dof_lid = corner_lid
+        const size_t corner_gid = Mesh.corners_in_elem(elem_gid, dof_lid);
+        REAL_t rhs = elem_corner_vol_n(elem_gid, dof_lid)*corner_field_n(corner_gid);
+
+        // 4b. subtract the VOLUME integral: \int (\nabla phi_q) J^{-1} (v U) dV
+        REAL_t vol_integral = 0.0;
+        for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
+            vol_integral += tables.grad_basis_qjd(qpt_lid, 0, dof_lid)*qpt_vol_flux(elem_gid, qpt_lid, 0)
+                          + tables.grad_basis_qjd(qpt_lid, 1, dof_lid)*qpt_vol_flux(elem_gid, qpt_lid, 1)
+                          + tables.grad_basis_qjd(qpt_lid, 2, dof_lid)*qpt_vol_flux(elem_gid, qpt_lid, 2);
+        }
+        rhs -= rk_alpha*dt*vol_integral;
+
+        // 4c. add the SURFACE flux contribution
+        REAL_t surf_integral = 0.0;
+        for(size_t face_lid = 0; face_lid < num_surfs_in_elem; face_lid++)
+        for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_surf; qpt_lid++){
+            surf_integral += RHS_surf_flux(elem_gid, face_lid, qpt_lid)
+                           * RefSurf.qpt_basis(face_lid, qpt_lid, dof_lid);
+        }
+        rhs += rk_alpha*dt*surf_integral;
+
+        RHS_elem(elem_gid, dof_lid) = rhs;
+    });
+} // end assemble_rhs
 
 
 int main(int argc, char** argv) {
@@ -149,7 +447,7 @@ int main(int argc, char** argv) {
 MATAR_INITIALIZE(argc, argv);
 { // MATAR scope
     std::cout<<"Reference Element Remap Example!"<<std::endl;
-    
+
     Quadrature_t Quad;
     ReferenceElement_t FERefElem; // kinematic space
     ReferenceElement_t DGRefElem; // thermal space, it is discontinous
@@ -162,17 +460,30 @@ MATAR_INITIALIZE(argc, argv);
     const size_t elem_dims = 3;
     const size_t elem_order = 3; 
     
-    const double L_x = 1.;
-    const double L_y = 1.;
-    const double L_z = 0.0625;  // 0.5, 0.25, 0.125, 0.0625
-    const size_t num_elems_x = 8;
-    const size_t num_elems_y = 8;
-    const size_t num_elems_z = 1;
+    const REAL_t L_x = 1.;
+    const REAL_t L_y = 1.;
+    const REAL_t L_z = 0.0625;  // 0.5, 0.25, 0.125, 0.0625
+    // The defaults reproduce the reference case; the optional arguments only
+    // exist so the problem can be swept without recompiling.
+    size_t num_elems_x = 10;
+    size_t num_elems_y = 10;
+    size_t num_elems_z = 1;
+    REAL_t max_time    = 0.2;
+    REAL_t graphics_dt = 0.01;
+
+    if (argc >= 3) {
+        num_elems_x = (size_t)std::strtod(argv[1], nullptr);
+        num_elems_y = (size_t)std::strtod(argv[2], nullptr);
+    }
+    if (argc >= 4) num_elems_z = (size_t)std::strtod(argv[3], nullptr);
+    if (argc >= 5) max_time    = std::strtod(argv[4], nullptr);
+    if (argc >= 6) graphics_dt = std::strtod(argv[5], nullptr);
 
     const size_t rk_num_stages = 2;    // number of runge kutta time integration levels
     const size_t max_cycles = 10000000;
-    const double max_time   = 0.5;
-    const double graphics_dt = 0.1;
+
+    printf("mesh %zux%zux%zu, max_time %g, graphics_dt %g\n",
+           num_elems_x, num_elems_y, num_elems_z, max_time, graphics_dt);
 
 
     // ================================================================
@@ -223,22 +534,22 @@ MATAR_INITIALIZE(argc, argv);
     Mesh.initialize_elems_Pn(num_elems, elem_order, Quad.num_qpts_1d);
     Mesh.initialize_nodes(num_nodes);
     
-    DCArrayKokkos <double> node_coords(Mesh.num_nodes, Mesh.num_dims);
+    DCArrayKokkos <REAL_t> node_coords(Mesh.num_nodes, Mesh.num_dims);
 
     // Physical element sizes
-    const double h_x = L_x / (double)num_elems_x;
-    const double h_y = L_y / (double)num_elems_y;
-    const double h_z = L_z / (double)num_elems_z;
+    const REAL_t h_x = L_x / (REAL_t)num_elems_x;
+    const REAL_t h_y = L_y / (REAL_t)num_elems_y;
+    const REAL_t h_z = L_z / (REAL_t)num_elems_z;
 
 
 
     // create indexing for a Pn order mesh
 
-    CArrayKokkos <double> lob_nodes_1D(num_DOFs_1d);
+    CArrayKokkos <REAL_t> lob_nodes_1D(num_DOFs_1d);
     RUN({
         get_lobatto_nodes_1D(lob_nodes_1D,num_DOFs_1d); 
     });
-    const double ref_length = 2.0;
+    const REAL_t ref_length = 2.0;
 
 
     // Step 1: Initialize ALL node coordinates once
@@ -315,29 +626,70 @@ MATAR_INITIALIZE(argc, argv);
 
     if(num_nodes_in_elem != FERefElem.num_dofs_in_elem) Kokkos::abort("ERROR: mismatch in DOFs and num nodes in elem \n");
 
-    CArrayKokkos <double> elem_vol(num_elems);
-    DCArrayKokkos<double> elem_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
-    DCArrayKokkos<double> elem_det_jac(num_elems, num_qpts_in_elem, "elem_det_jacobian");
-    DCArrayKokkos<double> elem_inv_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_inv_jacobian");
-    
+    // Per quadrature point geometry of the moving mesh.  Both are only ever
+    // read and written on the device, so neither needs a host mirror.
+    CArrayKokkos<REAL_t> elem_det_jac(num_elems, num_qpts_in_elem, "elem_det_jacobian");
+    CArrayKokkos<REAL_t> inv_jac_ijq(num_elems, elem_dims, elem_dims, num_qpts_in_elem, "inv_jac_ijq");
 
-    DCArrayKokkos<double> surf_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_jacobian");
-    DCArrayKokkos<double> surf_flux(num_surfs, "surf_flux");
-    
-    DCArrayKokkos<double> elem_field(num_elems, "elem_field");
-    DCArrayKokkos<double> node_field(num_nodes, "node_field");     // for displaying field results
-    DCArrayKokkos<double> node_velocity(num_nodes, elem_dims, "node_velocity");
-    DCArrayKokkos<double> node_velocity_n(num_nodes, elem_dims, "node_velocity_n");
-    DCArrayKokkos<double> node_coords_n(num_nodes, elem_dims, "node_coords_n");
+    DCArrayKokkos<REAL_t> elem_field(num_elems, "elem_field");
+    DCArrayKokkos<REAL_t> node_field(num_nodes, "node_field");     // for displaying field results
+    DCArrayKokkos<REAL_t> node_velocity(num_nodes, elem_dims, "node_velocity");
+    DCArrayKokkos<REAL_t> node_velocity_n(num_nodes, elem_dims, "node_velocity_n");
+    DCArrayKokkos<REAL_t> node_coords_n(num_nodes, elem_dims, "node_coords_n");
 
-    DCArrayKokkos<double> corner_field(num_corners, "corner_field");
-    DCArrayKokkos<double> corner_field_n(num_corners, "corner_field_n");
-    DCArrayKokkos<double> elem_corner_vol(num_elems, num_nodes_in_elem, "elem_corner_vol");
-    DCArrayKokkos<double> elem_corner_vol_n(num_elems, num_nodes_in_elem, "elem_corner_vol_n");
+    DCArrayKokkos<REAL_t> corner_field(num_corners, "corner_field");
+    DCArrayKokkos<REAL_t> corner_field_n(num_corners, "corner_field_n");
+    DCArrayKokkos<REAL_t> elem_corner_vol(num_elems, num_nodes_in_elem, "elem_corner_vol");
+    DCArrayKokkos<REAL_t> elem_corner_vol_n(num_elems, num_nodes_in_elem, "elem_corner_vol_n");
 
     // Calculate RHS_surf_flux
-    CArrayKokkos <double> RHS_surf_flux(num_elems, num_surfs_in_elem, num_qpts_in_surf, "RHS_surf_flux"); // used to build RHS vector 
-    CArrayKokkos <double> RHS_elem(num_elems, num_nodes_in_elem, "RHS_elem"); // RHS vector 
+    CArrayKokkos <REAL_t> RHS_surf_flux(num_elems, num_surfs_in_elem, num_qpts_in_surf, "RHS_surf_flux"); // used to build RHS vector 
+    CArrayKokkos <REAL_t> RHS_elem(num_elems, num_nodes_in_elem, "RHS_elem"); // RHS vector 
+
+
+    // ---- transposed reference tables and per quadrature point scratch ----
+    BasisTables_t tables;
+    CArrayKokkos<REAL_t> qpt_vol_flux(num_elems, num_qpts_in_elem, elem_dims, "qpt_vol_flux");
+    CArrayKokkos<REAL_t> elem_err(num_elems, 2, "elem_error_norms");
+
+    tables.basis_row_sum = CArrayKokkos<REAL_t>(num_qpts_in_elem, "basis_row_sum");
+    FOR_ALL(qpt_lid, 0, num_qpts_in_elem, {
+        REAL_t sum = 0.0;
+        for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
+            sum += FERefElem.qpt_basis(qpt_lid, dof_lid);
+        }
+        tables.basis_row_sum(qpt_lid) = sum;
+    });
+    tables.basis_dq       = CArrayKokkos<REAL_t>(num_nodes_in_elem, num_qpts_in_elem, "basis_dq");
+    tables.grad_basis_njq = CArrayKokkos<REAL_t>(num_nodes_in_elem, elem_dims, num_qpts_in_elem, "grad_basis_njq");
+    tables.grad_basis_qjd = CArrayKokkos<REAL_t>(num_qpts_in_elem, elem_dims, num_nodes_in_elem, "grad_basis_qjd");
+    FOR_ALL(qpt_lid, 0, num_qpts_in_elem, {
+        for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
+            tables.basis_dq(dof_lid, qpt_lid) = FERefElem.qpt_basis(qpt_lid, dof_lid);
+            for(size_t dim = 0; dim < elem_dims; dim++){
+                const REAL_t val = FERefElem.qpt_grad_basis(qpt_lid, dof_lid, dim);
+                tables.grad_basis_njq(dof_lid, dim, qpt_lid) = val;
+                tables.grad_basis_qjd(qpt_lid, dim, dof_lid) = val;
+            }
+        }
+    });
+    tables.surf_basis_fdq = CArrayKokkos<REAL_t>(num_surfs_in_elem, num_nodes_in_elem,
+                                                 num_qpts_in_surf, "surf_basis_fdq");
+    tables.surf_grad_fjdq = CArrayKokkos<REAL_t>(num_surfs_in_elem, elem_dims, num_nodes_in_elem,
+                                                 num_qpts_in_surf, "surf_grad_fjdq");
+    FOR_ALL(face_lid, 0, num_surfs_in_elem, {
+        for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_surf; qpt_lid++){
+            for(size_t dof_lid = 0; dof_lid < num_nodes_in_elem; dof_lid++){
+                tables.surf_basis_fdq(face_lid, dof_lid, qpt_lid) =
+                    RefSurf.qpt_basis(face_lid, qpt_lid, dof_lid);
+                for(size_t dim = 0; dim < elem_dims; dim++){
+                    tables.surf_grad_fjdq(face_lid, dim, dof_lid, qpt_lid) =
+                        RefSurf.qpt_grad_basis(face_lid, qpt_lid, dof_lid, dim);
+                }
+            }
+        }
+    });
+    Kokkos::fence();
 
 
     // ================================================================
@@ -355,60 +707,22 @@ MATAR_INITIALIZE(argc, argv);
     // ================================================================
     // Step 1: build the volume matrix for nodal DG at t=0
 
-    elem_corner_vol.set_values(0.0);
-    FOR_FIRST(elem_gid, 0, num_elems, {
-
-        ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
-
-        // lump the Vol_matrix = \int (phi_q \phi_p j w)
-        FOR_SECOND(node_lid, 0, num_nodes_in_elem, {
-
-            for(size_t qpt_lid=0;  qpt_lid<num_qpts_in_elem;   qpt_lid++){
-
-                    // extract the grad_basis at a single quadrature point (qpt,dof,3D)
-                    ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
-                                                        num_nodes_in_elem, 3);
-
-                    // extract the basis at a single quadrature point (qpt,dof)    
-                    ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
-                                                    num_nodes_in_elem);
-                    
-                    // jacobian matrix and inverse
-                    ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
-                    ViewCArrayKokkos<double> inv_jac(&elem_inv_jac(elem_gid,qpt_lid,0,0),3,3);
-                    
-                    jacobian(jac, 
-                             node_coords, 
-                             nodes_in_elem,
-                             a_grad_basis);
-
-                    // calculate and save det_J 
-                    elem_det_jac(elem_gid, qpt_lid) = det_3x3(jac);
-                    invert_3x3(jac, inv_jac, elem_det_jac(elem_gid,qpt_lid));
-                    
-                    // volume contribution from qpt
-                    const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
-                    
-                    for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++){
-                        elem_corner_vol(elem_gid, node_lid) += a_basis(dof_lid)*a_basis(node_lid)*vol_qpt;
-                    }
-            } // end for dof_lid and qpt_lid
-
-        });  // end parallel for over node_lid
-
-    }); // end parallel for
+    build_element_geometry(Mesh, tables, node_coords, elem_det_jac, inv_jac_ijq,
+                           num_elems, num_qpts_in_elem, num_nodes_in_elem);
+    build_lumped_volume(FERefElem, Quad, tables, elem_det_jac, elem_corner_vol,
+                        num_elems, num_qpts_in_elem, num_nodes_in_elem);
     Kokkos::fence();
 
 
     // -----------------------------------------------------
-    const double max_vel = 1.0; // the CFL velocity used for calculating dt
-    double h_cfl = 1.e-6;       // the CFL length scale for calculating dt
-    double dt = 1.e-6;          // dt from CFL at start, this time is psuedo time
+    const REAL_t max_vel = 1.0; // the CFL velocity used for calculating dt
+    REAL_t h_cfl = 1.e-6;       // the CFL length scale for calculating dt
+    REAL_t dt = 1.e-6;          // dt from CFL at start, this time is psuedo time
 
 
     // -----------------------------------------------------
-    double time = 0;                    // the time 
-    double time_output = graphics_dt;   // the time for graphics outputs
+    REAL_t time = 0;                    // the time 
+    REAL_t time_output = graphics_dt;   // the time for graphics outputs
     size_t output_id = 0;               // the file id for the outputs
     
     std::ofstream err_file("ErrorNorms.txt");
@@ -439,34 +753,6 @@ MATAR_INITIALIZE(argc, argv);
 
     });  // end parallel for
 
-    // Conservation Check
-    double sum_elem = 0.0;
-    double domain_mass_t0 = 0.0;
-    FOR_REDUCE_SUM(elem_gid, 0, num_elems, sum_elem, {
-
-        for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
-            const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
-            sum_elem += elem_corner_vol(elem_gid, node_lid)*corner_field(corner_gid);
-        }
-
-    }, domain_mass_t0);
-
-    printf("Domain Mass t=0, before limiting: %f \n", domain_mass_t0);
-
-
-    // limit the initial corner fields
-    get_elem_volumes(Quad, elem_det_jac, elem_vol); 
-    double epsilon = 1.E-10;
-    limit_corner_field(FERefElem,
-                       Quad,
-                       Mesh,
-                       elem_vol,
-                       elem_det_jac,
-                       corner_field,
-                       epsilon);
-
-
-
     FOR_ALL(node_gid, 0, num_nodes,{
         // new velocity, it is Taylor-Green vortex
         // PI is defined in mesh class
@@ -477,9 +763,9 @@ MATAR_INITIALIZE(argc, argv);
     Kokkos::fence();
 
 
-    // Conservation Check afer limiting initial fields
-    sum_elem = 0.0;
-    double domain_mass_t0b = 0.0;
+    // Conservation Check
+    REAL_t sum_elem = 0.0;
+    REAL_t domain_mass_t0 = 0.0;
     FOR_REDUCE_SUM(elem_gid, 0, num_elems, sum_elem, {
 
         for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
@@ -487,16 +773,15 @@ MATAR_INITIALIZE(argc, argv);
             sum_elem += elem_corner_vol(elem_gid, node_lid)*corner_field(corner_gid);
         }
 
-    }, domain_mass_t0b);
+    }, domain_mass_t0);
 
-    printf("Domain Mass t=0, after limiting: %f \n", domain_mass_t0b);
+    printf("Domain Mass t=0: %f \n", domain_mass_t0);
 
-    DCArrayKokkos <double> output_node_coords(num_nodes,3);
+    DCArrayKokkos <REAL_t> output_node_coords(num_nodes,3);
     
 
     // export results to Paraview graphics file
     {
-
         elem_field.set_values(0.0);
         FOR_ALL(elem_gid,0,num_elems,{
             for(size_t node_lid=0; node_lid<Mesh.num_nodes_in_elem; node_lid++){
@@ -504,7 +789,7 @@ MATAR_INITIALIZE(argc, argv);
                 const size_t corner_gid = Mesh.corners_in_elem(elem_gid, corner_lid);
                 elem_field(elem_gid) += corner_field(corner_gid);
             } 
-            elem_field(elem_gid) /= (double)Mesh.num_nodes_in_elem;
+            elem_field(elem_gid) /= (REAL_t)Mesh.num_nodes_in_elem;
         });
 
         // save corner field to the nodes for graphics outputs
@@ -514,7 +799,7 @@ MATAR_INITIALIZE(argc, argv);
                 const size_t corner_gid = Mesh.corners_in_node(node_gid, corner_lid);
                 node_field(node_gid) += corner_field(corner_gid);
             } 
-            node_field(node_gid) /= (double)Mesh.num_corners_in_node(node_gid);
+            node_field(node_gid) /= (REAL_t)Mesh.num_corners_in_node(node_gid);
         });
 
         // map nodes to uniform locations
@@ -528,6 +813,7 @@ MATAR_INITIALIZE(argc, argv);
         // writing the initial mesh and state
         output_node_coords.update_host();
         node_field.update_host();
+        elem_field.update_host();
 
         printf(" Writing output at time = %.4f. ", time);
 
@@ -561,15 +847,15 @@ MATAR_INITIALIZE(argc, argv);
         // --------------------------------------------------
         // Step 1a: Store time level n state
 
-        FOR_FIRST(elem_gid, 0, num_elems, {
+        FOR_ALL(idx, 0, num_elems*num_nodes_in_elem, {
 
-            FOR_SECOND(node_lid, 0, num_nodes_in_elem,{
-                elem_corner_vol_n(elem_gid, node_lid) = elem_corner_vol(elem_gid, node_lid);
+            const size_t elem_gid = idx / num_nodes_in_elem;
+            const size_t node_lid = idx % num_nodes_in_elem;
 
-                const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
-                corner_field_n(corner_gid) = corner_field(corner_gid);
-            });
-            
+            elem_corner_vol_n(elem_gid, node_lid) = elem_corner_vol(elem_gid, node_lid);
+
+            const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
+            corner_field_n(corner_gid) = corner_field(corner_gid);
         });
 
         FOR_ALL(node_gid, 0, num_nodes, {
@@ -578,40 +864,42 @@ MATAR_INITIALIZE(argc, argv);
                 node_velocity_n(node_gid, dim) = node_velocity(node_gid, dim);
             }
         });
-        Kokkos::fence();
 
 
         // ------------------------------------------------------
         // Step 1b: get CFL time step for moving mesh
 
-        double min_h_loc;
-        FOR_REDUCE_MIN(elem_gid, 0, num_elems, 
-                        min_h_loc, { 
-            
-            for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
+        // x -> x^(1/3) is monotone, so the smallest length comes from the
+        // smallest quadrature volume: one transcendental instead of one per qpt.
+        REAL_t min_vol_loc;
+        REAL_t min_vol_qpt;
+        FOR_REDUCE_MIN(idx, 0, num_elems*num_qpts_in_elem,
+                       min_vol_loc, {
+            const size_t elem_gid = idx / num_qpts_in_elem;
+            const size_t qpt_lid  = idx % num_qpts_in_elem;
 
-                // jacobian matrix was already calculated in corner volume vector
-                ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
-
-                // calculate det_J 
-                double det = det_3x3(jac);
-
-                const double vol_qpt= Quad.qpt_weights(qpt_lid)*det;
-                const double h_qpt = pow(vol_qpt,0.3333333);
-                if(h_qpt < min_h_loc) min_h_loc = h_qpt;
-            }
-
-        }, h_cfl);
-        Kokkos::fence();
+            const REAL_t vol_qpt = Quad.qpt_weights(qpt_lid)*elem_det_jac(elem_gid, qpt_lid);
+            if(vol_qpt < min_vol_loc) min_vol_loc = vol_qpt;
+        }, min_vol_qpt);
+        h_cfl = pow(min_vol_qpt, 0.3333333);
 
         dt = 0.1*h_cfl/max_vel; // pseudo time step used for the remap
+
+        // A tangled element gives a non-positive quadrature volume, so the CFL
+        // length becomes NaN. NaN then defeats both the max_time test and the
+        // mass conservation check below, so the run has to stop here.
+        if(!(dt > 0.0)){
+            printf("\n STOPPING at time = %.6f, cycle %zu: CFL length is %g,"
+                   " the mesh has tangled.\n", time, cycle, h_cfl);
+            break;
+        }
 
 
         // Runge Kutta time integration levels
         for(size_t rk_stage=0; rk_stage<rk_num_stages; rk_stage++){
 
             // RK coefficient
-            const double rk_alpha = 1.0 / ((double)rk_num_stages - (double)rk_stage);
+            const REAL_t rk_alpha = 1.0 / ((REAL_t)rk_num_stages - (REAL_t)rk_stage);
 
 
             // ------------------------------------------------------
@@ -629,211 +917,20 @@ MATAR_INITIALIZE(argc, argv);
             // ----------------------------------------------------------
             // Step 3: Calculate the surface fluxes at quadrature points
 
-            RHS_surf_flux.set_values(0.0);
-            FOR_FIRST(surf_gid, 0, num_surfs, {
-                
-                const size_t num_elems_in_surf = Mesh.num_elems_in_surf(surf_gid);
+            build_surface_flux(Mesh, RefSurf, SurfQuad, tables, node_coords, node_velocity, corner_field,
+                               surf_qpt_qpt_map, RHS_surf_flux,
+                               num_surfs, num_qpts_in_surf, num_nodes_in_elem);
 
-                // get the first elem id and face in this surf
-                const size_t elem_gid = Mesh.elems_in_surf(surf_gid, 0);
-                const size_t face_lid = Mesh.faces_in_surf(surf_gid, 0);
-
-                ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
-
-                // for_all_second here
-                FOR_SECOND(qpt_lid, 0, num_qpts_in_surf, {
-                
-                    // extract the grad_basis at a single quadrature point (surf,qpt,dof,3D)
-                    ViewCArrayKokkos<double> a_grad_basis(&RefSurf.qpt_grad_basis(face_lid,qpt_lid,0,0),
-                                                        num_nodes_in_elem, 3);
-
-                    // extract the basis at a single quadrature point (surf,qpt,dof)    
-                    ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0),
-                                                    num_nodes_in_elem);
-                    
-                    ViewCArrayKokkos<double> jac(&surf_jac(surf_gid,qpt_lid,0,0),3,3);
-                    
-                    double surf_inv_jac_1D[9];
-                    ViewCArrayKokkos<double> inv_jac(&surf_inv_jac_1D[0],3,3);
-
-                    jacobian(jac, 
-                            node_coords, 
-                            nodes_in_elem,
-                            a_grad_basis);
-
-                    const double det_jac_qpt = det_3x3(jac);
-
-                    invert_3x3(jac, inv_jac, det_jac_qpt);
-
-                    // Nanson's formula: s*J^-1*j*f*w
-                    double area_normal[3];
-                    area_normal[0] = 0.;
-                    area_normal[1] = 0.;
-                    area_normal[2] = 0.;
-                    for(size_t j=0; j<elem_dims; j++){ 
-                        for(size_t i=0; i<elem_dims; i++){
-                            area_normal[j] += RefSurf.outward_normal(face_lid,i)*inv_jac(i,j);
-                        } // end i
-                        area_normal[j] *= det_jac_qpt*SurfQuad.qpt_weights(face_lid,qpt_lid);
-                    } // end j
-
-                    double qpt_vel[3];
-                    for(size_t dim=0; dim<elem_dims; dim++){
-                        qpt_vel[dim] = 0.0;
-                    }
-
-                    for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++)
-                    for(size_t dim=0; dim<elem_dims; dim++){
-                        const size_t node_gid = nodes_in_elem(node_lid);
-                        qpt_vel[dim] += a_basis(node_lid)*node_velocity(node_gid,dim);
-                    } // end for
-
-
-                    double normal_dot_vel = 0.0;
-                    for(size_t dim=0; dim<elem_dims; dim++){
-                        normal_dot_vel += area_normal[dim]*qpt_vel[dim];
-                    }
-                    
-                    size_t nbr_elem_gid = elem_gid;
-                    size_t nbr_face_lid = face_lid;
-                    if(num_elems_in_surf==2){
-                        nbr_elem_gid = Mesh.elems_in_surf(surf_gid, 1); // second elem
-                        nbr_face_lid = Mesh.faces_in_surf(surf_gid, 1); // second elem face
-                    }    
-
-                    const size_t nbr_qpt_lid = surf_qpt_qpt_map(surf_gid,0,qpt_lid); // matching qpt
-
-                    ViewCArrayKokkos<double> a_nbr_basis(&RefSurf.qpt_basis(nbr_face_lid,nbr_qpt_lid,0),
-                                                         num_nodes_in_elem);
-
-                    // reconstruct the fields
-                    double qpt_field     = 0.0;
-                    double nbr_qpt_field = 0.0;
-
-                    for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
-
-                        // Note: corner_lid = node_lid inside the element
-
-                        const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
-                        qpt_field += a_basis(node_lid)*corner_field(corner_gid);
-
-                        const size_t nbr_corner_gid = Mesh.corners_in_elem(nbr_elem_gid,node_lid);
-                        nbr_qpt_field += a_nbr_basis(node_lid)*corner_field(nbr_corner_gid);  
-                    } // end for
-
-                    //
-                    // Rusanov flux at the quadrature point
-                    //
-                    
-                    // if normal_dot_vel<0 advection is out of first elem in the surf
-                    const double flux_val = 0.5*(qpt_field+nbr_qpt_field)*normal_dot_vel 
-                                           -0.5*fabs(normal_dot_vel)*(qpt_field-nbr_qpt_field);
-
-                    // save flux value to the quadrature points on either side of the element
-                    RHS_surf_flux(elem_gid, face_lid, qpt_lid) = flux_val;
-                    if(num_elems_in_surf==2) RHS_surf_flux(nbr_elem_gid, nbr_face_lid, nbr_qpt_lid) = -flux_val;
-
-                }); // end parallel for qpt
-        
-            }); // end surf loop
-            Kokkos::fence();
 
             // -------------------------------------------------
             // Step 4: Build RHS of DG equations in the element
 
-            RHS_elem.set_values(0.0); 
-            FOR_FIRST(elem_gid, 0, num_elems,{
-
-                ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
-                
-                FOR_SECOND(dof_lid, 0, num_nodes_in_elem, {
-
-                    // ----------------------------------------------
-                    // 4a. First add to RHS the M*u^n term
-                    
-                    // remember node_lid = dof_lid = corner_lid;
-                    const size_t corner_gid = Mesh.corners_in_elem(elem_gid, dof_lid);
-                    RHS_elem(elem_gid, dof_lid) += 
-                        elem_corner_vol_n(elem_gid, dof_lid) * corner_field_n(corner_gid);
-                
-
-                    // ----------------------------------------------
-                    // 4b. Subtract the VOLUME integral: \int (\nabal phi_q)J^{-1}*(v*U) dV
-
-                    for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
-                        
-                        // extract the grad_basis at a single quadrature point (qpt,dof,3D)
-                        ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
-                                                            num_nodes_in_elem, 3);
-
-                        // extract the basis at a single quadrature point (qpt,dof)    
-                        ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
-                                                        num_nodes_in_elem);
-                        
-
-                        // jacobian matrix and inverse; jacobian was calculated already when building volume vector
-                        ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
-                        ViewCArrayKokkos<double> inv_jac(&elem_inv_jac(elem_gid,qpt_lid,0,0),3,3);
-
-                        // Reconstruct field at quadrature point
-                        double qpt_field = 0.0;
-                        for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
-                            const size_t corner_gid = Mesh.corners_in_elem(elem_gid, node_lid);
-                            qpt_field += a_basis(node_lid) * corner_field(corner_gid);
-                        }
-                        
-                        // Reconstruct velocity at quadrature point 
-                        double qpt_vel[3];
-                        qpt_vel[0] = 0.0;
-                        qpt_vel[1] = 0.0; 
-                        qpt_vel[2] = 0.0;
-                        
-                        for(size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++){
-                            const size_t node_gid = Mesh.nodes_in_elem(elem_gid, node_lid);
-                            for(size_t dim = 0; dim < elem_dims; dim++){
-                                qpt_vel[dim] += a_basis(node_lid) * node_velocity(node_gid, dim);
-                            }
-                        }
-
-                        // transform the gradient to the physical space
-                        double physical_grad[3]; 
-                        physical_grad[0] = 0.0;
-                        physical_grad[1] = 0.0; 
-                        physical_grad[2] = 0.0;
-                        for(size_t i = 0; i < elem_dims; i++)
-                        for(size_t j = 0; j < elem_dims; j++){
-                            physical_grad[i] += a_grad_basis(dof_lid, j)*inv_jac(j,i);
-                        }
-                        
-                        // Compute (\nabal phi_q)*J^-1*(v*U)
-                        // From Anderson et. al. paper
-                        double grad_dot_flux = 0.0;
-                        for(size_t dim = 0; dim < elem_dims; dim++){
-                            grad_dot_flux += physical_grad[dim] * qpt_vel[dim] * qpt_field;
-                        }
-                        
-                        const double vol_qpt = elem_det_jac(elem_gid, qpt_lid) * Quad.qpt_weights(qpt_lid);
-                        RHS_elem(elem_gid, dof_lid) -= rk_alpha * dt * grad_dot_flux * vol_qpt;
-                    } // end for qpt
-                
-
-                    // ----------------------------------------------
-                    // 4c. Add SURFACE flux contribution
-                
-                    for(size_t face_lid = 0; face_lid < num_surfs_in_elem; face_lid++)
-                    for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_surf; qpt_lid++){
-                        
-                        ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid, qpt_lid, 0),
-                                                        num_nodes_in_elem);
-                        
-                        // surface flux (note: RHS_surf_flux already has correct sign)
-                        RHS_elem(elem_gid, dof_lid) += 
-                            rk_alpha * dt * RHS_surf_flux(elem_gid, face_lid, qpt_lid) * a_basis(dof_lid);
-                    }
-
-                }); // end parallel for over dof_lid
-
-            });
+            assemble_rhs(Mesh, RefSurf, Quad, tables, elem_det_jac, inv_jac_ijq,
+                         corner_field, corner_field_n, node_velocity, elem_corner_vol_n,
+                         RHS_surf_flux, RHS_elem, qpt_vol_flux,
+                         rk_alpha, dt,
+                         num_elems, num_qpts_in_elem, num_nodes_in_elem,
+                         num_surfs_in_elem, num_qpts_in_surf, elem_dims);
 
 
             // ================================================================
@@ -844,85 +941,32 @@ MATAR_INITIALIZE(argc, argv);
                 node_coords(node_gid, 1) = node_coords_n(node_gid, 1) + 0.5*(node_velocity(node_gid, 1)+node_velocity_n(node_gid, 1)) * rk_alpha * dt;
                 // z-coords never change
             });
-            Kokkos::fence();
 
 
             // ================================================================
             // Step 6: build the diagonal volume matrix for nodal DG after the mesh moved
-            elem_corner_vol.set_values(0.0);
-            FOR_FIRST(elem_gid, 0, num_elems, {
-
-                ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
-
-                // lump the Vol_matrix = \int (phi_q \phi_p j w)
-                FOR_SECOND(node_lid, 0, num_nodes_in_elem, {
-
-                    for(size_t qpt_lid=0;  qpt_lid<num_qpts_in_elem;   qpt_lid++){
-
-                            // extract the grad_basis at a single quadrature point (qpt,dof,3D)
-                            ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
-                                                                num_nodes_in_elem, 3);
-
-                            // extract the basis at a single quadrature point (qpt,dof)    
-                            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
-                                                            num_nodes_in_elem);
-                            
-                            // jacobian matrix and inverse
-                            ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
-                            ViewCArrayKokkos<double> inv_jac(&elem_inv_jac(elem_gid,qpt_lid,0,0),3,3);
-                            
-                            jacobian(jac, 
-                                    node_coords, 
-                                    nodes_in_elem,
-                                    a_grad_basis);
-
-                            // calculate and save det_J 
-                            elem_det_jac(elem_gid, qpt_lid) = det_3x3(jac);
-                            invert_3x3(jac, inv_jac, elem_det_jac(elem_gid,qpt_lid));
-                            
-                            // volume contribution from qpt
-                            const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
-                            
-                            for(size_t dof_lid=0;  dof_lid<num_nodes_in_elem;  dof_lid++){
-                                elem_corner_vol(elem_gid, node_lid) += a_basis(dof_lid)*a_basis(node_lid)*vol_qpt;
-                            }
-                    } // end for dof_lid and qpt_lid
-
-                });  // end parallel for over node_lid
-
-            }); // end parallel for
-            Kokkos::fence();
+            build_element_geometry(Mesh, tables, node_coords, elem_det_jac, inv_jac_ijq,
+                                   num_elems, num_qpts_in_elem, num_nodes_in_elem);
+            build_lumped_volume(FERefElem, Quad, tables, elem_det_jac, elem_corner_vol,
+                                num_elems, num_qpts_in_elem, num_nodes_in_elem);
 
 
             // -----------------------------------------------------
             // 7. Solve M * u^{n+1} = RHS where M is diagonal
 
-            FOR_FIRST(elem_gid, 0, num_elems,{
-        
-                // -----------------------------------------------------
-                // 4e. Save the new corner DOFs
+            FOR_ALL(idx, 0, num_elems*num_nodes_in_elem, {
 
-                // for_all_second here
-                FOR_SECOND(dof_lid, 0, num_nodes_in_elem, {
-                    const size_t corner_gid = Mesh.corners_in_elem(elem_gid, dof_lid);
-                    corner_field(corner_gid) = RHS_elem(elem_gid, dof_lid)/elem_corner_vol(elem_gid, dof_lid);
-                });
+                const size_t elem_gid = idx / num_nodes_in_elem;
+                const size_t dof_lid  = idx % num_nodes_in_elem;
 
-            }); // end parallel for elems
-            Kokkos::fence();
+                const size_t corner_gid = Mesh.corners_in_elem(elem_gid, dof_lid);
+                corner_field(corner_gid) = RHS_elem(elem_gid, dof_lid)/elem_corner_vol(elem_gid, dof_lid);
+            });
 
 
             // -----------------------------------------------------
-            // 8. Limit the fields to remain bounded by nieghbors
-            get_elem_volumes(Quad, elem_det_jac, elem_vol); 
-            limit_corner_field(FERefElem,
-                               Quad,
-                               Mesh,
-                               elem_vol,
-                               elem_det_jac,
-                               corner_field,
-                               epsilon);
-
+            // 8. A slope/bound limiter would be applied to corner_field here;
+            //    see limit_corner_field in remap_dg_lumped_test.cpp.
 
         } // end Runge Kutta time level loop
 
@@ -932,8 +976,8 @@ MATAR_INITIALIZE(argc, argv);
         time += dt;
 
         // Conservation Check
-        double sum_elem = 0.0;
-        double domain_mass_time = 0.0;
+        REAL_t sum_elem = 0.0;
+        REAL_t domain_mass_time = 0.0;
         FOR_REDUCE_SUM(elem_gid, 0, num_elems, sum_elem, {
 
             for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
@@ -950,69 +994,53 @@ MATAR_INITIALIZE(argc, argv);
         // Step 8: write outputs
         if( time-time_output >= -1.e-8 ){
 
-
             //// L1 and L2 error norms
-            double L1;
-            double L1_lcl;
-            FOR_REDUCE_SUM(elem_gid, 0, num_elems,  L1_lcl, {
+            // The original walks the same 216x64 reconstruction twice, once per
+            // norm. One pass fills both per element, then two cheap reductions
+            // over elements keep the original summation tree.
+            FOR_ALL(elem_gid, 0, num_elems, {
+
+                REAL_t l1_elem = 0.0;
+                REAL_t l2_elem = 0.0;
 
                 for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
 
-                        // volume contribution from qpt
-                        const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
-                        
-                        double val_qpt = 0.0;
-                        double x_qpt   = 0.0;
-                        double y_qpt   = 0.0;
+                    const REAL_t vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
 
-                        for(size_t corner_lid=0; corner_lid<num_nodes_in_elem; corner_lid++) {
-                            
-                            // remmeber node_lid = corner_lid
-                            const size_t node_gid   = Mesh.nodes_in_elem(elem_gid,corner_lid);
-                            const size_t corner_gid = Mesh.corners_in_elem(elem_gid, corner_lid);
-                            
-                            val_qpt += corner_field(corner_gid)*FERefElem.qpt_basis(qpt_lid,corner_lid); 
-                            x_qpt   += node_coords(node_gid,0)*FERefElem.qpt_basis(qpt_lid,corner_lid);
-                            y_qpt   += node_coords(node_gid,1)*FERefElem.qpt_basis(qpt_lid,corner_lid);
-                                
-                        } // loop over corners of the element
+                    REAL_t val_qpt = 0.0;
+                    REAL_t x_qpt   = 0.0;
+                    REAL_t y_qpt   = 0.0;
 
-                        L1_lcl += fabs(val_qpt - test_function(x_qpt,y_qpt))*vol_qpt;
-                        
-                } // end for dof_lid and qpt_lid
+                    for(size_t corner_lid=0; corner_lid<num_nodes_in_elem; corner_lid++) {
+                        const size_t node_gid   = Mesh.nodes_in_elem(elem_gid,corner_lid);
+                        const size_t corner_gid = Mesh.corners_in_elem(elem_gid, corner_lid);
+                        const REAL_t phi = FERefElem.qpt_basis(qpt_lid,corner_lid);
 
-            }, L1); // end parallel for
+                        val_qpt += corner_field(corner_gid)*phi;
+                        x_qpt   += node_coords(node_gid,0)*phi;
+                        y_qpt   += node_coords(node_gid,1)*phi;
+                    }
 
-            double L2;
-            double L2_lcl;
+                    const REAL_t diff = val_qpt - test_function(x_qpt,y_qpt);
+                    l1_elem += fabs(diff)*vol_qpt;
+                    l2_elem += diff*diff*vol_qpt;
+                }
+
+                elem_err(elem_gid, 0) = l1_elem;
+                elem_err(elem_gid, 1) = l2_elem;
+            });
+
+            REAL_t L1;
+            REAL_t L1_lcl;
+            FOR_REDUCE_SUM(elem_gid, 0, num_elems, L1_lcl, {
+                L1_lcl += elem_err(elem_gid, 0);
+            }, L1);
+
+            REAL_t L2;
+            REAL_t L2_lcl;
             FOR_REDUCE_SUM(elem_gid, 0, num_elems, L2_lcl, {
-
-                for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
-
-                        // volume contribution from qpt
-                        const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
-                        
-                        double val_qpt = 0.0;
-                        double x_qpt   = 0.0;
-                        double y_qpt   = 0.0;
-
-                        for(size_t corner_lid=0; corner_lid<num_nodes_in_elem; corner_lid++) {
-                            
-                            // remmeber node_lid = corner_lid
-                            const size_t node_gid   = Mesh.nodes_in_elem(elem_gid,corner_lid);
-                            const size_t corner_gid = Mesh.corners_in_elem(elem_gid,corner_lid);
-                            
-                            val_qpt += corner_field(corner_gid)*FERefElem.qpt_basis(qpt_lid,corner_lid); 
-                            x_qpt   += node_coords(node_gid,0)*FERefElem.qpt_basis(qpt_lid,corner_lid);
-                            y_qpt   += node_coords(node_gid,1)*FERefElem.qpt_basis(qpt_lid,corner_lid);
-
-                        } // loop over corners of the element
-
-                        L2_lcl += (val_qpt - test_function(x_qpt,y_qpt))*(val_qpt - test_function(x_qpt,y_qpt))*vol_qpt;
-                        
-                } // end for dof_lid and qpt_lid
-
-            }, L2); // end parallel for
+                L2_lcl += elem_err(elem_gid, 1);
+            }, L2);
             L2 = sqrt(L2);
 
             printf("=====\n");
@@ -1030,7 +1058,7 @@ MATAR_INITIALIZE(argc, argv);
                     const size_t corner_gid = Mesh.corners_in_elem(elem_gid, corner_lid);
                     elem_field(elem_gid) += corner_field(corner_gid);
                 } 
-                elem_field(elem_gid) /= (double)Mesh.num_nodes_in_elem;
+                elem_field(elem_gid) /= (REAL_t)Mesh.num_nodes_in_elem;
             });
 
             // save corner field to the nodes for graphics outputs
@@ -1039,8 +1067,9 @@ MATAR_INITIALIZE(argc, argv);
                 for(size_t corner_lid=0; corner_lid<Mesh.num_corners_in_node(node_gid); corner_lid++){
                     const size_t corner_gid = Mesh.corners_in_node(node_gid, corner_lid);
                     node_field(node_gid) += corner_field(corner_gid);
+                    //node_field(node_gid) = fmax(node_field(node_gid), corner_field(corner_gid));
                 } 
-                node_field(node_gid) /= (double)Mesh.num_corners_in_node(node_gid);
+                node_field(node_gid) /= (REAL_t)Mesh.num_corners_in_node(node_gid);
             });
 
             // map nodes to uniform locations
@@ -1054,6 +1083,7 @@ MATAR_INITIALIZE(argc, argv);
             // writing the initial mesh and state
             output_node_coords.update_host();
             node_field.update_host();
+            elem_field.update_host();
 
 
             printf(" Writing output at time = %.4f. ", time);
@@ -1103,15 +1133,15 @@ return 0;
 // 
 void write_lagrange_hex_mesh(
     const std::string& filename,
-    const DCArrayKokkos<double>& node_coords,       // All node coordinates [num_nodes][3]
+    const DCArrayKokkos<REAL_t>& node_coords,       // All node coordinates [num_nodes][3]
     const size_t num_nodes,
     const DCArrayKokkos<size_t>& nodes_in_elem,     // Connectivity
     const size_t num_elems,
     const size_t order,
-    const DCArrayKokkos<double>& node_data,         // Nodal data
+    const DCArrayKokkos<REAL_t>& node_data,         // Nodal data
     const std::string& node_data_name,
-    const DCArrayKokkos<double>& elem_data,         // Element center data (NEW)
-    const std::string& elem_data_name)              // Element data name (NEW)
+    const DCArrayKokkos<REAL_t>& elem_data,         // Element center data
+    const std::string& elem_data_name)              // Element data name
 {
     std::ofstream vtu_file(filename);
     if (!vtu_file.is_open()) {
@@ -1147,7 +1177,7 @@ void write_lagrange_hex_mesh(
     std::cout << "Wrote VTU file: " << filename << std::endl;
 }
 
-void write_points(std::ofstream& file, const DCArrayKokkos<double>& coords, size_t num_nodes)
+void write_points(std::ofstream& file, const DCArrayKokkos<REAL_t>& coords, size_t num_nodes)
 {
     file << "      <Points>\n";
     file << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
@@ -1166,7 +1196,7 @@ void write_lagrange_cells(std::ofstream& file,
                           const DCArrayKokkos<size_t>& nodes_in_elem,
                           size_t num_elems, 
                           size_t order,
-                          const DCArrayKokkos<double>& elem_data,    // Element data
+                          const DCArrayKokkos<REAL_t>& elem_data,    // Element data
                           const std::string& elem_data_name)         // Element data name
 {
     const size_t nodes_per_elem = (order + 1) * (order + 1) * (order + 1);
@@ -1233,7 +1263,7 @@ void write_lagrange_cells(std::ofstream& file,
 }
 
 void write_point_data(std::ofstream& file, 
-                      const DCArrayKokkos<double>& data, 
+                      const DCArrayKokkos<REAL_t>& data, 
                       size_t num_nodes,
                       const std::string& name)
 {
@@ -1328,8 +1358,8 @@ inline int PointIndexFromIJK(int i, int j, int k, const int* order)
 
 // Lagrange basis function
 KOKKOS_INLINE_FUNCTION
-double lagrange_basis(const double xi, const size_t i, const CArrayKokkos<double>& nodes) {
-    double L = 1.0;
+REAL_t lagrange_basis(const REAL_t xi, const size_t i, const CArrayKokkos<REAL_t>& nodes) {
+    REAL_t L = 1.0;
     for (size_t j = 0; j < nodes.dims(0); j++) {
         if (j != i) {
             L *= (xi - nodes(j)) / (nodes(i) - nodes(j));
@@ -1340,118 +1370,93 @@ double lagrange_basis(const double xi, const size_t i, const CArrayKokkos<double
 
 
 void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
-                            const CArrayKokkos<double>& lob_nodes_1D,
-                            const DCArrayKokkos<double>& node_coords_lob,  // Lobatto node positions
-                            DCArrayKokkos<double>& node_coords_uniform,   // Output uniform positions 
+                            const CArrayKokkos<REAL_t>& lob_nodes_1D,
+                            const DCArrayKokkos<REAL_t>& node_coords_lob,  // Lobatto node positions
+                            DCArrayKokkos<REAL_t>& node_coords_uniform,   // Output uniform positions 
                             const size_t num_elems)   
 {
 
     const size_t num_DOFs_1d = lob_nodes_1D.dims(0);
 
-    for(size_t elem_gid=0; elem_gid<num_elems; elem_gid++){
-    
-        // loop over structured nodes in this element
-        FOR_ALL(k,0,num_DOFs_1d, 
-                j,0,num_DOFs_1d, 
-                i,0,num_DOFs_1d, {
-                    
-            // Uniform parametric coordinates in [-1, 1]
-            double xi   = -1.0 + 2.0 * (double)i / ((double)(num_DOFs_1d - 1));
-            double eta  = -1.0 + 2.0 * (double)j / ((double)(num_DOFs_1d - 1));
-            double zeta = -1.0 + 2.0 * (double)k / ((double)(num_DOFs_1d - 1));
-            
-            // Interpolate using Lagrange basis at Lobatto nodes
-            double x = 0.0;
-            double y = 0.0; 
-            double z = 0.0;
-            for (size_t kk = 0; kk < num_DOFs_1d; kk++) {
-                double Lk = lagrange_basis(zeta, kk, lob_nodes_1D);
-                for (size_t jj = 0; jj < num_DOFs_1d; jj++) {
-                    double Lj = lagrange_basis(eta, jj, lob_nodes_1D);
-                    for (size_t ii = 0; ii < num_DOFs_1d; ii++) {
-                        double Li = lagrange_basis(xi, ii, lob_nodes_1D);
-                        
-                        size_t node_lid = ii + (jj + kk*num_DOFs_1d)*num_DOFs_1d;
-                        size_t node = nodes_in_elem(elem_gid, node_lid);
-                        double basis = Li * Lj * Lk;
-                        
-                        x += basis * node_coords_lob(node, 0);
-                        y += basis * node_coords_lob(node, 1);
-                        z += basis * node_coords_lob(node, 2);
-                    }
+    // One launch for the whole mesh instead of one launch plus fence per element.
+    const size_t num_dofs_in_elem = num_DOFs_1d*num_DOFs_1d*num_DOFs_1d;
+    FOR_ALL(idx, 0, num_elems*num_dofs_in_elem, {
+
+        const size_t elem_gid = idx / num_dofs_in_elem;
+        const size_t node_lcl = idx % num_dofs_in_elem;
+
+        const size_t i = node_lcl % num_DOFs_1d;
+        const size_t j = (node_lcl / num_DOFs_1d) % num_DOFs_1d;
+        const size_t k = node_lcl / (num_DOFs_1d*num_DOFs_1d);
+
+        // Uniform parametric coordinates in [-1, 1]
+        REAL_t xi   = -1.0 + 2.0 * (REAL_t)i / ((REAL_t)(num_DOFs_1d - 1));
+        REAL_t eta  = -1.0 + 2.0 * (REAL_t)j / ((REAL_t)(num_DOFs_1d - 1));
+        REAL_t zeta = -1.0 + 2.0 * (REAL_t)k / ((REAL_t)(num_DOFs_1d - 1));
+
+        // Interpolate using Lagrange basis at Lobatto nodes
+        REAL_t x = 0.0;
+        REAL_t y = 0.0;
+        REAL_t z = 0.0;
+        for (size_t kk = 0; kk < num_DOFs_1d; kk++) {
+            REAL_t Lk = lagrange_basis(zeta, kk, lob_nodes_1D);
+            for (size_t jj = 0; jj < num_DOFs_1d; jj++) {
+                REAL_t Lj = lagrange_basis(eta, jj, lob_nodes_1D);
+                for (size_t ii = 0; ii < num_DOFs_1d; ii++) {
+                    REAL_t Li = lagrange_basis(xi, ii, lob_nodes_1D);
+
+                    size_t node_lid = ii + (jj + kk*num_DOFs_1d)*num_DOFs_1d;
+                    size_t node = nodes_in_elem(elem_gid, node_lid);
+                    REAL_t basis = Li * Lj * Lk;
+
+                    x += basis * node_coords_lob(node, 0);
+                    y += basis * node_coords_lob(node, 1);
+                    z += basis * node_coords_lob(node, 2);
                 }
             }
-            
-            // Store interpolated position
-            size_t node_lcl = i + (j + k*num_DOFs_1d)*num_DOFs_1d;
-            size_t node_gid = nodes_in_elem(elem_gid, node_lcl);
-            node_coords_uniform(node_gid,0) = x;
-            node_coords_uniform(node_gid,1) = y;
-            node_coords_uniform(node_gid,2) = z;
-        
-        }); // end parallel for
-        Kokkos::fence();
-    }
+        }
+
+        // Store interpolated position
+        size_t node_gid = nodes_in_elem(elem_gid, node_lcl);
+        node_coords_uniform(node_gid,0) = x;
+        node_coords_uniform(node_gid,1) = y;
+        node_coords_uniform(node_gid,2) = z;
+    });
+    Kokkos::fence();
 } // end function
 
 
 // ============================================================================
 // Notched CIRCLE FUNCTION IMPLEMENTATION
 // ============================================================================
-//
-// Create a notched circle characteristic function.
-//    
-//    Parameters:
-//    -----------
-//    x, y : array-like
-//        Coordinate arrays
-//    center : float 
-//        Circle center (x0, y0)
-//    radius : float
-//        Circle radius
-//    notch_width : float
-//        Width of the notch
-//    notch_height : float
-//        Height of the notch extending from edge
-//    
-//    Returns:
-//    --------
-//    field : array
-//        1 inside notched circle, 0 outside
-//
-// ============================================================================
 #ifdef USE_NOTCHED_CIRCLE 
 
 KOKKOS_INLINE_FUNCTION
-double test_function(const double x, 
-                     const double y){
+REAL_t test_function(const REAL_t x, 
+                     const REAL_t y){
 
 
-    const double x0 = 0.5;
-    const double y0 = 0.5;
-    const double radius = 0.25;
-    const double notch_width = 0.15;
-    const double notch_depth = 0.4-radius;  // How far the notch cuts INTO the circle
-    const double smoothing = 0.01;   // Smoothing width, 
-    const double eps = 1e-10;
+    const REAL_t x0 = 0.5;
+    const REAL_t y0 = 0.5;
+    const REAL_t radius = 0.25;
+    const REAL_t notch_width = 0.15;
+    const REAL_t notch_depth = 0.4-radius;  // How far the notch cuts INTO the circle
+    const REAL_t smoothing = 0.01;   // Smoothing width, 
+    const REAL_t eps = 1e-10;
 
 
     // Check if inside circle
-    const double dx = x - x0;
-    const double dy = y - y0;
-    const double r = sqrt(dx*dx + dy*dy);
+    const REAL_t dx = x - x0;
+    const REAL_t dy = y - y0;
+    const REAL_t r = sqrt(dx*dx + dy*dy);
 
 
     // Smooth circle
-    double circle = 0.5 * (1.0 - tanh((r - radius) / smoothing));
+    REAL_t circle = 0.5 * (1.0 - tanh((r - radius) / smoothing));
     
-    // Smooth notch
-    //if(x > x0 && fabs(y - y0) < notch_width/2.0){ // right notch
-    //double notch = 0.5 * (1.0 + tanh((x - x0) / smoothing)); // right notch
-
     // Deep notch from TOP, extending PAST center
     if(fabs(x - x0) < notch_width/2.0){  // Remove y > y0 condition!
-        double notch = 0.5 * (1.0 + tanh((y - (y0 - notch_depth)) / smoothing));
+        REAL_t notch = 0.5 * (1.0 + tanh((y - (y0 - notch_depth)) / smoothing));
         circle *= (1.0 - notch);
     }
     
@@ -1469,7 +1474,7 @@ double test_function(const double x,
 #ifdef USE_SIN_FUNCTION
 
 KOKKOS_INLINE_FUNCTION
-double test_function(double x, double y) {
+REAL_t test_function(REAL_t x, REAL_t y) {
     return sin(PI*x);
 }
 
@@ -1483,410 +1488,16 @@ double test_function(double x, double y) {
 #ifdef USE_GAUSSIAN
 
 KOKKOS_INLINE_FUNCTION
-double test_function(double x, double y) {
-    const double cx = 0.5;
-    const double cy = 0.5;
-    const double sigma = 0.1;
+REAL_t test_function(REAL_t x, REAL_t y) {
+    const REAL_t cx = 0.5;
+    const REAL_t cy = 0.5;
+    const REAL_t sigma = 0.1;
     
-    double dx = x - cx;
-    double dy = y - cy;
-    double r2 = dx*dx + dy*dy;
+    REAL_t dx = x - cx;
+    REAL_t dy = y - cy;
+    REAL_t r2 = dx*dx + dy*dy;
     
     return exp(-r2 / (2.0 * sigma * sigma));
 }
 
 #endif // USE_GAUSSIAN
-
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Nodal Asymmetric Clip-and-Scale Limiter
-// 
-// Applies bound-preserving limiter to a DG scalar field while maintaining
-// element-wise conservation using asymmetric scaling.
-// 
-// @param mesh          Mesh object with neighbor access
-// @param field         Nodal scalar field [num_corners]
-// @param epsilon       Tolerance for floating point comparisons
-// 
-//////////////////////////////////////////////////////////////////////////////
-template <typename T1, typename T2, typename T3>
-void limit_corner_field(const ReferenceElement_t& FERefElem,
-                        const Quadrature_t& Quad,
-                        const Mesh_t& Mesh,
-                        const T1& elem_vol,
-                        const T2& elem_det_jac,
-                        T3& field,  // [num_corners]
-                        double epsilon) 
-{
-    // shorthand names
-    const size_t num_elems = Mesh.num_elems;
-    const size_t num_nodes_in_elem = Mesh.num_nodes_in_elem;
-    const size_t num_corners = Mesh.num_corners;
-
-    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
-    
-    // Temporary storage for limited values
-    CArrayKokkos<double> clipped_corner_field(num_corners);
-
-    CArrayKokkos<double> deviations(num_elems, num_nodes_in_elem);
-    CArrayKokkos<double> upper_indices(num_elems, num_nodes_in_elem);
-    CArrayKokkos<double> lower_indices(num_elems, num_nodes_in_elem);
-
-    CArrayKokkos<double> field_elem_avg(num_elems);
-    CArrayKokkos<double> clipped_field_elem_avg(num_elems);
-
-    CArrayKokkos<double> field_max(num_elems);
-    CArrayKokkos<double> field_min(num_elems);
-
-
-    // ====================================================================
-    // STEP 1: Compute original element average (to be preserved)
-    // ====================================================================
-
-    get_elem_avg_nodal_scalar(Mesh, FERefElem, Quad, elem_vol, field, elem_det_jac, field_elem_avg);
-
-
-    // Parallel loop over elems
-    FOR_ALL(elem_gid, 0, num_elems, {
-
-        // ====================================================================
-        // STEP 2: Compute element-wise bounds from neighbors
-        // ====================================================================
-        
-        double u_min;
-        double u_max;
-        
-        // Initialize with current element values
-        u_min = field_elem_avg(elem_gid);
-        u_max = field_elem_avg(elem_gid);
-    
-        // Expand bounds using neighbor cell averages
-        const size_t num_neighbors = Mesh.num_elems_in_elem(elem_gid);
-        for (size_t nbr = 0; nbr < num_neighbors; nbr++) {
-
-            const size_t neighbor_id = Mesh.elems_in_elem(elem_gid, nbr);
-
-            u_min = fmin(u_min, field_elem_avg(neighbor_id));
-            u_max = fmax(u_max, field_elem_avg(neighbor_id));
-        } // end for nbrs
-
-        // Add small tolerance to avoid numerical issues
-        u_min -= epsilon;
-        u_max += epsilon;
-        
-        field_max(elem_gid) = u_max;
-        field_min(elem_gid) = u_min;
-        
-        
-        // ====================================================================
-        // STEP 3: Clip nodal values to bounds
-        // ====================================================================
-        
-        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
-            const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
-            clipped_corner_field(corner_gid) = fmin(fmax(field(corner_gid), u_min), u_max);
-        }
-
-    }); // end parallel for over elems
-    Kokkos::fence();
-
-
-    get_elem_avg_nodal_scalar(Mesh, FERefElem, Quad, elem_vol, clipped_corner_field, elem_det_jac, clipped_field_elem_avg);
-
-
-    // Parallel loop over elems
-    FOR_ALL(elem_gid, 0, num_elems, {
-
-        // ====================================================================
-        // STEP 4: Check if scaling is needed
-        // ====================================================================
-        
-        //if (fabs(clipped_field_elem_avg(elem_gid) - field_elem_avg(elem_gid)) < epsilon) {
-        //
-        //    // Clipping preserved conservation, no scaling needed
-        //    for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
-        //        const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
-        //        limited_field(corner_gid) = clipped_corner_field(corner_gid);
-        //    }
-        //
-        //    continue;
-        //} // end if
-        
-        // ====================================================================
-        // STEP 5: Compute deviations from clipped average
-        // ====================================================================
-        
-        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
-            const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
-            deviations(elem_gid,node_lid) = clipped_corner_field(corner_gid) - clipped_field_elem_avg(elem_gid);
-        }
-        
-        // ====================================================================
-        // STEP 6: Classify nodes into upper/lower groups
-        // ====================================================================
-        
-        size_t num_upper = 0;
-        size_t num_lower = 0;
-
-        // First pass: Classify nodes (ONCE!)
-        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
-            if(deviations(elem_gid, node_lid) > epsilon){
-                upper_indices(elem_gid, num_upper++) = node_lid;
-            }
-            else if(deviations(elem_gid, node_lid) < -epsilon){
-                lower_indices(elem_gid, num_lower++) = node_lid;
-            }
-        }
-
-        // Second pass: Integrate positive and negative deviations
-        double S_plus = 0.0;
-        double S_minus = 0.0;
-
-        for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
-            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0), num_nodes_in_elem);
-            const double vol_qpt = elem_det_jac(elem_gid, qpt_lid) * Quad.qpt_weights(qpt_lid);
-
-            for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
-                if(deviations(elem_gid, node_lid) > epsilon){
-                    S_plus += deviations(elem_gid, node_lid) * a_basis(node_lid) * vol_qpt;
-                }
-                else if(deviations(elem_gid, node_lid) < -epsilon){
-                    S_minus += deviations(elem_gid, node_lid) * a_basis(node_lid) * vol_qpt;
-                }
-            }
-        }
-
-        
-        // ====================================================================
-        // STEP 7: Compute scaling factors (asymmetric or symmetric)
-        // ====================================================================
-        
-        double theta_plus = 1.0;
-        double theta_minus = 1.0;
-
-        // shorthand names
-        const double u_max = field_max(elem_gid); // bounds for this elem
-        const double u_min = field_min(elem_gid); // bounds for this elem
-        const double u_bar_original = field_elem_avg(elem_gid); 
-        
-        // Check if asymmetric scaling is applicable
-        bool use_asymmetric = (num_upper > 0 && num_lower > 0 && 
-                              fabs(S_plus) > epsilon && 
-                              fabs(S_minus) > epsilon);
-        
-        if (use_asymmetric) {
-            // Asymmetric scaling
-            
-            // Compute maximum theta_plus (upper bound constraint)
-            double theta_plus_max = 1.0e16;
-            for (size_t j = 0; j < num_upper; j++) {
-                size_t i = upper_indices(elem_gid,j);
-                if (deviations(elem_gid,i) > epsilon) {
-                    double theta_i = (u_max - u_bar_original) / deviations(elem_gid,i);
-                    theta_plus_max = fmin(theta_plus_max, theta_i);
-                }
-            }
-            
-            // Compute maximum theta_minus (lower bound constraint)
-            double theta_minus_max = 1.0e16;
-            for (size_t j = 0; j < num_lower; j++) {
-                size_t i = lower_indices(elem_gid,j);
-                if (deviations(elem_gid,i) < -epsilon) {
-                    double theta_i = (u_bar_original - u_min) / (-deviations(elem_gid,i));
-                    theta_minus_max = fmin(theta_minus_max, theta_i);
-                }
-            }
-            
-            // Conservation coupling: theta_plus = |S_minus|/S_plus * theta_minus
-            double coupling_ratio = fabs(S_minus) / S_plus;
-            
-            // Find optimal theta_minus
-            theta_minus = fmin(theta_minus_max, 
-                             S_plus / fabs(S_minus) * theta_plus_max);
-            theta_plus = coupling_ratio * theta_minus;
-            
-            // Clamp to [0, 1]
-            theta_plus = fmax(0.0, fmin(1.0, theta_plus));
-            theta_minus = fmax(0.0, fmin(1.0, theta_minus));
-            
-        } else {
-            // Symmetric scaling (fallback)
-            
-            double theta_max = 1.0e16;
-            
-            for (size_t i = 0; i < num_nodes_in_elem; i++) {
-                double dev = deviations(elem_gid,i);
-                
-                if (dev > epsilon) {
-                    double theta_i = (u_max - u_bar_original) / dev;
-                    theta_max = fmin(theta_max, theta_i);
-                }
-                else if (dev < -epsilon) {
-                    double theta_i = (u_bar_original - u_min) / (-dev);
-                    theta_max = fmin(theta_max, theta_i);
-                } // end if
-            }
-            
-            theta_plus = fmax(0.0, fmin(1.0, theta_max));
-            theta_minus = theta_plus;
-        }
-        
-        // ====================================================================
-        // STEP 8: Apply scaling to restore conservation
-        // ====================================================================
-        
-        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
-            double theta = 1.0;
-            
-            // Select appropriate theta based on node classification
-            if (deviations(elem_gid,node_lid) > epsilon) {
-                theta = theta_plus;
-            } else if (deviations(elem_gid,node_lid) < -epsilon) {
-                theta = theta_minus;
-            } else {
-                theta = 1.0;  // Node value is at the average, it doesn't matter
-            }
-            
-            // Apply scaling: u_i* = u_bar + theta * (u_clipped_i - u_bar_clipped)
-            double u_limited = u_bar_original + theta * deviations(elem_gid,node_lid);
-            
-            // Safety clip (should be unnecessary if theta computed correctly)
-            u_limited = fmin(fmax(u_limited, u_min), u_max);
-            
-            const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
-
-            field(corner_gid) = u_limited; // Copy limited values back to original field
-        } // end loop over corners in elem
-        
-    }); // END FOR_ALL
-    
-    Kokkos::fence();
-
-} // end limiter
-
-
-// ============================================================================
-// Calculate the element average of a scalar field for each element in the mesh
-// This function is for DG and FE fields whose DOFs are at the mesh nodes
-// ============================================================================
-template <typename T1, typename T2, typename T3, typename T4>
-void get_elem_avg_nodal_scalar(const Mesh_t& Mesh,
-                               const ReferenceElement_t& FERefElem,
-                               const Quadrature_t& Quad,
-                               const T1& elem_vol,
-                               const T2& corner_field,
-                               const T3& elem_det_jac,
-                               T4& elem_avg){
-
-    const size_t num_elems = elem_vol.dims(0);
-    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
-    const size_t num_nodes_in_elem = FERefElem.num_dofs_in_elem;
-
-    FOR_FIRST(elem_gid, 0, num_elems,{
-
-        elem_avg(elem_gid) = 0.0;
-        double sum_lcl = 0.0;
-
-
-        // loop quadrature points in the element
-        FOR_REDUCE_SUM_SECOND(qpt_lid, 0, num_qpts_in_elem, sum_lcl, {
-
-            // extract the basis at a single quadrature point (qpt,dof)    
-            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),num_nodes_in_elem);
-
-            // value at qpt
-            double val_qpt = 0.0;
-            for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
-                const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
-                val_qpt += corner_field(corner_gid)*a_basis(node_lid);
-            }
-
-            // volume contribution from qpt
-            const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
-
-            sum_lcl += val_qpt*vol_qpt;
-            
-        }, elem_avg(elem_gid)); // end parallel over qpts in elem
-
-        elem_avg(elem_gid) /= elem_vol(elem_gid);
-
-    }); // end parallel over elems of the mesh
-
-} // end function
-
-
-// ============================================================================
-// Calculate the element integral of a scalar field in each element of the mesh
-// This function is for DG and FE fields whose DOFs are at the mesh nodes
-// ============================================================================
-template <typename T1, typename T2, typename T3>
-void get_elem_integral_nodal_scalar(const Mesh_t& Mesh,
-                                    const ReferenceElement_t& FERefElem,
-                                    const Quadrature_t& Quad,
-                                    const T1& corner_field,
-                                    const T2& elem_det_jac,
-                                    T3& elem_integral){
-
-    const size_t num_elems = elem_integral.dims(0);
-    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
-    const size_t num_nodes_in_elem = FERefElem.num_dofs_in_elem;
-
-
-    FOR_FIRST(elem_gid, 0, num_elems,{
-
-        elem_integral(elem_gid) = 0.0;
-        double sum_lcl = 0.0;
-
-        // loop quadrature points in the element
-        FOR_REDUCE_SUM_SECOND(qpt_lid, 0, num_qpts_in_elem, sum_lcl, {
-
-            // extract the basis at a single quadrature point (qpt,dof)    
-            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),num_nodes_in_elem);
-
-            // value at qpt
-            double val_qpt = 0.0;
-            for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
-                const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
-                val_qpt += corner_field(corner_gid)*a_basis(node_lid);
-            }
-
-            // volume contribution from qpt
-            const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
-
-            sum_lcl += val_qpt*vol_qpt;
-            
-        }, elem_integral(elem_gid)); // end parallel over qpts in elem
-
-    }); // end parallel over elems of the mesh
-
-} // end function
-    
-
-// ============================================================================
-// Calculate the element volumes across the entire mesh
-// ============================================================================
-template <typename T1, typename T2>
-void get_elem_volumes(const Quadrature_t& Quad,
-                      const T1& elem_det_jac,
-                      T2& elem_vol){
-
-    const size_t num_elems = elem_vol.dims(0);
-    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
-
-    FOR_FIRST(elem_gid, 0, num_elems,{
-
-        elem_vol(elem_gid) = 0.0;
-        double vol_lcl = 0.0;
-        
-        // loop quadrature points in the element
-        FOR_REDUCE_SUM_SECOND(qpt_lid, 0, num_qpts_in_elem, vol_lcl, {
-
-            // volume contribution from qpt
-            vol_lcl += elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
-            
-        }, elem_vol(elem_gid)); // end parallel over qpts in elem
-
-    }); // end parallel over elems of the mesh
-
-} // end function

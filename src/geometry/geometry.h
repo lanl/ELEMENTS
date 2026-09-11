@@ -51,6 +51,82 @@ void jacobian(
 
 /////////////////////////////////////////////////////////////////////////////
 ///
+/// \fn invert_3x3
+///
+/// \brief Inverts a 3x3 matrix held in registers using Cramer's rule
+///
+/// This is the scalar counterpart of the view based invert_3x3 in
+/// cramers_rule.hpp, for kernels that accumulate the Jacobian into registers
+/// and never write it to memory.  The determinate is passed in, e.g. from
+/// det_3x3(a00,...,a22), so this header does not depend on the solvers.
+///
+/// \param det The determinate of the matrix to be inverted
+/// \param j00 The 00 component of the matrix to be inverted
+/// ....
+/// \param j22 The 22 component of the matrix to be inverted
+/// \param i00 The 00 component of the inverse, calculated in the routine
+/// ....
+/// \param i22 The 22 component of the inverse, calculated in the routine
+///
+/////////////////////////////////////////////////////////////////////////////
+KOKKOS_FORCEINLINE_FUNCTION
+void invert_3x3(const double det,
+                const double j00, const double j01, const double j02,
+                const double j10, const double j11, const double j12,
+                const double j20, const double j21, const double j22,
+                double& i00, double& i01, double& i02,
+                double& i10, double& i11, double& i12,
+                double& i20, double& i21, double& i22){
+
+    const double den = det + 1e-16;
+
+    i00 = +(j11*j22 - j12*j21) / den;
+    i01 = -(j01*j22 - j02*j21) / den;
+    i02 = +(j01*j12 - j02*j11) / den;
+
+    i10 = -(j10*j22 - j12*j20) / den;
+    i11 = +(j00*j22 - j02*j20) / den;
+    i12 = -(j00*j12 - j02*j10) / den;
+
+    i20 = +(j10*j21 - j11*j20) / den;
+    i21 = -(j00*j21 - j01*j20) / den;
+    i22 = +(j00*j11 - j01*j10) / den;
+
+} // end of invert_3x3 function
+
+
+/////////////////////////////////////////////////////////////////////////////
+///
+/// \fn nanson_area_normal
+///
+/// \brief Maps a reference outward normal to the physical area weighted normal
+///
+/// Nanson's formula, a_j = scale * n_i * Jinv(i,j), where the scale is the
+/// determinate of the Jacobian times the surface quadrature weight.
+///
+/// \param n0, n1, n2 The outward normal on the reference surface
+/// \param scale      det(J) times the surface quadrature weight
+/// \param i00 ... i22 The components of the inverse Jacobian
+/// \param a0, a1, a2 The physical area normal, calculated in the routine
+///
+/////////////////////////////////////////////////////////////////////////////
+KOKKOS_FORCEINLINE_FUNCTION
+void nanson_area_normal(const double n0, const double n1, const double n2,
+                        const double scale,
+                        const double i00, const double i01, const double i02,
+                        const double i10, const double i11, const double i12,
+                        const double i20, const double i21, const double i22,
+                        double& a0, double& a1, double& a2){
+
+    a0 = (n0*i00 + n1*i10 + n2*i20)*scale;
+    a1 = (n0*i01 + n1*i11 + n2*i21)*scale;
+    a2 = (n0*i02 + n1*i12 + n2*i22)*scale;
+
+} // end of nanson_area_normal function
+
+
+/////////////////////////////////////////////////////////////////////////////
+///
 /// \fn build_quadrature_point_connectivity
 ///
 /// \brief Using mesh coordinates, mesh connectivity data structures, and  

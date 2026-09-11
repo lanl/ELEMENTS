@@ -337,7 +337,7 @@ static void build_surface_flux(const Mesh_t& Mesh,
                             *corner_field(Mesh.corners_in_elem(nbr_elem_gid, node_lid));
         }
 
-        const REAL_t flux_val = rusanov_flux(qpt_field, nbr_qpt_field, normal_dot_vel);
+        const REAL_t flux_val = 0.5*(qpt_field + nbr_qpt_field)*normal_dot_vel-0.5*fabs(normal_dot_vel)*(qpt_field - nbr_qpt_field);
 
         RHS_surf_flux(elem_gid, face_lid, qpt_lid) = flux_val;
         if(num_elems_in_surf == 2) RHS_surf_flux(nbr_elem_gid, nbr_face_lid, nbr_qpt_lid) = -flux_val;

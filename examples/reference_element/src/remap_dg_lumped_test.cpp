@@ -52,6 +52,8 @@ using namespace swage;    // unstructured mesh and point cloud
 using namespace elements; // reference element space
 
 
+#define HEAVISIDE 0
+
 #define USE_NOTCHED_CIRCLE
 //#define USE_SIN_FUNCTION
 // #define USE_GAUSSIAN
@@ -129,16 +131,25 @@ void get_elem_volumes(const Quadrature_t& Quad,
                       T2& elem_vol);
 
 
-template <typename T1, typename T2, typename T3>
+template <typename T1, typename T2, typename T3, typename T4>
 void limit_corner_field(const ReferenceElement_t& FERefElem,
                         const Quadrature_t& Quad,
                         const Mesh_t& Mesh,
                         const T1& elem_vol,
                         const T2& elem_det_jac,
-                        T3& field,  // [num_corners]
-                        double epsilon=1.E-14);
+                        const T3& elem_field_avg,
+                        T4& field,  // [num_corners]
+                        double epsilon); 
 
-
+void apply_fct_limiting(
+    Mesh_t Mesh,
+    const CArrayKokkos<double>& F_safe,
+    const CArrayKokkos<double>& F_accurate,
+    CArrayKokkos<double>& beta,
+    const DCArrayKokkos<double>& u_avg,
+    const CArrayKokkos<double>& elem_volume,
+    const double dt
+);
 
 
 
@@ -322,7 +333,7 @@ MATAR_INITIALIZE(argc, argv);
     DCArrayKokkos<double> surf_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_jacobian");
     DCArrayKokkos<double> surf_flux(num_surfs, "surf_flux");
     
-    DCArrayKokkos<double> elem_field(num_elems, "elem_field");
+    DCArrayKokkos<double> elem_field_avg(num_elems, "elem_field_avg");
     DCArrayKokkos<double> node_field(num_nodes, "node_field");     // for displaying field results
     DCArrayKokkos<double> node_velocity(num_nodes, elem_dims, "node_velocity");
     DCArrayKokkos<double> node_velocity_n(num_nodes, elem_dims, "node_velocity_n");
@@ -335,6 +346,7 @@ MATAR_INITIALIZE(argc, argv);
 
     // Calculate RHS_surf_flux
     CArrayKokkos <double> RHS_surf_flux(num_elems, num_surfs_in_elem, num_qpts_in_surf, "RHS_surf_flux"); // used to build RHS vector 
+    CArrayKokkos <double> RHS_surf_flux_lo(num_elems, num_surfs_in_elem, "RHS_surf_flux_lo"); // used to build RHS vector 
     CArrayKokkos <double> RHS_elem(num_elems, num_nodes_in_elem, "RHS_elem"); // RHS vector 
 
 
@@ -454,12 +466,21 @@ MATAR_INITIALIZE(argc, argv);
 
     // limit the initial corner fields
     get_elem_volumes(Quad, elem_det_jac, elem_vol); 
+    get_elem_avg_nodal_scalar(Mesh,
+                            FERefElem,
+                            Quad,
+                            elem_vol,
+                            corner_field,
+                            elem_det_jac,
+                            elem_field_avg);
+
     double epsilon = 1.E-10;
     limit_corner_field(FERefElem,
                        Quad,
                        Mesh,
                        elem_vol,
                        elem_det_jac,
+                       elem_field_avg,
                        corner_field,
                        epsilon);
 
@@ -489,64 +510,54 @@ MATAR_INITIALIZE(argc, argv);
 
     printf("Domain Mass t=0, after limiting: %f \n", domain_mass_t0b);
 
+
+
     DCArrayKokkos <double> output_node_coords(num_nodes,3);
-    
 
     // export results to Paraview graphics file
-    {
 
-        elem_field.set_values(0.0);
-        FOR_ALL(elem_gid,0,num_elems,{
-            for(size_t node_lid=0; node_lid<Mesh.num_nodes_in_elem; node_lid++){
-                const size_t corner_lid = node_lid;
-                const size_t corner_gid = Mesh.corners_in_elem(elem_gid, corner_lid);
-                elem_field(elem_gid) += corner_field(corner_gid);
-            } 
-            elem_field(elem_gid) /= (double)Mesh.num_nodes_in_elem;
-        });
+    // save corner field to the nodes for graphics outputs
+    node_field.set_values(0.0);
+    FOR_ALL(node_gid,0,num_nodes,{
+        for(size_t corner_lid=0; corner_lid<Mesh.num_corners_in_node(node_gid); corner_lid++){
+            const size_t corner_gid = Mesh.corners_in_node(node_gid, corner_lid);
+            node_field(node_gid) += corner_field(corner_gid);
+        } 
+        node_field(node_gid) /= (double)Mesh.num_corners_in_node(node_gid);
+    });
 
-        // save corner field to the nodes for graphics outputs
-        node_field.set_values(0.0);
-        FOR_ALL(node_gid,0,num_nodes,{
-            for(size_t corner_lid=0; corner_lid<Mesh.num_corners_in_node(node_gid); corner_lid++){
-                const size_t corner_gid = Mesh.corners_in_node(node_gid, corner_lid);
-                node_field(node_gid) += corner_field(corner_gid);
-            } 
-            node_field(node_gid) /= (double)Mesh.num_corners_in_node(node_gid);
-        });
+    // map nodes to uniform locations
+    output_node_coords.set_values(0.0);
+    interpolate_to_uniform(Mesh.nodes_in_elem,
+                            lob_nodes_1D,
+                            node_coords,  
+                            output_node_coords,   
+                            num_elems); 
 
-        // map nodes to uniform locations
-        output_node_coords.set_values(0.0);
-        interpolate_to_uniform(Mesh.nodes_in_elem,
-                               lob_nodes_1D,
-                               node_coords,  
-                               output_node_coords,   
-                               num_elems); 
+    // writing the initial mesh and state
+    output_node_coords.update_host();
+    node_field.update_host();
 
-        // writing the initial mesh and state
-        output_node_coords.update_host();
-        node_field.update_host();
+    printf(" Writing output at time = %.4f. ", time);
 
-        printf(" Writing output at time = %.4f. ", time);
+    char filename[100];
+    snprintf(filename, sizeof(filename), "output_time_%04zu.vtu", output_id);
 
-        char filename[100];
-        snprintf(filename, sizeof(filename), "output_time_%04zu.vtu", output_id);
-
-        // Write the mesh state
-        write_lagrange_hex_mesh(
-            filename,
-            output_node_coords,           
-            Mesh.num_nodes,
-            Mesh.nodes_in_elem,    
-            Mesh.num_elems,
-            elem_order,            
-            node_field,       
-            "Node_Field",
-            elem_field,          // element center data
-            "Elem_Field"         // element data name                  
-        );
-        output_id += 1;
-    } // end graphics dump scope
+    // Write the mesh state
+    write_lagrange_hex_mesh(
+        filename,
+        output_node_coords,           
+        Mesh.num_nodes,
+        Mesh.nodes_in_elem,    
+        Mesh.num_elems,
+        elem_order,            
+        node_field,       
+        "Node_Field",
+        elem_field_avg,          // element center data
+        "Elem_Field_avg"         // element data name                  
+    );
+    output_id += 1;
+    
 
 
     // --------------------------------------------------
@@ -627,7 +638,15 @@ MATAR_INITIALIZE(argc, argv);
             // ----------------------------------------------------------
             // Step 3: Calculate the surface fluxes at quadrature points
 
+            CArrayKokkos<double> F_accurate(num_surfs);
+            F_accurate.set_values(0.0);
+            CArrayKokkos<double> F_safe(num_surfs);
+            F_safe.set_values(0.0);
+            Kokkos::fence();
+
+
             RHS_surf_flux.set_values(0.0);
+            RHS_surf_flux_lo.set_values(0.0);
             FOR_FIRST(surf_gid, 0, num_surfs, {
                 
                 const size_t num_elems_in_surf = Mesh.num_elems_in_surf(surf_gid);
@@ -635,6 +654,13 @@ MATAR_INITIALIZE(argc, argv);
                 // get the first elem id and face in this surf
                 const size_t elem_gid = Mesh.elems_in_surf(surf_gid, 0);
                 const size_t face_lid = Mesh.faces_in_surf(surf_gid, 0);
+
+                size_t nbr_elem_gid = elem_gid;
+                size_t nbr_face_lid = face_lid;
+                if(num_elems_in_surf==2){
+                    nbr_elem_gid = Mesh.elems_in_surf(surf_gid, 1); // second elem
+                    nbr_face_lid = Mesh.faces_in_surf(surf_gid, 1); // second elem face
+                }    
 
                 ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
 
@@ -691,13 +717,6 @@ MATAR_INITIALIZE(argc, argv);
                     for(size_t dim=0; dim<elem_dims; dim++){
                         normal_dot_vel += area_normal[dim]*qpt_vel[dim];
                     }
-                    
-                    size_t nbr_elem_gid = elem_gid;
-                    size_t nbr_face_lid = face_lid;
-                    if(num_elems_in_surf==2){
-                        nbr_elem_gid = Mesh.elems_in_surf(surf_gid, 1); // second elem
-                        nbr_face_lid = Mesh.faces_in_surf(surf_gid, 1); // second elem face
-                    }    
 
                     const size_t nbr_qpt_lid = surf_qpt_qpt_map(surf_gid,0,qpt_lid); // matching qpt
 
@@ -719,22 +738,68 @@ MATAR_INITIALIZE(argc, argv);
                         nbr_qpt_field += a_nbr_basis(node_lid)*corner_field(nbr_corner_gid);  
                     } // end for
 
+#if HEAVISIDE==1
                     //
-                    // Rusanov flux at the quadrature point
+                    // Use upwind flux at the quadrature point
                     //
                     
+                    // high-order (ho) flux
                     // if normal_dot_vel<0 advection is out of first elem in the surf
-                    const double flux_val = 0.5*(qpt_field+nbr_qpt_field)*normal_dot_vel 
+                    const double flux_ho = -0.5*(qpt_field+nbr_qpt_field)*normal_dot_vel 
+                                           +0.5*fabs(normal_dot_vel)*(qpt_field-nbr_qpt_field);
+                    F_accurate(surf_gid) += flux_ho;
+#else
+                    //
+                    // Rusanov flux at the quadrature point using HIGH-order reconstructions
+                    //
+                    
+                    // high-order (ho) flux
+                    // if normal_dot_vel<0 advection is out of first elem in the surf
+                    const double flux_ho = 0.5*(qpt_field+nbr_qpt_field)*normal_dot_vel 
                                            -0.5*fabs(normal_dot_vel)*(qpt_field-nbr_qpt_field);
+                    F_accurate(surf_gid) += flux_ho;
+#endif
+
+                    //
+                    // Rusanov flux at the quadrature point using LOW-order reconstructions
+                    //
+
+                    // low-order (lo) flux uses the element average
+                    const double avg_field = elem_field_avg(elem_gid);
+                    const double nbr_avg_field = elem_field_avg(nbr_elem_gid);
+                    const double flux_lo = 0.5*(avg_field+nbr_avg_field)*normal_dot_vel 
+                                          -0.5*fabs(normal_dot_vel)*(avg_field-nbr_avg_field);
+                    F_safe(surf_gid) += flux_lo;
 
                     // save flux value to the quadrature points on either side of the element
-                    RHS_surf_flux(elem_gid, face_lid, qpt_lid) = flux_val;
-                    if(num_elems_in_surf==2) RHS_surf_flux(nbr_elem_gid, nbr_face_lid, nbr_qpt_lid) = -flux_val;
+                    RHS_surf_flux(elem_gid, face_lid, qpt_lid) = flux_ho;
+                    if(num_elems_in_surf==2) RHS_surf_flux(nbr_elem_gid, nbr_face_lid, nbr_qpt_lid) = -flux_ho;
 
                 }); // end parallel for qpt
+
+                // remember low-order is the entire face so we tally all qpt values
+                RHS_surf_flux_lo(elem_gid, face_lid) = F_safe(surf_gid);
+                if(num_elems_in_surf==2) RHS_surf_flux_lo(nbr_elem_gid, nbr_face_lid) = -F_safe(surf_gid);
         
             }); // end surf loop
             Kokkos::fence();
+
+            
+            // -------------------------------------------------
+            // Step 3b: Calculate flux limiter using FCT
+            // F_limited(surf_gid) = F_safe(surf_gid) + beta(surf_gid)*(F_accurate(surf_gid)-F_safe(surf_gid));
+
+            CArrayKokkos<double> beta(num_surfs); 
+
+            // limit flux
+            apply_fct_limiting(Mesh,
+                               F_safe,
+                               F_accurate,
+                               beta,
+                               elem_field_avg,
+                               elem_vol,
+                               dt);
+
 
             // -------------------------------------------------
             // Step 4: Build RHS of DG equations in the element
@@ -818,16 +883,23 @@ MATAR_INITIALIZE(argc, argv);
                     // ----------------------------------------------
                     // 4c. Add SURFACE flux contribution
                 
-                    for(size_t face_lid = 0; face_lid < num_surfs_in_elem; face_lid++)
-                    for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_surf; qpt_lid++){
-                        
-                        ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid, qpt_lid, 0),
-                                                        num_nodes_in_elem);
-                        
-                        // surface flux (note: RHS_surf_flux already has correct sign)
-                        RHS_elem(elem_gid, dof_lid) += 
-                            rk_alpha * dt * RHS_surf_flux(elem_gid, face_lid, qpt_lid) * a_basis(dof_lid);
-                    }
+                    for(size_t face_lid = 0; face_lid < num_surfs_in_elem; face_lid++){
+
+                        const size_t surf_gid = Mesh.surfs_in_elem(elem_gid, face_lid);
+
+                        for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_surf; qpt_lid++){
+                            
+                            ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid, qpt_lid, 0),
+                                                            num_nodes_in_elem);
+                            
+                            // surface flux (note: RHS_surf_flux already has correct sign)
+                            RHS_elem(elem_gid, dof_lid) += 
+                                rk_alpha * dt * beta(surf_gid)*RHS_surf_flux(elem_gid, face_lid, qpt_lid) * a_basis(dof_lid);
+                        } // end qpt_lid
+
+                        RHS_elem(elem_gid, dof_lid) += rk_alpha * dt *(1.0-beta(surf_gid))*RHS_surf_flux_lo(elem_gid, face_lid);
+
+                    } // end face_lid
 
                 }); // end parallel for over dof_lid
 
@@ -913,11 +985,19 @@ MATAR_INITIALIZE(argc, argv);
             // -----------------------------------------------------
             // 8. Limit the fields to remain bounded by nieghbors
             get_elem_volumes(Quad, elem_det_jac, elem_vol); 
+            get_elem_avg_nodal_scalar(Mesh,
+                                      FERefElem,
+                                      Quad,
+                                      elem_vol,
+                                      corner_field,
+                                      elem_det_jac,
+                                      elem_field_avg);
             limit_corner_field(FERefElem,
                                Quad,
                                Mesh,
                                elem_vol,
                                elem_det_jac,
+                               elem_field_avg,
                                corner_field,
                                epsilon);
 
@@ -939,6 +1019,7 @@ MATAR_INITIALIZE(argc, argv);
                 sum_elem += elem_corner_vol(elem_gid, node_lid)*corner_field(corner_gid);
             }
         }, domain_mass_time);
+
 
         printf("Domain mass error= %f \n", domain_mass_time-domain_mass_t0);
         if(fabs(domain_mass_time-domain_mass_t0)>1.e-12) Kokkos::abort("ERROR: Mass is not conserved");
@@ -1021,14 +1102,14 @@ MATAR_INITIALIZE(argc, argv);
 
 
 
-            elem_field.set_values(0.0);
+            elem_field_avg.set_values(0.0);
             FOR_ALL(elem_gid,0,num_elems,{
                 for(size_t node_lid=0; node_lid<Mesh.num_nodes_in_elem; node_lid++){
                     const size_t corner_lid = node_lid;
                     const size_t corner_gid = Mesh.corners_in_elem(elem_gid, corner_lid);
-                    elem_field(elem_gid) += corner_field(corner_gid);
+                    elem_field_avg(elem_gid) += corner_field(corner_gid);
                 } 
-                elem_field(elem_gid) /= (double)Mesh.num_nodes_in_elem;
+                elem_field_avg(elem_gid) /= (double)Mesh.num_nodes_in_elem;
             });
 
             // save corner field to the nodes for graphics outputs
@@ -1069,8 +1150,8 @@ MATAR_INITIALIZE(argc, argv);
                 elem_order,            
                 node_field,       
                 "Node_Field",
-                elem_field,          // element center data
-                "Elem_Field"           // element data name                  
+                elem_field_avg,          // element center data
+                "Elem_Field_avg"           // element data name                  
             );
             time_output += graphics_dt;
             output_id += 1;
@@ -1508,13 +1589,14 @@ double test_function(double x, double y) {
 // @param epsilon       Tolerance for floating point comparisons
 // 
 //////////////////////////////////////////////////////////////////////////////
-template <typename T1, typename T2, typename T3>
+template <typename T1, typename T2, typename T3, typename T4>
 void limit_corner_field(const ReferenceElement_t& FERefElem,
                         const Quadrature_t& Quad,
                         const Mesh_t& Mesh,
                         const T1& elem_vol,
                         const T2& elem_det_jac,
-                        T3& field,  // [num_corners]
+                        const T3& elem_field_avg,
+                        T4& field,  // [num_corners]
                         double epsilon) 
 {
     // shorthand names
@@ -1531,18 +1613,10 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
     CArrayKokkos<double> upper_indices(num_elems, num_nodes_in_elem);
     CArrayKokkos<double> lower_indices(num_elems, num_nodes_in_elem);
 
-    CArrayKokkos<double> field_elem_avg(num_elems);
-    CArrayKokkos<double> clipped_field_elem_avg(num_elems);
+    CArrayKokkos<double> clipped_elem_field_avg(num_elems);
 
     CArrayKokkos<double> field_max(num_elems);
     CArrayKokkos<double> field_min(num_elems);
-
-
-    // ====================================================================
-    // STEP 1: Compute original element average (to be preserved)
-    // ====================================================================
-
-    get_elem_avg_nodal_scalar(Mesh, FERefElem, Quad, elem_vol, field, elem_det_jac, field_elem_avg);
 
 
     // Parallel loop over elems
@@ -1556,8 +1630,8 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
         double u_max;
         
         // Initialize with current element values
-        u_min = field_elem_avg(elem_gid);
-        u_max = field_elem_avg(elem_gid);
+        u_min = elem_field_avg(elem_gid);
+        u_max = elem_field_avg(elem_gid);
     
         // Expand bounds using neighbor cell averages
         const size_t num_neighbors = Mesh.num_elems_in_elem(elem_gid);
@@ -1565,8 +1639,8 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
 
             const size_t neighbor_id = Mesh.elems_in_elem(elem_gid, nbr);
 
-            u_min = fmin(u_min, field_elem_avg(neighbor_id));
-            u_max = fmax(u_max, field_elem_avg(neighbor_id));
+            u_min = fmin(u_min, elem_field_avg(neighbor_id));
+            u_max = fmax(u_max, elem_field_avg(neighbor_id));
         } // end for nbrs
 
         // Add small tolerance to avoid numerical issues
@@ -1590,7 +1664,7 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
     Kokkos::fence();
 
 
-    get_elem_avg_nodal_scalar(Mesh, FERefElem, Quad, elem_vol, clipped_corner_field, elem_det_jac, clipped_field_elem_avg);
+    get_elem_avg_nodal_scalar(Mesh, FERefElem, Quad, elem_vol, clipped_corner_field, elem_det_jac, clipped_elem_field_avg);
 
 
     // Parallel loop over elems
@@ -1600,7 +1674,7 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
         // STEP 4: Check if scaling is needed
         // ====================================================================
         
-        //if (fabs(clipped_field_elem_avg(elem_gid) - field_elem_avg(elem_gid)) < epsilon) {
+        //if (fabs(clipped_elem_field_avg(elem_gid) - elem_field_avg(elem_gid)) < epsilon) {
         //
         //    // Clipping preserved conservation, no scaling needed
         //    for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
@@ -1617,7 +1691,7 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
         
         for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
             const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
-            deviations(elem_gid,node_lid) = clipped_corner_field(corner_gid) - clipped_field_elem_avg(elem_gid);
+            deviations(elem_gid,node_lid) = clipped_corner_field(corner_gid) - clipped_elem_field_avg(elem_gid);
         }
         
         // ====================================================================
@@ -1666,7 +1740,7 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
         // shorthand names
         const double u_max = field_max(elem_gid); // bounds for this elem
         const double u_min = field_min(elem_gid); // bounds for this elem
-        const double u_bar_original = field_elem_avg(elem_gid); 
+        const double u_bar_original = elem_field_avg(elem_gid); 
         
         // Check if asymmetric scaling is applicable
         bool use_asymmetric = (num_upper > 0 && num_lower > 0 && 
@@ -1889,6 +1963,7 @@ void get_elem_volumes(const Quadrature_t& Quad,
 
 } // end function
 
+
 //////////////////////////////////////////////////////////////////////////////////////
 //
 // Generic FCT flux correction for DG remap
@@ -1898,7 +1973,7 @@ void get_elem_volumes(const Quadrature_t& Quad,
 // @param Mesh          Mesh object containing connectivity
 // @param F_safe        Safe/monotone flux at each face (num_surfs)
 // @param F_accurate    Accurate flux at each face (num_surfs)
-// @param F_total       Output: limited total flux (num_surfs)
+// @param beta          Output: limiter for use on the total flux (num_surfs)
 // @param u_avg         Elem average values (num_elems)
 // @param elem_volume   Elem volumes (num_elems)
 // @param dt            Time step size
@@ -1907,8 +1982,8 @@ void apply_fct_limiting(
     Mesh_t Mesh,
     const CArrayKokkos<double>& F_safe,
     const CArrayKokkos<double>& F_accurate,
-    CArrayKokkos<double>& F_total,
-    const CArrayKokkos<double>& u_avg,
+    CArrayKokkos<double>& beta,
+    const DCArrayKokkos<double>& u_avg,
     const CArrayKokkos<double>& elem_volume,
     const double dt
 ) {
@@ -2056,7 +2131,7 @@ void apply_fct_limiting(
     // =========================================================================
     // Step 6: Compute face limiting coefficients beta
     // =========================================================================
-    CArrayKokkos<double> beta(num_surfs);
+    // CArrayKokkos<double> beta(num_surfs) is passed in and sent back
     
     FOR_ALL(surf_gid, 0, num_surfs, {
 
@@ -2088,14 +2163,13 @@ void apply_fct_limiting(
     }); // end parallel for
     
 
-    // =========================================================================
-    // Step 7: Compute final limited flux
-    // =========================================================================
-    FOR_ALL(surf_gid, 0, num_surfs, {
-        F_total(surf_gid) = F_safe(surf_gid) + beta(surf_gid)*f_AD_raw(surf_gid);
-    });
-
+    // ==============================================================================
+    // Note: Compute final limited flux outside this function
+    //
+    //   F_limited(surf_gid) = F_safe(surf_gid) + beta(surf_gid)*f_AD_raw(surf_gid);
+    //
     // As an example, one can use these fluxes as follows here:
-    // m*(U^new - U^n) = dt*Sum(F_total)
+    //   m*(U^new - U^n) = dt*Sum(F_limited)
+    // ==============================================================================
 
 } // end function

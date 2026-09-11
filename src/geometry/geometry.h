@@ -51,6 +51,71 @@ void jacobian(
 
 /////////////////////////////////////////////////////////////////////////////
 ///
+/// \fn jacobian
+///
+/// \brief Calculates the jacobian matrix in 2D, 3D, 4D, ...
+///
+/// \param j00     The jacobian matrix 00 component
+/// \param j10     The jacobian matrix 10 component
+///  .....
+/// \param j22     The jacobian matrix 22 component
+/// \param node_coords  An array containing all node coords on the mesh
+/// \param nodes_in_an_elem  The node indices in a single elem, its a 1D array
+/// \param a_grad_basis The gradient of the basis at a single point, Grad[DOFs,dims]
+///
+/////////////////////////////////////////////////////////////////////////////
+template <typename T1, typename T2, typename T3, typename T4>
+KOKKOS_INLINE_FUNCTION
+void jacobian(
+    T1 j00,      // double or float 
+    T1 j01,      // double or float 
+    T1 j02,      // double or float 
+    T1 j10,      // double or float 
+    T1 j11,      // double or float 
+    T1 j12,      // double or float 
+    T1 j20,      // double or float 
+    T1 j21,      // double or float 
+    T1 j22,      // double or float 
+    const T2 &node_coords,      // e.g., DCArrayKokkos    <double>
+    const T3 &nodes_in_an_elem, // e.g., ViewCArrayKokkos <size_t>
+    const T4 &a_grad_basis){    // e.g., ViewCArrayKokkos <double>
+
+    const size_t dims = a_grad_basis.dims(1);
+    const size_t num_dofs_in_elem = nodes_in_an_elem.size();
+
+    // setting jacobian matrix to all zeros
+    j00 = 0.0;
+    j01 = 0.0;
+    j02 = 0.0;
+    
+    j10 = 0.0;
+    j11 = 0.0;
+    j12 = 0.0;
+    
+    j20 = 0.0;
+    j21 = 0.0;
+    j22 = 0.0;
+    
+    // Calculate Jacobian: J[i,j] = partial x_i/partial \xi_j
+    for(size_t dof_lid = 0; dof_lid < num_dofs_in_elem; dof_lid++){
+        const size_t node_gid = nodes_in_an_elem(dof_lid);
+        const T1 x0 = node_coords(node_gid, 0);
+        const T1 x1 = node_coords(node_gid, 1);
+        const T1 x2 = node_coords(node_gid, 2);
+        const T1 g0 = a_grad_basis(dof_lid, 0);
+        const T1 g1 = a_grad_basis(dof_lid, 1);
+        const T1 g2 = a_grad_basis(dof_lid, 2);
+        j00 += x0*g0; j01 += x0*g1; j02 += x0*g2;
+        j10 += x1*g0; j11 += x1*g1; j12 += x1*g2;
+        j20 += x2*g0; j21 += x2*g1; j22 += x2*g2;
+    }
+
+} // end of jacobian function
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+///
 /// \fn build_quadrature_point_connectivity
 ///
 /// \brief Using mesh coordinates, mesh connectivity data structures, and  

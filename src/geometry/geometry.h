@@ -151,10 +151,11 @@ void nanson_area_normal(const double n0, const double n1, const double n2,
 /// \return void
 ///
 /////////////////////////////////////////////////////////////////////////////
+template <typename NodeCoordsT>
 inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
                                                 const elements::ReferenceSurface_t& RefSurf,
                                                 CArrayKokkos<int>& surf_qpt_qpt_map,
-                                                const DCArrayKokkos<double>& node_coords){
+                                                const NodeCoordsT& node_coords){
 
     surf_qpt_qpt_map.set_values(-1);
                                                     

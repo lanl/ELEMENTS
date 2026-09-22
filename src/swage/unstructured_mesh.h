@@ -159,6 +159,9 @@ struct Mesh_t
     RaggedRightArrayKokkos<size_t> bdy_nodes_in_set; ///< Boundary nodes in a boundary set
     DCArrayKokkos<size_t> num_bdy_nodes_in_set; ///< Number of boundary nodes in a set
 
+    RaggedRightArrayKokkos<size_t> bdy_surfs_in_set; ///< Boundary nodes in a boundary set
+    DCArrayKokkos<size_t> num_bdy_surfs_in_set; ///< Number of boundary nodes in a set
+
 
     // ---- Internal Condition Data Definitions ---- //
     size_t num_internal_sets = 0; ///< Number of internal sets

@@ -173,12 +173,13 @@ MATAR_INITIALIZE(argc, argv);
     const size_t elem_dims = 3;
     const size_t elem_order = 3; 
     
-    const double L_x = 1.;
-    const double L_y = 1.;
-    const double L_z = 0.0625;  // 0.5, 0.25, 0.125, 0.0625
     const size_t num_elems_x = 8;
     const size_t num_elems_y = 8;
     const size_t num_elems_z = 1;
+
+    const double L_x = 1.;
+    const double L_y = 1.;
+    const double L_z = 1./((double)num_elems_x);  // 0.5, 0.25, 0.125, 0.0625
 
     const size_t rk_num_stages = 2;    // number of runge kutta time integration levels
     const size_t max_cycles = 10000000;
@@ -1682,7 +1683,7 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
     Kokkos::fence();
 
 
-    get_elem_avg_nodal_scalar(Mesh, FERefElem, Quad, elem_vol, clipped_corner_field, elem_det_jac, clipped_elem_field_avg);
+   get_elem_avg_nodal_scalar(Mesh, FERefElem, Quad, elem_vol, clipped_corner_field, elem_det_jac, clipped_elem_field_avg);
 
 
     // Parallel loop over elems

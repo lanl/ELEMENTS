@@ -54,6 +54,7 @@ using namespace elements; // reference element space
 
 #define HEAVISIDE 0
 #define FCT 0
+#define LIMIT 1
 
 #define USE_NOTCHED_CIRCLE
 //#define USE_SIN_FUNCTION
@@ -173,8 +174,8 @@ MATAR_INITIALIZE(argc, argv);
     const size_t elem_dims = 3;
     const size_t elem_order = 3; 
     
-    const size_t num_elems_x = 8;
-    const size_t num_elems_y = 8;
+    const size_t num_elems_x = 16;
+    const size_t num_elems_y = 16;
     const size_t num_elems_z = 1;
 
     const double L_x = 1.;
@@ -479,6 +480,7 @@ MATAR_INITIALIZE(argc, argv);
                             elem_field_avg);
 
     double epsilon = 1.E-10;
+#if LIMIT == 1
     limit_corner_field(FERefElem,
                        Quad,
                        Mesh,
@@ -487,7 +489,7 @@ MATAR_INITIALIZE(argc, argv);
                        elem_field_avg,
                        corner_field,
                        epsilon);
-
+#endif
 
 
     FOR_ALL(node_gid, 0, num_nodes,{
@@ -797,6 +799,7 @@ MATAR_INITIALIZE(argc, argv);
 
             CArrayKokkos<double> beta(num_surfs); 
 #if FCT==1
+            printf("FCT limiter \n");
             // limit flux
             apply_fct_limiting(Mesh,
                                F_safe,
@@ -906,6 +909,7 @@ MATAR_INITIALIZE(argc, argv);
                                 rk_alpha * dt * beta(surf_gid)*RHS_surf_flux(elem_gid, face_lid, qpt_lid) * a_basis(dof_lid);
                         } // end qpt_lid
 
+                        //printf("RHS_elem use of beta = %f \n", beta(surf_gid));
                         RHS_elem(elem_gid, dof_lid) += rk_alpha * dt *(1.0-beta(surf_gid))*RHS_surf_flux_lo(elem_gid, face_lid);
 
                     } // end face_lid
@@ -1001,6 +1005,8 @@ MATAR_INITIALIZE(argc, argv);
                                       corner_field,
                                       elem_det_jac,
                                       elem_field_avg);
+#if LIMIT == 1
+            printf("limiting nodal dofs\n");
             limit_corner_field(FERefElem,
                                Quad,
                                Mesh,
@@ -1009,7 +1015,7 @@ MATAR_INITIALIZE(argc, argv);
                                elem_field_avg,
                                corner_field,
                                epsilon);
-
+#endif
 
         } // end Runge Kutta time level loop
 
@@ -2033,13 +2039,13 @@ void apply_fct_limiting(
     CArrayKokkos<double> u_min(num_elems);
     
     FOR_ALL(elem_gid, 0, num_elems, {
-        double u_max_local = u_avg(elem_gid);
-        double u_min_local = u_avg(elem_gid);
+        double u_max_local = u_avg_n(elem_gid);
+        double u_min_local = u_avg_n(elem_gid);
         
         for (size_t nbr_lid = 0; nbr_lid < Mesh.num_elems_in_elem(elem_gid); nbr_lid++) {
             size_t neighbor = Mesh.elems_in_elem(elem_gid, nbr_lid);
-            u_max_local = fmax(u_max_local, u_avg(neighbor));
-            u_min_local = fmin(u_min_local, u_avg(neighbor));
+            u_max_local = fmax(u_max_local, u_avg_n(neighbor));
+            u_min_local = fmin(u_min_local, u_avg_n(neighbor));
         }
         
         u_max(elem_gid) = u_max_local;
@@ -2053,6 +2059,7 @@ void apply_fct_limiting(
     // =========================================================================
     CArrayKokkos<double> u_low(num_elems);
     CArrayKokkos<double> RHS_LO(num_elems,num_surfs_in_elem);
+    RHS_LO.set_values(0.0);
 
     FOR_ALL(surf_gid, 0, num_surfs, {
                 
@@ -2179,6 +2186,9 @@ void apply_fct_limiting(
                 beta(surf_gid) = 0.0;
             }
         } // end if
+
+        //if(beta(surf_gid)<0.9)
+        //printf("beta = %f \n", beta(surf_gid));
 
     }); // end parallel for
     

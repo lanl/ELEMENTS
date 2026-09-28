@@ -145,6 +145,15 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
                         T4& field,  // [num_corners]
                         double epsilon); 
 
+template <typename T1, typename T2, typename T3, typename T4>
+void get_elem_avg_nodal_scalar(const Mesh_t& Mesh,
+                                const ReferenceElement_t& FERefElem,
+                                const Quadrature_t& Quad,
+                                const T1& elem_vol,
+                                const T2& corner_field,
+                                const T3& elem_det_jac,
+                                T4& elem_avg);
+
 
 // ============================================================================
 // Reference-element tables replicated in the layouts the GPU kernels want.
@@ -249,6 +258,35 @@ static void build_lumped_volume(const ReferenceElement_t& FERefElem,
         elem_corner_vol(elem_gid, node_lid) = vol;
     });
 } // end build_lumped_volume
+
+
+// ============================================================================
+// Calculate the element volumes across the entire mesh
+// ============================================================================
+template <typename T1, typename T2>
+void get_elem_volumes(const Quadrature_t& Quad,
+                      const T1& elem_det_jac,
+                      T2& elem_vol){
+
+    const size_t num_elems = elem_vol.dims(0);
+    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
+
+    FOR_FIRST(elem_gid, 0, num_elems,{
+
+        elem_vol(elem_gid) = 0.0;
+        double vol_lcl = 0.0;
+        
+        // loop quadrature points in the element
+        FOR_REDUCE_SUM_SECOND(qpt_lid, 0, num_qpts_in_elem, vol_lcl, {
+
+            // volume contribution from qpt
+            vol_lcl += elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+            
+        }, elem_vol(elem_gid)); // end parallel over qpts in elem
+
+    }); // end parallel over elems of the mesh
+
+} // end function
 
 
 // ============================================================================
@@ -477,11 +515,13 @@ MATAR_INITIALIZE(argc, argv);
     const REAL_t L_z = 0.0625;  // 0.5, 0.25, 0.125, 0.0625
     // The defaults reproduce the reference case; the optional arguments only
     // exist so the problem can be swept without recompiling.
-    size_t num_elems_x = 10;
-    size_t num_elems_y = 10;
+    size_t num_elems_x = 32;
+    size_t num_elems_y = 32;
     size_t num_elems_z = 1;
-    REAL_t max_time    = 0.2;
-    REAL_t graphics_dt = 0.01;
+    REAL_t max_time    = 0.5;
+    REAL_t graphics_dt = 0.1;
+
+    bool LIMIT = false;
 
     if (argc >= 3) {
         num_elems_x = (size_t)std::strtod(argv[1], nullptr);
@@ -642,6 +682,10 @@ MATAR_INITIALIZE(argc, argv);
     // read and written on the device, so neither needs a host mirror.
     CArrayKokkos<REAL_t> elem_det_jac(num_elems, num_qpts_in_elem, "elem_det_jacobian");
     CArrayKokkos<REAL_t> inv_jac_ijq(num_elems, elem_dims, elem_dims, num_qpts_in_elem, "inv_jac_ijq");
+
+    // Fields for limiting
+    CArrayKokkos<REAL_t> elem_vol(num_elems, "elem_vol");
+    CArrayKokkos<REAL_t> elem_field_avg(num_elems, "elem_field_avg");
 
     DCArrayKokkos<REAL_t> elem_field(num_elems, "elem_field");
     DCArrayKokkos<REAL_t> node_field(num_nodes, "node_field");     // for displaying field results
@@ -979,8 +1023,27 @@ MATAR_INITIALIZE(argc, argv);
 
             // -----------------------------------------------------
             // 8. Limit the fields to remain bounded by nieghbors
+            if(LIMIT){
+                get_elem_volumes(Quad, elem_det_jac, elem_vol); 
+                get_elem_avg_nodal_scalar(Mesh,
+                                        FERefElem,
+                                        Quad,
+                                        elem_vol,
+                                        corner_field,
+                                        elem_det_jac,
+                                        elem_field_avg);
+                double epsilon = 1.E-10;
 
-
+                limit_corner_field(FERefElem,
+                    Quad,
+                    Mesh,
+                    elem_vol,
+                    elem_det_jac,
+                    elem_field_avg,
+                    corner_field,
+                    epsilon);            
+            }
+            
 
         } // end Runge Kutta time level loop
 
@@ -1440,33 +1503,7 @@ void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
 } // end function
 
 
-// ============================================================================
-// Calculate the element volumes across the entire mesh
-// ============================================================================
-template <typename T1, typename T2>
-void get_elem_volumes(const Quadrature_t& Quad,
-                      const T1& elem_det_jac,
-                      T2& elem_vol){
 
-    const size_t num_elems = elem_vol.dims(0);
-    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
-
-    FOR_FIRST(elem_gid, 0, num_elems,{
-
-        elem_vol(elem_gid) = 0.0;
-        double vol_lcl = 0.0;
-        
-        // loop quadrature points in the element
-        FOR_REDUCE_SUM_SECOND(qpt_lid, 0, num_qpts_in_elem, vol_lcl, {
-
-            // volume contribution from qpt
-            vol_lcl += elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
-            
-        }, elem_vol(elem_gid)); // end parallel over qpts in elem
-
-    }); // end parallel over elems of the mesh
-
-} // end function
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1737,6 +1774,56 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
     Kokkos::fence();
 
 } // end limiter
+
+
+// ============================================================================
+// Calculate the element average of a scalar field for each element in the mesh
+// This function is for DG and FE fields whose DOFs are at the mesh nodes
+// ============================================================================
+template <typename T1, typename T2, typename T3, typename T4>
+void get_elem_avg_nodal_scalar(const Mesh_t& Mesh,
+                               const ReferenceElement_t& FERefElem,
+                               const Quadrature_t& Quad,
+                               const T1& elem_vol,
+                               const T2& corner_field,
+                               const T3& elem_det_jac,
+                               T4& elem_avg){
+
+    const size_t num_elems = elem_vol.dims(0);
+    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
+    const size_t num_nodes_in_elem = FERefElem.num_dofs_in_elem;
+
+    FOR_FIRST(elem_gid, 0, num_elems,{
+
+        elem_avg(elem_gid) = 0.0;
+        double sum_lcl = 0.0;
+
+
+        // loop quadrature points in the element
+        FOR_REDUCE_SUM_SECOND(qpt_lid, 0, num_qpts_in_elem, sum_lcl, {
+
+            // extract the basis at a single quadrature point (qpt,dof)    
+            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),num_nodes_in_elem);
+
+            // value at qpt
+            double val_qpt = 0.0;
+            for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+                const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+                val_qpt += corner_field(corner_gid)*a_basis(node_lid);
+            }
+
+            // volume contribution from qpt
+            const double vol_qpt = elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+
+            sum_lcl += val_qpt*vol_qpt;
+            
+        }, elem_avg(elem_gid)); // end parallel over qpts in elem
+
+        elem_avg(elem_gid) /= elem_vol(elem_gid);
+
+    }); // end parallel over elems of the mesh
+
+} // end function
 
 
 

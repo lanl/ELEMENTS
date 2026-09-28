@@ -134,6 +134,18 @@ void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
                             const size_t num_elems); 
 
 
+
+template <typename T1, typename T2, typename T3, typename T4>
+void limit_corner_field(const ReferenceElement_t& FERefElem,
+                        const Quadrature_t& Quad,
+                        const Mesh_t& Mesh,
+                        const T1& elem_vol,
+                        const T2& elem_det_jac,
+                        const T3& elem_field_avg,
+                        T4& field,  // [num_corners]
+                        double epsilon); 
+
+
 // ============================================================================
 // Reference-element tables replicated in the layouts the GPU kernels want.
 // Kernels threaded over quadrature points need qpt as the fastest index;
@@ -962,11 +974,13 @@ MATAR_INITIALIZE(argc, argv);
                 const size_t corner_gid = Mesh.corners_in_elem(elem_gid, dof_lid);
                 corner_field(corner_gid) = RHS_elem(elem_gid, dof_lid)/elem_corner_vol(elem_gid, dof_lid);
             });
+            Kokkos::fence();
 
 
             // -----------------------------------------------------
-            // 8. A slope/bound limiter would be applied to corner_field here;
-            //    see limit_corner_field in remap_dg_lumped_test.cpp.
+            // 8. Limit the fields to remain bounded by nieghbors
+
+
 
         } // end Runge Kutta time level loop
 
@@ -1427,6 +1441,307 @@ void interpolate_to_uniform(const DCArrayKokkos<size_t>& nodes_in_elem,
 
 
 // ============================================================================
+// Calculate the element volumes across the entire mesh
+// ============================================================================
+template <typename T1, typename T2>
+void get_elem_volumes(const Quadrature_t& Quad,
+                      const T1& elem_det_jac,
+                      T2& elem_vol){
+
+    const size_t num_elems = elem_vol.dims(0);
+    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
+
+    FOR_FIRST(elem_gid, 0, num_elems,{
+
+        elem_vol(elem_gid) = 0.0;
+        double vol_lcl = 0.0;
+        
+        // loop quadrature points in the element
+        FOR_REDUCE_SUM_SECOND(qpt_lid, 0, num_qpts_in_elem, vol_lcl, {
+
+            // volume contribution from qpt
+            vol_lcl += elem_det_jac(elem_gid, qpt_lid)*Quad.qpt_weights(qpt_lid);
+            
+        }, elem_vol(elem_gid)); // end parallel over qpts in elem
+
+    }); // end parallel over elems of the mesh
+
+} // end function
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Nodal Asymmetric Clip-and-Scale Limiter
+// 
+// Applies bound-preserving limiter to a DG scalar field while maintaining
+// element-wise conservation using asymmetric scaling.
+// 
+// @param mesh          Mesh object with neighbor access
+// @param field         Nodal scalar field [num_corners]
+// @param epsilon       Tolerance for floating point comparisons
+// 
+//////////////////////////////////////////////////////////////////////////////
+template <typename T1, typename T2, typename T3, typename T4>
+void limit_corner_field(const ReferenceElement_t& FERefElem,
+                        const Quadrature_t& Quad,
+                        const Mesh_t& Mesh,
+                        const T1& elem_vol,
+                        const T2& elem_det_jac,
+                        const T3& elem_field_avg,
+                        T4& field,  // corner_field[num_corners]
+                        double epsilon) 
+{
+    // shorthand names
+    const size_t num_elems = Mesh.num_elems;
+    const size_t num_nodes_in_elem = Mesh.num_nodes_in_elem;
+    const size_t num_corners = Mesh.num_corners;
+
+    const size_t num_qpts_in_elem = Quad.num_qpts_in_elem;
+    
+    // Temporary storage for limited values
+    CArrayKokkos<double> clipped_corner_field(num_corners);
+
+    CArrayKokkos<double> deviations(num_elems, num_nodes_in_elem);
+    CArrayKokkos<double> upper_indices(num_elems, num_nodes_in_elem);
+    CArrayKokkos<double> lower_indices(num_elems, num_nodes_in_elem);
+
+    CArrayKokkos<double> clipped_elem_field_avg(num_elems);
+
+    CArrayKokkos<double> field_max(num_elems);
+    CArrayKokkos<double> field_min(num_elems);
+
+
+    // Parallel loop over elems
+    FOR_ALL(elem_gid, 0, num_elems, {
+
+        // ====================================================================
+        // STEP 2: Compute element-wise bounds from neighbors
+        // ====================================================================
+        
+        double u_min;
+        double u_max;
+        
+        // Initialize with current element values
+        u_min = elem_field_avg(elem_gid);
+        u_max = elem_field_avg(elem_gid);
+    
+        // Expand bounds using neighbor cell averages
+        const size_t num_neighbors = Mesh.num_elems_in_elem(elem_gid);
+        for (size_t nbr = 0; nbr < num_neighbors; nbr++) {
+
+            const size_t neighbor_id = Mesh.elems_in_elem(elem_gid, nbr);
+
+            // nodal polynomial values define bounds
+            //for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
+            //    // Note: corner_lid = node_lid inside the element
+            //    const size_t nbr_corner_gid = Mesh.corners_in_elem(neighbor_id, node_lid);
+            //    u_min = fmin(u_min, field(nbr_corner_gid)); // corner_field in nbr defines bounds    
+            //    u_max = fmax(u_max, field(nbr_corner_gid)); // corner_field in nbr defines bounds  
+            //} // end node_lid
+
+            // element averages of neighbors define bounds
+            u_min = fmin(u_min, elem_field_avg(neighbor_id));
+            u_max = fmax(u_max, elem_field_avg(neighbor_id));
+
+        } // end for nbrs
+
+        // Add small tolerance to avoid numerical issues
+        u_min -= epsilon;
+        u_max += epsilon;
+        
+        field_max(elem_gid) = u_max;
+        field_min(elem_gid) = u_min;
+        
+        
+        // ====================================================================
+        // STEP 3: Clip nodal values to bounds
+        // ====================================================================
+        
+        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+            const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+            clipped_corner_field(corner_gid) = fmin(fmax(field(corner_gid), u_min), u_max);
+        }
+
+    }); // end parallel for over elems
+    Kokkos::fence();
+
+
+    get_elem_avg_nodal_scalar(Mesh, FERefElem, Quad, elem_vol, clipped_corner_field, elem_det_jac, clipped_elem_field_avg);
+
+
+    // Parallel loop over elems
+    FOR_ALL(elem_gid, 0, num_elems, {
+
+        // ====================================================================
+        // STEP 4: Check if scaling is needed
+        // ====================================================================
+        
+        //if (fabs(clipped_elem_field_avg(elem_gid) - elem_field_avg(elem_gid)) < epsilon) {
+        //
+        //    // Clipping preserved conservation, no scaling needed
+        //    for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+        //        const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+        //        limited_field(corner_gid) = clipped_corner_field(corner_gid);
+        //    }
+        //
+        //    continue;
+        //} // end if
+        
+        // ====================================================================
+        // STEP 5: Compute deviations from clipped average
+        // ====================================================================
+        
+        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+            const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+            deviations(elem_gid,node_lid) = clipped_corner_field(corner_gid) - clipped_elem_field_avg(elem_gid);
+        }
+        
+        // ====================================================================
+        // STEP 6: Classify nodes into upper/lower groups
+        // ====================================================================
+        
+        size_t num_upper = 0;
+        size_t num_lower = 0;
+
+        // First pass: Classify nodes (ONCE!)
+        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+            if(deviations(elem_gid, node_lid) > epsilon){
+                upper_indices(elem_gid, num_upper++) = node_lid;
+            }
+            else if(deviations(elem_gid, node_lid) < -epsilon){
+                lower_indices(elem_gid, num_lower++) = node_lid;
+            }
+        }
+
+        // Second pass: Integrate positive and negative deviations
+        double S_plus = 0.0;
+        double S_minus = 0.0;
+
+        for(size_t qpt_lid = 0; qpt_lid < num_qpts_in_elem; qpt_lid++){
+            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0), num_nodes_in_elem);
+            const double vol_qpt = elem_det_jac(elem_gid, qpt_lid) * Quad.qpt_weights(qpt_lid);
+
+            for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+                if(deviations(elem_gid, node_lid) > epsilon){
+                    S_plus += deviations(elem_gid, node_lid) * a_basis(node_lid) * vol_qpt;
+                }
+                else if(deviations(elem_gid, node_lid) < -epsilon){
+                    S_minus += deviations(elem_gid, node_lid) * a_basis(node_lid) * vol_qpt;
+                }
+            }
+        }
+
+        
+        // ====================================================================
+        // STEP 7: Compute scaling factors (asymmetric or symmetric)
+        // ====================================================================
+        
+        double theta_plus = 1.0;
+        double theta_minus = 1.0;
+
+        // shorthand names
+        const double u_max = field_max(elem_gid); // bounds for this elem
+        const double u_min = field_min(elem_gid); // bounds for this elem
+        const double u_bar_original = elem_field_avg(elem_gid); 
+        
+        // Check if asymmetric scaling is applicable
+        bool use_asymmetric = (num_upper > 0 && num_lower > 0 && 
+                              fabs(S_plus) > epsilon && 
+                              fabs(S_minus) > epsilon);
+        
+        if (use_asymmetric) {
+            // Asymmetric scaling
+            
+            // Compute maximum theta_plus (upper bound constraint)
+            double theta_plus_max = 1.0e16;
+            for (size_t j = 0; j < num_upper; j++) {
+                size_t i = upper_indices(elem_gid,j);
+                if (deviations(elem_gid,i) > epsilon) {
+                    double theta_i = (u_max - u_bar_original) / deviations(elem_gid,i);
+                    theta_plus_max = fmin(theta_plus_max, theta_i);
+                }
+            }
+            
+            // Compute maximum theta_minus (lower bound constraint)
+            double theta_minus_max = 1.0e16;
+            for (size_t j = 0; j < num_lower; j++) {
+                size_t i = lower_indices(elem_gid,j);
+                if (deviations(elem_gid,i) < -epsilon) {
+                    double theta_i = (u_bar_original - u_min) / (-deviations(elem_gid,i));
+                    theta_minus_max = fmin(theta_minus_max, theta_i);
+                }
+            }
+            
+            // Conservation coupling: theta_plus = |S_minus|/S_plus * theta_minus
+            double coupling_ratio = fabs(S_minus) / S_plus;
+            
+            // Find optimal theta_minus
+            theta_minus = fmin(theta_minus_max, 
+                             S_plus / fabs(S_minus) * theta_plus_max);
+            theta_plus = coupling_ratio * theta_minus;
+            
+            // Clamp to [0, 1]
+            theta_plus = fmax(0.0, fmin(1.0, theta_plus));
+            theta_minus = fmax(0.0, fmin(1.0, theta_minus));
+            
+        } else {
+            // Symmetric scaling (fallback)
+            
+            double theta_max = 1.0e16;
+            
+            for (size_t i = 0; i < num_nodes_in_elem; i++) {
+                double dev = deviations(elem_gid,i);
+                
+                if (dev > epsilon) {
+                    double theta_i = (u_max - u_bar_original) / dev;
+                    theta_max = fmin(theta_max, theta_i);
+                }
+                else if (dev < -epsilon) {
+                    double theta_i = (u_bar_original - u_min) / (-dev);
+                    theta_max = fmin(theta_max, theta_i);
+                } // end if
+            }
+            
+            theta_plus = fmax(0.0, fmin(1.0, theta_max));
+            theta_minus = theta_plus;
+        }
+        
+        // ====================================================================
+        // STEP 8: Apply scaling to restore conservation
+        // ====================================================================
+        
+        for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
+            double theta = 1.0;
+            
+            // Select appropriate theta based on node classification
+            if (deviations(elem_gid,node_lid) > epsilon) {
+                theta = theta_plus;
+            } else if (deviations(elem_gid,node_lid) < -epsilon) {
+                theta = theta_minus;
+            } else {
+                theta = 1.0;  // Node value is at the average, it doesn't matter
+            }
+            
+            // Apply scaling: u_i* = u_bar + theta * (u_clipped_i - u_bar_clipped)
+            double u_limited = u_bar_original + theta * deviations(elem_gid,node_lid);
+            
+            // Safety clip (should be unnecessary if theta computed correctly)
+            u_limited = fmin(fmax(u_limited, u_min), u_max);
+            
+            const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
+
+            field(corner_gid) = u_limited; // Copy limited values back to original field
+        } // end loop over corners in elem
+        
+    }); // END FOR_ALL
+    
+    Kokkos::fence();
+
+} // end limiter
+
+
+
+
+// ============================================================================
 // Notched CIRCLE FUNCTION IMPLEMENTATION
 // ============================================================================
 #ifdef USE_NOTCHED_CIRCLE 
@@ -1499,5 +1814,10 @@ REAL_t test_function(REAL_t x, REAL_t y) {
     
     return exp(-r2 / (2.0 * sigma * sigma));
 }
+
+
+
+
+
 
 #endif // USE_GAUSSIAN

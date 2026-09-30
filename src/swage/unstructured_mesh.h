@@ -162,6 +162,8 @@ struct Mesh_t
     RaggedRightArrayKokkos<size_t> bdy_surfs_in_set; ///< Boundary nodes in a boundary set
     DCArrayKokkos<size_t> num_bdy_surfs_in_set; ///< Number of boundary nodes in a set
 
+    CArrayKokkos<size_t> bdy_nodes_in_bdy_surf; /// boundary node lid access for boundary surfaces
+
 
     // ---- Internal Condition Data Definitions ---- //
     size_t num_internal_sets = 0; ///< Number of internal sets
@@ -836,6 +838,9 @@ struct Mesh_t
         });
         Kokkos::fence();
 
+        bdy_nodes_in_bdy_surf = CArrayKokkos <size_t> (num_bdy_surfs, num_nodes_in_surf, "bdy_nodes_in_bdy_surf");
+        CArrayKokkos<size_t> node_gid_to_bdy_node_gid(num_nodes, "node_gid_to_bdy_node_gid"); // temporary memory to avoid race condition
+
         FOR_ALL_CLASS(bdy_surf_gid, 0, num_bdy_surfs,{
             
             const size_t surf_gid = bdy_surfs(bdy_surf_gid);
@@ -850,12 +855,25 @@ struct Mesh_t
                     const size_t bdy_node_gid = Kokkos::atomic_fetch_add(&bdy_node_counter(0), 1);
                     const size_t node_gid = nodes_in_surf(surf_gid,node_lid);
                     bdy_node_helper(bdy_node_gid) = node_gid;
+                    node_gid_to_bdy_node_gid(node_gid) = bdy_node_gid;   // record reverse map for bdy_nodes_in_bdy_surf
                 } 
 
             } // end for node_lid
         }); // end parallel for
         Kokkos::fence();
         bdy_node_counter.update_host();
+
+        // every boundary surface fills in ALL of its slots via direct lookup — no race, no skipped nodes
+        FOR_ALL_CLASS(bdy_surf_gid, 0, num_bdy_surfs, {
+
+            const size_t surf_gid = bdy_surfs(bdy_surf_gid);
+
+            for (size_t node_lid = 0; node_lid < num_nodes_in_surf; node_lid++) {
+                const size_t node_gid = nodes_in_surf(surf_gid, node_lid);
+                bdy_nodes_in_bdy_surf(bdy_surf_gid, node_lid) = node_gid_to_bdy_node_gid(node_gid);
+            }
+        });
+        Kokkos::fence();
 
         num_bdy_nodes = bdy_node_counter.host(0);
 

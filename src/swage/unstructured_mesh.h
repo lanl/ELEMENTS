@@ -1008,24 +1008,41 @@ struct Mesh_t
         if (num_dims == 0) {
             Kokkos::abort("Error: mesh.num_dims is not set. Exiting at build_node_node_connectivity().");
         }
-        // find the max number of elems around a node
-        size_t max_num_elems_in_node;
-        size_t max_num_lcl;
-        FOR_REDUCE_MAX_CLASS(node_gid, 0, num_nodes, max_num_lcl, {
-            // num_corners_in_node = num_elems_in_node
-            size_t max_num = num_corners_in_node(node_gid);
+        if (num_patches == 0) {
+            Kokkos::abort("Error: build_surf_connectivity must be called first. Exiting at build_node_node_connectivity().");
+        }
 
-            if (max_num > max_num_lcl) {
-                max_num_lcl = max_num;
-            }
-        }, max_num_elems_in_node); // end parallel reduction on max
+        // count how many patches each node appears in
+        CArrayKokkos<size_t> num_patches_in_node(num_nodes, "num_patches_in_node");
+        num_patches_in_node.set_values(0);
         Kokkos::fence();
 
-        // each elem corner will contribute 3 edges to the node. Those edges will likely be the same
-        // ones from an adjacent element so it is a safe estimate to multiply by 3
-        DynamicRaggedRightArrayKokkos<size_t> temp_nodes_in_nodes(num_nodes, max_num_elems_in_node * 3, "temp_nodes_in_nodes");
+        FOR_ALL_CLASS(patch_gid, 0, num_patches, {
+            for (size_t n = 0; n < num_nodes_in_patch; n++) {
+                Kokkos::atomic_add(&num_patches_in_node(nodes_in_patch(patch_gid, n)), (size_t)1);
+            }
+        });
+        Kokkos::fence();
+
+        size_t max_patches_in_node = 0;
+        size_t max_lcl = 0;
+        FOR_REDUCE_MAX_CLASS(node_gid, 0, num_nodes, max_lcl, {
+            if (num_patches_in_node(node_gid) > max_lcl) {
+                max_lcl = num_patches_in_node(node_gid);
+            }
+        }, max_patches_in_node);
+        Kokkos::fence();
+
+        // 3D: each patch occurrence adds at most 2 edge neighbors (prev/next around the patch)
+        // 2D: each patch is an edge, so it adds 1 neighbor
+        const size_t nbrs_per_patch = (num_dims == 3) ? 2 : 1;
+        const size_t max_nbrs = (max_patches_in_node > 0) ? nbrs_per_patch * max_patches_in_node : 1;
+
+        DynamicRaggedRightArrayKokkos<size_t> temp_nodes_in_nodes(num_nodes, max_nbrs, "temp_nodes_in_nodes");
 
         num_nodes_in_node = CArrayKokkos<size_t>(num_nodes, "mesh.num_nodes_in_node");
+        num_nodes_in_node.set_values(0);   // body-interior nodes never appear in a patch
+        Kokkos::fence();
 
         // walk over the patches and save the node node connectivity
         RUN_CLASS({
@@ -1066,18 +1083,14 @@ struct Mesh_t
                         }
 
                         if (save_0 == 1) {
-                            // increment the number of nodes in a node saved
+                            if (num_saved_0 >= max_nbrs) Kokkos::abort("build_node_node_connectivity: temp_nodes_in_nodes overflow");
                             temp_nodes_in_nodes.stride(node_gid_0)++;
-
-                            // save the second node to the first node
                             temp_nodes_in_nodes(node_gid_0, num_saved_0) = node_gid_1;
                         }
 
                         if (save_1 == 1) {
-                            // increment the number of nodes in a node saved
+                            if (num_saved_1 >= max_nbrs) Kokkos::abort("build_node_node_connectivity: temp_nodes_in_nodes overflow");
                             temp_nodes_in_nodes.stride(node_gid_1)++;
-
-                            // save the first node to the second node
                             temp_nodes_in_nodes(node_gid_1, num_saved_1) = node_gid_0;
                         }
 

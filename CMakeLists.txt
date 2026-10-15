@@ -119,11 +119,23 @@ if(NOT TARGET ptscotch)
     set(SCOTCH_MPI ON CACHE BOOL "Enable MPI for Scotch" FORCE)
     set(SCOTCH_BUILD_TESTS OFF CACHE BOOL "Disable Scotch Tests" FORCE)
     set(BUILD_FORTRAN OFF CACHE BOOL "Disable Scotch Fortran interface" FORCE)
+    set(_scotch_fetch_extra_args)
     if(WIN32)
-        # Scotch does not ship pthreads on Windows; ensure all pthread toggles are off
-        set(SCOTCH_PTHREAD OFF CACHE BOOL "Disable Scotch pthread on Windows" FORCE)
-        set(SCOTCH_PTHREAD_MPI OFF CACHE BOOL "Disable Scotch pthread MPI on Windows" FORCE)
-        set(COMMON_PTHREAD OFF CACHE BOOL "Disable common pthread on Windows" FORCE)
+        # Scotch requires pthreads on Windows: without COMMON_PTHREAD its file
+        # (de)compression falls back to fork()/waitpid(), which do not exist there.
+        # Use pthreads-win32 (e.g. conda-forge pthreads-win32).
+        find_path(PTHREADS_WIN32_INCLUDE_DIR pthread.h)
+        find_library(PTHREADS_WIN32_LIBRARY NAMES pthreads pthread pthreadVC3 pthreadVSE2 pthreadVC2)
+        if(NOT PTHREADS_WIN32_INCLUDE_DIR OR NOT PTHREADS_WIN32_LIBRARY)
+            message(FATAL_ERROR "PT-Scotch on Windows requires pthreads-win32 (conda install -c conda-forge pthreads-win32)")
+        endif()
+        message(STATUS "Using pthreads-win32 for Scotch: ${PTHREADS_WIN32_LIBRARY}")
+        set(THREADS ON CACHE BOOL "Use multi-threading in Scotch and PT-Scotch" FORCE)
+        # Scotch's executables and tests use POSIX headers (unistd.h, sys/time.h);
+        # only build the libraries that ELEMENTS links against
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.28)
+            list(APPEND _scotch_fetch_extra_args EXCLUDE_FROM_ALL)
+        endif()
     endif()
 
     FetchContent_Declare(
@@ -132,8 +144,30 @@ if(NOT TARGET ptscotch)
         GIT_TAG        v7.0.4
         GIT_SHALLOW    TRUE
         PATCH_COMMAND  ${CMAKE_COMMAND} -DFileToPatch=CMakeLists.txt -P "${PROJECT_SOURCE_DIR}/cmake/PatchScotch.cmake"
+        ${_scotch_fetch_extra_args}
     )
     FetchContent_MakeAvailable(Scotch)
+
+    if(WIN32)
+        foreach(_target scotch ptscotch)
+            if(TARGET ${_target})
+                # The flex-generated parser includes unistd.h unless told otherwise
+                target_compile_definitions(${_target} PRIVATE YY_NO_UNISTD_H)
+                # Scotch links libm and Threads::Threads (which FindThreads turns into
+                # the Unix flag -lpthreads here); neither is valid for MSVC-style linkers
+                foreach(_prop LINK_LIBRARIES INTERFACE_LINK_LIBRARIES)
+                    get_target_property(_libs ${_target} ${_prop})
+                    if(_libs)
+                        list(REMOVE_ITEM _libs m Threads::Threads)
+                        set_target_properties(${_target} PROPERTIES ${_prop} "${_libs}")
+                    endif()
+                endforeach()
+                # Link pthreads-win32 explicitly instead
+                target_include_directories(${_target} PUBLIC ${PTHREADS_WIN32_INCLUDE_DIR})
+                target_link_libraries(${_target} PUBLIC ${PTHREADS_WIN32_LIBRARY})
+            endif()
+        endforeach()
+    endif()
 
     # FIX: GCC 15 Warning Suppressions (Target-Specific)
     # Even though C11 is set globally above, we still need to silence the

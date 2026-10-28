@@ -64,7 +64,7 @@ Setting `ELEMENTS_DEVICE_BACKEND` overrides the `ELEMENTS_ENABLE_*` toggles (Ser
  
 ## Using ELEMENTS from another CMake project
 
-You can add ELEMENTS to your own CMake build with `FetchContent`:
+ELEMENTS itself does not use FetchContent for MATAR or Kokkos; both come from the `matar` git submodule. Another project can pull in ELEMENTS (and, with it, those submodules) using `FetchContent`:
 
 ```cmake
 include(FetchContent)
@@ -74,8 +74,8 @@ set(ELEMENTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(ELEMENTS_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
 set(ELEMENTS_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
 # Choose backends as needed; defaults are listed above
-# set(ELEMENTS_ENABLE_OPENMP ON  CACHE BOOL "" FORCE)
-# set(ELEMENTS_ENABLE_CUDA   ON  CACHE BOOL "" FORCE)
+# set(ELEMENTS_DEVICE_BACKEND cuda   CACHE STRING "" FORCE)  # FOR_ALL, ...
+# set(ELEMENTS_HOST_BACKEND   openmp CACHE STRING "" FORCE)  # FOR_ALL_HOST, ...
 
 FetchContent_Declare(ELEMENTS
   GIT_REPOSITORY https://github.com/lanl/ELEMENTS.git
@@ -87,7 +87,7 @@ add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE ELEMENTS)
 ```
 
-`ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). FetchContent clones the MATAR/Kokkos submodules automatically; if the parent project already defines `matar::matar` or `Kokkos::kokkos`, ELEMENTS uses those instead (they must be Kokkos 5.x / C++20). Set the options before `FetchContent_MakeAvailable` to control which backends build.
+`ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). FetchContent checks out ELEMENTS' submodules recursively by default, so MATAR and its bundled Kokkos come along automatically; if the parent project already defines `matar::matar` or `Kokkos::kokkos`, ELEMENTS uses those instead (they must be Kokkos 5.x / C++20). Set the options before `FetchContent_MakeAvailable` to control which backends build.
 
 To learn more about ELEMENTS and how to get started using it, please see the [ELEMENTS documentation](https://lanl.github.io/ELEMENTS/).
 

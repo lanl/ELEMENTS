@@ -27,7 +27,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4 # Updated to v4 for latest node support
       with: 
-        submodules: true
+        submodules: recursive
 
     - name: Install Fortran
       uses: fortran-lang/setup-fortran@v1

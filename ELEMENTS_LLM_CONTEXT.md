@@ -1311,20 +1311,22 @@ Device kernels (`FOR_ALL`) appear sparingly — mostly to copy node coordinates 
 | Option | Default | Purpose |
 |--------|---------|---------|
 | `ELEMENTS_ENABLE_SERIAL` | `ON` | Serial Kokkos backend |
-| `ELEMENTS_ENABLE_OPENMP` | `ON` | OpenMP backend |
-| `ELEMENTS_ENABLE_PTHREADS` | `OFF` | Pthreads backend |
+| `ELEMENTS_ENABLE_OPENMP` | `OFF` | OpenMP backend |
+| `ELEMENTS_ENABLE_PTHREADS` | `OFF` | Threads backend (`Kokkos_ENABLE_THREADS`) |
 | `ELEMENTS_ENABLE_CUDA` | `OFF` | CUDA backend |
 | `ELEMENTS_ENABLE_HIP` | `OFF` | HIP backend |
+| `ELEMENTS_DEVICE_BACKEND` | empty | Backend for MATAR device macros (`FOR_ALL`, ...); passed to `MATAR_DEVICE_BACKEND`; overrides `ELEMENTS_ENABLE_*` |
+| `ELEMENTS_HOST_BACKEND` | `serial` | Backend for MATAR `_HOST` macros (`FOR_ALL_HOST`, ...): `serial`/`openmp`/`pthreads` only (GPU backends are a configure error); passed to `MATAR_HOST_BACKEND` |
 | `ELEMENTS_BUILD_EXAMPLES` | `ON` if top-level, else `OFF` | Build `examples/*` |
 | `ELEMENTS_BUILD_TESTS` | `OFF` | Build `tests/` |
 | `ELEMENTS_BUILD_DOCS` | `OFF` | Doxygen + Sphinx |
 
 ### Required dependencies
 
-ELEMENTS is wired with `FetchContent` for its core deps:
-- **Kokkos** at tag `4.3.00`
-- **MATAR** at `main` (compile-defined `HAVE_KOKKOS` and, when MPI is found, `HAVE_MPI`)
-- **PT-Scotch** at `v7.0.4` (with `SCOTCH_MPI=ON`, `BUILD_FORTRAN=OFF`)
+ELEMENTS requires C++20 and CMake 3.22+. Its core deps:
+- **MATAR** is a git submodule at `matar/`, added with `add_subdirectory` (`MATAR_ENABLE_KOKKOS=ON`, `MATAR_ENABLE_MPI=ON`, which define `HAVE_KOKKOS` and `HAVE_MPI`). `matar/solvers` is on the ELEMENTS include path.
+- **Kokkos** 5.x comes from MATAR's nested submodule (`matar/src/Kokkos/kokkos`). Clone with `--recursive`. A parent-provided `matar::matar` or `Kokkos::kokkos` target is used if it already exists.
+- **PT-Scotch** (via `FetchContent`) at `v7.0.4` (with `SCOTCH_MPI=ON`, `BUILD_FORTRAN=OFF`)
 - **MPI** is `find_package`'d (required); MPI 3+ is preferred
 
 ### Linking from another CMake project

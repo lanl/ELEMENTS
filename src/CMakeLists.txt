@@ -21,20 +21,20 @@ target_include_directories(ELEMENTS INTERFACE
     #    This allows users to resolve "ELEMENTS.h", "swage/mesh.h", and "elements/material.h"
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     
-    # 2. Standard install location
+    # 2. MATAR's header-only solvers (cramers_rule.hpp, lu_solver.hpp, ...),
+    #    which the matar target no longer exposes
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/matar/solvers>
+
+    # 3. Standard install location
     $<INSTALL_INTERFACE:include>
 )
+
+# Kokkos 5 requires C++20; propagate it to anyone linking ELEMENTS
+target_compile_features(ELEMENTS INTERFACE cxx_std_20)
 
 # Install Rules: The Target
 install(TARGETS ELEMENTS
     EXPORT ElementsTargets
-)
-
-# Install Rules: The Headers
-# Copy headers from 'swage' (current dir) to the install 'include' folder
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ 
-    DESTINATION include
-    FILES_MATCHING PATTERN "*.h"
 )
 
 # Install Rules: The Headers

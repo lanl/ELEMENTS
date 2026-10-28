@@ -27,6 +27,14 @@ git clone --recursive https://github.com/lanl/ELEMENTS.git
 
 ## Getting started
 
+Requirements: a C++20 compiler, CMake 3.22+ (3.25.2+ for CUDA builds), and MPI 3+.
+MATAR and Kokkos (5.x, bundled inside MATAR) are git submodules, so clone recursively:
+```
+git clone --recursive https://github.com/lanl/ELEMENTS.git
+# or, in an existing clone:
+git submodule update --init --recursive
+```
+
 To build the examples locally:
 
 1. Configure into a separate build tree:
@@ -45,10 +53,14 @@ Key CMake options (defaults in parentheses):
 - `ELEMENTS_BUILD_EXAMPLES` (`ON` when ELEMENTS is the top-level project, otherwise `OFF`)
 - `ELEMENTS_BUILD_TESTS` (`OFF`)
 - `ELEMENTS_ENABLE_SERIAL` (`ON`)
-- `ELEMENTS_ENABLE_OPENMP` (`ON`)
+- `ELEMENTS_ENABLE_OPENMP` (`OFF`)
 - `ELEMENTS_ENABLE_PTHREADS` (`OFF`)
 - `ELEMENTS_ENABLE_CUDA` (`OFF`)
 - `ELEMENTS_ENABLE_HIP` (`OFF`)
+- `ELEMENTS_DEVICE_BACKEND` (empty): backend for MATAR's `FOR_ALL` and related macros: `serial`, `openmp`, `pthreads`, `cuda`, `hip`, `sycl`
+- `ELEMENTS_HOST_BACKEND` (`serial`): backend for MATAR's `_HOST` macros (`FOR_ALL_HOST`, ...): `serial`, `openmp`, `pthreads`. GPU backends are rejected.
+
+Setting `ELEMENTS_DEVICE_BACKEND` overrides the `ELEMENTS_ENABLE_*` toggles (Serial stays on). They are passed to MATAR as `MATAR_DEVICE_BACKEND` / `MATAR_HOST_BACKEND`. Kokkos allows only one host-parallel space, so `openmp` and `pthreads` cannot be combined. Example: `cmake .. -DELEMENTS_DEVICE_BACKEND=cuda -DELEMENTS_HOST_BACKEND=openmp`.
  
 ## Using ELEMENTS from another CMake project
 
@@ -75,7 +87,7 @@ add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE ELEMENTS)
 ```
 
-`ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). Set the options before `FetchContent_MakeAvailable` to control which backends build.
+`ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). FetchContent clones the MATAR/Kokkos submodules automatically; if the parent project already defines `matar::matar` or `Kokkos::kokkos`, ELEMENTS uses those instead (they must be Kokkos 5.x / C++20). Set the options before `FetchContent_MakeAvailable` to control which backends build.
 
 To learn more about ELEMENTS and how to get started using it, please see the [ELEMENTS documentation](https://lanl.github.io/ELEMENTS/).
 

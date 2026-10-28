@@ -575,14 +575,14 @@ struct PointCloud_t{
         //   its own stencil walk.  Thread i detects this and atomically increments
         //   j's neighbor count to reserve the extra slot.
         //
-        //   Correctness of atomic_increment here:
+        //   Correctness of atomic_inc here:
         //     - Each thread only increments counts for neighbors that MISSED it.
         //     - Only one thread (thread i) can discover that j missed i, because
         //       the miss condition (!nbr_sees_me) is evaluated from i's perspective.
         //     - Therefore no two threads ever atomically increment the same
         //       (point_gid, nbr_gid) pair for the same reason, eliminating
         //       double-counting.
-        //     - atomic_increment ensures the counter update is indivisible,
+        //     - atomic_inc ensures the counter update is indivisible,
         //       preventing lost updates when multiple threads increment different
         //       missed-neighbor slots of the same point concurrently.
         //
@@ -625,7 +625,7 @@ struct PointCloud_t{
                         // nbr's own stencil walk won't find point_gid; reserve one slot now.
                         // Safe: only thread point_gid can decide nbr missed point_gid,
                         // so this increment happens exactly once per asymmetric pair.
-                        Kokkos::atomic_increment(&points_num_neighbors(nbr_gid));
+                        Kokkos::atomic_inc(&points_num_neighbors(nbr_gid));
                     }
 
                 } // end for storage_lid

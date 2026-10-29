@@ -118,8 +118,8 @@ MATAR_INITIALIZE(argc, argv);
     Mesh.initialize_elems_Pn(num_elems, elem_order, Quad.num_qpts_1d);
     Mesh.initialize_nodes(num_nodes);
     
-    DCArrayKokkos <double> node_coords(Mesh.num_nodes, Mesh.num_dims);
-    const double h = 1.0/((double)num_nodes_1D);
+    DCArrayKokkos <real_t> node_coords(Mesh.num_nodes, Mesh.num_dims);
+    const real_t h = 1.0/((real_t)num_nodes_1D);
 
     // create indexing for a Pn order mesh
 
@@ -130,9 +130,9 @@ MATAR_INITIALIZE(argc, argv);
         
         size_t node_gid = ic + (jc + kc*num_nodes_1D)*num_nodes_1D;
         
-        node_coords(node_gid, 0) = (double)ic * h;
-        node_coords(node_gid, 1) = (double)jc * h;
-        node_coords(node_gid, 2) = (double)kc * h;
+        node_coords(node_gid, 0) = (real_t)ic * h;
+        node_coords(node_gid, 1) = (real_t)jc * h;
+        node_coords(node_gid, 2) = (real_t)kc * h;
     });
 
     // Step 2: Build element connectivity
@@ -187,12 +187,12 @@ MATAR_INITIALIZE(argc, argv);
 
     if(num_nodes_in_elem != FERefElem.num_dofs_in_elem) Kokkos::abort("ERROR: mismatch in DOFs and num nodes in elem \n");
 
-    DCArrayKokkos<double> elem_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
-    DCArrayKokkos<double> elem_vol(num_elems, "elem_vol");
+    DCArrayKokkos<real_t> elem_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
+    DCArrayKokkos<real_t> elem_vol(num_elems, "elem_vol");
     
     
-    DCArrayKokkos<double> surf_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_jacobian");
-    DCArrayKokkos<double> surf_inv_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_inv_jacobian");
+    DCArrayKokkos<real_t> surf_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_jacobian");
+    DCArrayKokkos<real_t> surf_inv_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_inv_jacobian");
 
 
     printf("\n=== TEST: Surface Integration ===\n");
@@ -206,42 +206,42 @@ MATAR_INITIALIZE(argc, argv);
         // calculate volume
         for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
             // extract the grad_basis at a single quadrature point (qpt,dof,3D)
-            ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
+            ViewCArrayKokkos<real_t> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
                                                   num_nodes_in_elem, 3);
 
             // extract the basis at a single quadrature point (qpt,dof)    
-            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
+            ViewCArrayKokkos<real_t> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
                                              num_nodes_in_elem);
             
             // jacobian matrix
-            ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
+            ViewCArrayKokkos<real_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
 
             jacobian(jac, 
                     node_coords, 
                     nodes_in_elem,
                     a_grad_basis);
 
-            const double det_jac = det_3x3(jac);
+            const real_t det_jac = det_3x3(jac);
             
             elem_vol(elem_gid) += det_jac*Quad.qpt_weights(qpt_lid);
 
         } // end for
 
-        const double vol_q = elem_vol(elem_gid);
-        double vol_h = 1.0;
+        const real_t vol_q = elem_vol(elem_gid);
+        real_t vol_h = 1.0;
         for(size_t dim=0; dim<elem_dims; dim++) vol_h *= h;
 
-        if( fabs(vol_q-vol_h) > 1.0e-12){
+        if( fabs(vol_q-vol_h) > real_tol(1.0e-12)){
             printf("wrong elem volume using gauss quadrature, error = %.15f \n", vol_q-vol_h );
             Kokkos::abort("ERROR: wrong volume \n");
         }
 
 
-        double tally_div=0;    
-        double tally_flux[3][3];
-        double tally_normal[3];
+        real_t tally_div=0;    
+        real_t tally_flux[3][3];
+        real_t tally_normal[3];
 
-        double eye[3][3];
+        real_t eye[3][3];
 
         for(size_t j=0; j<elem_dims; j++){ 
             for(size_t i=0; i<elem_dims; i++){   
@@ -261,27 +261,27 @@ MATAR_INITIALIZE(argc, argv);
             for(size_t qpt_lid=0; qpt_lid<num_qpts_in_surf; qpt_lid++){
                 
                 // extract the grad_basis at a single quadrature point (surf,qpt,dof,3D)
-                ViewCArrayKokkos<double> a_grad_basis(&RefSurf.qpt_grad_basis(face_lid,qpt_lid,0,0),
+                ViewCArrayKokkos<real_t> a_grad_basis(&RefSurf.qpt_grad_basis(face_lid,qpt_lid,0,0),
                                                       num_nodes_in_elem, 3);
 
                 // extract the basis at a single quadrature point (surf,qpt,dof)    
-                ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0),
+                ViewCArrayKokkos<real_t> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0),
                                                  num_nodes_in_elem);
                 
-                ViewCArrayKokkos<double> jac(&surf_jac(surf_gid,qpt_lid,0,0),3,3);
-                ViewCArrayKokkos<double> inv_jac(&surf_inv_jac(surf_gid,qpt_lid,0,0),3,3);
+                ViewCArrayKokkos<real_t> jac(&surf_jac(surf_gid,qpt_lid,0,0),3,3);
+                ViewCArrayKokkos<real_t> inv_jac(&surf_inv_jac(surf_gid,qpt_lid,0,0),3,3);
 
                 jacobian(jac, 
                         node_coords, 
                         nodes_in_elem,
                         a_grad_basis);
 
-                const double det_jac = det_3x3(jac);
+                const real_t det_jac = det_3x3(jac);
 
                 invert_3x3(jac, inv_jac, det_jac);
 
                 // Nanson's formula: s*J^-1*j*f*w
-                double area_normal[3];
+                real_t area_normal[3];
                 area_normal[0] = 0.;
                 area_normal[1] = 0.;
                 area_normal[2] = 0.;
@@ -296,12 +296,12 @@ MATAR_INITIALIZE(argc, argv);
                 // ============================
                 //  testing a area normals
 
-                double mag_sqrd = 0.0;
+                real_t mag_sqrd = 0.0;
                 for(size_t dim=0; dim<elem_dims; dim++){
                     mag_sqrd += area_normal[dim]*area_normal[dim];    
                 }
 
-                if(mag_sqrd < 1.e-16){
+                if(mag_sqrd < real_tol(1.e-8)*real_tol(1.e-8)){
                     printf("Zero area normal = %f, %f, %f \n", area_normal[0], area_normal[1], area_normal[2]);
                     Kokkos::abort("ERROR: area normal = 0 \n");
                 }
@@ -315,7 +315,7 @@ MATAR_INITIALIZE(argc, argv);
                 // ========================================================
                 //  testing a linear field, answer-> identity & trace=3
 
-                double qpt_coords[3];
+                real_t qpt_coords[3];
                 for(size_t dim=0; dim<elem_dims; dim++){
                     qpt_coords[dim] = 0.0;
                 }
@@ -344,7 +344,7 @@ MATAR_INITIALIZE(argc, argv);
 
         // Test: check normals sum to zero over the element
         for(size_t dim=0; dim<elem_dims; dim++){
-            if(fabs(tally_normal[dim]) >= 1.e-12){
+            if(fabs(tally_normal[dim]) >= real_tol(1.e-12)){
                 printf("Tally_normal of area normals in elem (should=0) = (%f, %f, %f) \n", tally_normal[0], tally_normal[1], tally_normal[2]);
                 Kokkos::abort("ERROR: no conservation of surface normals \n");
             } // end check on tally_normal
@@ -355,7 +355,7 @@ MATAR_INITIALIZE(argc, argv);
         bool passed = true;
         for(size_t i=0; i<elem_dims; i++) 
         for(size_t j=0; j<elem_dims; j++) {
-            if(fabs((tally_flux[i][j]/elem_vol(elem_gid)) - eye[i][j]) >= 1.e-12) passed = false;
+            if(fabs((tally_flux[i][j]/elem_vol(elem_gid)) - eye[i][j]) >= real_tol(1.e-12)) passed = false;
         }
         if(!passed){
             printf("\n");
@@ -371,7 +371,7 @@ MATAR_INITIALIZE(argc, argv);
         }
 
         // Test: divergence is = 3, for some reason, tol needs to be 1e-10
-        if(fabs((tally_div/elem_vol(elem_gid)) - 3.0) >= 1.e-10){
+        if(fabs((tally_div/elem_vol(elem_gid)) - 3.0) >= real_tol(1.e-10)){
             printf("Tally_div = %.15f \n",tally_div/elem_vol(elem_gid)-3.0);
             Kokkos::abort("ERROR: divergence of Gradx should be equal to 3 \n");
         }

@@ -50,35 +50,35 @@ const size_t max_order = 19; // max polynomial order to test, limit is 19th-orde
 
 // polynomial with terms <= p_order
 KOKKOS_INLINE_FUNCTION
-double polynomial(const CArrayKokkos<double> &coeff, const double x, const size_t p_order){
+real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     for (int i = 0; i <= p_order; ++i) {
-        result += coeff(i) * pow(x, (double)i);
+        result += coeff(i) * pow(x, (real_t)i);
     }
     return result;
 } // end polynomial
 
 KOKKOS_INLINE_FUNCTION
-double polynomial(const CArrayKokkos<double> &coeff, const double x, const double y, const size_t p_order){
+real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const real_t y, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     for (int j = 0; j <= p_order; ++j) 
     for (int i = 0; i <= p_order-j; ++i) {
-        result += coeff(i,j) * pow(x, (double)i) * pow(y, (double)j);
+        result += coeff(i,j) * pow(x, (real_t)i) * pow(y, (real_t)j);
         
     } // end for
     return result;
 } // end polynomial
 
 KOKKOS_INLINE_FUNCTION
-double polynomial(const CArrayKokkos<double> &coeff, const double x, const double y, const double z, const size_t p_order){
+real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const real_t y, const real_t z, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     for (int k = 0; k <= p_order; ++k) 
     for (int j = 0; j <= p_order-k; ++j) 
     for (int i = 0; i <= p_order-j-k; ++i) {
-        result += coeff(i,j,k) * pow(x, (double)i) * pow(y, (double)j) * pow(z, (double)k); 
+        result += coeff(i,j,k) * pow(x, (real_t)i) * pow(y, (real_t)j) * pow(z, (real_t)k); 
     } // end for
 
     return result;
@@ -87,13 +87,13 @@ double polynomial(const CArrayKokkos<double> &coeff, const double x, const doubl
 
 // polynomial with terms <= p_order
 KOKKOS_INLINE_FUNCTION
-double grad_polynomial_x(const CArrayKokkos<double> &coeff, const double x, const size_t p_order){
+real_t grad_polynomial_x(const CArrayKokkos<real_t> &coeff, const real_t x, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     if(p_order==0) return 0.0;
 
     for (int i = 1; i <= p_order; ++i) {
-        result += (double)i*coeff(i) * pow(x, (double)i-1);
+        result += (real_t)i*coeff(i) * pow(x, (real_t)i-1);
     }
 
     return result;
@@ -101,28 +101,28 @@ double grad_polynomial_x(const CArrayKokkos<double> &coeff, const double x, cons
 
 // --- 2D grad
 KOKKOS_INLINE_FUNCTION
-double grad_polynomial_x(const CArrayKokkos<double> &coeff, const double x, const double y, const size_t p_order){
+real_t grad_polynomial_x(const CArrayKokkos<real_t> &coeff, const real_t x, const real_t y, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     if(p_order==0) return 0.0;
 
     for (int j = 0; j <= p_order; ++j) 
     for (int i = 1; i <= p_order-j; ++i) {
-        result += (double)i*coeff(i,j) * pow(x, (double)i-1) * pow(y, (double)j);
+        result += (real_t)i*coeff(i,j) * pow(x, (real_t)i-1) * pow(y, (real_t)j);
     } // end for
 
     return result;
 } // end polynomial
 
 KOKKOS_INLINE_FUNCTION
-double grad_polynomial_y(const CArrayKokkos<double> &coeff, const double x, const double y, const size_t p_order){
+real_t grad_polynomial_y(const CArrayKokkos<real_t> &coeff, const real_t x, const real_t y, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     if(p_order==0) return 0.0;
 
     for (int j = 1; j <= p_order; ++j) 
     for (int i = 0; i <= p_order-j; ++i) {
-        result += (double)j*coeff(i,j) * pow(x, (double)i) * pow(y, (double)j-1);
+        result += (real_t)j*coeff(i,j) * pow(x, (real_t)i) * pow(y, (real_t)j-1);
     } // end for
 
     return result;
@@ -130,45 +130,45 @@ double grad_polynomial_y(const CArrayKokkos<double> &coeff, const double x, cons
 
 // --- 3D grad
 KOKKOS_INLINE_FUNCTION
-double grad_polynomial_x(const CArrayKokkos<double> &coeff, const double x, const double y, const double z, const size_t p_order){
+real_t grad_polynomial_x(const CArrayKokkos<real_t> &coeff, const real_t x, const real_t y, const real_t z, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     if(p_order==0) return 0.0;
 
     for (int k = 0; k <= p_order; ++k) 
     for (int j = 0; j <= p_order-k; ++j) 
     for (int i = 1; i <= p_order-j-k; ++i) {
-        result += (double)i*coeff(i,j,k) * pow(x, (double)i-1.) * pow(y, (double)j) * pow(z, (double)k); 
+        result += (real_t)i*coeff(i,j,k) * pow(x, (real_t)i-1.) * pow(y, (real_t)j) * pow(z, (real_t)k); 
     } // end for
 
     return result;
 } // end polynomial
 
 KOKKOS_INLINE_FUNCTION
-double grad_polynomial_y(const CArrayKokkos<double> &coeff, const double x, const double y, const double z, const size_t p_order){
+real_t grad_polynomial_y(const CArrayKokkos<real_t> &coeff, const real_t x, const real_t y, const real_t z, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     if(p_order==0) return 0.0;
 
     for (int k = 0; k <= p_order; ++k) 
     for (int j = 1; j <= p_order-k; ++j) 
     for (int i = 0; i <= p_order-j-k; ++i) {
-        result += (double)j*coeff(i,j,k) * pow(x, (double)i) * pow(y, (double)j-1.) * pow(z, (double)k); 
+        result += (real_t)j*coeff(i,j,k) * pow(x, (real_t)i) * pow(y, (real_t)j-1.) * pow(z, (real_t)k); 
     } // end for
 
     return result;
 } // end polynomial
 
 KOKKOS_INLINE_FUNCTION
-double grad_polynomial_z(const CArrayKokkos<double> &coeff, const double x, const double y, const double z, const size_t p_order){
+real_t grad_polynomial_z(const CArrayKokkos<real_t> &coeff, const real_t x, const real_t y, const real_t z, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     if(p_order==0) return 0.0;
 
     for (int k = 1; k <= p_order; ++k) 
     for (int j = 0; j <= p_order-k; ++j) 
     for (int i = 0; i <= p_order-j-k; ++i) {
-        result += (double)k*coeff(i,j,k) * pow(x, (double)i) * pow(y, (double)j) * pow(z, (double)k-1.); 
+        result += (real_t)k*coeff(i,j,k) * pow(x, (real_t)i) * pow(y, (real_t)j) * pow(z, (real_t)k-1.); 
     } // end for
 
     return result;
@@ -184,18 +184,18 @@ void test_gradient(const Quadrature_t& Quad,
     
     const size_t p_order = RefElem.num_dofs_1d - 1;
 
-    CArrayKokkos<double> dof_values(RefElem.num_dofs_in_elem);
-    CArrayKokkos<double> coeff;
+    CArrayKokkos<real_t> dof_values(RefElem.num_dofs_in_elem);
+    CArrayKokkos<real_t> coeff;
 
 
     if(RefElem.elem_dims==1){
-        coeff = CArrayKokkos<double>(p_order+1);
+        coeff = CArrayKokkos<real_t>(p_order+1);
     }
     else if (RefElem.elem_dims==2){
-        coeff = CArrayKokkos<double>(p_order+1, p_order+1);
+        coeff = CArrayKokkos<real_t>(p_order+1, p_order+1);
     }
     else {
-        coeff = CArrayKokkos<double>(p_order+1, p_order+1, p_order+1);
+        coeff = CArrayKokkos<real_t>(p_order+1, p_order+1, p_order+1);
     }
     coeff.set_values(0.78914567);  // a radom value
 
@@ -204,20 +204,20 @@ void test_gradient(const Quadrature_t& Quad,
     // populate polynomial values at DOFs of the ref element
     FOR_ALL(dof, 0, RefElem.num_dofs_in_elem, {
 
-        double value=0.0;
+        real_t value=0.0;
         if(RefElem.elem_dims==1){
-            const double xi = RefElem.dof_positions(dof, 0);
+            const real_t xi = RefElem.dof_positions(dof, 0);
             value = polynomial(coeff, xi, p_order);
         }
         else if (RefElem.elem_dims==2){
-            const double xi  = RefElem.dof_positions(dof, 0);
-            const double eta = RefElem.dof_positions(dof, 1);
+            const real_t xi  = RefElem.dof_positions(dof, 0);
+            const real_t eta = RefElem.dof_positions(dof, 1);
             value = polynomial(coeff, xi, eta, p_order);
         }
         else {
-            const double xi  = RefElem.dof_positions(dof, 0);
-            const double eta = RefElem.dof_positions(dof, 1);
-            const double mu  = RefElem.dof_positions(dof, 2);
+            const real_t xi  = RefElem.dof_positions(dof, 0);
+            const real_t eta = RefElem.dof_positions(dof, 1);
+            const real_t mu  = RefElem.dof_positions(dof, 2);
             value = polynomial(coeff, xi, eta, mu, p_order);
         }
 
@@ -229,7 +229,7 @@ void test_gradient(const Quadrature_t& Quad,
     // compare interpoloation with exact solution
     FOR_ALL(qpt, 0, Quad.num_qpts_in_elem, {
         
-        double sum[3]; // gradient value
+        real_t sum[3]; // gradient value
         sum[0] = 0.0;
         sum[1] = 0.0;
         sum[2] = 0.0;
@@ -240,25 +240,25 @@ void test_gradient(const Quadrature_t& Quad,
             }
         }
 
-        double exact_value[3];
+        real_t exact_value[3];
         exact_value[0] = 0.0;
         exact_value[1] = 0.0;
         exact_value[2] = 0.0;
 
         if(RefElem.elem_dims==1){
-            const double xi = Quad.qpt_positions(qpt, 0);
+            const real_t xi = Quad.qpt_positions(qpt, 0);
             exact_value[0] = grad_polynomial_x(coeff, xi, p_order);
         }
         else if (RefElem.elem_dims==2){
-            const double xi  = Quad.qpt_positions(qpt, 0);
-            const double eta = Quad.qpt_positions(qpt, 1);
+            const real_t xi  = Quad.qpt_positions(qpt, 0);
+            const real_t eta = Quad.qpt_positions(qpt, 1);
             exact_value[0] = grad_polynomial_x(coeff, xi, eta, p_order);
             exact_value[1] = grad_polynomial_y(coeff, xi, eta, p_order);
         }
         else {
-            const double xi  = Quad.qpt_positions(qpt, 0);
-            const double eta = Quad.qpt_positions(qpt, 1);
-            const double mu  = Quad.qpt_positions(qpt, 2);
+            const real_t xi  = Quad.qpt_positions(qpt, 0);
+            const real_t eta = Quad.qpt_positions(qpt, 1);
+            const real_t mu  = Quad.qpt_positions(qpt, 2);
             exact_value[0] = grad_polynomial_x(coeff, xi, eta, mu, p_order);
             exact_value[1] = grad_polynomial_y(coeff, xi, eta, mu, p_order);
             exact_value[2] = grad_polynomial_z(coeff, xi, eta, mu, p_order);
@@ -267,8 +267,8 @@ void test_gradient(const Quadrature_t& Quad,
         // round off get bad at high p_order's due to polynomial sensativity
         for(size_t dim=0; dim<RefElem.elem_dims; dim++){
 
-            const double error = fabs(sum[dim] - exact_value[dim]);
-            const double tolerance = fmax(1.e-10, 1.e-10 * (double)p_order);
+            const real_t error = fabs(sum[dim] - exact_value[dim]);
+            const real_t tolerance = fmax(real_tol(1.e-10), real_tol(1.e-10) * (real_t)p_order);
             
             if (error > tolerance) {
                 printf("Error: interpolation failed at qpt id = %d with order = %zu \n", qpt, p_order);

@@ -54,12 +54,12 @@ void verify_partition_of_unity(const Quadrature_t& Quad,
 
     // device parallel loop
     FOR_ALL(qpt, 0, Quad.num_qpts_in_elem, {
-        double sum = 0.0;
+        real_t sum = 0.0;
         
         for (size_t basis = 0; basis < RefElem.num_dofs_in_elem; basis++) {
             sum += RefElem.qpt_basis(qpt, basis);
         }
-        if (fabs(sum - 1.0) > 1.e-12) {
+        if (fabs(sum - 1.0) > real_tol(1.e-12)) {
             printf("Error: partion of unity failed, sum of basis = %f at qpt id = %d with order = %zu \n", sum, qpt, RefElem.num_dofs_1d-1);
             Kokkos::abort("Partition of unity failed at quadrature point ");
         }
@@ -73,7 +73,7 @@ void verify_gradient(const Quadrature_t& Quad,
     
     // device parallel loop
     FOR_ALL(qpt, 0, Quad.num_qpts_in_elem, {
-        double sum[3];
+        real_t sum[3];
         sum[0] = 0.0;
         sum[1] = 0.0;
         sum[2] = 0.0;
@@ -82,7 +82,7 @@ void verify_gradient(const Quadrature_t& Quad,
             for (size_t basis = 0; basis < RefElem.num_dofs_in_elem; basis++) {
                 sum[dim] += RefElem.qpt_grad_basis(qpt, basis, dim);
             }
-            if (fabs(sum[dim]) > 1.e-12) {
+            if (fabs(sum[dim]) > real_tol(1.e-12)) {
                 printf("Error: gradient failed, sum of gradient basis = %.15e at qpt id = %d, for dim = %zu, with order = %zu \n", sum[dim], qpt, dim, RefElem.num_dofs_1d);
                 Kokkos::abort("Gradient of basis failed at quadrature point ");
             }

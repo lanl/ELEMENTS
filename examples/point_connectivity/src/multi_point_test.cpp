@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
         // -----------------------------------------------------------------------
 
         const size_t num_points = 16;
-        CArrayKokkos <double> corner_pts(num_points, 3, "corner_pts");
+        CArrayKokkos <real_t> corner_pts(num_points, 3, "corner_pts");
 
         RUN({
             // element 0 — unit cube [0,1]^3
@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 
         
         PointCloud_t pc;
-        pc.initialize_shared_node_vars(1.0e-16);  // set tolerance for coincient points
+        pc.initialize_shared_node_vars(real_tol(1.0e-16));  // set tolerance for coincient points
 
         // build the bin mesh with a small padding around the domain [0,2]^3
         pc.build_bin_mesh(-0.1, -0.1, -0.1,

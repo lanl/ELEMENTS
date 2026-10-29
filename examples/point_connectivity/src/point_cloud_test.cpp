@@ -59,20 +59,20 @@ MATAR_INITIALIZE(argc, argv);
 
     // number of points in each direction, creating structured point cloud
     const size_t N = 3; 
-    const double h = 2.0/((double)N - 1);
+    const real_t h = 2.0/((real_t)N - 1);
 
     const size_t num_points = N*N*N;
 
-    DCArrayKokkos <double> point_positions(num_points, 3, "point_positions");
+    DCArrayKokkos <real_t> point_positions(num_points, 3, "point_positions");
 
     // save point locations
     size_t point_gid = 0;  
     for(size_t k=0; k<N; k++)
     for(size_t j=0; j<N; j++)
     for(size_t i=0; i<N; i++){
-        point_positions.host(point_gid, 0) = ((double)i)*h;
-        point_positions.host(point_gid, 1) = ((double)j)*h;
-        point_positions.host(point_gid, 2) = ((double)k)*h;
+        point_positions.host(point_gid, 0) = ((real_t)i)*h;
+        point_positions.host(point_gid, 1) = ((real_t)j)*h;
+        point_positions.host(point_gid, 2) = ((real_t)k)*h;
         point_gid++;
     } // end for
 

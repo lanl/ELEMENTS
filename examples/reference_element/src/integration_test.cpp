@@ -51,25 +51,25 @@ const size_t max_order = 19; // max polynomial order to test, limit is 19th-orde
 
 // polynomial with terms <= p_order
 KOKKOS_INLINE_FUNCTION
-double polynomial(const CArrayKokkos<double> &coeff, const double x, const size_t p_order){
+real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     for (int i = 0; i <= p_order; ++i) {
-        result += coeff(i) * pow(x, (double)i);
+        result += coeff(i) * pow(x, (real_t)i);
     }
     return result;
 } // end polynomial
 
 // Analytical integration of polynomial over [-1, 1]
 KOKKOS_INLINE_FUNCTION
-double integrate_polynomial_1D(const CArrayKokkos<double> &coeff, const size_t p_order){
-    double result = 0.0;
+real_t integrate_polynomial_1D(const CArrayKokkos<real_t> &coeff, const size_t p_order){
+    real_t result = 0.0;
     for (int i = 0; i <= p_order; ++i) {
         // Integral of x^i from -1 to 1
         // = [x^(i+1)/(i+1)] from -1 to 1
         // = (1^(i+1) - (-1)^(i+1))/(i+1)
         if (i % 2 == 0) {  // even power: (-1)^i = 1
-            result += coeff(i) * 2.0 / (double)(i + 1);
+            result += coeff(i) * 2.0 / (real_t)(i + 1);
         }
         // odd powers integrate to zero over symmetric interval
     }
@@ -78,28 +78,28 @@ double integrate_polynomial_1D(const CArrayKokkos<double> &coeff, const size_t p
 
 // 2D polynomial for QUADS
 KOKKOS_INLINE_FUNCTION
-double polynomial(const CArrayKokkos<double> &coeff, const double x, 
-                  const double y, const size_t p_order){
-    double result = 0.0;
+real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, 
+                  const real_t y, const size_t p_order){
+    real_t result = 0.0;
     for (int j = 0; j <= p_order; ++j)      // Full range
     for (int i = 0; i <= p_order; ++i) {    // Full range - NO "-j"
-        result += coeff(i,j) * pow(x, (double)i) * pow(y, (double)j);
+        result += coeff(i,j) * pow(x, (real_t)i) * pow(y, (real_t)j);
     }
     return result;
 }
 
 // 2D analytical integration for QUADS
 KOKKOS_INLINE_FUNCTION
-double integrate_polynomial_2D_quad(const CArrayKokkos<double> &coeff, 
+real_t integrate_polynomial_2D_quad(const CArrayKokkos<real_t> &coeff, 
                                      const size_t p_order){
-    double result = 0.0;
+    real_t result = 0.0;
     for (int j = 0; j <= p_order; ++j)      // Full range
     for (int i = 0; i <= p_order; ++i) {    // Full range - NO "-j"
-        double xi_integral = 0.0;
-        double eta_integral = 0.0;
+        real_t xi_integral = 0.0;
+        real_t eta_integral = 0.0;
         
-        if (i % 2 == 0) xi_integral = 2.0 / (double)(i + 1);
-        if (j % 2 == 0) eta_integral = 2.0 / (double)(j + 1);
+        if (i % 2 == 0) xi_integral = 2.0 / (real_t)(i + 1);
+        if (j % 2 == 0) eta_integral = 2.0 / (real_t)(j + 1);
         
         result += coeff(i,j) * xi_integral * eta_integral;
     }
@@ -108,34 +108,34 @@ double integrate_polynomial_2D_quad(const CArrayKokkos<double> &coeff,
 
 // 3D polynomial for HEXES
 KOKKOS_INLINE_FUNCTION
-double polynomial(const CArrayKokkos<double> &coeff, const double x, 
-                  const double y, const double z, const size_t p_order){
-    double result = 0.0;
+real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, 
+                  const real_t y, const real_t z, const size_t p_order){
+    real_t result = 0.0;
     for (int k = 0; k <= p_order; ++k)      // Full range
     for (int j = 0; j <= p_order; ++j)      // Full range
     for (int i = 0; i <= p_order; ++i) {    // Full range
-        result += coeff(i,j,k) * pow(x, (double)i) * 
-                                 pow(y, (double)j) * 
-                                 pow(z, (double)k); 
+        result += coeff(i,j,k) * pow(x, (real_t)i) * 
+                                 pow(y, (real_t)j) * 
+                                 pow(z, (real_t)k); 
     }
     return result;
 }
 
 // 3D analytical integration for HEXES
 KOKKOS_INLINE_FUNCTION
-double integrate_polynomial_3D_hex(const CArrayKokkos<double> &coeff, 
+real_t integrate_polynomial_3D_hex(const CArrayKokkos<real_t> &coeff, 
                                     const size_t p_order){
-    double result = 0.0;
+    real_t result = 0.0;
     for (int k = 0; k <= p_order; ++k)      // Full range
     for (int j = 0; j <= p_order; ++j)      // Full range  
     for (int i = 0; i <= p_order; ++i) {    // Full range
-        double xi_integral = 0.0;
-        double eta_integral = 0.0;
-        double mu_integral = 0.0;
+        real_t xi_integral = 0.0;
+        real_t eta_integral = 0.0;
+        real_t mu_integral = 0.0;
         
-        if (i % 2 == 0) xi_integral = 2.0 / (double)(i + 1);
-        if (j % 2 == 0) eta_integral = 2.0 / (double)(j + 1);
-        if (k % 2 == 0) mu_integral = 2.0 / (double)(k + 1);
+        if (i % 2 == 0) xi_integral = 2.0 / (real_t)(i + 1);
+        if (j % 2 == 0) eta_integral = 2.0 / (real_t)(j + 1);
+        if (k % 2 == 0) mu_integral = 2.0 / (real_t)(k + 1);
         
         result += coeff(i,j,k) * xi_integral * eta_integral * mu_integral;
     }
@@ -152,40 +152,40 @@ void test_integration(const Quadrature_t& Quad,
     
     const size_t p_order = RefElem.num_dofs_1d - 1;
 
-    CArrayKokkos<double> coeff;
+    CArrayKokkos<real_t> coeff;
 
     if(RefElem.elem_dims==1){
-        coeff = CArrayKokkos<double>(p_order+1);
+        coeff = CArrayKokkos<real_t>(p_order+1);
     }
     else if (RefElem.elem_dims==2){
-        coeff = CArrayKokkos<double>(p_order+1, p_order+1);
+        coeff = CArrayKokkos<real_t>(p_order+1, p_order+1);
     }
     else {
-        coeff = CArrayKokkos<double>(p_order+1, p_order+1, p_order+1);
+        coeff = CArrayKokkos<real_t>(p_order+1, p_order+1, p_order+1);
     }
     coeff.set_values(0.78914567);  // a radom value
 
     // Compute numerical integral using quadratur
-    double numerical_integral = 0.0;
-    double sum_lcl = 0.0;
+    real_t numerical_integral = 0.0;
+    real_t sum_lcl = 0.0;
 
     // evaluate polynomial at quadrature point and sum 
     FOR_REDUCE_SUM(qpt, 0, Quad.num_qpts_in_elem, sum_lcl, {
 
-        double value = 0.0;
+        real_t value = 0.0;
         if(RefElem.elem_dims==1){
-            const double xi = Quad.qpt_positions(qpt, 0);
+            const real_t xi = Quad.qpt_positions(qpt, 0);
             value = polynomial(coeff, xi, p_order);
         }
         else if (RefElem.elem_dims==2){
-            const double xi  = Quad.qpt_positions(qpt, 0);
-            const double eta = Quad.qpt_positions(qpt, 1);
+            const real_t xi  = Quad.qpt_positions(qpt, 0);
+            const real_t eta = Quad.qpt_positions(qpt, 1);
             value = polynomial(coeff, xi, eta, p_order);
         }
         else {
-            const double xi  = Quad.qpt_positions(qpt, 0);
-            const double eta = Quad.qpt_positions(qpt, 1);
-            const double mu  = Quad.qpt_positions(qpt, 2);
+            const real_t xi  = Quad.qpt_positions(qpt, 0);
+            const real_t eta = Quad.qpt_positions(qpt, 1);
+            const real_t mu  = Quad.qpt_positions(qpt, 2);
             value = polynomial(coeff, xi, eta, mu, p_order);
         }
 
@@ -197,7 +197,7 @@ void test_integration(const Quadrature_t& Quad,
     RUN({
 
         // Compute analytical integral
-        double exact_integral = 0.0;
+        real_t exact_integral = 0.0;
 
         if(RefElem.elem_dims==1){
             exact_integral = integrate_polynomial_1D(coeff, p_order);
@@ -210,8 +210,8 @@ void test_integration(const Quadrature_t& Quad,
         }
 
         // Compare results
-        const double error = fabs(numerical_integral - exact_integral);
-        const double tolerance = fmax(1.e-10, 1.e-10 * (double)p_order);
+        const real_t error = fabs(numerical_integral - exact_integral);
+        const real_t tolerance = fmax(real_tol(1.e-10), real_tol(1.e-10) * (real_t)p_order);
 
         if (error > tolerance) {
             printf("Error: integration failed with order = %zu \n", p_order);
@@ -233,8 +233,8 @@ void test_integration(const Quadrature_t& Quad,
 // Diagnostic: Check weight sums in all dimensions
 void check_quadrature(const Quadrature_t& Quad) {
 
-    double weight_sum = 0.0;
-    double weight_sum_lcl = 0.0;
+    real_t weight_sum = 0.0;
+    real_t weight_sum_lcl = 0.0;
 
     FOR_REDUCE_SUM(qpt, 0, Quad.num_qpts_in_elem, weight_sum_lcl, {
         weight_sum_lcl += Quad.qpt_weights(qpt);
@@ -242,9 +242,9 @@ void check_quadrature(const Quadrature_t& Quad) {
     Kokkos::fence();
     
     
-    double expected = pow(2.0, (double)Quad.elem_dims);
-    double error = fabs(weight_sum - expected);
-    if (error > 1.e-12) {
+    real_t expected = pow(2.0, (real_t)Quad.elem_dims);
+    real_t error = fabs(weight_sum - expected);
+    if (error > real_tol(1.e-12)) {
         printf("Error: quadrature weights don't correctly tally for number = %zu \n", Quad.num_qpts_in_elem);
         printf("numerical = %.15e vs exact = %.15e, error = %.15e \n", 
             weight_sum, expected, error);

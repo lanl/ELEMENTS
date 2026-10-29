@@ -98,8 +98,8 @@ void test_affine_transformation() {
         {-1, -1,  1}, {1, -1,  1}, {1, 1,  1}, {-1, 1,  1}   // top
     };
 
-    DCArrayKokkos <double> node_coords_dual(8,3);
-    DCArrayKokkos <double> node_in_elem_dual(8);
+    DCArrayKokkos <real_t> node_coords_dual(8,3);
+    DCArrayKokkos <real_t> node_in_elem_dual(8);
     
     for(size_t n = 0; n < 8; n++) {
         for(size_t i = 0; i < 3; i++) {
@@ -145,7 +145,7 @@ void test_affine_transformation() {
     // and verify it matches A
 
     // Call jacobian function and then compare results
-    DCArrayKokkos <double> jac(3, 3);
+    DCArrayKokkos <real_t> jac(3, 3);
     RUN({
         // exact the basis and grad basis for this quadrature point
         //ViewCArrayKokkos a_basis(&RefElem.qpt_basis(0,0),RefElem.num_dofs_in_elem);
@@ -165,14 +165,14 @@ void test_affine_transformation() {
             printf("\n");
         } // end for 
 
-        double det = det_3x3(jac);
+        real_t det = det_3x3(jac);
         printf("Calculated determinant: %12.8f\n", det);
     }); // end RUN on device
     jac.update_host();
 
     for(size_t i = 0; i < 3; i++)  // looping over dimension
     for(size_t j = 0; j < 3; j++){ // looping over dimension
-        if(fabs(jac.host(i, j)-A[i][j])>1e-12){
+        if(fabs(jac.host(i, j)-A[i][j])>real_tol(1e-12)){
             Kokkos::abort("ERROR: Jacobian calculation in affine test failed\n");
         }
     } // end for 
@@ -263,8 +263,8 @@ void test_skewed_hexahedron() {
     // =======================
     // using ELEMENTS
     // =======================
-    DCArrayKokkos <double> node_coords_dual(8,3);
-    DCArrayKokkos <double> node_in_elem_dual(8);
+    DCArrayKokkos <real_t> node_coords_dual(8,3);
+    DCArrayKokkos <real_t> node_in_elem_dual(8);
     
     for(size_t n = 0; n < 8; n++) {
         for(size_t i = 0; i < 3; i++) {
@@ -292,7 +292,7 @@ void test_skewed_hexahedron() {
                                   1);   
 
     // Call jacobian function and then compare results
-    DCArrayKokkos <double> jac(3, 3);
+    DCArrayKokkos <real_t> jac(3, 3);
     RUN({
         // exact the basis and grad basis for this quadrature point
         //ViewCArrayKokkos a_basis(&RefElem.qpt_basis(0,0),RefElem.num_dofs_in_elem);
@@ -312,14 +312,14 @@ void test_skewed_hexahedron() {
             printf("\n");
         } // end for 
 
-        double det = det_3x3(jac);
+        real_t det = det_3x3(jac);
         printf("Calculated determinant: %12.8f\n", det);
     }); // end RUN on device
     jac.update_host();
 
     for(size_t i = 0; i < 3; i++)  // looping over dimension
     for(size_t j = 0; j < 3; j++){ // looping over dimension
-        if(fabs(jac.host(i, j)-J_approx[i][j])>1.e-10){
+        if(fabs(jac.host(i, j)-J_approx[i][j])>real_tol(1.e-10)){
             Kokkos::abort("ERROR: Jacobian calculation in skewed hex test failed\n");
         }
     } // end for 
@@ -412,8 +412,8 @@ void test_rotated_scaled_cube() {
     // =======================
     // using ELEMENTS
     // =======================
-    DCArrayKokkos <double> node_coords_dual(8,3);
-    DCArrayKokkos <double> node_in_elem_dual(8);
+    DCArrayKokkos <real_t> node_coords_dual(8,3);
+    DCArrayKokkos <real_t> node_in_elem_dual(8);
     
     for(size_t n = 0; n < 8; n++) {
         for(size_t i = 0; i < 3; i++) {
@@ -441,7 +441,7 @@ void test_rotated_scaled_cube() {
                                   1);   
 
     // Call jacobian function and then compare results
-    DCArrayKokkos <double> jac(3, 3);
+    DCArrayKokkos <real_t> jac(3, 3);
     RUN({
         // exact the basis and grad basis for this quadrature point
         //ViewCArrayKokkos a_basis(&RefElem.qpt_basis(0,0),RefElem.num_dofs_in_elem);
@@ -461,14 +461,14 @@ void test_rotated_scaled_cube() {
             printf("\n");
         } // end for 
 
-        double det = det_3x3(jac);
+        real_t det = det_3x3(jac);
         printf("Calculated determinant: %12.8f\n", det);
     }); // end RUN on device
     jac.update_host();
 
     for(size_t i = 0; i < 3; i++)  // looping over dimension
     for(size_t j = 0; j < 3; j++){ // looping over dimension
-        if(fabs(jac.host(i, j)-T[i][j])>1.e-10){
+        if(fabs(jac.host(i, j)-T[i][j])>real_tol(1.e-10)){
             Kokkos::abort("ERROR: Jacobian calculation in rotated and scaled test failed\n");
         }
     } // end for 
@@ -552,9 +552,9 @@ void test_manufactured_solution() {
     };
     
     // Setup Kokkos arrays with IJK ordering
-    DCArrayKokkos<double> node_coords_dual(8,3, "node coords dual");
-    DCArrayKokkos<double> node_in_elem_dual(8, "nodes in elem dual");
-    DCArrayKokkos<double> jac(3, 3, "jacobian");
+    DCArrayKokkos<real_t> node_coords_dual(8,3, "node coords dual");
+    DCArrayKokkos<real_t> node_in_elem_dual(8, "nodes in elem dual");
+    DCArrayKokkos<real_t> jac(3, 3, "jacobian");
 
     for(size_t n = 0; n < 8; n++) {
         node_in_elem_dual.host(n) = n;
@@ -586,7 +586,7 @@ void test_manufactured_solution() {
                                 RefElem);
 
     // Test points
-    const double qpt = 0.774596669241483377035853079956;  // sqrt(3/5)
+    const real_t qpt = 0.774596669241483377035853079956;  // sqrt(3/5)
     real_t test_points[3][3] = {
         {-qpt, -qpt, -qpt},  // qpt_id = 0
         {0.0, 0.0, 0.0},     // qpt_id = 13 
@@ -622,7 +622,7 @@ void test_manufactured_solution() {
 
         // Numerical
         RUN({
-            ViewCArrayKokkos<double> a_grad_basis(&RefElem.qpt_grad_basis(qpt_id,0,0),
+            ViewCArrayKokkos<real_t> a_grad_basis(&RefElem.qpt_grad_basis(qpt_id,0,0),
                                                    RefElem.num_dofs_in_elem, 3);
 
             jacobian(jac, 
@@ -643,12 +643,12 @@ void test_manufactured_solution() {
         }
         
         // Compare
-        double max_error = 0.0;
+        real_t max_error = 0.0;
         printf("\n  Absolute Error:\n");
         for(int i = 0; i < 3; i++) {
             printf("    ");
             for(int j = 0; j < 3; j++) {
-                double error = fabs(J_analytical[i][j] - jac.host(i,j));
+                real_t error = fabs(J_analytical[i][j] - jac.host(i,j));
                 max_error = fmax(max_error, error);
                 printf("%10.2e ", error);
             }
@@ -663,20 +663,20 @@ void test_manufactured_solution() {
                             + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
                                                   J_analytical[1][1]*J_analytical[2][0]);
         
-        DCArrayKokkos <double> det_numerical(1, "det_numerical dual");
+        DCArrayKokkos <real_t> det_numerical(1, "det_numerical dual");
         RUN({
             det_numerical(0) = det_3x3(jac);
         });
         det_numerical.update_host();
 
-        double det_error = fabs(det_analytical - det_numerical.host(0));
+        real_t det_error = fabs(det_analytical - det_numerical.host(0));
         
         printf("\n  Determinant:\n");
         printf("    Analytical: %12.8f\n", det_analytical);
         printf("    Numerical:  %12.8f\n", det_numerical.host(0));
         printf("    Error:      %12.2e\n", det_error);
         
-        const double tol = 1e-10;
+        const real_t tol = real_tol(1e-10);
         bool passed = (max_error < tol) && (det_error < tol);
 
         printf("\n  Max Error: %12.2e\n", max_error);
@@ -763,7 +763,7 @@ void test_manufactured_solution() {
             // Numerical
             RUN({
                 // extract the grad_basis at a single quadrature point (num_dofs,3D)
-                ViewCArrayKokkos<double> a_grad_basis(&RefSurf.qpt_grad_basis(side,qpt_id,0,0),
+                ViewCArrayKokkos<real_t> a_grad_basis(&RefSurf.qpt_grad_basis(side,qpt_id,0,0),
                                                     RefElem.num_dofs_in_elem, 3);
 
                 jacobian(jac, 
@@ -784,12 +784,12 @@ void test_manufactured_solution() {
             }
             
             // Compare
-            double max_error = 0.0;
+            real_t max_error = 0.0;
             printf("\n  Absolute Error:\n");
             for(int i = 0; i < 3; i++) {
                 printf("    ");
                 for(int j = 0; j < 3; j++) {
-                    double error = fabs(J_analytical[i][j] - jac.host(i,j));
+                    real_t error = fabs(J_analytical[i][j] - jac.host(i,j));
                     max_error = fmax(max_error, error);
                     printf("%10.2e ", error);
                 }
@@ -804,19 +804,19 @@ void test_manufactured_solution() {
                                 + J_analytical[0][2]*(J_analytical[1][0]*J_analytical[2][1] - 
                                                       J_analytical[1][1]*J_analytical[2][0]);
             
-            DCArrayKokkos <double> det_numerical(1, "det_numerical");
+            DCArrayKokkos <real_t> det_numerical(1, "det_numerical");
             RUN({
                 det_numerical(0) = det_3x3(jac);
             });
             det_numerical.update_host();
-            double det_error = fabs(det_analytical - det_numerical.host(0));
+            real_t det_error = fabs(det_analytical - det_numerical.host(0));
             
             printf("\n  Determinant:\n");
             printf("    Analytical: %12.8f\n", det_analytical);
             printf("    Numerical:  %12.8f\n", det_numerical.host(0));
             printf("    Error:      %12.2e\n", det_error);
             
-            const double tol = 1e-10;
+            const real_t tol = real_tol(1e-10);
             bool passed = (max_error < tol) && (det_error < tol);
             
             printf("\n  Max Error: %12.2e\n", max_error);
@@ -891,8 +891,8 @@ MATAR_INITIALIZE(argc, argv);
     Mesh.initialize_elems_Pn(num_elems, elem_order, Quad.num_qpts_1d);
     Mesh.initialize_nodes(num_nodes);
     
-    DCArrayKokkos <double> node_coords(Mesh.num_nodes, Mesh.num_dims);
-    const double h = 1.0/((double)num_nodes_1D);
+    DCArrayKokkos <real_t> node_coords(Mesh.num_nodes, Mesh.num_dims);
+    const real_t h = 1.0/((real_t)num_nodes_1D);
 
     // create indexing for a Pn order mesh
 
@@ -903,9 +903,9 @@ MATAR_INITIALIZE(argc, argv);
         
         size_t node_gid = ic + (jc + kc*num_nodes_1D)*num_nodes_1D;
         
-        node_coords(node_gid, 0) = (double)ic * h;
-        node_coords(node_gid, 1) = (double)jc * h;
-        node_coords(node_gid, 2) = (double)kc * h;
+        node_coords(node_gid, 0) = (real_t)ic * h;
+        node_coords(node_gid, 1) = (real_t)jc * h;
+        node_coords(node_gid, 2) = (real_t)kc * h;
     });
 
     // Step 2: Build element connectivity
@@ -1070,8 +1070,8 @@ MATAR_INITIALIZE(argc, argv);
     // ==========================================
     // Create state on the unstructured mesh structure
 
-    DCArrayKokkos <double> node_scalar(Mesh.num_nodes);
-    DCArrayKokkos <double> gauss_scalar(Mesh.num_gauss_in_elem);
+    DCArrayKokkos <real_t> node_scalar(Mesh.num_nodes);
+    DCArrayKokkos <real_t> gauss_scalar(Mesh.num_gauss_in_elem);
 
 
     // ===========
@@ -1083,12 +1083,12 @@ MATAR_INITIALIZE(argc, argv);
         const size_t num_nodes_in_elem = FERefElem.num_dofs_in_elem;
 
         // get Jacobian
-        double j_1D[9];
-        ViewCArrayKokkos <double> jac(&j_1D[0], 3, 3); 
+        real_t j_1D[9];
+        ViewCArrayKokkos <real_t> jac(&j_1D[0], 3, 3); 
 
         // make views on device, extacting only element and quadrature point values
         ViewCArrayKokkos <size_t> nodes_in_an_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
-        ViewCArrayKokkos <double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt, 0, 0), num_nodes_in_elem, 3);
+        ViewCArrayKokkos <real_t> a_grad_basis(&FERefElem.qpt_grad_basis(qpt, 0, 0), num_nodes_in_elem, 3);
 
         jacobian(jac, 
                  node_coords, 

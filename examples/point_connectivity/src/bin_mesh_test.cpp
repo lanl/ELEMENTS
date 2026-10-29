@@ -57,7 +57,7 @@ MATAR_INITIALIZE(argc, argv);
                       10, 10, 10);     // num bins per direction
 
     // bin spacing should be 0.1
-    if(fabs(pc.bin_dx - 0.1) > 1.e-14)
+    if(fabs(pc.bin_dx - 0.1) > real_tol(1.e-14))
         throw std::runtime_error("ERROR: wrong bin dx spacing \n");
      
 

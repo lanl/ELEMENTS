@@ -53,14 +53,14 @@ using namespace elements; // reference element space
 
 void write_lagrange_hex_mesh(
     const std::string& filename,
-    const DCArrayKokkos<double>& node_coords,       // All node coordinates [num_nodes][3]
+    const DCArrayKokkos<real_t>& node_coords,       // All node coordinates [num_nodes][3]
     const size_t num_nodes,
     const DCArrayKokkos<size_t>& nodes_in_elem,     // Connectivity
     const size_t num_elems,
     const size_t order,
-    const DCArrayKokkos<double>& node_data,         // Nodal data
+    const DCArrayKokkos<real_t>& node_data,         // Nodal data
     const std::string& node_data_name,
-    const DCArrayKokkos<double>& elem_data,         // Element center data (NEW)
+    const DCArrayKokkos<real_t>& elem_data,         // Element center data (NEW)
     const std::string& elem_data_name);             // Element data name (NEW)
 
 
@@ -68,16 +68,16 @@ void write_lagrange_cells(std::ofstream& file,
                         const DCArrayKokkos<size_t>& nodes_in_elem,
                         size_t num_elems, 
                         size_t order,
-                        const DCArrayKokkos<double>& elem_data,    // Element data
+                        const DCArrayKokkos<real_t>& elem_data,    // Element data
                         const std::string& elem_data_name);        // Element data name
 
 void write_points(std::ofstream& file, 
-                  const DCArrayKokkos<double>& coords, 
+                  const DCArrayKokkos<real_t>& coords, 
                   size_t num_nodes);
 
 
 void write_point_data(std::ofstream& file, 
-                      const DCArrayKokkos<double>& data, 
+                      const DCArrayKokkos<real_t>& data, 
                       size_t num_nodes,
                       const std::string& name);
 
@@ -108,8 +108,8 @@ MATAR_INITIALIZE(argc, argv);
     const size_t num_elems_1D = 16;
 
     const size_t max_cycles = 1000;
-    const double max_time   = 0.5;
-    const double graphics_dt = 0.1;
+    const real_t max_time   = 0.5;
+    const real_t graphics_dt = 0.1;
 
     // the minimum quadrature for FE hydrodynamics based on elem order
     const size_t num_DOFs_1d = elem_order + 1; // 
@@ -164,8 +164,8 @@ MATAR_INITIALIZE(argc, argv);
     Mesh.initialize_elems_Pn(num_elems, elem_order, Quad.num_qpts_1d);
     Mesh.initialize_nodes(num_nodes);
     
-    DCArrayKokkos <double> node_coords(Mesh.num_nodes, Mesh.num_dims);
-    const double h = 1.0/((double)num_nodes_1D-1);
+    DCArrayKokkos <real_t> node_coords(Mesh.num_nodes, Mesh.num_dims);
+    const real_t h = 1.0/((real_t)num_nodes_1D-1);
 
     // create indexing for a Pn order mesh
 
@@ -176,9 +176,9 @@ MATAR_INITIALIZE(argc, argv);
         
         size_t node_gid = ic + (jc + kc*num_nodes_1D)*num_nodes_1D;
         
-        node_coords(node_gid, 0) = (double)ic * h;
-        node_coords(node_gid, 1) = (double)jc * h;
-        node_coords(node_gid, 2) = (double)kc * h;
+        node_coords(node_gid, 0) = (real_t)ic * h;
+        node_coords(node_gid, 1) = (real_t)jc * h;
+        node_coords(node_gid, 2) = (real_t)kc * h;
     });
 
     // Step 2: Build element connectivity
@@ -264,36 +264,36 @@ MATAR_INITIALIZE(argc, argv);
 
     if(num_nodes_in_elem != FERefElem.num_dofs_in_elem) Kokkos::abort("ERROR: mismatch in DOFs and num nodes in elem \n");
 
-    DCArrayKokkos<double> elem_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
-    DCArrayKokkos<double> elem_det_jac(num_elems, num_qpts_in_elem, "elem_det_jacobian");
-    DCArrayKokkos<double> elem_vol(num_elems, "elem_vol");
-    DCArrayKokkos<double> elem_vol_n(num_elems, "elem_vol_n");
+    DCArrayKokkos<real_t> elem_jac(num_elems, num_qpts_in_elem, elem_dims, elem_dims, "elem_jacobian");
+    DCArrayKokkos<real_t> elem_det_jac(num_elems, num_qpts_in_elem, "elem_det_jacobian");
+    DCArrayKokkos<real_t> elem_vol(num_elems, "elem_vol");
+    DCArrayKokkos<real_t> elem_vol_n(num_elems, "elem_vol_n");
     
     
-    DCArrayKokkos<double> surf_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_jacobian");
-    DCArrayKokkos<double> surf_inv_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_inv_jacobian");
-    DCArrayKokkos<double> surf_flux(num_surfs, "surf_flux");
+    DCArrayKokkos<real_t> surf_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_jacobian");
+    DCArrayKokkos<real_t> surf_inv_jac(num_surfs, num_qpts_in_surf, elem_dims, elem_dims, "surf_inv_jacobian");
+    DCArrayKokkos<real_t> surf_flux(num_surfs, "surf_flux");
     
-    DCArrayKokkos<double> elem_field(num_elems, "elem_field");     // P0 field in the element, this is a FV method on high-order meshes
-    DCArrayKokkos<double> elem_field_n(num_elems, "elem_field_n"); // P0 field in the element, this is a FV method on high-order meshes
-    DCArrayKokkos<double> node_velocity(num_nodes, elem_dims, "node_velocity");
+    DCArrayKokkos<real_t> elem_field(num_elems, "elem_field");     // P0 field in the element, this is a FV method on high-order meshes
+    DCArrayKokkos<real_t> elem_field_n(num_elems, "elem_field_n"); // P0 field in the element, this is a FV method on high-order meshes
+    DCArrayKokkos<real_t> node_velocity(num_nodes, elem_dims, "node_velocity");
 
 
-    const double max_vel = 1.0;
-    double h_cfl = h;
-    double dt = 0.2*h_cfl/max_vel;  // dt from CFL at start, this time is psuedo time
+    const real_t max_vel = 1.0;
+    real_t h_cfl = h;
+    real_t dt = 0.2*h_cfl/max_vel;  // dt from CFL at start, this time is psuedo time
 
     FOR_ALL(elem_gid, 0, num_elems, {
 
         ViewCArrayKokkos<size_t> nodes_in_elem(&Mesh.nodes_in_elem(elem_gid,0), num_nodes_in_elem);
 
-        double elem_coords[3];
+        real_t elem_coords[3];
         for(size_t dim=0; dim<elem_dims; dim++){elem_coords[dim] = 0.0;}
 
         for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
             const size_t node_gid = nodes_in_elem(node_lid);
             for(size_t dim=0; dim<elem_dims; dim++){ 
-                    elem_coords[dim] += node_coords(node_gid,dim)/((double)num_nodes_in_elem);
+                    elem_coords[dim] += node_coords(node_gid,dim)/((real_t)num_nodes_in_elem);
             }
         }
 
@@ -313,15 +313,15 @@ MATAR_INITIALIZE(argc, argv);
         // calculate volume
         for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
             // extract the grad_basis at a single quadrature point (qpt,dof,3D)
-            ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
+            ViewCArrayKokkos<real_t> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
                                                 num_nodes_in_elem, 3);
 
             // extract the basis at a single quadrature point (qpt,dof)    
-            ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
+            ViewCArrayKokkos<real_t> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
                                             num_nodes_in_elem);
             
             // jacobian matrix
-            ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
+            ViewCArrayKokkos<real_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
             jacobian(jac, 
                     node_coords, 
                     nodes_in_elem,
@@ -339,8 +339,8 @@ MATAR_INITIALIZE(argc, argv);
 
 
     ////--------///
-    double time = 0;
-    double time_output = graphics_dt;
+    real_t time = 0;
+    real_t time_output = graphics_dt;
     size_t output_id = 0;
 
 
@@ -396,13 +396,13 @@ MATAR_INITIALIZE(argc, argv);
 
 
         // Step 2: get CFL pseudo time step for moving mesh
-        double min_h_loc;
+        real_t min_h_loc;
         FOR_REDUCE_MIN(elem_gid, 0, num_elems, 
                        min_h_loc, { 
             
             for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
-                const double vol_qpt= Quad.qpt_weights(qpt_lid)*elem_det_jac(elem_gid, qpt_lid);
-                const double h_qpt = pow(vol_qpt,0.3333333);
+                const real_t vol_qpt= Quad.qpt_weights(qpt_lid)*elem_det_jac(elem_gid, qpt_lid);
+                const real_t h_qpt = pow(vol_qpt,0.3333333);
                 if(h_qpt < min_h_loc) min_h_loc = h_qpt;
             }
 
@@ -426,27 +426,27 @@ MATAR_INITIALIZE(argc, argv);
             for(size_t qpt_lid=0; qpt_lid<num_qpts_in_surf; qpt_lid++){
                 
                 // extract the grad_basis at a single quadrature point (surf,qpt,dof,3D)
-                ViewCArrayKokkos<double> a_grad_basis(&RefSurf.qpt_grad_basis(face_lid,qpt_lid,0,0),
+                ViewCArrayKokkos<real_t> a_grad_basis(&RefSurf.qpt_grad_basis(face_lid,qpt_lid,0,0),
                                                     num_nodes_in_elem, 3);
 
                 // extract the basis at a single quadrature point (surf,qpt,dof)    
-                ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0),
+                ViewCArrayKokkos<real_t> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0),
                                                 num_nodes_in_elem);
                 
-                ViewCArrayKokkos<double> jac(&surf_jac(surf_gid,qpt_lid,0,0),3,3);
-                ViewCArrayKokkos<double> inv_jac(&surf_inv_jac(surf_gid,qpt_lid,0,0),3,3);
+                ViewCArrayKokkos<real_t> jac(&surf_jac(surf_gid,qpt_lid,0,0),3,3);
+                ViewCArrayKokkos<real_t> inv_jac(&surf_inv_jac(surf_gid,qpt_lid,0,0),3,3);
 
                 jacobian(jac, 
                         node_coords, 
                         nodes_in_elem,
                         a_grad_basis);
 
-                const double det_jac_qpt = det_3x3(jac);
+                const real_t det_jac_qpt = det_3x3(jac);
 
                 invert_3x3(jac, inv_jac, det_jac_qpt);
 
                 // Nanson's formula: s*J^-1*j*f*w
-                double area_normal[3];
+                real_t area_normal[3];
                 area_normal[0] = 0.;
                 area_normal[1] = 0.;
                 area_normal[2] = 0.;
@@ -457,7 +457,7 @@ MATAR_INITIALIZE(argc, argv);
                     area_normal[j] *= det_jac_qpt*SurfQuad.qpt_weights(face_lid,qpt_lid);
                 } // end j
 
-                double qpt_vel[3];
+                real_t qpt_vel[3];
                 for(size_t dim=0; dim<elem_dims; dim++){
                     qpt_vel[dim] = 0.0;
                 }
@@ -470,7 +470,7 @@ MATAR_INITIALIZE(argc, argv);
 
                 //printf("qpt normal x = %.4f \n", area_normal[0]);
 
-                double normal_dot_vel = 0.0;
+                real_t normal_dot_vel = 0.0;
                 for(size_t dim=0; dim<elem_dims; dim++){
                     normal_dot_vel += area_normal[dim]*qpt_vel[dim];
                 }
@@ -514,15 +514,15 @@ MATAR_INITIALIZE(argc, argv);
             // calculate volume
             for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
                 // extract the grad_basis at a single quadrature point (qpt,dof,3D)
-                ViewCArrayKokkos<double> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
+                ViewCArrayKokkos<real_t> a_grad_basis(&FERefElem.qpt_grad_basis(qpt_lid,0,0),
                                                     num_nodes_in_elem, 3);
 
                 // extract the basis at a single quadrature point (qpt,dof)    
-                ViewCArrayKokkos<double> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
+                ViewCArrayKokkos<real_t> a_basis(&FERefElem.qpt_basis(qpt_lid,0),
                                                 num_nodes_in_elem);
                 
                 // jacobian matrix
-                ViewCArrayKokkos<double> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
+                ViewCArrayKokkos<real_t> jac(&elem_jac(elem_gid,qpt_lid,0,0),3,3);
                 jacobian(jac, 
                         node_coords, 
                         nodes_in_elem,
@@ -543,14 +543,14 @@ MATAR_INITIALIZE(argc, argv);
         FOR_ALL(elem_gid, 0, num_elems,{
 
             // Start with conservative quantity from previous time
-            double conservative_quantity = elem_field_n(elem_gid) * elem_vol_n(elem_gid);
+            real_t conservative_quantity = elem_field_n(elem_gid) * elem_vol_n(elem_gid);
             
             // Accumulate fluxes from all faces
             for(size_t face_lid=0; face_lid<num_surfs_in_elem; face_lid++){
                 const size_t surf_gid = Mesh.surfs_in_elem(elem_gid, face_lid);
                 
                 // Determine sign: flux is positive OUT of first element
-                double flux_sign = 1.0;
+                real_t flux_sign = 1.0;
                 if(Mesh.elems_in_surf(surf_gid, 0) != elem_gid){
                     flux_sign = -1.0;  // We're the second element, flux goes in
                 }
@@ -565,7 +565,7 @@ MATAR_INITIALIZE(argc, argv);
 
         time += dt;
 
-        if( time-time_output >= -1.e-8 ){
+        if( time-time_output >= -real_tol(1.e-8) ){
 
             node_coords.update_host();
             node_velocity.update_host();
@@ -615,14 +615,14 @@ return 0;
 // 
 void write_lagrange_hex_mesh(
     const std::string& filename,
-    const DCArrayKokkos<double>& node_coords,       // All node coordinates [num_nodes][3]
+    const DCArrayKokkos<real_t>& node_coords,       // All node coordinates [num_nodes][3]
     const size_t num_nodes,
     const DCArrayKokkos<size_t>& nodes_in_elem,     // Connectivity
     const size_t num_elems,
     const size_t order,
-    const DCArrayKokkos<double>& node_data,         // Nodal data
+    const DCArrayKokkos<real_t>& node_data,         // Nodal data
     const std::string& node_data_name,
-    const DCArrayKokkos<double>& elem_data,         // Element center data (NEW)
+    const DCArrayKokkos<real_t>& elem_data,         // Element center data (NEW)
     const std::string& elem_data_name)              // Element data name (NEW)
 {
     std::ofstream vtu_file(filename);
@@ -659,7 +659,7 @@ void write_lagrange_hex_mesh(
     std::cout << "Wrote VTU file: " << filename << std::endl;
 }
 
-void write_points(std::ofstream& file, const DCArrayKokkos<double>& coords, size_t num_nodes)
+void write_points(std::ofstream& file, const DCArrayKokkos<real_t>& coords, size_t num_nodes)
 {
     file << "      <Points>\n";
     file << "        <DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
@@ -678,7 +678,7 @@ void write_lagrange_cells(std::ofstream& file,
                           const DCArrayKokkos<size_t>& nodes_in_elem,
                           size_t num_elems, 
                           size_t order,
-                          const DCArrayKokkos<double>& elem_data,    // Element data
+                          const DCArrayKokkos<real_t>& elem_data,    // Element data
                           const std::string& elem_data_name)         // Element data name
 {
     const size_t nodes_per_elem = (order + 1) * (order + 1) * (order + 1);
@@ -745,7 +745,7 @@ void write_lagrange_cells(std::ofstream& file,
 }
 
 void write_point_data(std::ofstream& file, 
-                      const DCArrayKokkos<double>& data, 
+                      const DCArrayKokkos<real_t>& data, 
                       size_t num_nodes,
                       const std::string& name)
 {

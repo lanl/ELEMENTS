@@ -87,7 +87,7 @@ MATAR_INITIALIZE(argc, argv);
 
                     // remember: dof_pt = qpt, it is a collocated grid
 
-                    double expected = (basis == dof_pt) ? 1.0 : 0.0;
+                    real_t expected = (basis == dof_pt) ? 1.0 : 0.0;
 
                     if(Verbose){
                         printf("   checking at DOF basis = %d \n", basis);
@@ -96,7 +96,7 @@ MATAR_INITIALIZE(argc, argv);
                             printf("   quad pos     = %f, basis pos = %f \n", Quad.qpt_positions(dof_pt, dim), FERefElem.dof_positions(dof_pt, dim));
                         }
                     }
-                    if (fabs(FERefElem.qpt_basis(dof_pt, basis) - expected) > 1.0e-12) {
+                    if (fabs(FERefElem.qpt_basis(dof_pt, basis) - expected) > real_tol(1.0e-12)) {
                         printf("ERROR: expected val = %f, basis val = %f \n", expected, FERefElem.qpt_basis(dof_pt, basis));
                         Kokkos::abort("ERROR: Kronecker delta property violated");
                     }

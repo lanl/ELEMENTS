@@ -144,8 +144,8 @@ inline int PointIndexFromIJK(int i, int j, int k, const int* order)
 void build_3d_box(
     swage::Mesh_t& mesh,
     node_t&   node,
-    double origin[3],
-    double length[3],
+    real_t origin[3],
+    real_t length[3],
     int num_elems_dim[3])
 {
     printf("Creating a 3D box mesh \n");
@@ -153,9 +153,9 @@ void build_3d_box(
     const int num_dim = 3;
 
     // Note: In fierro, these come from the simulation parameters
-    const double lx = length[0];
-    const double ly = length[1];
-    const double lz = length[2];
+    const real_t lx = length[0];
+    const real_t ly = length[1];
+    const real_t lz = length[2];
 
     // Note: In fierro, these come from the simulation parameters
     const int num_elems_i = num_elems_dim[0];
@@ -168,9 +168,9 @@ void build_3d_box(
 
     const int num_nodes = num_points_i * num_points_j * num_points_k;
 
-    const double dx = lx / ((double)num_elems_i);  // len/(num_elems_i)
-    const double dy = ly / ((double)num_elems_j);  // len/(num_elems_j)
-    const double dz = lz / ((double)num_elems_k);  // len/(num_elems_k)
+    const real_t dx = lx / ((real_t)num_elems_i);  // len/(num_elems_i)
+    const real_t dy = ly / ((real_t)num_elems_j);  // len/(num_elems_j)
+    const real_t dz = lz / ((real_t)num_elems_k);  // len/(num_elems_k)
 
     const int num_elems = num_elems_i * num_elems_j * num_elems_k;
 
@@ -189,7 +189,7 @@ void build_3d_box(
 
     // --- Build nodes ---
 
-    CArrayDual<double> origin_mtr(3, "origin_mtr");
+    CArrayDual<real_t> origin_mtr(3, "origin_mtr");
     origin_mtr.host(0) = origin[0];
     origin_mtr.host(1) = origin[1];
     origin_mtr.host(2) = origin[2];
@@ -204,9 +204,9 @@ void build_3d_box(
         size_t node_gid = get_id(i, j, k, num_points_i, num_points_j);
 
         // store the point coordinates
-        node.coords(node_gid, 0) = origin_mtr(0) + (double)i * dx;
-        node.coords(node_gid, 1) = origin_mtr(1) + (double)j * dy;
-        node.coords(node_gid, 2) = origin_mtr(2) + (double)k * dz;
+        node.coords(node_gid, 0) = origin_mtr(0) + (real_t)i * dx;
+        node.coords(node_gid, 1) = origin_mtr(1) + (real_t)j * dy;
+        node.coords(node_gid, 2) = origin_mtr(2) + (real_t)k * dz;
     });
     // Update the host side
     node.coords.update_host();
@@ -273,7 +273,7 @@ void build_3d_box(
         int rank)
     {
 
-        CArray<double> graphics_times(1);
+        CArray<real_t> graphics_times(1);
         int graphics_id = 0;
         graphics_times(0) = 0.0;
 
@@ -316,7 +316,7 @@ void build_3d_box(
 
 
         // save the cell state to an array for exporting to graphics files
-        auto elem_fields = CArray<double>(num_elems, num_cell_scalar_vars);
+        auto elem_fields = CArray<real_t>(num_elems, num_cell_scalar_vars);
         int  elem_switch = 1;
 
 
@@ -327,14 +327,14 @@ void build_3d_box(
 
         for (size_t elem_gid = 0; elem_gid < num_elems; elem_gid++) {
             elem_fields(elem_gid, 0) = rank;
-            elem_fields(elem_gid, 1) = (double)mesh.num_elems_in_elem(elem_gid);
+            elem_fields(elem_gid, 1) = (real_t)mesh.num_elems_in_elem(elem_gid);
             elem_fields(elem_gid, 2) = mesh.local_to_global_elem_mapping.host(elem_gid);
         }
 
 
         // save the vertex vector fields to an array for exporting to graphics files
-        CArray<double> vec_fields(num_nodes, num_point_vec_vars, 3);
-        CArray<double> point_scalar_fields(num_nodes, num_point_scalar_vars);
+        CArray<real_t> vec_fields(num_nodes, num_point_vec_vars, 3);
+        CArray<real_t> point_scalar_fields(num_nodes, num_point_scalar_vars);
 
         for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
             // position, var 0
@@ -348,7 +348,7 @@ void build_3d_box(
             vec_fields(node_gid, 1, 2) = node.vector_field.host(node_gid, 2);
 
             point_scalar_fields(node_gid, 0) = rank;
-            point_scalar_fields(node_gid, 1) = (double)mesh.num_corners_in_node(node_gid);
+            point_scalar_fields(node_gid, 1) = (real_t)mesh.num_corners_in_node(node_gid);
             point_scalar_fields(node_gid, 2) = node.scalar_field.host(node_gid);
 
         } // end for loop over vertices
@@ -535,7 +535,7 @@ void write_vtu(swage::Mesh_t& mesh,
     int world_size;
     MPI_Comm_size(comm, &world_size);
 
-    CArray<double> graphics_times(1);
+    CArray<real_t> graphics_times(1);
     int graphics_id = 0;
     graphics_times(0) = 0.0;
 
@@ -573,12 +573,12 @@ void write_vtu(swage::Mesh_t& mesh,
     const size_t num_dims  = mesh.num_dims;
 
     // save the cell state to an array for exporting to graphics files
-    auto elem_fields = CArray<double>(num_elems, num_cell_scalar_vars);
-    auto elem_vec_fields = CArray<double>(num_elems, num_cell_vec_vars, 3);
+    auto elem_fields = CArray<real_t>(num_elems, num_cell_scalar_vars);
+    auto elem_vec_fields = CArray<real_t>(num_elems, num_cell_vec_vars, 3);
 
-    DCArrayKokkos <double> num_elems_in_elem(mesh.num_elems, "tmp_num_elem_in_elem");
+    DCArrayKokkos <real_t> num_elems_in_elem(mesh.num_elems, "tmp_num_elem_in_elem");
     FOR_ALL(i, 0, mesh.num_elems, {
-        num_elems_in_elem(i) = (double)mesh.num_elems_in_elem(i);
+        num_elems_in_elem(i) = (real_t)mesh.num_elems_in_elem(i);
     });
     MATAR_FENCE();
     num_elems_in_elem.update_host();
@@ -595,13 +595,13 @@ void write_vtu(swage::Mesh_t& mesh,
     }
 
     // save the vertex vector fields to an array for exporting to graphics files
-    CArray<double> vec_fields(num_nodes, num_point_vec_vars, 3);
-    CArray<double> point_scalar_fields(num_nodes, num_point_scalar_vars);
+    CArray<real_t> vec_fields(num_nodes, num_point_vec_vars, 3);
+    CArray<real_t> point_scalar_fields(num_nodes, num_point_scalar_vars);
 
 
-    DCArrayKokkos <double> num_elems_in_node(mesh.num_elems, "tmp_num_elems_in_node");
+    DCArrayKokkos <real_t> num_elems_in_node(mesh.num_elems, "tmp_num_elems_in_node");
     FOR_ALL(i, 0, mesh.num_elems, {
-        num_elems_in_node(i) = (double)mesh.num_corners_in_node(i);
+        num_elems_in_node(i) = (real_t)mesh.num_corners_in_node(i);
     });
     MATAR_FENCE();
     num_elems_in_node.update_host();
@@ -619,7 +619,7 @@ void write_vtu(swage::Mesh_t& mesh,
 
         point_scalar_fields(node_gid, 0) = rank;
         point_scalar_fields(node_gid, 1) = num_elems_in_node.host(node_gid);
-        point_scalar_fields(node_gid, 2) = (double)mesh.local_to_global_node_mapping.host(node_gid);
+        point_scalar_fields(node_gid, 2) = (real_t)mesh.local_to_global_node_mapping.host(node_gid);
         point_scalar_fields(node_gid, 3) = node.scalar_field.host(node_gid);
     }
 
@@ -909,10 +909,10 @@ void write_vtu(swage::Mesh_t& mesh,
         std::vector<std::string> v = split (str, delimiter);
 
         // save the nodal coordinates
-        node.coords.host(node_gid, 0) = std::stod(v[0]); // double
-        node.coords.host(node_gid, 1) = std::stod(v[1]); // double
+        node.coords.host(node_gid, 0) = std::stod(v[0]); // real_t
+        node.coords.host(node_gid, 1) = std::stod(v[1]); // real_t
         if(num_dims==3){
-            node.coords.host(node_gid, 2) = std::stod(v[2]); // double
+            node.coords.host(node_gid, 2) = std::stod(v[2]); // real_t
         }
 
     } // end for nodes

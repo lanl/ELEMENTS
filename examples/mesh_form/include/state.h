@@ -62,12 +62,12 @@ struct node_t
 {
 
     // Replace with MPIDCArrayKokkos
-    DCArrayKokkos<double> coords;     ///< Nodal coordinates
-    DCArrayKokkos<double> coords_n0;  ///< Nodal coordinates at tn=0 of time integration
+    DCArrayKokkos<real_t> coords;     ///< Nodal coordinates
+    DCArrayKokkos<real_t> coords_n0;  ///< Nodal coordinates at tn=0 of time integration
     
-    DCArrayKokkos<double> scalar_field; ///< Scalar field on a node
-    DCArrayKokkos<double> normal; ///< Vector field on a node
-    DCArrayKokkos<double> closest_facet_point; ///< Closest point on a facet to a node
+    DCArrayKokkos<real_t> scalar_field; ///< Scalar field on a node
+    DCArrayKokkos<real_t> normal; ///< Vector field on a node
+    DCArrayKokkos<real_t> closest_facet_point; ///< Closest point on a facet to a node
 
 
     // initialization method (num_nodes, num_dims, state to allocate)
@@ -78,20 +78,20 @@ struct node_t
             switch(field){
                 case node_state::coords:
                     if (coords.size() == 0){
-                        this->coords = DCArrayKokkos<double>(num_nodes, num_dims, "node_coordinates");
+                        this->coords = DCArrayKokkos<real_t>(num_nodes, num_dims, "node_coordinates");
                     }
                     if (coords_n0.size() == 0){
-                        this->coords_n0 = DCArrayKokkos<double>(num_nodes, num_dims, "node_coordinates_n0");
+                        this->coords_n0 = DCArrayKokkos<real_t>(num_nodes, num_dims, "node_coordinates_n0");
                     }
                     break;
                 case node_state::scalar_field:
-                    if (scalar_field.size() == 0) this->scalar_field = DCArrayKokkos<double>(num_nodes, "node_scalar_field");
+                    if (scalar_field.size() == 0) this->scalar_field = DCArrayKokkos<real_t>(num_nodes, "node_scalar_field");
                     break;
                 case node_state::normal:
-                    if (normal.size() == 0) this->normal = DCArrayKokkos<double>(num_nodes, num_dims, "node_normal");
+                    if (normal.size() == 0) this->normal = DCArrayKokkos<real_t>(num_nodes, num_dims, "node_normal");
                     break;
                 case node_state::closest_facet_point:
-                    if (closest_facet_point.size() == 0) this->closest_facet_point = DCArrayKokkos<double>(num_nodes, num_dims, "node_closest_facet_point");
+                    if (closest_facet_point.size() == 0) this->closest_facet_point = DCArrayKokkos<real_t>(num_nodes, num_dims, "node_closest_facet_point");
                     break;
                 default:
                     std::cout<<"Desired node state not understood in node_t initialize"<<std::endl;
@@ -112,7 +112,7 @@ struct node_t
 
 struct surface_t
 {
-    DCArrayKokkos<double> normal;  //< Surface normal
+    DCArrayKokkos<real_t> normal;  //< Surface normal
 };
 
 // end surface_t
@@ -143,8 +143,8 @@ enum class gauss_pt_state
 struct GaussPoint_t
 {
 
-    DCArrayKokkos<double> fields;
-    DCArrayKokkos<double> position;
+    DCArrayKokkos<real_t> fields;
+    DCArrayKokkos<real_t> position;
 
     // initialization method (num_cells, num_dims)
     void initialize(size_t num_gauss_pnts, size_t num_dims, std::vector<gauss_pt_state> gauss_pt_states)
@@ -153,14 +153,14 @@ struct GaussPoint_t
         for (auto field : gauss_pt_states){
             switch(field){
                 case gauss_pt_state::fields:
-                    //if (fields.size() == 0) this->fields = DCArrayKokkos<double>(num_gauss_pnts, "gauss_point_fields");
+                    //if (fields.size() == 0) this->fields = DCArrayKokkos<real_t>(num_gauss_pnts, "gauss_point_fields");
                     if (fields.size() == 0){
-                        this->fields = DCArrayKokkos<double>(num_gauss_pnts, "gauss_point_fields");
+                        this->fields = DCArrayKokkos<real_t>(num_gauss_pnts, "gauss_point_fields");
                     } 
                     break;
                 case gauss_pt_state::position:
                     if (position.size() == 0){
-                        this->position = DCArrayKokkos<double>(num_gauss_pnts, num_dims, "gauss_point_position");
+                        this->position = DCArrayKokkos<real_t>(num_gauss_pnts, num_dims, "gauss_point_position");
                     } 
                     break;
                 default:

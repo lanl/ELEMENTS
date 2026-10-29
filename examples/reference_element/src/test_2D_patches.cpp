@@ -101,7 +101,7 @@ void verify_patches_in_surfaces(const Mesh_t& mesh) {
 
 
 void verify_patch_orientation(const Mesh_t& mesh, 
-                              const DCArrayKokkos<double>& node_coords) {
+                              const DCArrayKokkos<real_t>& node_coords) {
     
     if (mesh.num_dims == 3) {
 
@@ -113,22 +113,22 @@ void verify_patch_orientation(const Mesh_t& mesh,
             size_t n3 = mesh.nodes_in_patch(patch_gid, 3);
             
             // Calculate two edge vectors
-            double v1[3];
-            double v2[3];
+            real_t v1[3];
+            real_t v2[3];
             for (int d = 0; d < 3; d++) {
                 v1[d] = node_coords(1, n1, d) - node_coords(1, n0, d);
                 v2[d] = node_coords(1, n3, d) - node_coords(1, n0, d);
             }
             
             // Cross product gives normal
-            double normal[3];
+            real_t normal[3];
             normal[0] = v1[1]*v2[2] - v1[2]*v2[1];
             normal[1] = v1[2]*v2[0] - v1[0]*v2[2];
             normal[2] = v1[0]*v2[1] - v1[1]*v2[0];
             
             // Get element center to determine inward/outward
             size_t elem_gid = mesh.elems_in_patch(patch_gid, 0);
-            double elem_center[3];
+            real_t elem_center[3];
             elem_center[0] = 0;
             elem_center[1] = 0; 
             elem_center[2] = 0;
@@ -144,7 +144,7 @@ void verify_patch_orientation(const Mesh_t& mesh,
             }
             
             // Patch center
-            double patch_center[3];
+            real_t patch_center[3];
             patch_center[0]= 0;
             patch_center[1]= 0; 
             patch_center[2]= 0;
@@ -159,18 +159,18 @@ void verify_patch_orientation(const Mesh_t& mesh,
             }
             
             // Vector from elem center to patch center
-            double outward[3];
+            real_t outward[3];
             for (int d = 0; d < 3; d++) {
                 outward[d] = patch_center[d] - elem_center[d];
             }
             
             // Dot product should be positive (outward normal)
-            double dot = normal[0]*outward[0] + normal[1]*outward[1] + normal[2]*outward[2];
+            real_t dot = normal[0]*outward[0] + normal[1]*outward[1] + normal[2]*outward[2];
             
             if (dot < 0) {
                 printf("ERROR: Patch %d has inward-facing normal (dot=%f)\n", patch_gid, dot);
             }
-            assert(dot > -1e-12); // Allow small numerical error
+            assert(dot > -real_tol(1e-12)); // Allow small numerical error
         });
     }
     
@@ -285,7 +285,7 @@ void print_patch_diagnostics(const Mesh_t& mesh) {
 
 
 void verify_all_patch_connectivity(const Mesh_t& mesh, 
-                                   const DCArrayKokkos<double>& node_coords) {
+                                   const DCArrayKokkos<real_t>& node_coords) {
     printf("\n=== Starting Patch Connectivity Verification ===\n\n");
     
     verify_patch_basics(mesh);
@@ -324,8 +324,8 @@ int main(int argc, char** argv) {
         const size_t num_elems_1D = 1;
 
         const size_t max_cycles = 1000;
-        const double max_time   = 0.5;
-        const double graphics_dt = 0.1;
+        const real_t max_time   = 0.5;
+        const real_t graphics_dt = 0.1;
 
 
         // ================================================================
@@ -349,8 +349,8 @@ int main(int argc, char** argv) {
         Mesh.initialize_elems(num_elems);  // NOTE: no Pn, no Guass points, etc. It's classic element
         Mesh.initialize_nodes(num_nodes);
         
-        DCArrayKokkos <double> node_coords(Mesh.num_nodes, Mesh.num_dims);
-        const double h = 1.0/((double)num_nodes_1D-1);
+        DCArrayKokkos <real_t> node_coords(Mesh.num_nodes, Mesh.num_dims);
+        const real_t h = 1.0/((real_t)num_nodes_1D-1);
 
         // create indexing for a Pn order mesh
 
@@ -360,8 +360,8 @@ int main(int argc, char** argv) {
             
             size_t node_gid = ic + jc*num_nodes_1D;
             
-            node_coords(node_gid, 0) = (double)ic * h;
-            node_coords(node_gid, 1) = (double)jc * h;
+            node_coords(node_gid, 0) = (real_t)ic * h;
+            node_coords(node_gid, 1) = (real_t)jc * h;
         });
 
         const size_t ensight_ordering[4] = {0, 1, 3, 2};

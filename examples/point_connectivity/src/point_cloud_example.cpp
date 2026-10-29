@@ -54,13 +54,13 @@ MATAR_INITIALIZE(argc, argv);
     // --------------------------------------------
 
     // Domain of point cloud
-    const double X0 = 0.0;   // origin
-    const double Y0 = 0.0;
-    const double Z0 = 0.0;
+    const real_t X0 = 0.0;   // origin
+    const real_t Y0 = 0.0;
+    const real_t Z0 = 0.0;
 
-    const double LX = 2.0;   // length 
-    const double LY = 2.0;
-    const double LZ = 2.0;
+    const real_t LX = 2.0;   // length 
+    const real_t LY = 2.0;
+    const real_t LZ = 2.0;
 
     // number of points in each direction, creating structured point cloud
     const size_t num_1d_x = 4;
@@ -70,12 +70,12 @@ MATAR_INITIALIZE(argc, argv);
     const size_t num_points = num_1d_x*num_1d_y*num_1d_z;
 
 
-    const double dx = (LX-X0)/((double)num_1d_x - 1.0);
-    const double dy = (LY-Y0)/((double)num_1d_y - 1.0);
-    const double dz = (LZ-Z0)/((double)num_1d_z - 1.0);
+    const real_t dx = (LX-X0)/((real_t)num_1d_x - 1.0);
+    const real_t dy = (LY-Y0)/((real_t)num_1d_y - 1.0);
+    const real_t dz = (LZ-Z0)/((real_t)num_1d_z - 1.0);
 
 
-    DCArrayKokkos <double> point_positions(num_points, 3, "point_positions");
+    DCArrayKokkos <real_t> point_positions(num_points, 3, "point_positions");
 
     // save point locations
     size_t point_gid = 0;  
@@ -83,9 +83,9 @@ MATAR_INITIALIZE(argc, argv);
         for(size_t j=0; j<num_1d_y; j++){
             for(size_t i=0; i<num_1d_x; i++){
                 // x = x0 + i*dx
-                point_positions.host(point_gid, 0) = X0 + ((double)i)*dx;
-                point_positions.host(point_gid, 1) = Y0 + ((double)j)*dy;
-                point_positions.host(point_gid, 2) = Z0 + ((double)k)*dz;
+                point_positions.host(point_gid, 0) = X0 + ((real_t)i)*dx;
+                point_positions.host(point_gid, 1) = Y0 + ((real_t)j)*dy;
+                point_positions.host(point_gid, 2) = Z0 + ((real_t)k)*dz;
                 point_gid++;
             } // end i
         } // end j
@@ -101,9 +101,9 @@ MATAR_INITIALIZE(argc, argv);
     
 
     // fitting radius of the cloud
-    const double h_kernel = fmax(fmax(dx,dy),dz); 
-    const double cutoff_coeff = 1.5; // coeff*h_kernel = search radius
-    const double min_num_points_fit = 7; 
+    const real_t h_kernel = fmax(fmax(dx,dy),dz); 
+    const real_t cutoff_coeff = 1.5; // coeff*h_kernel = search radius
+    const real_t min_num_points_fit = 7; 
 
     // set the data structure variables
     pc.initialize_point_cloud_vars(h_kernel*cutoff_coeff,min_num_points_fit);
@@ -115,7 +115,7 @@ MATAR_INITIALIZE(argc, argv);
     const size_t num_bins_x_in = 6;
     const size_t num_bins_y_in = 6;
     const size_t num_bins_z_in = 6;
-    double dx_cloud = LX/((double)num_bins_x_in); // or use search radius
+    real_t dx_cloud = LX/((real_t)num_bins_x_in); // or use search radius
     pc.build_bin_mesh(X0-dx_cloud, 
                       Y0-dx_cloud, 
                       Z0-dx_cloud,

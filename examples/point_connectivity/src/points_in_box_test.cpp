@@ -57,20 +57,20 @@ MATAR_INITIALIZE(argc, argv);
 
     // number of points in each direction, creating structured point cloud
     const size_t N = 4; 
-    const double h = 2.0/((double)N - 1);
+    const real_t h = 2.0/((real_t)N - 1);
 
     const size_t num_points = N*N*N;
 
-    DCArrayKokkos <double> point_positions(num_points, 3, "point_positions");
+    DCArrayKokkos <real_t> point_positions(num_points, 3, "point_positions");
 
     // save point locations
     size_t point_gid = 0;  
     for(size_t k=0; k<N; k++)
     for(size_t j=0; j<N; j++)
     for(size_t i=0; i<N; i++){
-        point_positions.host(point_gid, 0) = ((double)i)*h;
-        point_positions.host(point_gid, 1) = ((double)j)*h;
-        point_positions.host(point_gid, 2) = ((double)k)*h;
+        point_positions.host(point_gid, 0) = ((real_t)i)*h;
+        point_positions.host(point_gid, 1) = ((real_t)j)*h;
+        point_positions.host(point_gid, 2) = ((real_t)k)*h;
         point_gid++;
     } // end for
 
@@ -83,8 +83,8 @@ MATAR_INITIALIZE(argc, argv);
     PointCloud_t pc;
 
     // build the bin mesh, ensuring it covers point cloud domain
-    double xmin; double ymin; double zmin;
-    double xmax; double ymax; double zmax;
+    real_t xmin; real_t ymin; real_t zmin;
+    real_t xmax; real_t ymax; real_t zmax;
     pc.get_bounds_point_cloud(xmin, ymin, zmin,
                               xmax, ymax, zmax,
                               point_positions);
@@ -109,7 +109,7 @@ MATAR_INITIALIZE(argc, argv);
 
     // define boxes to capture points
     const size_t num_boxes = 2;
-    CArrayKokkos <double> bounding_box(num_boxes,2,3); // always these dims
+    CArrayKokkos <real_t> bounding_box(num_boxes,2,3); // always these dims
     DCArrayKokkos <size_t> num_points_in_box(num_boxes); //always this dim   
 
     RUN({

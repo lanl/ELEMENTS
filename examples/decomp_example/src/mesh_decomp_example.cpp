@@ -46,28 +46,28 @@ int main(int argc, char** argv) {
     double t_main_start = MPI_Wtime();
 
     // Mesh size for 3D box
-    double origin[3] = {0.0, 0.0, 0.0};
-    double length[3] = {1.0, 1.0, 1.0};
+    real_t origin[3] = {0.0, 0.0, 0.0};
+    real_t length[3] = {1.0, 1.0, 1.0};
     int num_elems_dim[3] = {20, 20, 20};
    
     // Mesh size for 2D polar
-    double inner_radius = 1.0;
-    double outer_radius = 2.0;
-    double start_angle = 0.0;
-    double end_angle = 45.0;
+    real_t inner_radius = 1.0;
+    real_t outer_radius = 2.0;
+    real_t start_angle = 0.0;
+    real_t end_angle = 45.0;
     int num_elems_i = 40;
     int num_elems_j = 40;
 
     // Initial mesh built on rank zero
     swage::Mesh_t initial_mesh;
     initial_mesh.num_dims = num_dims;
-    MPICArrayKokkos<double> initial_node_coords;
+    MPICArrayKokkos<real_t> initial_node_coords;
 
     // Mesh partitioned by pt-scotch, including ghost
     swage::Mesh_t final_mesh;
     final_mesh.num_dims = num_dims;
     node_t final_node;
-    MPICArrayKokkos<double> final_node_coords;
+    MPICArrayKokkos<real_t> final_node_coords;
 
     GaussPoint_t gauss_point;
 
@@ -201,9 +201,9 @@ int main(int argc, char** argv) {
     // Initialize the gauss point fields on each rank
     // Set owned elements to rank number, ghost elements to -1 (to verify communication)
     for (int i = 0; i < final_mesh.num_owned_elems; i++) {
-        gauss_point.fields.host(i) = static_cast<double>(rank);
+        gauss_point.fields.host(i) = static_cast<real_t>(rank);
         for(int dim = 0; dim < final_mesh.num_dims; dim++){
-            gauss_point.fields_vec.host(i, dim) = static_cast<double>(rank);
+            gauss_point.fields_vec.host(i, dim) = static_cast<real_t>(rank);
         }
     }
     for (int i = final_mesh.num_owned_elems; i < final_mesh.num_elems; i++) {
@@ -222,11 +222,11 @@ int main(int argc, char** argv) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    CArrayKokkos <double> tmp(final_mesh.num_elems);
+    CArrayKokkos <real_t> tmp(final_mesh.num_elems);
     
     // Loop over all elements and average the values of elements connected to that element
     FOR_ALL(i, 0, final_mesh.num_elems, {
-        double value = 0.0;
+        real_t value = 0.0;
         for (int j = 0; j < final_mesh.num_elems_in_elem(i); j++) {
             value += gauss_point.fields(final_mesh.elems_in_elem(i, j));
         }
@@ -267,9 +267,9 @@ int main(int argc, char** argv) {
     final_node.coords.update_device();
     
     for (int i = 0; i < final_mesh.num_owned_nodes; i++) {
-        final_node.scalar_field.host(i) = static_cast<double>(rank);
+        final_node.scalar_field.host(i) = static_cast<real_t>(rank);
         for(int dim = 0; dim < final_mesh.num_dims; dim++){
-            final_node.vector_field.host(i, dim) = static_cast<double>(rank);
+            final_node.vector_field.host(i, dim) = static_cast<real_t>(rank);
         }
     }
     for (int i = final_mesh.num_owned_nodes; i < final_mesh.num_nodes; i++) {
@@ -291,11 +291,11 @@ int main(int argc, char** argv) {
     MATAR_FENCE();
     MPI_Barrier(MPI_COMM_WORLD);
 
-    DCArrayKokkos <double> tmp_too(final_mesh.num_nodes);
+    DCArrayKokkos <real_t> tmp_too(final_mesh.num_nodes);
     for(int smooth = 0; smooth < 3; smooth++){
         FOR_ALL(i, 0, final_mesh.num_nodes, {
 
-            double value = final_node.scalar_field(i);
+            real_t value = final_node.scalar_field(i);
             for(int j = 0; j < final_mesh.num_nodes_in_node(i); j++){
                 value += final_node.scalar_field(final_mesh.nodes_in_node(i, j));
             }

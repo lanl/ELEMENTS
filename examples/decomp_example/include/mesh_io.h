@@ -165,9 +165,9 @@ int PointIndexFromIJK(int i, int j, int k, const int* order)
 /////////////////////////////////////////////////////////////////////////////
 void build_3d_box(
     swage::Mesh_t& mesh,
-    MPICArrayKokkos<double>& node_coords,
-    double origin[3],
-    double length[3],
+    MPICArrayKokkos<real_t>& node_coords,
+    real_t origin[3],
+    real_t length[3],
     int num_elems_dim[3],
     int Pn_order)
 {
@@ -179,9 +179,9 @@ void build_3d_box(
     mesh.num_dims = num_dim;
 
     // Note: In fierro, these come from the simulation parameters
-    const double lx = length[0];
-    const double ly = length[1];
-    const double lz = length[2];
+    const real_t lx = length[0];
+    const real_t ly = length[1];
+    const real_t lz = length[2];
 
     // Note: In fierro, these come from the simulation parameters
     const int num_elems_i = num_elems_dim[0];
@@ -199,9 +199,9 @@ void build_3d_box(
     const int num_nodes = num_points_i * num_points_j * num_points_k;
 
     // Note: this should be modified to account for quadrature spacing, but not yet. 
-    const double dx = lx / ((double)num_points_i - 1);  // len/(num_points_i)
-    const double dy = ly / ((double)num_points_j - 1);  // len/(num_points_j)
-    const double dz = lz / ((double)num_points_k - 1);  // len/(num_points_k)
+    const real_t dx = lx / ((real_t)num_points_i - 1);  // len/(num_points_i)
+    const real_t dy = ly / ((real_t)num_points_j - 1);  // len/(num_points_j)
+    const real_t dz = lz / ((real_t)num_points_k - 1);  // len/(num_points_k)
 
     const int num_elems = num_elems_i * num_elems_j * num_elems_k;
 
@@ -216,11 +216,11 @@ void build_3d_box(
 
 
     // initialize node coordinates
-    node_coords = MPICArrayKokkos<double>(num_nodes, num_dim, "node_coordinates");
+    node_coords = MPICArrayKokkos<real_t>(num_nodes, num_dim, "node_coordinates");
 
     // --- Build nodes ---
 
-    CArrayDual<double> origin_mtr(3, "origin_mtr");
+    CArrayDual<real_t> origin_mtr(3, "origin_mtr");
     origin_mtr.host(0) = origin[0];
     origin_mtr.host(1) = origin[1];
     origin_mtr.host(2) = origin[2];
@@ -235,9 +235,9 @@ void build_3d_box(
         size_t node_gid = get_id(i, j, k, num_points_i, num_points_j);
 
         // store the point coordinates
-        node_coords(node_gid, 0) = origin_mtr(0) + (double)i * dx;
-        node_coords(node_gid, 1) = origin_mtr(1) + (double)j * dy;
-        node_coords(node_gid, 2) = origin_mtr(2) + (double)k * dz;
+        node_coords(node_gid, 0) = origin_mtr(0) + (real_t)i * dx;
+        node_coords(node_gid, 1) = origin_mtr(1) + (real_t)j * dy;
+        node_coords(node_gid, 2) = origin_mtr(2) + (real_t)k * dz;
     });
     // Update the host side
     node_coords.update_host();
@@ -322,11 +322,11 @@ void build_3d_box(
 /////////////////////////////////////////////////////////////////////////////
 void build_2d_polar(
     swage::Mesh_t& mesh,
-    MPICArrayKokkos<double>& node_coords,
-    double& inner_radius,
-    double& outer_radius,
-    double& start_angle,
-    double& end_angle,
+    MPICArrayKokkos<real_t>& node_coords,
+    real_t& inner_radius,
+    real_t& outer_radius,
+    real_t& start_angle,
+    real_t& end_angle,
     int& num_elems_i,
     int& num_elems_j)
 {
@@ -339,18 +339,18 @@ void build_2d_polar(
 
     const int num_nodes = num_points_i * num_points_j;
 
-    const double dx = (outer_radius - inner_radius) / ((double)num_elems_i);  // len/(elems)
+    const real_t dx = (outer_radius - inner_radius) / ((real_t)num_elems_i);  // len/(elems)
 
 
 
     // Convert degrees to radians
     start_angle = start_angle * M_PI / 180.0;
     end_angle = end_angle * M_PI / 180.0;
-    const double dy = (end_angle - start_angle) / ((double)num_elems_j);  // len/(elems)
+    const real_t dy = (end_angle - start_angle) / ((real_t)num_elems_j);  // len/(elems)
 
     const int num_elems = num_elems_i * num_elems_j;
 
-    std::vector<double> origin(num_dim);
+    std::vector<real_t> origin(num_dim);
 
     for (int i = 0; i < num_dim; i++) { origin[i] = 0.0; }
 
@@ -372,7 +372,7 @@ void build_2d_polar(
     // intialize node variables
     mesh.initialize_nodes(num_nodes);
 
-    node_coords = MPICArrayKokkos<double>(num_nodes, num_dim, "node_coordinates");
+    node_coords = MPICArrayKokkos<real_t>(num_nodes, num_dim, "node_coordinates");
 
     // populate the point data structures
     for (int j = 0; j < num_points_j; j++) {
@@ -380,8 +380,8 @@ void build_2d_polar(
             // global id for the point
             int node_gid = get_id(i, j, 0, num_points_i, num_points_j);
 
-            double r_i     = inner_radius + (double)i * dx;
-            double theta_j = start_angle + (double)j * dy;
+            real_t r_i     = inner_radius + (real_t)i * dx;
+            real_t theta_j = start_angle + (real_t)j * dy;
 
             // store the point coordinates
             node_coords.host(node_gid, 0) = origin[0] + r_i * cos(theta_j);
@@ -464,7 +464,7 @@ void write_vtu(swage::Mesh_t& mesh,
     int world_size;
     MPI_Comm_size(comm, &world_size);
 
-    CArray<double> graphics_times(1);
+    CArray<real_t> graphics_times(1);
     int graphics_id = 0;
     graphics_times(0) = 0.0;
 
@@ -504,12 +504,12 @@ void write_vtu(swage::Mesh_t& mesh,
     printf("num_dims = %zu\n", num_dims);
 
     // save the cell state to an array for exporting to graphics files
-    auto elem_fields = CArray<double>(num_elems, num_cell_scalar_vars);
-    auto elem_vec_fields = CArray<double>(num_elems, num_cell_vec_vars, num_dims);
+    auto elem_fields = CArray<real_t>(num_elems, num_cell_scalar_vars);
+    auto elem_vec_fields = CArray<real_t>(num_elems, num_cell_vec_vars, num_dims);
 
-    DCArrayKokkos <double> num_elems_in_elem(mesh.num_elems, "tmp_num_elem_in_elem");
+    DCArrayKokkos <real_t> num_elems_in_elem(mesh.num_elems, "tmp_num_elem_in_elem");
     FOR_ALL(i, 0, mesh.num_elems, {
-        num_elems_in_elem(i) = (double)mesh.num_elems_in_elem(i);
+        num_elems_in_elem(i) = (real_t)mesh.num_elems_in_elem(i);
     });
     MATAR_FENCE();
     num_elems_in_elem.update_host();
@@ -528,13 +528,13 @@ void write_vtu(swage::Mesh_t& mesh,
     }
 
     // save the vertex vector fields to an array for exporting to graphics files
-    CArray<double> vec_fields(num_nodes, num_point_vec_vars, num_dims);
-    CArray<double> point_scalar_fields(num_nodes, num_point_scalar_vars);
+    CArray<real_t> vec_fields(num_nodes, num_point_vec_vars, num_dims);
+    CArray<real_t> point_scalar_fields(num_nodes, num_point_scalar_vars);
 
     std::cout<<"Populating node fields for rank "<<rank<<std::endl;
-    DCArrayKokkos <double> num_elems_in_node(mesh.num_nodes, "tmp_num_elems_in_node");
+    DCArrayKokkos <real_t> num_elems_in_node(mesh.num_nodes, "tmp_num_elems_in_node");
     FOR_ALL(i, 0, mesh.num_nodes, {
-        num_elems_in_node(i) = (double)mesh.num_corners_in_node(i);
+        num_elems_in_node(i) = (real_t)mesh.num_corners_in_node(i);
     });
     MATAR_FENCE();
     num_elems_in_node.update_host();
@@ -553,7 +553,7 @@ void write_vtu(swage::Mesh_t& mesh,
 
         point_scalar_fields(node_gid, 0) = rank;
         point_scalar_fields(node_gid, 1) = num_elems_in_node.host(node_gid);
-        point_scalar_fields(node_gid, 2) = node_gid; // (double)mesh.local_to_global_node_mapping.host(node_gid);
+        point_scalar_fields(node_gid, 2) = node_gid; // (real_t)mesh.local_to_global_node_mapping.host(node_gid);
         point_scalar_fields(node_gid, 3) = node.scalar_field.host(node_gid);
     }
 
@@ -589,9 +589,9 @@ void write_vtu(swage::Mesh_t& mesh,
     fprintf(vtu_file, "      <Points>\n");
     fprintf(vtu_file, "        <DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"ascii\">\n");
     for (size_t node_gid = 0; node_gid < num_nodes; node_gid++) {
-        double x = node.coords.host(node_gid, 0);
-        double y = (num_dims > 1) ? node.coords.host(node_gid, 1) : 0.0;
-        double z = (num_dims > 2) ? node.coords.host(node_gid, 2) : 0.0;
+        real_t x = node.coords.host(node_gid, 0);
+        real_t y = (num_dims > 1) ? node.coords.host(node_gid, 1) : 0.0;
+        real_t z = (num_dims > 2) ? node.coords.host(node_gid, 2) : 0.0;
         fprintf(vtu_file, "          %f %f %f\n", x, y, z);
     }
     fprintf(vtu_file, "        </DataArray>\n");

@@ -51,35 +51,35 @@ const size_t max_order = 19; // max polynomial order to test, limit is 19th-orde
 
 // polynomial with terms <= p_order
 KOKKOS_INLINE_FUNCTION
-double polynomial(const CArrayKokkos<double> &coeff, const double x, const size_t p_order){
+real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     for (int i = 0; i <= p_order; ++i) {
-        result += coeff(i) * pow(x, (double)i);
+        result += coeff(i) * pow(x, (real_t)i);
     }
     return result;
 } // end polynomial
 
 KOKKOS_INLINE_FUNCTION
-double polynomial(const CArrayKokkos<double> &coeff, const double x, const double y, const size_t p_order){
+real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const real_t y, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     for (int j = 0; j <= p_order; ++j) 
     for (int i = 0; i <= p_order-j; ++i) {
-        result += coeff(i,j) * pow(x, (double)i) * pow(y, (double)j);
+        result += coeff(i,j) * pow(x, (real_t)i) * pow(y, (real_t)j);
         
     } // end for
     return result;
 } // end polynomial
 
 KOKKOS_INLINE_FUNCTION
-double polynomial(const CArrayKokkos<double> &coeff, const double x, const double y, const double z, const size_t p_order){
+real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const real_t y, const real_t z, const size_t p_order){
 
-    double result = 0.0;
+    real_t result = 0.0;
     for (int k = 0; k <= p_order; ++k) 
     for (int j = 0; j <= p_order-k; ++j) 
     for (int i = 0; i <= p_order-j-k; ++i) {
-        result += coeff(i,j,k) * pow(x, (double)i) * pow(y, (double)j) * pow(z, (double)k); 
+        result += coeff(i,j,k) * pow(x, (real_t)i) * pow(y, (real_t)j) * pow(z, (real_t)k); 
     } // end for
 
     return result;
@@ -95,18 +95,18 @@ void test_interpolation(const Quadrature_t& Quad,
     
     const size_t p_order = RefElem.num_dofs_1d - 1;
 
-    CArrayKokkos<double> dof_values(RefElem.num_dofs_in_elem);
-    CArrayKokkos<double> coeff;
+    CArrayKokkos<real_t> dof_values(RefElem.num_dofs_in_elem);
+    CArrayKokkos<real_t> coeff;
 
 
     if(RefElem.elem_dims==1){
-        coeff = CArrayKokkos<double>(p_order+1);
+        coeff = CArrayKokkos<real_t>(p_order+1);
     }
     else if (RefElem.elem_dims==2){
-        coeff = CArrayKokkos<double>(p_order+1, p_order+1);
+        coeff = CArrayKokkos<real_t>(p_order+1, p_order+1);
     }
     else {
-        coeff = CArrayKokkos<double>(p_order+1, p_order+1, p_order+1);
+        coeff = CArrayKokkos<real_t>(p_order+1, p_order+1, p_order+1);
     }
     coeff.set_values(0.78914567);  // a radom value
 
@@ -115,20 +115,20 @@ void test_interpolation(const Quadrature_t& Quad,
     // populate polynomial values at DOFs of the ref element
     FOR_ALL(dof, 0, RefElem.num_dofs_in_elem, {
 
-        double value=0.0;
+        real_t value=0.0;
         if(RefElem.elem_dims==1){
-            const double xi = RefElem.dof_positions(dof, 0);
+            const real_t xi = RefElem.dof_positions(dof, 0);
             value = polynomial(coeff, xi, p_order);
         }
         else if (RefElem.elem_dims==2){
-            const double xi  = RefElem.dof_positions(dof, 0);
-            const double eta = RefElem.dof_positions(dof, 1);
+            const real_t xi  = RefElem.dof_positions(dof, 0);
+            const real_t eta = RefElem.dof_positions(dof, 1);
             value = polynomial(coeff, xi, eta, p_order);
         }
         else {
-            const double xi  = RefElem.dof_positions(dof, 0);
-            const double eta = RefElem.dof_positions(dof, 1);
-            const double mu  = RefElem.dof_positions(dof, 2);
+            const real_t xi  = RefElem.dof_positions(dof, 0);
+            const real_t eta = RefElem.dof_positions(dof, 1);
+            const real_t mu  = RefElem.dof_positions(dof, 2);
             value = polynomial(coeff, xi, eta, mu, p_order);
         }
 
@@ -140,32 +140,32 @@ void test_interpolation(const Quadrature_t& Quad,
     // compare interpoloation with exact solution
     FOR_ALL(qpt, 0, Quad.num_qpts_in_elem, {
         
-        double sum = 0; // interpolated value
+        real_t sum = 0; // interpolated value
 
         for (size_t dof = 0; dof < RefElem.num_dofs_in_elem; dof++) {
             sum += RefElem.qpt_basis(qpt, dof)*dof_values(dof);
         }
 
-        double exact_value=0.0;
+        real_t exact_value=0.0;
         if(RefElem.elem_dims==1){
-            const double xi = Quad.qpt_positions(qpt, 0);
+            const real_t xi = Quad.qpt_positions(qpt, 0);
             exact_value = polynomial(coeff, xi, p_order);
         }
         else if (RefElem.elem_dims==2){
-            const double xi  = Quad.qpt_positions(qpt, 0);
-            const double eta = Quad.qpt_positions(qpt, 1);
+            const real_t xi  = Quad.qpt_positions(qpt, 0);
+            const real_t eta = Quad.qpt_positions(qpt, 1);
             exact_value = polynomial(coeff, xi, eta, p_order);
         }
         else {
-            const double xi  = Quad.qpt_positions(qpt, 0);
-            const double eta = Quad.qpt_positions(qpt, 1);
-            const double mu  = Quad.qpt_positions(qpt, 2);
+            const real_t xi  = Quad.qpt_positions(qpt, 0);
+            const real_t eta = Quad.qpt_positions(qpt, 1);
+            const real_t mu  = Quad.qpt_positions(qpt, 2);
             exact_value = polynomial(coeff, xi, eta, mu, p_order);
         }
 
         // round off gets bad at high p_order's due to polynomial sensativity
-        const double error = fabs(sum - exact_value);
-        const double tolerance = fmax(1.e-11, 1.e-11 * (double)p_order);
+        const real_t error = fabs(sum - exact_value);
+        const real_t tolerance = fmax(real_tol(1.e-11), real_tol(1.e-11) * (real_t)p_order);
 
         if (error > tolerance) {
             printf("Error: interpolation failed at qpt id = %d with order = %zu \n", qpt, p_order);

@@ -14,7 +14,7 @@ jobs:
       matrix:
         #os: [ubuntu-18.04, ubuntu-latest]
         os: [ubuntu-latest]
-        build_type: [serial, openmp, debug]
+        build_type: [serial, openmp, debug, float]
         include:
           - build_type: serial
             cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF
@@ -22,6 +22,8 @@ jobs:
             cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=ON
           - build_type: debug
             cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Debug -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF
+          - build_type: float
+            cmake_flags: -DCMAKE_INSTALL_PREFIX=`pwd` -DCMAKE_BUILD_TYPE=Release -DELEMENTS_ENABLE_SERIAL=ON -DELEMENTS_ENABLE_OPENMP=OFF -DELEMENTS_REAL=float
     runs-on: ${{matrix.os}}
 
     steps:

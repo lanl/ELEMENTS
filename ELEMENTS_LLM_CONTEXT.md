@@ -1107,6 +1107,15 @@ The driver only prints a greeting. The interesting code is in the headers it inc
 
 ## 11. Common Pitfalls
 
+### 0. Writing `double` instead of `real_t`
+
+All ELEMENTS floating-point data is `real_t` (MATAR `precision.h`), which is `double` or `float` depending on `-DELEMENTS_REAL`. Hard-coded `double` breaks the float build at API boundaries (e.g. passing `CArrayKokkos<double>` to a function taking `CArrayKokkos<real_t>`).
+
+- Use `real_t` for data, parameters, locals and containers. Keep `double` only for wall-clock timers (`MPI_Wtime`, `std::chrono`).
+- MPI: use `mtr::mpi_type_map<real_t>::value()`, not `MPI_DOUBLE`.
+- Tolerances: wrap fixed thresholds in `real_tol(...)` (`src/utils/precision_utils.h`). It returns the value unchanged in double and never less than 100 machine epsilons in float. For squared-distance checks, compare against `real_tol(d) * real_tol(d)`.
+- Math: prefer `Kokkos::fmin/fmax/sqrt/fabs` so float arguments stay float on host and device.
+
 ### 1. The mesh type is `swage::Mesh`, not `mesh_t`
 
 ```cpp
@@ -1315,6 +1324,7 @@ Device kernels (`FOR_ALL`) appear sparingly — mostly to copy node coordinates 
 | `ELEMENTS_ENABLE_PTHREADS` | `OFF` | Threads backend (`Kokkos_ENABLE_THREADS`) |
 | `ELEMENTS_ENABLE_CUDA` | `OFF` | CUDA backend |
 | `ELEMENTS_ENABLE_HIP` | `OFF` | HIP backend |
+| `ELEMENTS_REAL` | `double` | Precision of `real_t` (`double`/`float`); passed to `MATAR_REAL` |
 | `ELEMENTS_DEVICE_BACKEND` | empty | Backend for MATAR device macros (`FOR_ALL`, ...); passed to `MATAR_DEVICE_BACKEND`; overrides `ELEMENTS_ENABLE_*` |
 | `ELEMENTS_HOST_BACKEND` | `serial` | Backend for MATAR `_HOST` macros (`FOR_ALL_HOST`, ...): `serial`/`openmp`/`pthreads` only (GPU backends are a configure error); passed to `MATAR_HOST_BACKEND` |
 | `ELEMENTS_BUILD_EXAMPLES` | `ON` if top-level, else `OFF` | Build `examples/*` |

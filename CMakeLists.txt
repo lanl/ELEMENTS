@@ -90,6 +90,15 @@ elseif(NOT ELEMENTS_HOST_BACKEND_LC MATCHES "^(serial|openmp|pthreads)$")
         "use serial, openmp, or pthreads")
 endif()
 
+# Floating-point precision of real_t, passed through to MATAR_REAL.
+set(ELEMENTS_REAL "double" CACHE STRING "Floating-point precision of real_t: double|float")
+set_property(CACHE ELEMENTS_REAL PROPERTY STRINGS double float)
+string(TOLOWER "${ELEMENTS_REAL}" ELEMENTS_REAL_LC)
+if(NOT ELEMENTS_REAL_LC MATCHES "^(double|float)$")
+    message(FATAL_ERROR
+        "ELEMENTS_REAL='${ELEMENTS_REAL}' is not supported; use double or float")
+endif()
+
 option(ELEMENTS_BUILD_EXAMPLES "Build examples" ${ELEMENTS_IS_TOP_LEVEL}) 
 option(ELEMENTS_BUILD_TESTS "Build unit tests" OFF)
 
@@ -135,6 +144,7 @@ if(NOT TARGET matar::matar)
     endif()
     set(MATAR_HOST_BACKEND   "${ELEMENTS_HOST_BACKEND_LC}" CACHE STRING "" FORCE)
     set(MATAR_DEVICE_BACKEND "${ELEMENTS_DEVICE_BACKEND}" CACHE STRING "" FORCE)
+    set(MATAR_REAL           "${ELEMENTS_REAL_LC}" CACHE STRING "" FORCE)
 
     set(MATAR_ENABLE_KOKKOS  ON  CACHE BOOL "" FORCE)
     set(MATAR_ENABLE_MPI     ON  CACHE BOOL "" FORCE)
@@ -164,7 +174,20 @@ if(NOT TARGET ptscotch)
         GIT_SHALLOW    TRUE
         PATCH_COMMAND  ${CMAKE_COMMAND} -DFileToPatch=CMakeLists.txt -P "${PROJECT_SOURCE_DIR}/cmake/PatchScotch.cmake"
     )
+
+    # Silence warnings from Scotch's own (third-party) C sources and CMake
+    # files. The Scotch subdirectory captures these values when it is added,
+    # so restoring them afterwards keeps ELEMENTS' own flags untouched.
+    set(_elements_saved_c_flags "${CMAKE_C_FLAGS}")
+    if(MSVC)
+        string(APPEND CMAKE_C_FLAGS " /w")
+    else()
+        string(APPEND CMAKE_C_FLAGS " -w")
+    endif()
+    set(CMAKE_POLICY_DEFAULT_CMP0177 NEW)  # install() DESTINATION normalization
     FetchContent_MakeAvailable(Scotch)
+    set(CMAKE_C_FLAGS "${_elements_saved_c_flags}")
+    unset(CMAKE_POLICY_DEFAULT_CMP0177)
 
     # FIX: GCC 15 Warning Suppressions (Target-Specific)
     # Even though C11 is set globally above, we still need to silence the

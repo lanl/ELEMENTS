@@ -57,6 +57,7 @@ Key CMake options (defaults in parentheses):
 - `ELEMENTS_ENABLE_PTHREADS` (`OFF`)
 - `ELEMENTS_ENABLE_CUDA` (`OFF`)
 - `ELEMENTS_ENABLE_HIP` (`OFF`)
+- `ELEMENTS_REAL` (`double`): precision of `real_t`, which ELEMENTS uses for all floating-point data: `double` or `float`. Passed to MATAR as `MATAR_REAL`.
 - `ELEMENTS_DEVICE_BACKEND` (empty): backend for MATAR's `FOR_ALL` and related macros: `serial`, `openmp`, `pthreads`, `cuda`, `hip`, `sycl`
 - `ELEMENTS_HOST_BACKEND` (`serial`): backend for MATAR's `_HOST` macros (`FOR_ALL_HOST`, ...): `serial`, `openmp`, `pthreads`. GPU backends are rejected.
 

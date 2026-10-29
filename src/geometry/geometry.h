@@ -23,10 +23,10 @@
 template <typename T1, typename T2, typename T3, typename T4>
 KOKKOS_INLINE_FUNCTION
 void jacobian(
-    const T1 &jacobian,         // e.g., ViewCArrayKokkos <double>
-    const T2 &node_coords,      // e.g., DCArrayKokkos    <double>
+    const T1 &jacobian,         // e.g., ViewCArrayKokkos <real_t>
+    const T2 &node_coords,      // e.g., DCArrayKokkos    <real_t>
     const T3 &nodes_in_an_elem, // e.g., ViewCArrayKokkos <size_t>
-    const T4 &a_grad_basis){    // e.g., ViewCArrayKokkos <double>
+    const T4 &a_grad_basis){    // e.g., ViewCArrayKokkos <real_t>
 
     const size_t dims = a_grad_basis.dims(1);
     const size_t num_dofs_in_elem = nodes_in_an_elem.size();
@@ -78,7 +78,7 @@ void jacobian(
 inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
                                                 const elements::ReferenceSurface_t& RefSurf,
                                                 CArrayKokkos<int>& surf_qpt_qpt_map,
-                                                const DCArrayKokkos<double>& node_coords){
+                                                const DCArrayKokkos<real_t>& node_coords){
 
     surf_qpt_qpt_map.set_values(-1);
                                                     
@@ -111,9 +111,9 @@ inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
             
             if (surf_qpt_qpt_map(surf_gid,0,qpt_lid)>=0) continue;  // this qpt was tagged
 
-            ViewCArrayKokkos<double> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0), num_nodes_in_elem);
+            ViewCArrayKokkos<real_t> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0), num_nodes_in_elem);
 
-            double qpt_x[3];
+            real_t qpt_x[3];
             
             for (size_t dim=0; dim<elem_dims; dim++){
                qpt_x[dim] = 0.0;
@@ -133,9 +133,9 @@ inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
 
                 if (surf_qpt_qpt_map(surf_gid,1,nbr_qpt_lid)>=0) continue; // this nbr_qpt was tagged
 
-                ViewCArrayKokkos<double> nbr_a_basis(&RefSurf.qpt_basis(nbr_face_lid,nbr_qpt_lid,0), num_nodes_in_elem);
+                ViewCArrayKokkos<real_t> nbr_a_basis(&RefSurf.qpt_basis(nbr_face_lid,nbr_qpt_lid,0), num_nodes_in_elem);
 
-                double nbr_qpt_x[3];
+                real_t nbr_qpt_x[3];
                 
                 for(size_t dim=0; dim<elem_dims; dim++){
                     nbr_qpt_x[dim] = 0.0;
@@ -148,12 +148,13 @@ inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
                     }
                 } 
 
-                double diff_sqrd = 0.0;
+                real_t diff_sqrd = 0.0;
                 for(size_t dim=0; dim<elem_dims; dim++){
                     diff_sqrd += (nbr_qpt_x[dim]-qpt_x[dim])*(nbr_qpt_x[dim]-qpt_x[dim]);
                 }
 
-                if(diff_sqrd<1.e-16){
+                const real_t match_tol = real_tol(1.e-8);  // distance tolerance
+                if(diff_sqrd < match_tol*match_tol){
                     // It is a match!  We found your friend!
                     surf_qpt_qpt_map(surf_gid,0,qpt_lid)     = nbr_qpt_lid;
                     surf_qpt_qpt_map(surf_gid,1,nbr_qpt_lid) = qpt_lid;

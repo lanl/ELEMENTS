@@ -36,6 +36,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cmath>
 #include "matar.h"
+#include "utils/precision_utils.h"
 
 using namespace mtr;
 
@@ -96,22 +97,22 @@ struct PointCloud_t{
     size_t num_bins_z = 0;
     size_t num_bins = 0;
 
-    double bin_dx = 0.0;
-    double bin_dy = 0.0;
-    double bin_dz = 0.0;
+    real_t bin_dx = 0.0;
+    real_t bin_dy = 0.0;
+    real_t bin_dz = 0.0;
 
-    double xmin = 0.0;
-    double ymin = 0.0;
-    double zmin = 0.0;
+    real_t xmin = 0.0;
+    real_t ymin = 0.0;
+    real_t zmin = 0.0;
 
-    double xmax = 0.0;
-    double ymax = 0.0;
-    double zmax = 0.0;
+    real_t xmax = 0.0;
+    real_t ymax = 0.0;
+    real_t zmax = 0.0;
 
     // --- point cloud parameters ---
-    double search_radius = 0.0;     // kernel support radius
+    real_t search_radius = 0.0;     // kernel support radius
     size_t min_num_points_fit = 0;  // minimum neighbors required for basis fit
-    double coincident_tol = 1.e-15; // tolerance for defining coincident points
+    real_t coincident_tol = real_tol(1.e-15); // tolerance for defining coincident points
 
     // --- bin mesh connectivity ---
     DCArrayKokkos <bin_keys_t> keys_in_bin;        // bin gid -> (i,j,k)
@@ -139,7 +140,7 @@ struct PointCloud_t{
     /// \param min_num_points_fit_in minimum neighbors required for basis fit
     ///
     /////////////////////////////////////////////////////////////////////////////
-    void initialize_point_cloud_vars(const double search_radius_in,
+    void initialize_point_cloud_vars(const real_t search_radius_in,
                                      const size_t min_num_points_fit_in){
 
         search_radius = search_radius_in;
@@ -159,7 +160,7 @@ struct PointCloud_t{
     /// \param coincident_tol_in      radius^2 defining coincident points
     ///
     /////////////////////////////////////////////////////////////////////////////
-    void initialize_shared_node_vars(const double coincident_tol_in){
+    void initialize_shared_node_vars(const real_t coincident_tol_in){
 
         coincident_tol = coincident_tol_in;  
 
@@ -186,8 +187,8 @@ struct PointCloud_t{
     /// \param num_bins_z_in number of bins in the z direction
     ///
     /////////////////////////////////////////////////////////////////////////////
-    void build_bin_mesh(const double xmin_in, const double ymin_in, const double zmin_in,
-                        const double xmax_in, const double ymax_in, const double zmax_in,
+    void build_bin_mesh(const real_t xmin_in, const real_t ymin_in, const real_t zmin_in,
+                        const real_t xmax_in, const real_t ymax_in, const real_t zmax_in,
                         const size_t num_bins_x_in,
                         const size_t num_bins_y_in,
                         const size_t num_bins_z_in) {
@@ -200,9 +201,9 @@ struct PointCloud_t{
         num_bins_z = num_bins_z_in;
         num_bins   = num_bins_x * num_bins_y * num_bins_z;
 
-        bin_dx = fmax(1.e-13, (xmax - xmin) / (double)num_bins_x);
-        bin_dy = fmax(1.e-13, (ymax - ymin) / (double)num_bins_y);
-        bin_dz = fmax(1.e-13, (zmax - zmin) / (double)num_bins_z);
+        bin_dx = Kokkos::fmax(real_t(1.e-13), (xmax - xmin) / (real_t)num_bins_x);
+        bin_dy = Kokkos::fmax(real_t(1.e-13), (ymax - ymin) / (real_t)num_bins_y);
+        bin_dz = Kokkos::fmax(real_t(1.e-13), (zmax - zmin) / (real_t)num_bins_z);
 
         keys_in_bin       = DCArrayKokkos <bin_keys_t> (num_bins, "keys_in_bin");
         num_points_in_bin = DCArrayKokkos <size_t>     (num_bins, "num_points_in_bin");
@@ -242,14 +243,14 @@ struct PointCloud_t{
     /// \param z_pt is the z coordinate
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
-    bin_keys_t get_bin_keys(const double x_pt, 
-                            const double y_pt, 
-                            const double z_pt) const {
+    bin_keys_t get_bin_keys(const real_t x_pt, 
+                            const real_t y_pt, 
+                            const real_t z_pt) const {
 
         bin_keys_t bk;
-        bk.i = (int)fmin((double)num_bins_x-1., fmax(0., round((x_pt - xmin)/bin_dx - 1.0e-10)));
-        bk.j = (int)fmin((double)num_bins_y-1., fmax(0., round((y_pt - ymin)/bin_dy - 1.0e-10)));
-        bk.k = (int)fmin((double)num_bins_z-1., fmax(0., round((z_pt - zmin)/bin_dz - 1.0e-10)));
+        bk.i = (int)Kokkos::fmin((real_t)num_bins_x-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((x_pt - xmin)/bin_dx - real_tol(1.0e-10))));
+        bk.j = (int)Kokkos::fmin((real_t)num_bins_y-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((y_pt - ymin)/bin_dy - real_tol(1.0e-10))));
+        bk.k = (int)Kokkos::fmin((real_t)num_bins_z-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((z_pt - zmin)/bin_dz - real_tol(1.0e-10))));
 
         return bk;
 
@@ -268,13 +269,13 @@ struct PointCloud_t{
     /// \param z_pt is the z coordinate
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
-    size_t get_bin_gid(const double x_pt, 
-                       const double y_pt, 
-                       const double z_pt) const {
+    size_t get_bin_gid(const real_t x_pt, 
+                       const real_t y_pt, 
+                       const real_t z_pt) const {
 
-        size_t i = (size_t)fmin((double)num_bins_x-1., fmax(0., round((x_pt - xmin)/bin_dx - 1.0e-10)));
-        size_t j = (size_t)fmin((double)num_bins_y-1., fmax(0., round((y_pt - ymin)/bin_dy - 1.0e-10)));
-        size_t k = (size_t)fmin((double)num_bins_z-1., fmax(0., round((z_pt - zmin)/bin_dz - 1.0e-10)));
+        size_t i = (size_t)Kokkos::fmin((real_t)num_bins_x-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((x_pt - xmin)/bin_dx - real_tol(1.0e-10))));
+        size_t j = (size_t)Kokkos::fmin((real_t)num_bins_y-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((y_pt - ymin)/bin_dy - real_tol(1.0e-10))));
+        size_t k = (size_t)Kokkos::fmin((real_t)num_bins_z-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((z_pt - zmin)/bin_dz - real_tol(1.0e-10))));
 
         return get_id_of_ijk(i, j, k, num_bins_x, num_bins_y);
 
@@ -296,7 +297,7 @@ struct PointCloud_t{
     /// \param node_in_corner_point   output: node gid for each corner point
     /// \param num_nodes              output: total number of unique nodes
     /////////////////////////////////////////////////////////////////////////////
-    void build_shared_node_connectivity(const CArrayKokkos <double>  &corner_point_positions,
+    void build_shared_node_connectivity(const CArrayKokkos <real_t>  &corner_point_positions,
                                        CArrayKokkos <size_t> &node_in_corner_point,
                                        size_t &num_nodes) {
 
@@ -374,9 +375,9 @@ struct PointCloud_t{
 
                     if (nbr_gid >= smallest_id) continue; // only look at lower id's
 
-                    const double pnt_dx = (corner_point_positions(point_gid,0)-corner_point_positions(nbr_gid,0));
-                    const double pnt_dy = (corner_point_positions(point_gid,1)-corner_point_positions(nbr_gid,1));
-                    const double pnt_dz = (corner_point_positions(point_gid,2)-corner_point_positions(nbr_gid,2));
+                    const real_t pnt_dx = (corner_point_positions(point_gid,0)-corner_point_positions(nbr_gid,0));
+                    const real_t pnt_dy = (corner_point_positions(point_gid,1)-corner_point_positions(nbr_gid,1));
+                    const real_t pnt_dz = (corner_point_positions(point_gid,2)-corner_point_positions(nbr_gid,2));
 
                     if(pnt_dx*pnt_dx + pnt_dy*pnt_dy + pnt_dz*pnt_dz < coincident_tol) smallest_id = nbr_gid;
 
@@ -444,7 +445,7 @@ struct PointCloud_t{
     ///
     /// \param point_positions are the (x,y,z) coordinates of every point 
     /////////////////////////////////////////////////////////////////////////////
-    void build_point_cloud_connectivity(const DCArrayKokkos <double> &point_positions){
+    void build_point_cloud_connectivity(const DCArrayKokkos <real_t> &point_positions){
 
         const size_t num_points = point_positions.dims(0);
 
@@ -532,19 +533,19 @@ struct PointCloud_t{
                 if (num_found < min_num_points_fit && num_found < num_points) continue;
 
                 // distance from the bin center to the near and far faces of the stencil
-                const double x_mid   = bin_dx*(double)i + xmin;
-                const double y_mid   = bin_dy*(double)j + ymin;
-                const double z_mid   = bin_dz*(double)k + zmin;
+                const real_t x_mid   = bin_dx*(real_t)i + xmin;
+                const real_t y_mid   = bin_dy*(real_t)j + ymin;
+                const real_t z_mid   = bin_dz*(real_t)k + zmin;
 
-                const double dist_minus = sqrt(
-                    (bin_dx*(double)iminus + xmin - x_mid)*(bin_dx*(double)iminus + xmin - x_mid) +
-                    (bin_dy*(double)jminus + ymin - y_mid)*(bin_dy*(double)jminus + ymin - y_mid) +
-                    (bin_dz*(double)kminus + zmin - z_mid)*(bin_dz*(double)kminus + zmin - z_mid) );
+                const real_t dist_minus = Kokkos::sqrt(
+                    (bin_dx*(real_t)iminus + xmin - x_mid)*(bin_dx*(real_t)iminus + xmin - x_mid) +
+                    (bin_dy*(real_t)jminus + ymin - y_mid)*(bin_dy*(real_t)jminus + ymin - y_mid) +
+                    (bin_dz*(real_t)kminus + zmin - z_mid)*(bin_dz*(real_t)kminus + zmin - z_mid) );
 
-                const double dist_plus = sqrt(
-                    (bin_dx*(double)iplus  + xmin - x_mid)*(bin_dx*(double)iplus  + xmin - x_mid) +
-                    (bin_dy*(double)jplus  + ymin - y_mid)*(bin_dy*(double)jplus  + ymin - y_mid) +
-                    (bin_dz*(double)kplus  + zmin - z_mid)*(bin_dz*(double)kplus  + zmin - z_mid) );
+                const real_t dist_plus = Kokkos::sqrt(
+                    (bin_dx*(real_t)iplus  + xmin - x_mid)*(bin_dx*(real_t)iplus  + xmin - x_mid) +
+                    (bin_dy*(real_t)jplus  + ymin - y_mid)*(bin_dy*(real_t)jplus  + ymin - y_mid) +
+                    (bin_dz*(real_t)kplus  + zmin - z_mid)*(bin_dz*(real_t)kplus  + zmin - z_mid) );
 
                 // accept stencil when it spans the search radius, or all points fit
                 if (dist_minus >= search_radius || dist_plus >= search_radius ||
@@ -581,7 +582,7 @@ struct PointCloud_t{
         //       the miss condition (!nbr_sees_me) is evaluated from i's perspective.
         //     - Therefore no two threads ever atomically increment the same
         //       (point_gid, nbr_gid) pair for the same reason, eliminating
-        //       double-counting.
+        //       real_t-counting.
         //     - atomic_inc ensures the counter update is indivisible,
         //       preventing lost updates when multiple threads increment different
         //       missed-neighbor slots of the same point concurrently.
@@ -772,10 +773,10 @@ struct PointCloud_t{
     /// \param num_points_in_box gives the number of points in each bounding box
     /// \param bounding_box array holding the min and max coordinates of each box
     /////////////////////////////////////////////////////////////////////////////
-    void get_points_in_box(const DCArrayKokkos <double> &point_positions, 
+    void get_points_in_box(const DCArrayKokkos <real_t> &point_positions, 
                            RaggedRightArrayKokkos <size_t> &points_in_box, 
                            DCArrayKokkos <size_t> &num_points_in_box,
-                           const CArrayKokkos <double> &bounding_box){
+                           const CArrayKokkos <real_t> &bounding_box){
 
         const size_t num_points = point_positions.dims(0);
         const size_t num_boxes = num_points_in_box.dims(0);
@@ -854,12 +855,12 @@ struct PointCloud_t{
             const int kplus  = MIN((int)num_bins_z-1,  box_max_keys.k+1);
 
             // exact box bounds for the geometric test
-            const double xlo = bounding_box(box_gid, 0, 0);
-            const double ylo = bounding_box(box_gid, 0, 1);
-            const double zlo = bounding_box(box_gid, 0, 2);
-            const double xhi = bounding_box(box_gid, 1, 0);
-            const double yhi = bounding_box(box_gid, 1, 1);
-            const double zhi = bounding_box(box_gid, 1, 2);
+            const real_t xlo = bounding_box(box_gid, 0, 0);
+            const real_t ylo = bounding_box(box_gid, 0, 1);
+            const real_t zlo = bounding_box(box_gid, 0, 2);
+            const real_t xhi = bounding_box(box_gid, 1, 0);
+            const real_t yhi = bounding_box(box_gid, 1, 1);
+            const real_t zhi = bounding_box(box_gid, 1, 2);
 
 
             // count all points inside the bounding box
@@ -876,9 +877,9 @@ struct PointCloud_t{
                     size_t nbr_gid = points_in_bin(nbr_bin, sl);
  
                     // exact geometric test: point must lie inside the box
-                    const double px = point_positions(nbr_gid, 0);
-                    const double py = point_positions(nbr_gid, 1);
-                    const double pz = point_positions(nbr_gid, 2);
+                    const real_t px = point_positions(nbr_gid, 0);
+                    const real_t py = point_positions(nbr_gid, 1);
+                    const real_t pz = point_positions(nbr_gid, 2);
  
                     if (px >= xlo && px <= xhi &&
                         py >= ylo && py <= yhi &&
@@ -928,12 +929,12 @@ struct PointCloud_t{
             const int kplus  = MIN((int)num_bins_z-1,  box_max_keys.k+1);
 
             // exact box bounds for the geometric test
-            const double xlo = bounding_box(box_gid, 0, 0);
-            const double ylo = bounding_box(box_gid, 0, 1);
-            const double zlo = bounding_box(box_gid, 0, 2);
-            const double xhi = bounding_box(box_gid, 1, 0);
-            const double yhi = bounding_box(box_gid, 1, 1);
-            const double zhi = bounding_box(box_gid, 1, 2);
+            const real_t xlo = bounding_box(box_gid, 0, 0);
+            const real_t ylo = bounding_box(box_gid, 0, 1);
+            const real_t zlo = bounding_box(box_gid, 0, 2);
+            const real_t xhi = bounding_box(box_gid, 1, 0);
+            const real_t yhi = bounding_box(box_gid, 1, 1);
+            const real_t zhi = bounding_box(box_gid, 1, 2);
 
             size_t idx = 0;
 
@@ -947,9 +948,9 @@ struct PointCloud_t{
  
                     size_t nbr_gid = points_in_bin(nbr_bin, sl);
  
-                    const double px = point_positions(nbr_gid, 0);
-                    const double py = point_positions(nbr_gid, 1);
-                    const double pz = point_positions(nbr_gid, 2);
+                    const real_t px = point_positions(nbr_gid, 0);
+                    const real_t py = point_positions(nbr_gid, 1);
+                    const real_t pz = point_positions(nbr_gid, 2);
  
                     if (px >= xlo && px <= xhi &&
                         py >= ylo && py <= yhi &&
@@ -985,9 +986,9 @@ struct PointCloud_t{
     /// \param z_max is the maximum z coordinate, the end of the bin mesh
     /// \param points is point cloud coordinates array
     /////////////////////////////////////////////////////////////////////////////
-    void get_bounds_point_cloud(double &xmin, double &ymin, double &zmin,
-                                double &xmax, double &ymax, double &zmax,
-                                const DCArrayKokkos <double> &point_positions) {
+    void get_bounds_point_cloud(real_t &xmin, real_t &ymin, real_t &zmin,
+                                real_t &xmax, real_t &ymax, real_t &zmax,
+                                const DCArrayKokkos <real_t> &point_positions) {
 
         const size_t num_points = point_positions.dims(0);
 
@@ -996,22 +997,22 @@ struct PointCloud_t{
             "point_min_domain_extents",
             num_points,
             KOKKOS_LAMBDA(const int point_gid,         
-                        double& xmin_lcl,
-                        double& ymin_lcl,
-                        double& zmin_lcl) 
+                        real_t& xmin_lcl,
+                        real_t& ymin_lcl,
+                        real_t& zmin_lcl) 
             {
-                xmin_lcl = fmin(point_positions(point_gid,0), xmin_lcl);
-                ymin_lcl = fmin(point_positions(point_gid,1), ymin_lcl);
-                zmin_lcl = fmin(point_positions(point_gid,2), zmin_lcl);
+                xmin_lcl = Kokkos::fmin(point_positions(point_gid,0), xmin_lcl);
+                ymin_lcl = Kokkos::fmin(point_positions(point_gid,1), ymin_lcl);
+                zmin_lcl = Kokkos::fmin(point_positions(point_gid,2), zmin_lcl);
             },
-            Kokkos::Min<double>(xmin), 
-            Kokkos::Min<double>(ymin), 
-            Kokkos::Min<double>(zmin)); 
+            Kokkos::Min<real_t>(xmin), 
+            Kokkos::Min<real_t>(ymin), 
+            Kokkos::Min<real_t>(zmin)); 
             // end parallel reduction over all STL triangles
 
-        xmin -= 1.e-6; // decrease by a small fraction
-        ymin -= 1.e-6; // decrease by a small fraction
-        zmin -= 1.e-6; // decrease by a small fraction
+        xmin -= real_tol(1.e-6); // decrease by a small fraction
+        ymin -= real_tol(1.e-6); // decrease by a small fraction
+        zmin -= real_tol(1.e-6); // decrease by a small fraction
 
         // find (xmax, ymax, zmax) for building bin mesh
         Kokkos::parallel_reduce(
@@ -1019,22 +1020,22 @@ struct PointCloud_t{
             num_points,
             // this is the for loop coding
             KOKKOS_LAMBDA(const int point_gid,         
-                        double& xmax_lcl,
-                        double& ymax_lcl,
-                        double& zmax_lcl) 
+                        real_t& xmax_lcl,
+                        real_t& ymax_lcl,
+                        real_t& zmax_lcl) 
             {
-                xmax_lcl = fmax(point_positions(point_gid,0), xmax_lcl);
-                ymax_lcl = fmax(point_positions(point_gid,1), ymax_lcl);
-                zmax_lcl = fmax(point_positions(point_gid,2), zmax_lcl);
+                xmax_lcl = Kokkos::fmax(point_positions(point_gid,0), xmax_lcl);
+                ymax_lcl = Kokkos::fmax(point_positions(point_gid,1), ymax_lcl);
+                zmax_lcl = Kokkos::fmax(point_positions(point_gid,2), zmax_lcl);
             },
-            Kokkos::Max<double>(xmax), 
-            Kokkos::Max<double>(ymax), 
-            Kokkos::Max<double>(zmax)); 
+            Kokkos::Max<real_t>(xmax), 
+            Kokkos::Max<real_t>(ymax), 
+            Kokkos::Max<real_t>(zmax)); 
             // end parallel reduction over all STL triangles
 
-        xmax += 1.e-6; // increase by a small fraction
-        ymax += 1.e-6; // increase by a small fraction
-        zmax += 1.e-6; // increase by a small fraction
+        xmax += real_tol(1.e-6); // increase by a small fraction
+        ymax += real_tol(1.e-6); // increase by a small fraction
+        zmax += real_tol(1.e-6); // increase by a small fraction
 
         return;
 

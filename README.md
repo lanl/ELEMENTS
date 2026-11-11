@@ -27,6 +27,18 @@ git clone --recursive https://github.com/lanl/ELEMENTS.git
 
 ## Getting started
 
+ELEMENTS builds MATAR from the `matar/` git submodule, and MATAR in turn supplies Kokkos (currently
+5.2.1) from its own bundled submodule. Clone with `--recursive` as shown above, or run
+
+```
+git submodule update --init --recursive
+```
+
+in an existing clone — plain `--init` is not enough, because Kokkos sits one level deeper. Configuring
+without the submodule fails immediately with that instruction. Only Scotch/PT-Scotch is still
+downloaded at configure time. MATAR requires C++20, so ELEMENTS and anything linking it compile as
+C++20.
+
 To build the examples locally:
 
 1. Configure into a separate build tree:
@@ -45,10 +57,31 @@ Key CMake options (defaults in parentheses):
 - `ELEMENTS_BUILD_EXAMPLES` (`ON` when ELEMENTS is the top-level project, otherwise `OFF`)
 - `ELEMENTS_BUILD_TESTS` (`OFF`)
 - `ELEMENTS_ENABLE_SERIAL` (`ON`)
-- `ELEMENTS_ENABLE_OPENMP` (`ON`)
+- `ELEMENTS_ENABLE_OPENMP` (`OFF`)
 - `ELEMENTS_ENABLE_PTHREADS` (`OFF`)
 - `ELEMENTS_ENABLE_CUDA` (`OFF`)
 - `ELEMENTS_ENABLE_HIP` (`OFF`)
+- `ELEMENTS_DEVICE_BACKEND` (empty) — `serial`, `openmp`, `pthreads`, `cuda`, `hip`, `sycl`
+- `ELEMENTS_HOST_BACKEND` (empty) — `serial`, `openmp`, `pthreads`
+
+## Mixed host/device backends
+
+The `ELEMENTS_ENABLE_*` options above pick **one** Kokkos backend that runs everything. The
+`ELEMENTS_*_BACKEND` pair instead selects the two sides independently, mirroring MATAR's
+`MATAR_DEVICE_BACKEND` / `MATAR_HOST_BACKEND`: the **device** backend runs MATAR's `FOR_ALL`,
+`DO_ALL` and friends, while the **host** backend runs the `_HOST` twins (`FOR_ALL_HOST`, ...). Since
+device kernels are asynchronous and host kernels only block the calling thread, CPU work then
+overlaps in-flight GPU kernels:
+
+```
+cmake -B build -DELEMENTS_DEVICE_BACKEND=cuda -DELEMENTS_HOST_BACKEND=openmp
+```
+
+The values are forwarded to MATAR, which validates the pair and maps it onto the `Kokkos_ENABLE_*`
+variables. Setting either one takes precedence over the `ELEMENTS_ENABLE_*` toggles (ELEMENTS warns
+if you turn on both). Kokkos permits only one host-parallel space per build, so `openmp` and
+`pthreads` cannot be paired with each other, and naming the same backend on both sides is valid but
+gives no concurrency — MATAR warns at configure time.
  
 ## Using ELEMENTS from another CMake project
 
@@ -76,6 +109,8 @@ target_link_libraries(my_app PRIVATE ELEMENTS)
 ```
 
 `ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). Set the options before `FetchContent_MakeAvailable` to control which backends build.
+
+MATAR and its bundled Kokkos come along automatically — `FetchContent` clones submodules recursively by default. If your project already defines a `Kokkos::kokkos` target, MATAR uses it instead of building its own copy, so set your Kokkos backends before pulling ELEMENTS in.
 
 To learn more about ELEMENTS and how to get started using it, please see the [ELEMENTS documentation](https://lanl.github.io/ELEMENTS/).
 

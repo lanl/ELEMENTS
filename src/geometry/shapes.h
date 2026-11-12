@@ -17,15 +17,16 @@ class Plane
 public:
 
     int num_dims = 0; ///< Number of dimensions of the plane
-    double epsilon = 1e-7; ///< Epsilon for floating point comparisons
+    real_t epsilon = mtr::prec::fmax(real_t(1e-7),
+                                mtr::prec::epsilon<real_t>() * real_t(100)); ///< Epsilon for floating point comparisons
 
-    ViewCArrayKokkos<double> position; ///< Position of the plane
-    ViewCArrayKokkos<double> normal; ///< Normal vector of the plane, normalize internally
+    ViewCArrayKokkos<real_t> position; ///< Position of the plane
+    ViewCArrayKokkos<real_t> normal; ///< Normal vector of the plane, normalize internally
 
-    Plane(const ViewCArrayKokkos<double>& position_inp, const ViewCArrayKokkos<double>& normal_inp){
+    Plane(const ViewCArrayKokkos<real_t>& position_inp, const ViewCArrayKokkos<real_t>& normal_inp){
 
-        assert(position_inp.order() == 1 && "Plane constructor requires a 1D ViewCArrayKokkos<double> for position");
-        assert(normal_inp.order() == 1 && "Plane constructor requires a 1D ViewCArrayKokkos<double> for normal");
+        assert(position_inp.order() == 1 && "Plane constructor requires a 1D ViewCArrayKokkos<real_t> for position");
+        assert(normal_inp.order() == 1 && "Plane constructor requires a 1D ViewCArrayKokkos<real_t> for normal");
         assert(position_inp.extent() == normal_inp.extent() && "Plane constructor requires the position and normal vectors to have the same number of dimensions");
         assert(position_inp.extent() >= 2 && "Plane constructor requires at least 2 dimensions");
         
@@ -49,9 +50,9 @@ public:
     }
 
     KOKKOS_INLINE_FUNCTION
-    bool is_point_on_plane(const ViewCArrayKokkos<double>& point) const
+    bool is_point_on_plane(const ViewCArrayKokkos<real_t>& point) const
     {
-        assert(point.order() == 1 && "is_point_on_plane requires a 1D ViewCArrayKokkos<double> for point");
+        assert(point.order() == 1 && "is_point_on_plane requires a 1D ViewCArrayKokkos<real_t> for point");
         assert(point.extent() == num_dims && "Point must have same num_dims as the plane");
 
         double dot_product = 0.0;
@@ -76,15 +77,16 @@ public:
 
     int num_dims = 0; ///< Number of dimensions of the circle
     double radius = 0.0; ///< Radius of the circle
-    double epsilon = 1e-7; ///< Epsilon for floating point comparisons
+    real_t epsilon = mtr::prec::fmax(real_t(1e-7),
+                                mtr::prec::epsilon<real_t>() * real_t(100)); ///< Epsilon for floating point comparisons
 
-    ViewCArrayKokkos<double> position; ///< Position of the circle
-    ViewCArrayKokkos<double> normal; ///< Normal vector of the circle, normalize internally
+    ViewCArrayKokkos<real_t> position; ///< Position of the circle
+    ViewCArrayKokkos<real_t> normal; ///< Normal vector of the circle, normalize internally
 
-    Circle(const ViewCArrayKokkos<double>& position_inp, const ViewCArrayKokkos<double>& normal_inp, const double radius_inp){
+    Circle(const ViewCArrayKokkos<real_t>& position_inp, const ViewCArrayKokkos<real_t>& normal_inp, const double radius_inp){
 
-        assert(position_inp.order() == 1 && "Circle constructor requires a 1D ViewCArrayKokkos<double> for position");
-        assert(normal_inp.order() == 1 && "Circle constructor requires a 1D ViewCArrayKokkos<double> for normal");
+        assert(position_inp.order() == 1 && "Circle constructor requires a 1D ViewCArrayKokkos<real_t> for position");
+        assert(normal_inp.order() == 1 && "Circle constructor requires a 1D ViewCArrayKokkos<real_t> for normal");
         assert(position_inp.extent() == normal_inp.extent() && "Circle constructor requires the position and normal vectors to have the same number of dimensions");
         assert(radius_inp > 0.0 && "Circle constructor requires a positive radius");
         assert(position_inp.extent() >= 2 && "Circle constructor requires at least 2 dimensions");
@@ -113,9 +115,9 @@ public:
     }
 
     KOKKOS_INLINE_FUNCTION
-    bool is_point_on_circle(const ViewCArrayKokkos<double>& point) const
+    bool is_point_on_circle(const ViewCArrayKokkos<real_t>& point) const
     {
-        assert(point.order() == 1 && "is_point_on_plane requires a 1D ViewCArrayKokkos<double> for point");
+        assert(point.order() == 1 && "is_point_on_plane requires a 1D ViewCArrayKokkos<real_t> for point");
         assert(point.extent() == num_dims && "Point must have same num_dims as the plane");
 
         double dot_product = 0.0;
@@ -146,15 +148,16 @@ public:
 
     int num_dims = 3; ///< Number of dimensions 
     double radius = 0.0; ///< Radius of the sphere
-    double epsilon = 1e-7; ///< Epsilon for floating point comparisons
+    real_t epsilon = mtr::prec::fmax(real_t(1e-7),
+                                mtr::prec::epsilon<real_t>() * real_t(100)); ///< Epsilon for floating point comparisons
 
-    ViewCArrayKokkos<double> position; ///< Position of the sphere
+    ViewCArrayKokkos<real_t> position; ///< Position of the sphere
 
-    Sphere(const ViewCArrayKokkos<double>& position_inp, const double radius_inp){
+    Sphere(const ViewCArrayKokkos<real_t>& position_inp, const double radius_inp){
 
-        assert(position_inp.order() == 1 && "Sphere constructor requires a 1D ViewCArrayKokkos<double> for position");
+        assert(position_inp.order() == 1 && "Sphere constructor requires a 1D ViewCArrayKokkos<real_t> for position");
         assert(radius_inp > 0.0 && "Sphere constructor requires a positive radius");
-        assert(position_inp.extent() == 3 && "Sphere constructor requires a 3D ViewCArrayKokkos<double> for position");
+        assert(position_inp.extent() == 3 && "Sphere constructor requires a 3D ViewCArrayKokkos<real_t> for position");
             
         radius = radius_inp;
         position = position_inp;
@@ -163,9 +166,9 @@ public:
     }
 
     KOKKOS_INLINE_FUNCTION
-    bool is_point_on_sphere(const ViewCArrayKokkos<double>& point) const
+    bool is_point_on_sphere(const ViewCArrayKokkos<real_t>& point) const
     {
-        assert(point.order() == 1 && "is_point_on_plane requires a 1D ViewCArrayKokkos<double> for point");
+        assert(point.order() == 1 && "is_point_on_plane requires a 1D ViewCArrayKokkos<real_t> for point");
         assert(point.extent() == num_dims && "Point must have same num_dims as the plane");
 
 
@@ -179,9 +182,9 @@ public:
     }
 
     KOKKOS_INLINE_FUNCTION
-    bool is_point_inside_sphere(const ViewCArrayKokkos<double>& point) const
+    bool is_point_inside_sphere(const ViewCArrayKokkos<real_t>& point) const
     {
-        assert(point.order() == 1 && "is_point_on_plane requires a 1D ViewCArrayKokkos<double> for point");
+        assert(point.order() == 1 && "is_point_on_plane requires a 1D ViewCArrayKokkos<real_t> for point");
         assert(point.extent() == num_dims && "Point must have same num_dims as the plane");
 
 
@@ -195,9 +198,9 @@ public:
     }
 
     KOKKOS_INLINE_FUNCTION
-    double signed_distance_to_sphere(const ViewCArrayKokkos<double>& point) const
+    double signed_distance_to_sphere(const ViewCArrayKokkos<real_t>& point) const
     {
-        assert(point.order() == 1 && "signed_distance_to_sphere requires a 1D ViewCArrayKokkos<double> for point");
+        assert(point.order() == 1 && "signed_distance_to_sphere requires a 1D ViewCArrayKokkos<real_t> for point");
         assert(point.extent() == num_dims && "Point must have same num_dims as the plane");
 
         double distance = 0.0;

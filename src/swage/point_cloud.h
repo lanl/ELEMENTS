@@ -296,7 +296,7 @@ struct PointCloud_t{
     /// \param node_in_corner_point   output: node gid for each corner point
     /// \param num_nodes              output: total number of unique nodes
     /////////////////////////////////////////////////////////////////////////////
-    void build_shared_node_connectivity(const CArrayKokkos <double>  &corner_point_positions,
+    void build_shared_node_connectivity(const CArrayKokkos<real_t>  &corner_point_positions,
                                        CArrayKokkos <size_t> &node_in_corner_point,
                                        size_t &num_nodes) {
 
@@ -444,7 +444,7 @@ struct PointCloud_t{
     ///
     /// \param point_positions are the (x,y,z) coordinates of every point 
     /////////////////////////////////////////////////////////////////////////////
-    void build_point_cloud_connectivity(const DCArrayKokkos <double> &point_positions){
+    void build_point_cloud_connectivity(const DCArrayKokkos<real_t> &point_positions){
 
         const size_t num_points = point_positions.dims(0);
 
@@ -772,10 +772,10 @@ struct PointCloud_t{
     /// \param num_points_in_box gives the number of points in each bounding box
     /// \param bounding_box array holding the min and max coordinates of each box
     /////////////////////////////////////////////////////////////////////////////
-    void get_points_in_box(const DCArrayKokkos <double> &point_positions, 
+    void get_points_in_box(const DCArrayKokkos<real_t> &point_positions, 
                            RaggedRightArrayKokkos <size_t> &points_in_box, 
                            DCArrayKokkos <size_t> &num_points_in_box,
-                           const CArrayKokkos <double> &bounding_box){
+                           const CArrayKokkos<real_t> &bounding_box){
 
         const size_t num_points = point_positions.dims(0);
         const size_t num_boxes = num_points_in_box.dims(0);
@@ -987,7 +987,7 @@ struct PointCloud_t{
     /////////////////////////////////////////////////////////////////////////////
     void get_bounds_point_cloud(double &xmin, double &ymin, double &zmin,
                                 double &xmax, double &ymax, double &zmax,
-                                const DCArrayKokkos <double> &point_positions) {
+                                const DCArrayKokkos<real_t> &point_positions) {
 
         const size_t num_points = point_positions.dims(0);
 

@@ -80,6 +80,26 @@ set(ELEMENTS_DEVICE_BACKEND "" CACHE STRING "Device backend for FOR_ALL and frie
 set_property(CACHE ELEMENTS_HOST_BACKEND   PROPERTY STRINGS serial openmp pthreads)
 set_property(CACHE ELEMENTS_DEVICE_BACKEND PROPERTY STRINGS serial openmp pthreads cuda hip sycl)
 
+# --- Floating-point precision selection (mirrors MATAR_REAL / HIGH_REAL / LOW_REAL) ---
+# These choose what MATAR's three tier types mean for this build:
+#   real_t       the default working precision for field data
+#   high_real_t  fields that must stay accurate (coordinates, conserved sums)
+#   low_real_t   tolerant or bulk-storage fields
+#
+#   cmake -B build -DELEMENTS_REAL=float -DELEMENTS_HIGH_REAL=double
+#
+# Forwarded verbatim to MATAR, which validates each value and maps it onto the
+# MATAR_*_TYPE compile definitions that precision.h consumes. Leaving them
+# empty keeps every tier at double, so existing builds are byte-for-byte
+# unaffected. Note high_real_t may not drop below float, and anything other
+# than double/float requires Kokkos.
+set(ELEMENTS_REAL      "" CACHE STRING "Precision of real_t: double|float|half|bfloat16|quad")
+set(ELEMENTS_HIGH_REAL "" CACHE STRING "Precision of high_real_t: double|float|quad")
+set(ELEMENTS_LOW_REAL  "" CACHE STRING "Precision of low_real_t: double|float|half|bfloat16")
+set_property(CACHE ELEMENTS_REAL      PROPERTY STRINGS double float half bfloat16 quad)
+set_property(CACHE ELEMENTS_HIGH_REAL PROPERTY STRINGS double float quad)
+set_property(CACHE ELEMENTS_LOW_REAL  PROPERTY STRINGS double float half bfloat16)
+
 include(FetchContent)
 
 # --- Dependency: Kokkos ---
@@ -136,6 +156,19 @@ if(NOT TARGET matar::matar)
     set(MATAR_ENABLE_MPI     ON  CACHE BOOL "" FORCE)
     set(MATAR_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(MATAR_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+
+    # Forward only the tiers the caller actually set, so an unset tier keeps
+    # MATAR's own default of double rather than being pinned here.
+    foreach(_tier REAL HIGH_REAL LOW_REAL)
+        if(ELEMENTS_${_tier})
+            set(MATAR_${_tier} "${ELEMENTS_${_tier}}" CACHE STRING "Set by ELEMENTS_${_tier}" FORCE)
+        endif()
+    endforeach()
+    if(ELEMENTS_REAL OR ELEMENTS_HIGH_REAL OR ELEMENTS_LOW_REAL)
+        message(STATUS
+            "ELEMENTS precision: real='${ELEMENTS_REAL}' high_real='${ELEMENTS_HIGH_REAL}'"
+            " low_real='${ELEMENTS_LOW_REAL}' -> MATAR_REAL / MATAR_HIGH_REAL / MATAR_LOW_REAL")
+    endif()
 
     add_subdirectory(matar)
 

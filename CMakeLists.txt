@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.22)
 project(ELEMENTS VERSION 1.0.0 LANGUAGES CXX C)
 
 # --- Global Compiler Fixes (Scoped to this project) ---
@@ -62,56 +62,122 @@ option(ELEMENTS_ENABLE_PTHREADS "Enable PThreads support in Kokkos" OFF)
 option(ELEMENTS_ENABLE_CUDA "Enable CUDA support in Kokkos" OFF)
 option(ELEMENTS_ENABLE_HIP "Enable HIP support in Kokkos" OFF)
 
-option(ELEMENTS_BUILD_EXAMPLES "Build examples" ${ELEMENTS_IS_TOP_LEVEL}) 
+option(ELEMENTS_BUILD_EXAMPLES "Build examples" ${ELEMENTS_IS_TOP_LEVEL})
 option(ELEMENTS_BUILD_TESTS "Build unit tests" OFF)
+
+# --- Host / device backend selection (mirrors MATAR_HOST_BACKEND / MATAR_DEVICE_BACKEND) ---
+# The device backend runs MATAR's standard macros (FOR_ALL, DO_ALL, ...); the
+# host backend runs the _HOST twins (FOR_ALL_HOST, ...). Choosing different
+# backends for the two lets CPU work overlap in-flight GPU kernels, e.g.
+#
+#   cmake -B build -DELEMENTS_DEVICE_BACKEND=cuda -DELEMENTS_HOST_BACKEND=openmp
+#
+# These are forwarded verbatim to MATAR, which validates the pair and maps it
+# onto the Kokkos_ENABLE_* variables. Leaving them empty keeps the historical
+# ELEMENTS_ENABLE_* behavior below, so existing builds are unaffected.
+set(ELEMENTS_HOST_BACKEND   "" CACHE STRING "Host backend for the _HOST macros: serial|openmp|pthreads")
+set(ELEMENTS_DEVICE_BACKEND "" CACHE STRING "Device backend for FOR_ALL and friends: serial|openmp|pthreads|cuda|hip|sycl")
+set_property(CACHE ELEMENTS_HOST_BACKEND   PROPERTY STRINGS serial openmp pthreads)
+set_property(CACHE ELEMENTS_DEVICE_BACKEND PROPERTY STRINGS serial openmp pthreads cuda hip sycl)
+
+# --- Floating-point precision selection (mirrors MATAR_REAL / HIGH_REAL / LOW_REAL) ---
+# These choose what MATAR's three tier types mean for this build:
+#   real_t       the default working precision for field data
+#   high_real_t  fields that must stay accurate (coordinates, conserved sums)
+#   low_real_t   tolerant or bulk-storage fields
+#
+#   cmake -B build -DELEMENTS_REAL=float -DELEMENTS_HIGH_REAL=double
+#
+# Forwarded verbatim to MATAR, which validates each value and maps it onto the
+# MATAR_*_TYPE compile definitions that precision.h consumes. Leaving them
+# empty keeps every tier at double, so existing builds are byte-for-byte
+# unaffected. Note high_real_t may not drop below float, and anything other
+# than double/float requires Kokkos.
+set(ELEMENTS_REAL      "" CACHE STRING "Precision of real_t: double|float|half|bfloat16|quad")
+set(ELEMENTS_HIGH_REAL "" CACHE STRING "Precision of high_real_t: double|float|quad")
+set(ELEMENTS_LOW_REAL  "" CACHE STRING "Precision of low_real_t: double|float|half|bfloat16")
+set_property(CACHE ELEMENTS_REAL      PROPERTY STRINGS double float half bfloat16 quad)
+set_property(CACHE ELEMENTS_HIGH_REAL PROPERTY STRINGS double float quad)
+set_property(CACHE ELEMENTS_LOW_REAL  PROPERTY STRINGS double float half bfloat16)
 
 include(FetchContent)
 
 # --- Dependency: Kokkos ---
-if(NOT TARGET Kokkos::kokkos)
+# Kokkos is NOT fetched here: the MATAR submodule bundles it (currently 5.2.1)
+# and builds it from the standard Kokkos cache variables. The guard is kept so
+# that a parent project which already provides Kokkos::kokkos still wins -- MATAR
+# detects that target and reuses it instead of adding its own submodule.
+if(ELEMENTS_HOST_BACKEND OR ELEMENTS_DEVICE_BACKEND)
+    # Front door in use: MATAR owns the Kokkos_ENABLE_* mapping and the
+    # validation (a host backend cannot be a GPU space, openmp and pthreads
+    # cannot coexist, the device backend must outrank the host one, ...), so
+    # do not also set them from the ELEMENTS_ENABLE_* toggles.
+    set(MATAR_HOST_BACKEND   "${ELEMENTS_HOST_BACKEND}"   CACHE STRING "Set by ELEMENTS_HOST_BACKEND"   FORCE)
+    set(MATAR_DEVICE_BACKEND "${ELEMENTS_DEVICE_BACKEND}" CACHE STRING "Set by ELEMENTS_DEVICE_BACKEND" FORCE)
+    # Any complaint about this pair is reported by MATAR against the MATAR_*
+    # names, so record the mapping here.
+    message(STATUS
+        "ELEMENTS backends: device='${ELEMENTS_DEVICE_BACKEND}' host='${ELEMENTS_HOST_BACKEND}'"
+        " -> MATAR_DEVICE_BACKEND / MATAR_HOST_BACKEND")
+
+    foreach(_legacy OPENMP PTHREADS CUDA HIP)
+        if(ELEMENTS_ENABLE_${_legacy})
+            message(WARNING
+                "ELEMENTS_ENABLE_${_legacy}=ON is ignored because ELEMENTS_HOST_BACKEND / "
+                "ELEMENTS_DEVICE_BACKEND are set; the backend pair is taken from those. "
+                "Use one scheme or the other.")
+        endif()
+    endforeach()
+elseif(NOT TARGET Kokkos::kokkos)
     set(Kokkos_ENABLE_SERIAL   ${ELEMENTS_ENABLE_SERIAL}   CACHE BOOL "" FORCE)
     set(Kokkos_ENABLE_OPENMP   ${ELEMENTS_ENABLE_OPENMP}   CACHE BOOL "" FORCE)
-    set(Kokkos_ENABLE_PTHREADS ${ELEMENTS_ENABLE_PTHREADS} CACHE BOOL "" FORCE)
+    # Kokkos 5 spells the std::threads backend THREADS; PTHREADS no longer exists.
+    set(Kokkos_ENABLE_THREADS  ${ELEMENTS_ENABLE_PTHREADS} CACHE BOOL "" FORCE)
     set(Kokkos_ENABLE_CUDA     ${ELEMENTS_ENABLE_CUDA}     CACHE BOOL "" FORCE)
     set(Kokkos_ENABLE_HIP      ${ELEMENTS_ENABLE_HIP}      CACHE BOOL "" FORCE)
-    
-    FetchContent_Declare(
-        Kokkos
-        GIT_REPOSITORY https://github.com/kokkos/kokkos
-        GIT_TAG        4.3.00
-    )
-    FetchContent_MakeAvailable(Kokkos)
 endif()
 
-# --- Dependency: MATAR ---
+# --- Dependency: MATAR (git submodule in matar/) ---
+# MATAR's own CMake exports the matar::matar alias, its include directories, the
+# HAVE_KOKKOS / HAVE_MPI definitions and cxx_std_20, and it pulls in Kokkos. So
+# there is nothing to patch up here -- just add it, with the backend variables
+# above already set.
 if(NOT TARGET matar::matar)
-    FetchContent_Declare(
-        MATAR
-        GIT_REPOSITORY https://github.com/lanl/MATAR
-        GIT_TAG        main
-    )
-    FetchContent_MakeAvailable(MATAR)
-
-    if(TARGET matar)
-        if(NOT TARGET matar::matar)
-            add_library(matar::matar ALIAS matar)
-        endif()
-        
-        FetchContent_GetProperties(MATAR SOURCE_DIR MATAR_SOURCE_DIR)
-        get_target_property(_matar_includes matar INTERFACE_INCLUDE_DIRECTORIES)
-        
-        if(NOT "${MATAR_SOURCE_DIR}/src/include" IN_LIST _matar_includes)
-            target_include_directories(matar INTERFACE 
-                $<BUILD_INTERFACE:${MATAR_SOURCE_DIR}/src/include>
-                $<BUILD_INTERFACE:${MATAR_SOURCE_DIR}/solvers>
-            )
-        endif()
-        
-        target_compile_definitions(matar INTERFACE HAVE_KOKKOS)
-        if(MPI_FOUND)
-            target_compile_definitions(matar INTERFACE HAVE_MPI)
-        endif()
+    if(NOT EXISTS ${PROJECT_SOURCE_DIR}/matar/CMakeLists.txt)
+        message(FATAL_ERROR
+            "The MATAR submodule is missing. Run:\n"
+            "    git submodule update --init --recursive\n"
+            "ELEMENTS builds MATAR (and the Kokkos it bundles) from matar/.")
     endif()
+
+    set(MATAR_ENABLE_KOKKOS  ON  CACHE BOOL "" FORCE)
+    # ELEMENTS requires MPI, and its examples use MATAR's MPICArrayKokkos and
+    # CommunicationPlan, which only exist in an MPI-enabled MATAR.
+    set(MATAR_ENABLE_MPI     ON  CACHE BOOL "" FORCE)
+    set(MATAR_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(MATAR_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+
+    # Forward only the tiers the caller actually set, so an unset tier keeps
+    # MATAR's own default of double rather than being pinned here.
+    foreach(_tier REAL HIGH_REAL LOW_REAL)
+        if(ELEMENTS_${_tier})
+            set(MATAR_${_tier} "${ELEMENTS_${_tier}}" CACHE STRING "Set by ELEMENTS_${_tier}" FORCE)
+        endif()
+    endforeach()
+    if(ELEMENTS_REAL OR ELEMENTS_HIGH_REAL OR ELEMENTS_LOW_REAL)
+        message(STATUS
+            "ELEMENTS precision: real='${ELEMENTS_REAL}' high_real='${ELEMENTS_HIGH_REAL}'"
+            " low_real='${ELEMENTS_LOW_REAL}' -> MATAR_REAL / MATAR_HIGH_REAL / MATAR_LOW_REAL")
+    endif()
+
+    add_subdirectory(matar)
+
+    # MATAR exports src/include but not solvers/ (its own examples add that path
+    # themselves). ELEMENTS examples include cramers_rule.hpp / lu_solver.hpp /
+    # qr_solver.hpp, so carry it on the interface as the previous wiring did.
+    target_include_directories(matar INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/matar/solvers>
+    )
 endif()
 
 # --- Dependency: Scotch / PT-Scotch ---

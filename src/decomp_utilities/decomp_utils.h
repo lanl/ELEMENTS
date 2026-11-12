@@ -51,9 +51,9 @@ namespace elements
 
 inline void naive_partition_mesh(
     swage::Mesh_t& initial_mesh,
-    MPICArrayKokkos<double>& initial_node_coords,
+    MPICArrayKokkos<real_t>& initial_node_coords,
     swage::Mesh_t& naive_mesh,
-    MPICArrayKokkos<double>& naive_node_coords,
+    MPICArrayKokkos<real_t>& naive_node_coords,
     CArrayDual<int>& elems_in_elem_on_rank,
     CArrayDual<int>& num_elems_in_elem_per_rank,
     int world_size,
@@ -297,7 +297,7 @@ inline void naive_partition_mesh(
 
     // CommunicationPlan tmp_comm_plan;
 
-    naive_node_coords = MPICArrayKokkos<double>(num_nodes_on_rank, num_dim, "naive_node_coords");
+    naive_node_coords = MPICArrayKokkos<real_t>(num_nodes_on_rank, num_dim, "naive_node_coords");
     // naive_node_coords.initialize_comm_plan(tmp_comm_plan);
 
 
@@ -591,8 +591,8 @@ inline void naive_partition_mesh(
 inline void build_ghost(
     swage::Mesh_t& input_mesh,
     swage::Mesh_t& output_mesh,
-    MPICArrayKokkos<double>& input_node_coords,
-    MPICArrayKokkos<double>& output_node_coords,
+    MPICArrayKokkos<real_t>& input_node_coords,
+    MPICArrayKokkos<real_t>& output_node_coords,
     CommunicationPlan& element_communication_plan,
     CommunicationPlan& node_communication_plan,
     int world_size,
@@ -1189,7 +1189,7 @@ inline void build_ghost(
 
 
     // output_node.initialize(total_extended_nodes, num_dim, {node_state::coords}, node_communication_plan);
-    output_node_coords = MPICArrayKokkos<double>(total_extended_nodes, num_dim, "output_node_coords");
+    output_node_coords = MPICArrayKokkos<real_t>(total_extended_nodes, num_dim, "output_node_coords");
     
     
     
@@ -1736,8 +1736,8 @@ inline void build_ghost(
 inline void partition_mesh(
     swage::Mesh_t& initial_mesh,
     swage::Mesh_t& final_mesh,
-    MPICArrayKokkos<double>& initial_node_coords,
-    MPICArrayKokkos<double>& final_node_coords,
+    MPICArrayKokkos<real_t>& initial_node_coords,
+    MPICArrayKokkos<real_t>& final_node_coords,
     CommunicationPlan& element_communication_plan,
     CommunicationPlan& node_communication_plan,
     int world_size,
@@ -1763,11 +1763,11 @@ inline void partition_mesh(
     swage::Mesh_t naive_mesh;
     naive_mesh.num_dims = initial_mesh.num_dims;
     naive_mesh.Pn = initial_mesh.Pn;
-    MPICArrayKokkos<double> naive_node_coords;
+    MPICArrayKokkos<real_t> naive_node_coords;
 
     // Mesh partitioned by pt-scotch, not including ghost
     swage::Mesh_t intermediate_mesh; 
-    MPICArrayKokkos<double> intermediate_node_coords;
+    MPICArrayKokkos<real_t> intermediate_node_coords;
 
     // Helper arrays to hold element-element connectivity for naive partitioning that include what would be ghost, without having to build the full mesh
     CArrayDual<int> elems_in_elem_on_rank;
@@ -2351,7 +2351,7 @@ inline void partition_mesh(
     }
     
     // Now fill coordinates in node order
-    intermediate_node_coords = MPICArrayKokkos<double>(num_new_nodes, num_dim, "intermediate_node_coords");
+    intermediate_node_coords = MPICArrayKokkos<real_t>(num_new_nodes, num_dim, "intermediate_node_coords");
     for (int i = 0; i < num_new_nodes; i++) {
         int node_gid = new_node_gids[i];
         auto it = node_gid_to_coords.find(node_gid);

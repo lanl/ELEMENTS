@@ -195,17 +195,17 @@ namespace elements
 
     KOKKOS_INLINE_FUNCTION
     void lagrange_basis_1D(
-        const CArrayKokkos<double>& interp,           // interpolant from each basis
-        const CArrayKokkos<double>& dof_positions_1d, // location of basis DOFs in ref elem 
-        const double x_point)                         // point of interest in element
+        const CArrayKokkos<real_t>& interp,           // interpolant from each basis
+        const CArrayKokkos<real_t>& dof_positions_1d, // location of basis DOFs in ref elem 
+        const real_t x_point)                         // point of interest in element
     // calculate the basis value associated with each node_i
     {
         const size_t num_dofs_1d = dof_positions_1d.dims(0);
 
         for (size_t vert_i = 0; vert_i < num_dofs_1d; vert_i++) {
-            double numerator   = 1.0;       // placeholder numerator
-            double denominator = 1.0;       // placeholder denominator
-            double interpolant = 1.0;       // placeholder value of numerator/denominator
+            real_t numerator   = real_t(1.0);       // placeholder numerator
+            real_t denominator = real_t(1.0);       // placeholder denominator
+            real_t interpolant = real_t(1.0);       // placeholder value of numerator/denominator
 
             for (size_t vert_j = 0; vert_j < num_dofs_1d; vert_j++) { // looping over the verts !=vert_i
                 if (vert_j != vert_i) {
@@ -244,16 +244,16 @@ namespace elements
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
     void lagrange_derivative_1D(
-        const CArrayKokkos<double>& derivative,        // derivative
-        const CArrayKokkos<double>& dof_positions_1d,  // location of basis DOFs in ref elem
-        const double x_point)                          // point of interest in element
+        const CArrayKokkos<real_t>& derivative,        // derivative
+        const CArrayKokkos<real_t>& dof_positions_1d,  // location of basis DOFs in ref elem
+        const real_t x_point)                          // point of interest in element
     {
         const size_t num_dofs_1d = dof_positions_1d.dims(0);
 
         for (size_t vert_i = 0; vert_i < num_dofs_1d; vert_i++) { // looping over the nodes
-            double denominator  = 1.0;      // placeholder denominator
-            double num_gradient = 0.0;      // placeholder for numerator of the gradient
-            double gradient     = 0.0;
+            real_t denominator  = real_t(1.0);      // placeholder denominator
+            real_t num_gradient = real_t(0.0);      // placeholder for numerator of the gradient
+            real_t gradient     = real_t(0.0);
 
             for (size_t vert_j = 0; vert_j < num_dofs_1d; vert_j++) { // looping over the nodes !=vert_i
                 if (vert_j != vert_i) {
@@ -261,7 +261,7 @@ namespace elements
                     // both the basis and the gradient of the basis
                     denominator = denominator * (dof_positions_1d(vert_i) - dof_positions_1d(vert_j));
 
-                    double product_gradient = 1.0;
+                    real_t product_gradient = real_t(1.0);
 
                     // Calculate the numerator of the gradient
                     for (size_t N = 0; N < num_dofs_1d; N++) { // looping over the nodes !=vert_i
@@ -299,24 +299,24 @@ namespace elements
     /// combined to form the full multi-dimensional basis. The results are written
     /// to the provided output array.
     ///
-    /// \param basis Reference to the output CArrayKokkos<double> to hold full 
+    /// \param basis Reference to the output CArrayKokkos<real_t> to hold full 
     ///              tensor-product basis values, sized for all DOFs in the element.
-    /// \param val_1d Temporary CArrayKokkos<double> for holding 1D basis values 
+    /// \param val_1d Temporary CArrayKokkos<real_t> for holding 1D basis values 
     ///               (as workspace).
-    /// \param val_3d Temporary CArrayKokkos<double> for holding basis values for 
+    /// \param val_3d Temporary CArrayKokkos<real_t> for holding basis values for 
     ///               each direction; shape should be (num_dofs_1d, 3).
-    /// \param point Reference to CArrayKokkos<double> representing the 
+    /// \param point Reference to CArrayKokkos<real_t> representing the 
     ///              coordinates (xi, eta, mu) at which the basis is evaluated (size 3).
     ///
     /// \return void
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
-    void get_basis(const CArrayKokkos<double>& basis,
-        const CArrayKokkos<double>& dof_positions_1d,
-        const CArrayKokkos<double>& val_1d,
-        const CArrayKokkos<double>& val_Nd,
-        const CArrayKokkos<double>& point) 
+    void get_basis(const CArrayKokkos<real_t>& basis,
+        const CArrayKokkos<real_t>& dof_positions_1d,
+        const CArrayKokkos<real_t>& val_1d,
+        const CArrayKokkos<real_t>& val_Nd,
+        const CArrayKokkos<real_t>& point) 
     {
         const size_t num_dofs_1d = dof_positions_1d.dims(0);
         const size_t elem_dims = point.dims(0);
@@ -325,7 +325,7 @@ namespace elements
         for(size_t dim=0; dim<elem_dims; dim++){
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i) = 0.0;
+                val_1d(i) = real_t(0.0);
             }
 
             // Calculate 1D basis for the this dim coordinate of the point
@@ -369,9 +369,9 @@ namespace elements
 
         // reset values to 0.0
         for (size_t i = 0; i < num_dofs_1d; i++) {
-            val_1d(i)    = 0.0;
+            val_1d(i)    = real_t(0.0);
             for(size_t dim=0; dim<elem_dims; dim++){
-                val_Nd(i, dim) = 0.0;
+                val_Nd(i, dim) = real_t(0.0);
             }
         } // end for i
 
@@ -407,20 +407,20 @@ namespace elements
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
-    void partial_xi_basis(const CArrayKokkos<double>& partial_xi,
-                          const CArrayKokkos<double>& dof_positions_1d,
-                          const CArrayKokkos<double>& val_1d,
-                          const CArrayKokkos<double>& val_Nd,
-                          const CArrayKokkos<double>& Dval_1d,
-                          const CArrayKokkos<double>& Dval_Nd,
-                          const CArrayKokkos<double>& point)
+    void partial_xi_basis(const CArrayKokkos<real_t>& partial_xi,
+                          const CArrayKokkos<real_t>& dof_positions_1d,
+                          const CArrayKokkos<real_t>& val_1d,
+                          const CArrayKokkos<real_t>& val_Nd,
+                          const CArrayKokkos<real_t>& Dval_1d,
+                          const CArrayKokkos<real_t>& Dval_Nd,
+                          const CArrayKokkos<real_t>& point)
     {
         const size_t num_dofs_1d = dof_positions_1d.dims(0);
         const size_t elem_dims = point.dims(0);
 
         // get grad basis 
         for (size_t i = 0; i < num_dofs_1d; i++) {
-            Dval_1d(i) = 0.0;
+            Dval_1d(i) = real_t(0.0);
         }
 
         // Calculate 1D partial w.r.t. xi for the X coordinate of the point
@@ -435,7 +435,7 @@ namespace elements
         for(size_t dim=1; dim<elem_dims; dim++){
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i) = 0.0;
+                val_1d(i) = real_t(0.0);
             }
 
             // Calculate 1D basis for the this dim coordinate of the point
@@ -461,14 +461,14 @@ namespace elements
             } // end for
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i)     = 0.0;
-                val_Nd(i, 0)  = 0.0;
-                val_Nd(i, 1)  = 0.0;
-                val_Nd(i, 2)  = 0.0;
-                Dval_1d(i)    = 0.0;
-                Dval_Nd(i, 0) = 0.0;
-                Dval_Nd(i, 1) = 0.0;
-                Dval_Nd(i, 2) = 0.0;
+                val_1d(i)     = real_t(0.0);
+                val_Nd(i, 0)  = real_t(0.0);
+                val_Nd(i, 1)  = real_t(0.0);
+                val_Nd(i, 2)  = real_t(0.0);
+                Dval_1d(i)    = real_t(0.0);
+                Dval_Nd(i, 0) = real_t(0.0);
+                Dval_Nd(i, 1) = real_t(0.0);
+                Dval_Nd(i, 2) = real_t(0.0);
             } // end for
         } //end if 3D
         else if(elem_dims==2){
@@ -483,12 +483,12 @@ namespace elements
             } // end for
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i)     = 0.0;
-                val_Nd(i, 0)  = 0.0;
-                val_Nd(i, 1)  = 0.0;
-                Dval_1d(i)    = 0.0;
-                Dval_Nd(i, 0) = 0.0;
-                Dval_Nd(i, 1) = 0.0;
+                val_1d(i)     = real_t(0.0);
+                val_Nd(i, 0)  = real_t(0.0);
+                val_Nd(i, 1)  = real_t(0.0);
+                Dval_1d(i)    = real_t(0.0);
+                Dval_Nd(i, 0) = real_t(0.0);
+                Dval_Nd(i, 1) = real_t(0.0);
             } // end for
         } // end if 2D
         else {
@@ -502,10 +502,10 @@ namespace elements
             } // end for
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i)     = 0.0;
-                val_Nd(i, 0)  = 0.0;
-                Dval_1d(i)    = 0.0;
-                Dval_Nd(i, 0) = 0.0;
+                val_1d(i)     = real_t(0.0);
+                val_Nd(i, 0)  = real_t(0.0);
+                Dval_1d(i)    = real_t(0.0);
+                Dval_Nd(i, 0) = real_t(0.0);
             } // end for
         } // end if 1D
 
@@ -544,13 +544,13 @@ namespace elements
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
-    void partial_eta_basis(const CArrayKokkos<double>& partial_eta,
-                            const CArrayKokkos<double>& dof_positions_1d,
-                            const CArrayKokkos<double>& val_1d,
-                            const CArrayKokkos<double>& val_Nd,
-                            const CArrayKokkos<double>& Dval_1d,
-                            const CArrayKokkos<double>& Dval_Nd,
-                            const CArrayKokkos<double>& point)
+    void partial_eta_basis(const CArrayKokkos<real_t>& partial_eta,
+                            const CArrayKokkos<real_t>& dof_positions_1d,
+                            const CArrayKokkos<real_t>& val_1d,
+                            const CArrayKokkos<real_t>& val_Nd,
+                            const CArrayKokkos<real_t>& Dval_1d,
+                            const CArrayKokkos<real_t>& Dval_Nd,
+                            const CArrayKokkos<real_t>& point)
     {
         const size_t num_dofs_1d = dof_positions_1d.dims(0);
         const size_t elem_dims = point.dims(0);
@@ -559,7 +559,7 @@ namespace elements
         for(size_t dim=0; dim<elem_dims; dim+=2){
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i) = 0.0;
+                val_1d(i) = real_t(0.0);
             }
 
             // Calculate 1D basis for the this dim coordinate of the point
@@ -574,7 +574,7 @@ namespace elements
 
         // get grad basis 
         for (size_t i = 0; i < num_dofs_1d; i++) {
-            Dval_1d(i) = 0.0;
+            Dval_1d(i) = real_t(0.0);
         }
 
         // Calculate 1D partial w.r.t. eta for the Y coordinate of the point
@@ -599,14 +599,14 @@ namespace elements
             } // end for
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i)     = 0.0;
-                val_Nd(i, 0)  = 0.0;
-                val_Nd(i, 1)  = 0.0;
-                val_Nd(i, 2)  = 0.0;
-                Dval_1d(i)    = 0.0;
-                Dval_Nd(i, 0) = 0.0;
-                Dval_Nd(i, 1) = 0.0;
-                Dval_Nd(i, 2) = 0.0;
+                val_1d(i)     = real_t(0.0);
+                val_Nd(i, 0)  = real_t(0.0);
+                val_Nd(i, 1)  = real_t(0.0);
+                val_Nd(i, 2)  = real_t(0.0);
+                Dval_1d(i)    = real_t(0.0);
+                Dval_Nd(i, 0) = real_t(0.0);
+                Dval_Nd(i, 1) = real_t(0.0);
+                Dval_Nd(i, 2) = real_t(0.0);
             }
         } // end if 3D
         else if(elem_dims==2){
@@ -621,12 +621,12 @@ namespace elements
             } // end for
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i)     = 0.0;
-                val_Nd(i, 0)  = 0.0;
-                val_Nd(i, 1)  = 0.0;
-                Dval_1d(i)    = 0.0;
-                Dval_Nd(i, 0) = 0.0;
-                Dval_Nd(i, 1) = 0.0;
+                val_1d(i)     = real_t(0.0);
+                val_Nd(i, 0)  = real_t(0.0);
+                val_Nd(i, 1)  = real_t(0.0);
+                Dval_1d(i)    = real_t(0.0);
+                Dval_Nd(i, 0) = real_t(0.0);
+                Dval_Nd(i, 1) = real_t(0.0);
             }
         } // end if 1D
         else {
@@ -660,13 +660,13 @@ namespace elements
     ///
     /////////////////////////////////////////////////////////////////////////////
     KOKKOS_INLINE_FUNCTION
-    void partial_mu_basis(const CArrayKokkos<double>& partial_mu,
-                            const CArrayKokkos<double>& dof_positions_1d,
-                            const CArrayKokkos<double>& val_1d,
-                            const CArrayKokkos<double>& val_3d,
-                            const CArrayKokkos<double>& Dval_1d,
-                            const CArrayKokkos<double>& Dval_3d,
-                            const CArrayKokkos<double>& point)
+    void partial_mu_basis(const CArrayKokkos<real_t>& partial_mu,
+                            const CArrayKokkos<real_t>& dof_positions_1d,
+                            const CArrayKokkos<real_t>& val_1d,
+                            const CArrayKokkos<real_t>& val_3d,
+                            const CArrayKokkos<real_t>& Dval_1d,
+                            const CArrayKokkos<real_t>& Dval_3d,
+                            const CArrayKokkos<real_t>& point)
     {
         // this routine is only valid for 3D ref elems
 
@@ -677,7 +677,7 @@ namespace elements
         for(size_t dim=0; dim<elem_dims-1; dim++){
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i) = 0.0;
+                val_1d(i) = real_t(0.0);
             }
 
             // Calculate 1D basis for the this dim coordinate of the point
@@ -693,7 +693,7 @@ namespace elements
 
         // get grad basis
         for (size_t i = 0; i < num_dofs_1d; i++) {
-            Dval_1d(i) = 0.0;
+            Dval_1d(i) = real_t(0.0);
         }
         
         // Calculate 1D partial w.r.t. mu for the Z coordinate of the point
@@ -716,14 +716,14 @@ namespace elements
         } // end for
 
         for (size_t i = 0; i < num_dofs_1d; i++) {
-            val_1d(i)     = 0.0;
-            val_3d(i, 0)  = 0.0;
-            val_3d(i, 1)  = 0.0;
-            val_3d(i, 2)  = 0.0;
-            Dval_1d(i)    = 0.0;
-            Dval_3d(i, 0) = 0.0;
-            Dval_3d(i, 1) = 0.0;
-            Dval_3d(i, 2) = 0.0;
+            val_1d(i)     = real_t(0.0);
+            val_3d(i, 0)  = real_t(0.0);
+            val_3d(i, 1)  = real_t(0.0);
+            val_3d(i, 2)  = real_t(0.0);
+            Dval_1d(i)    = real_t(0.0);
+            Dval_3d(i, 0) = real_t(0.0);
+            Dval_3d(i, 1) = real_t(0.0);
+            Dval_3d(i, 2) = real_t(0.0);
         }
     } // end partial_mu_basis 
 
@@ -767,11 +767,11 @@ namespace elements
         // -----------------------------------------------------------------------
 
         // temporary arrays to hold evaluations at a single point for each dof
-        CArrayKokkos<double> temp_basis(num_dofs_in_elem);
-        CArrayKokkos<double> temp_val_1d(num_dofs_1d);
-        CArrayKokkos<double> temp_val_Nd(num_dofs_1d, elem_dims); // 2D or 3D
+        CArrayKokkos<real_t> temp_basis(num_dofs_in_elem);
+        CArrayKokkos<real_t> temp_val_1d(num_dofs_1d);
+        CArrayKokkos<real_t> temp_val_Nd(num_dofs_1d, elem_dims); // 2D or 3D
 
-        CArrayKokkos<double> point(elem_dims);
+        CArrayKokkos<real_t> point(elem_dims);
 
 
         RUN({
@@ -786,7 +786,7 @@ namespace elements
 
                 for (size_t basis_id = 0; basis_id < num_dofs_in_elem; basis_id++) {
                     qpt_basis(qpt_rid, basis_id) = temp_basis(basis_id);
-                    temp_basis(basis_id) = 0.0;
+                    temp_basis(basis_id) = real_t(0.0);
                 }
             } // end for over qpts in elem
         });
@@ -798,12 +798,12 @@ namespace elements
             
 
         // temporary arrays to hold evaluations at a single point for each dof
-        CArrayKokkos<double> temp_partial_xi(num_dofs_in_elem);
-        CArrayKokkos<double> temp_partial_eta(num_dofs_in_elem);
-        CArrayKokkos<double> temp_partial_mu(num_dofs_in_elem);
+        CArrayKokkos<real_t> temp_partial_xi(num_dofs_in_elem);
+        CArrayKokkos<real_t> temp_partial_eta(num_dofs_in_elem);
+        CArrayKokkos<real_t> temp_partial_mu(num_dofs_in_elem);
 
-        CArrayKokkos<double> temp_Dval_1d(num_dofs_1d);
-        CArrayKokkos<double> temp_Dval_Nd(num_dofs_1d, elem_dims);
+        CArrayKokkos<real_t> temp_Dval_1d(num_dofs_1d);
+        CArrayKokkos<real_t> temp_Dval_Nd(num_dofs_1d, elem_dims);
 
 
         RUN({
@@ -843,9 +843,9 @@ namespace elements
                     if(elem_dims>1)qpt_grad_basis(qpt_rid, basis_id, 1) = temp_partial_eta(basis_id);
                     if(elem_dims>2)qpt_grad_basis(qpt_rid, basis_id, 2) = temp_partial_mu(basis_id);
 
-                    temp_partial_xi(basis_id)  = 0.0;
-                    if(elem_dims>1) temp_partial_eta(basis_id) = 0.0;
-                    if(elem_dims>2) temp_partial_mu(basis_id)  = 0.0;
+                    temp_partial_xi(basis_id)  = real_t(0.0);
+                    if(elem_dims>1) temp_partial_eta(basis_id) = real_t(0.0);
+                    if(elem_dims>2) temp_partial_mu(basis_id)  = real_t(0.0);
                 } // end loop over basis functions
 
                 
@@ -865,8 +865,8 @@ namespace elements
         size_t num_qpts_in_elem = 0;
         size_t num_qpts_1d = 0;
 
-        CArrayKokkos<double> qpt_positions;
-        CArrayKokkos<double> qpt_weights;
+        CArrayKokkos<real_t> qpt_positions;
+        CArrayKokkos<real_t> qpt_weights;
 
         /////////////////////////////////////////////////////////////////////////////
         ///
@@ -893,12 +893,12 @@ namespace elements
             for(size_t dim=0; dim<elem_dims; dim++){
                 num_qpts_in_elem *= num_qpts_1d;
             }
-            qpt_positions = CArrayKokkos<double>(num_qpts_in_elem, elem_dims, "qpt_positions");
-            qpt_weights   = CArrayKokkos<double>(num_qpts_in_elem, "qpt_weights");
+            qpt_positions = CArrayKokkos<real_t>(num_qpts_in_elem, elem_dims, "qpt_positions");
+            qpt_weights   = CArrayKokkos<real_t>(num_qpts_in_elem, "qpt_weights");
 
             // temporary 1D variables to build 3D element
-            CArrayKokkos<double> qpt_positions_1d(num_qpts_1d, "qpt_positions_1d");
-            CArrayKokkos<double> qpt_weights_1d (num_qpts_1d, "qpt_weights_1d");
+            CArrayKokkos<real_t> qpt_positions_1d(num_qpts_1d, "qpt_positions_1d");
+            CArrayKokkos<real_t> qpt_weights_1d (num_qpts_1d, "qpt_weights_1d");
 
             if(QuadratureType == reference_space::GaussLegendre){
                 RUN_CLASS({
@@ -986,13 +986,13 @@ namespace elements
       
 
         // DOF positions
-        CArrayKokkos<double> dof_positions;
-        CArrayKokkos<double> dof_positions_1d;
+        CArrayKokkos<real_t> dof_positions;
+        CArrayKokkos<real_t> dof_positions_1d;
 
 
         // Basis evaluation at quadrature points
-        CArrayKokkos<double> qpt_basis;
-        CArrayKokkos<double> qpt_grad_basis;
+        CArrayKokkos<real_t> qpt_basis;
+        CArrayKokkos<real_t> qpt_grad_basis;
 
 
         /////////////////////////////////////////////////////////////////////////////
@@ -1049,8 +1049,8 @@ namespace elements
             // -----------------------------------------------------------------------
             // Step 1b: get the positions in reference space for the DOFs
             // -----------------------------------------------------------------------
-            dof_positions = CArrayKokkos<double>(num_dofs_in_elem, elem_dims, "dof_positions");
-            dof_positions_1d = CArrayKokkos<double> (num_dofs_1d, "dof_positions_1d");
+            dof_positions = CArrayKokkos<real_t>(num_dofs_in_elem, elem_dims, "dof_positions");
+            dof_positions_1d = CArrayKokkos<real_t> (num_dofs_1d, "dof_positions_1d");
 
             // dof positions can be at legendre or lobatto locations in elem
             if(BasisTypeInp == reference_space::LagrangeLegendre){
@@ -1105,8 +1105,8 @@ namespace elements
 
 
             // build basis and grad basis in the reference element
-            qpt_basis = CArrayKokkos<double>(Quadrature.num_qpts_in_elem, num_dofs_in_elem, "qpt_basis"); 
-            qpt_grad_basis = CArrayKokkos<double>(Quadrature.num_qpts_in_elem, num_dofs_in_elem, elem_dims, "qpt_grad_basis");  
+            qpt_basis = CArrayKokkos<real_t>(Quadrature.num_qpts_in_elem, num_dofs_in_elem, "qpt_basis"); 
+            qpt_grad_basis = CArrayKokkos<real_t>(Quadrature.num_qpts_in_elem, num_dofs_in_elem, elem_dims, "qpt_grad_basis");  
             
             get_basis_and_grad_basis(qpt_basis,
                                      qpt_grad_basis,
@@ -1129,8 +1129,8 @@ namespace elements
 
         size_t num_ref_surfs = 0;
 
-        CArrayKokkos<double> qpt_positions;
-        CArrayKokkos<double> qpt_weights;
+        CArrayKokkos<real_t> qpt_positions;
+        CArrayKokkos<real_t> qpt_weights;
 
 
         /////////////////////////////////////////////////////////////////////////////
@@ -1164,13 +1164,13 @@ namespace elements
             }
 
 
-            qpt_positions = CArrayKokkos<double>(num_ref_surfs, num_qpts_in_surf, elem_dims, "qpt_positions");
-            qpt_weights   = CArrayKokkos<double>(num_ref_surfs, num_qpts_in_surf, "qpt_weights");           
+            qpt_positions = CArrayKokkos<real_t>(num_ref_surfs, num_qpts_in_surf, elem_dims, "qpt_positions");
+            qpt_weights   = CArrayKokkos<real_t>(num_ref_surfs, num_qpts_in_surf, "qpt_weights");           
 
 
             // temporary 1D variables to build 3D element
-            CArrayKokkos<double> qpt_positions_1d(num_qpts_1d, "qpt_positions_1d");
-            CArrayKokkos<double> qpt_weights_1d (num_qpts_1d, "qpt_weights_1d");
+            CArrayKokkos<real_t> qpt_positions_1d(num_qpts_1d, "qpt_positions_1d");
+            CArrayKokkos<real_t> qpt_weights_1d (num_qpts_1d, "qpt_weights_1d");
 
             if(QuadratureType == reference_space::GaussLegendre){
                 RUN_CLASS({
@@ -1202,7 +1202,7 @@ namespace elements
 
                     const size_t rid=get_qpt_rid(j, k, num_qpts_1d);
 
-                    qpt_positions(face, rid, 0) = -1.;
+                    qpt_positions(face, rid, 0) = -real_t(1.);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
@@ -1217,7 +1217,7 @@ namespace elements
 
                     const size_t rid=get_qpt_rid(j, k, num_qpts_1d);
 
-                    qpt_positions(face, rid, 0) = 1.;
+                    qpt_positions(face, rid, 0) = real_t(1.);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
@@ -1233,7 +1233,7 @@ namespace elements
                     const size_t rid=get_qpt_rid(i, k, num_qpts_1d);
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(face, rid, 1) = -1.;
+                    qpt_positions(face, rid, 1) = -real_t(1.);
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(k);
@@ -1248,7 +1248,7 @@ namespace elements
                     const size_t rid=get_qpt_rid(i, k, num_qpts_1d);
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(face, rid, 1) = 1.;
+                    qpt_positions(face, rid, 1) = real_t(1.);
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(k);
@@ -1265,7 +1265,7 @@ namespace elements
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
-                    qpt_positions(face, rid, 2) = -1.;
+                    qpt_positions(face, rid, 2) = -real_t(1.);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(j);
 
@@ -1280,7 +1280,7 @@ namespace elements
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
-                    qpt_positions(face, rid, 2) = 1.;
+                    qpt_positions(face, rid, 2) = real_t(1.);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(j);
 
@@ -1297,7 +1297,7 @@ namespace elements
                 FOR_ALL_CLASS(j, 0, num_qpts_1d, {
                     const size_t rid=j;
 
-                    qpt_positions(face, rid, 0) = -1.;
+                    qpt_positions(face, rid, 0) = -real_t(1.);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
 
                     qpt_weights(face,rid) = qpt_weights_1d(j);
@@ -1309,7 +1309,7 @@ namespace elements
                 FOR_ALL_CLASS(j, 0, num_qpts_1d, {
                     const size_t rid=j;
 
-                    qpt_positions(face, rid, 0) = 1.;
+                    qpt_positions(face, rid, 0) = real_t(1.);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
 
                     qpt_weights(face,rid) = qpt_weights_1d(j);
@@ -1322,7 +1322,7 @@ namespace elements
                     const size_t rid=i;
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(face, rid, 1) = -1.;
+                    qpt_positions(face, rid, 1) = -real_t(1.);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i);
 
@@ -1335,7 +1335,7 @@ namespace elements
                     const size_t rid=i;
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(face, rid, 1) = 1.;
+                    qpt_positions(face, rid, 1) = real_t(1.);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i);
 
@@ -1346,12 +1346,12 @@ namespace elements
             else if (elem_dims==1) {
                     size_t face = 0;
                     const size_t rid = 0;
-                    qpt_positions(face, rid, 0) = -1.;
-                    qpt_weights(face,rid) = 1.0;
+                    qpt_positions(face, rid, 0) = -real_t(1.);
+                    qpt_weights(face,rid) = real_t(1.0);
 
                     face = 1;
-                    qpt_positions(face, rid, 0) = 1.;
-                    qpt_weights(face,rid) = 1.0;
+                    qpt_positions(face, rid, 0) = real_t(1.);
+                    qpt_weights(face,rid) = real_t(1.0);
             }
             else{
                 throw std::runtime_error("ERROR: unsupported quadrature surface dims \n");
@@ -1368,11 +1368,11 @@ namespace elements
         size_t elem_dims = 0;
     
         // Basis evaluation at quadrature points on surface
-        CArrayKokkos<double> qpt_basis;      // access as (faces, surf_qpts, dofs)
-        CArrayKokkos<double> qpt_grad_basis; // access as (faces, surf_qpts, dofs, dims)
+        CArrayKokkos<real_t> qpt_basis;      // access as (faces, surf_qpts, dofs)
+        CArrayKokkos<real_t> qpt_grad_basis; // access as (faces, surf_qpts, dofs, dims)
 
-        CArrayKokkos<double> outward_sign;
-        CArrayKokkos<double> outward_normal;
+        CArrayKokkos<real_t> outward_sign;
+        CArrayKokkos<real_t> outward_normal;
 
         
         void initialize_ref_surf(const struct SurfaceQuadrature_t& SurfQuadrature,
@@ -1389,12 +1389,12 @@ namespace elements
             if(elem_dims==0) throw std::runtime_error("ERROR: quadrature not correctly specified \n");
             if(elem_dims>3)  throw std::runtime_error("ERROR: only 1D, 2D, and 3D reference elements supported \n");
 
-            qpt_basis      = CArrayKokkos<double>(num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem, "surf_qpt_basis"); 
-            qpt_grad_basis = CArrayKokkos<double>(num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem, elem_dims, "surf_qpt_grad_basis"); 
+            qpt_basis      = CArrayKokkos<real_t>(num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem, "surf_qpt_basis"); 
+            qpt_grad_basis = CArrayKokkos<real_t>(num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem, elem_dims, "surf_qpt_grad_basis"); 
 
             // the sign for outward normal relative to the reference element
-            outward_sign = CArrayKokkos<double>(num_ref_surfs, "surf_outward_sign");
-            outward_normal = CArrayKokkos<double>(num_ref_surfs, elem_dims, "surf_outward_normal");
+            outward_sign = CArrayKokkos<real_t>(num_ref_surfs, "surf_outward_sign");
+            outward_normal = CArrayKokkos<real_t>(num_ref_surfs, elem_dims, "surf_outward_normal");
 
             //face 0 (xi=-1):  sign = -1
             //face 1 (xi=+1):  sign = +1
@@ -1403,72 +1403,72 @@ namespace elements
             //face 4 (mu=-1):  sign = -1
             //face 5 (mu=+1):  sign = +1
             RUN_CLASS({
-                outward_sign(0) = -1.;
-                outward_sign(1) =  1.;
+                outward_sign(0) = -real_t(1.);
+                outward_sign(1) =  real_t(1.);
 
                 if(elem_dims>1){
-                    outward_sign(2) = -1.;
-                    outward_sign(3) =  1.;
+                    outward_sign(2) = -real_t(1.);
+                    outward_sign(3) =  real_t(1.);
                 }
                 if(elem_dims>2){
-                    outward_sign(4) = -1.;
-                    outward_sign(5) =  1.;
+                    outward_sign(4) = -real_t(1.);
+                    outward_sign(5) =  real_t(1.);
                 }
                 
                 if(elem_dims==1){
-                    outward_normal(0,0) = -1.; // face 0 xi-
-                    outward_normal(1,0) =  1.; // face 1 xi+
+                    outward_normal(0,0) = -real_t(1.); // face 0 xi-
+                    outward_normal(1,0) =  real_t(1.); // face 1 xi+
                 }
                 if(elem_dims==2){
-                    outward_normal(0,0) = -1.; // face 0 xi-
-                    outward_normal(0,1) =  0.; // face 0 xi-
+                    outward_normal(0,0) = -real_t(1.); // face 0 xi-
+                    outward_normal(0,1) =  real_t(0.); // face 0 xi-
 
-                    outward_normal(1,0) =  1.; // face 1 xi+
-                    outward_normal(1,1) =  0.; // face 1 xi+
+                    outward_normal(1,0) =  real_t(1.); // face 1 xi+
+                    outward_normal(1,1) =  real_t(0.); // face 1 xi+
 
-                    outward_normal(2,0) =  0.; // face 2 eta-
-                    outward_normal(2,1) = -1.; // face 2 eta-
+                    outward_normal(2,0) =  real_t(0.); // face 2 eta-
+                    outward_normal(2,1) = -real_t(1.); // face 2 eta-
 
-                    outward_normal(3,0) =  0.; // face 3 eta+
-                    outward_normal(3,1) =  1.; // face 3 eta+
+                    outward_normal(3,0) =  real_t(0.); // face 3 eta+
+                    outward_normal(3,1) =  real_t(1.); // face 3 eta+
                 }
                 if(elem_dims==3){
-                    outward_normal(0,0) = -1.; // face 0 xi-
-                    outward_normal(0,1) =  0.; // face 0 xi-
-                    outward_normal(0,2) =  0.; // face 0 xi-
+                    outward_normal(0,0) = -real_t(1.); // face 0 xi-
+                    outward_normal(0,1) =  real_t(0.); // face 0 xi-
+                    outward_normal(0,2) =  real_t(0.); // face 0 xi-
                     
-                    outward_normal(1,0) =  1.; // face 1 xi+
-                    outward_normal(1,1) =  0.; // face 1 xi+
-                    outward_normal(1,2) =  0.; // face 1 xi+
+                    outward_normal(1,0) =  real_t(1.); // face 1 xi+
+                    outward_normal(1,1) =  real_t(0.); // face 1 xi+
+                    outward_normal(1,2) =  real_t(0.); // face 1 xi+
 
-                    outward_normal(2,0) =  0.; // face 2 eta-
-                    outward_normal(2,1) = -1.; // face 2 eta-
-                    outward_normal(2,2) =  0.; // face 2 eta-
+                    outward_normal(2,0) =  real_t(0.); // face 2 eta-
+                    outward_normal(2,1) = -real_t(1.); // face 2 eta-
+                    outward_normal(2,2) =  real_t(0.); // face 2 eta-
 
-                    outward_normal(3,0) =  0.; // face 3 eta+
-                    outward_normal(3,1) =  1.; // face 3 eta+
-                    outward_normal(3,2) =  0.; // face 3 eta+
+                    outward_normal(3,0) =  real_t(0.); // face 3 eta+
+                    outward_normal(3,1) =  real_t(1.); // face 3 eta+
+                    outward_normal(3,2) =  real_t(0.); // face 3 eta+
                     
-                    outward_normal(4,0) =  0.; // face 4 mu-
-                    outward_normal(4,1) =  0.; // face 4 mu-
-                    outward_normal(4,2) = -1.; // face 4 mu-
+                    outward_normal(4,0) =  real_t(0.); // face 4 mu-
+                    outward_normal(4,1) =  real_t(0.); // face 4 mu-
+                    outward_normal(4,2) = -real_t(1.); // face 4 mu-
 
-                    outward_normal(5,0) =  0.; // face 5 mu+
-                    outward_normal(5,1) =  0.; // face 5 mu+
-                    outward_normal(5,2) =  1.; // face 5 mu+ 
+                    outward_normal(5,0) =  real_t(0.); // face 5 mu+
+                    outward_normal(5,1) =  real_t(0.); // face 5 mu+
+                    outward_normal(5,2) =  real_t(1.); // face 5 mu+ 
                 }
 
             }); // end serial RUN on GPU
 
             // Notes on arrays
-            //   RS.qpt_basis      = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem); 
-            //   RS.qpt_grad_basis = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem, elem_dims); 
-            //   SQ.qpt_positions  = CArrayKokkos<double> (num_ref_surfs, num_qpts_in_surf, elem_dims);
+            //   RS.qpt_basis      = CArrayKokkos<real_t> (num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem); 
+            //   RS.qpt_grad_basis = CArrayKokkos<real_t> (num_ref_surfs, num_qpts_in_surf, num_dofs_in_elem, elem_dims); 
+            //   SQ.qpt_positions  = CArrayKokkos<real_t> (num_ref_surfs, num_qpts_in_surf, elem_dims);
 
             // The face qpt values  
-            CArrayKokkos <double> face_qpt_basis(num_qpts_in_surf, num_dofs_in_elem);                  
-            CArrayKokkos <double> face_qpt_grad_basis(num_qpts_in_surf, num_dofs_in_elem, elem_dims);  
-            CArrayKokkos <double> face_qpt_positions(num_qpts_in_surf, elem_dims);
+            CArrayKokkos<real_t> face_qpt_basis(num_qpts_in_surf, num_dofs_in_elem);                  
+            CArrayKokkos<real_t> face_qpt_grad_basis(num_qpts_in_surf, num_dofs_in_elem, elem_dims);  
+            CArrayKokkos<real_t> face_qpt_positions(num_qpts_in_surf, elem_dims);
 
             // get the basis and grad basis functions for each surfaces of the element
             for(size_t face=0; face<num_ref_surfs; face++){

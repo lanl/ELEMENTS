@@ -197,15 +197,15 @@ namespace elements
     void lagrange_basis_1D(
         const CArrayKokkos<real_t>& interp,           // interpolant from each basis
         const CArrayKokkos<real_t>& dof_positions_1d, // location of basis DOFs in ref elem 
-        const double x_point)                         // point of interest in element
+        const real_t x_point)                         // point of interest in element
     // calculate the basis value associated with each node_i
     {
         const size_t num_dofs_1d = dof_positions_1d.dims(0);
 
         for (size_t vert_i = 0; vert_i < num_dofs_1d; vert_i++) {
-            double numerator   = 1.0;       // placeholder numerator
-            double denominator = 1.0;       // placeholder denominator
-            double interpolant = 1.0;       // placeholder value of numerator/denominator
+            real_t numerator   = real_t(1.0);       // placeholder numerator
+            real_t denominator = real_t(1.0);       // placeholder denominator
+            real_t interpolant = real_t(1.0);       // placeholder value of numerator/denominator
 
             for (size_t vert_j = 0; vert_j < num_dofs_1d; vert_j++) { // looping over the verts !=vert_i
                 if (vert_j != vert_i) {
@@ -246,14 +246,14 @@ namespace elements
     void lagrange_derivative_1D(
         const CArrayKokkos<real_t>& derivative,        // derivative
         const CArrayKokkos<real_t>& dof_positions_1d,  // location of basis DOFs in ref elem
-        const double x_point)                          // point of interest in element
+        const real_t x_point)                          // point of interest in element
     {
         const size_t num_dofs_1d = dof_positions_1d.dims(0);
 
         for (size_t vert_i = 0; vert_i < num_dofs_1d; vert_i++) { // looping over the nodes
-            double denominator  = 1.0;      // placeholder denominator
-            double num_gradient = 0.0;      // placeholder for numerator of the gradient
-            double gradient     = 0.0;
+            real_t denominator  = real_t(1.0);      // placeholder denominator
+            real_t num_gradient = real_t(0.0);      // placeholder for numerator of the gradient
+            real_t gradient     = real_t(0.0);
 
             for (size_t vert_j = 0; vert_j < num_dofs_1d; vert_j++) { // looping over the nodes !=vert_i
                 if (vert_j != vert_i) {
@@ -261,7 +261,7 @@ namespace elements
                     // both the basis and the gradient of the basis
                     denominator = denominator * (dof_positions_1d(vert_i) - dof_positions_1d(vert_j));
 
-                    double product_gradient = 1.0;
+                    real_t product_gradient = real_t(1.0);
 
                     // Calculate the numerator of the gradient
                     for (size_t N = 0; N < num_dofs_1d; N++) { // looping over the nodes !=vert_i
@@ -325,7 +325,7 @@ namespace elements
         for(size_t dim=0; dim<elem_dims; dim++){
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i) = 0.0;
+                val_1d(i) = real_t(0.0);
             }
 
             // Calculate 1D basis for the this dim coordinate of the point
@@ -369,9 +369,9 @@ namespace elements
 
         // reset values to 0.0
         for (size_t i = 0; i < num_dofs_1d; i++) {
-            val_1d(i)    = 0.0;
+            val_1d(i)    = real_t(0.0);
             for(size_t dim=0; dim<elem_dims; dim++){
-                val_Nd(i, dim) = 0.0;
+                val_Nd(i, dim) = real_t(0.0);
             }
         } // end for i
 
@@ -420,7 +420,7 @@ namespace elements
 
         // get grad basis 
         for (size_t i = 0; i < num_dofs_1d; i++) {
-            Dval_1d(i) = 0.0;
+            Dval_1d(i) = real_t(0.0);
         }
 
         // Calculate 1D partial w.r.t. xi for the X coordinate of the point
@@ -435,7 +435,7 @@ namespace elements
         for(size_t dim=1; dim<elem_dims; dim++){
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i) = 0.0;
+                val_1d(i) = real_t(0.0);
             }
 
             // Calculate 1D basis for the this dim coordinate of the point
@@ -461,14 +461,14 @@ namespace elements
             } // end for
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i)     = 0.0;
-                val_Nd(i, 0)  = 0.0;
-                val_Nd(i, 1)  = 0.0;
-                val_Nd(i, 2)  = 0.0;
-                Dval_1d(i)    = 0.0;
-                Dval_Nd(i, 0) = 0.0;
-                Dval_Nd(i, 1) = 0.0;
-                Dval_Nd(i, 2) = 0.0;
+                val_1d(i)     = real_t(0.0);
+                val_Nd(i, 0)  = real_t(0.0);
+                val_Nd(i, 1)  = real_t(0.0);
+                val_Nd(i, 2)  = real_t(0.0);
+                Dval_1d(i)    = real_t(0.0);
+                Dval_Nd(i, 0) = real_t(0.0);
+                Dval_Nd(i, 1) = real_t(0.0);
+                Dval_Nd(i, 2) = real_t(0.0);
             } // end for
         } //end if 3D
         else if(elem_dims==2){
@@ -483,12 +483,12 @@ namespace elements
             } // end for
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i)     = 0.0;
-                val_Nd(i, 0)  = 0.0;
-                val_Nd(i, 1)  = 0.0;
-                Dval_1d(i)    = 0.0;
-                Dval_Nd(i, 0) = 0.0;
-                Dval_Nd(i, 1) = 0.0;
+                val_1d(i)     = real_t(0.0);
+                val_Nd(i, 0)  = real_t(0.0);
+                val_Nd(i, 1)  = real_t(0.0);
+                Dval_1d(i)    = real_t(0.0);
+                Dval_Nd(i, 0) = real_t(0.0);
+                Dval_Nd(i, 1) = real_t(0.0);
             } // end for
         } // end if 2D
         else {
@@ -502,10 +502,10 @@ namespace elements
             } // end for
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i)     = 0.0;
-                val_Nd(i, 0)  = 0.0;
-                Dval_1d(i)    = 0.0;
-                Dval_Nd(i, 0) = 0.0;
+                val_1d(i)     = real_t(0.0);
+                val_Nd(i, 0)  = real_t(0.0);
+                Dval_1d(i)    = real_t(0.0);
+                Dval_Nd(i, 0) = real_t(0.0);
             } // end for
         } // end if 1D
 
@@ -559,7 +559,7 @@ namespace elements
         for(size_t dim=0; dim<elem_dims; dim+=2){
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i) = 0.0;
+                val_1d(i) = real_t(0.0);
             }
 
             // Calculate 1D basis for the this dim coordinate of the point
@@ -574,7 +574,7 @@ namespace elements
 
         // get grad basis 
         for (size_t i = 0; i < num_dofs_1d; i++) {
-            Dval_1d(i) = 0.0;
+            Dval_1d(i) = real_t(0.0);
         }
 
         // Calculate 1D partial w.r.t. eta for the Y coordinate of the point
@@ -599,14 +599,14 @@ namespace elements
             } // end for
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i)     = 0.0;
-                val_Nd(i, 0)  = 0.0;
-                val_Nd(i, 1)  = 0.0;
-                val_Nd(i, 2)  = 0.0;
-                Dval_1d(i)    = 0.0;
-                Dval_Nd(i, 0) = 0.0;
-                Dval_Nd(i, 1) = 0.0;
-                Dval_Nd(i, 2) = 0.0;
+                val_1d(i)     = real_t(0.0);
+                val_Nd(i, 0)  = real_t(0.0);
+                val_Nd(i, 1)  = real_t(0.0);
+                val_Nd(i, 2)  = real_t(0.0);
+                Dval_1d(i)    = real_t(0.0);
+                Dval_Nd(i, 0) = real_t(0.0);
+                Dval_Nd(i, 1) = real_t(0.0);
+                Dval_Nd(i, 2) = real_t(0.0);
             }
         } // end if 3D
         else if(elem_dims==2){
@@ -621,12 +621,12 @@ namespace elements
             } // end for
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i)     = 0.0;
-                val_Nd(i, 0)  = 0.0;
-                val_Nd(i, 1)  = 0.0;
-                Dval_1d(i)    = 0.0;
-                Dval_Nd(i, 0) = 0.0;
-                Dval_Nd(i, 1) = 0.0;
+                val_1d(i)     = real_t(0.0);
+                val_Nd(i, 0)  = real_t(0.0);
+                val_Nd(i, 1)  = real_t(0.0);
+                Dval_1d(i)    = real_t(0.0);
+                Dval_Nd(i, 0) = real_t(0.0);
+                Dval_Nd(i, 1) = real_t(0.0);
             }
         } // end if 1D
         else {
@@ -677,7 +677,7 @@ namespace elements
         for(size_t dim=0; dim<elem_dims-1; dim++){
 
             for (size_t i = 0; i < num_dofs_1d; i++) {
-                val_1d(i) = 0.0;
+                val_1d(i) = real_t(0.0);
             }
 
             // Calculate 1D basis for the this dim coordinate of the point
@@ -693,7 +693,7 @@ namespace elements
 
         // get grad basis
         for (size_t i = 0; i < num_dofs_1d; i++) {
-            Dval_1d(i) = 0.0;
+            Dval_1d(i) = real_t(0.0);
         }
         
         // Calculate 1D partial w.r.t. mu for the Z coordinate of the point
@@ -716,14 +716,14 @@ namespace elements
         } // end for
 
         for (size_t i = 0; i < num_dofs_1d; i++) {
-            val_1d(i)     = 0.0;
-            val_3d(i, 0)  = 0.0;
-            val_3d(i, 1)  = 0.0;
-            val_3d(i, 2)  = 0.0;
-            Dval_1d(i)    = 0.0;
-            Dval_3d(i, 0) = 0.0;
-            Dval_3d(i, 1) = 0.0;
-            Dval_3d(i, 2) = 0.0;
+            val_1d(i)     = real_t(0.0);
+            val_3d(i, 0)  = real_t(0.0);
+            val_3d(i, 1)  = real_t(0.0);
+            val_3d(i, 2)  = real_t(0.0);
+            Dval_1d(i)    = real_t(0.0);
+            Dval_3d(i, 0) = real_t(0.0);
+            Dval_3d(i, 1) = real_t(0.0);
+            Dval_3d(i, 2) = real_t(0.0);
         }
     } // end partial_mu_basis 
 
@@ -786,7 +786,7 @@ namespace elements
 
                 for (size_t basis_id = 0; basis_id < num_dofs_in_elem; basis_id++) {
                     qpt_basis(qpt_rid, basis_id) = temp_basis(basis_id);
-                    temp_basis(basis_id) = 0.0;
+                    temp_basis(basis_id) = real_t(0.0);
                 }
             } // end for over qpts in elem
         });
@@ -843,9 +843,9 @@ namespace elements
                     if(elem_dims>1)qpt_grad_basis(qpt_rid, basis_id, 1) = temp_partial_eta(basis_id);
                     if(elem_dims>2)qpt_grad_basis(qpt_rid, basis_id, 2) = temp_partial_mu(basis_id);
 
-                    temp_partial_xi(basis_id)  = 0.0;
-                    if(elem_dims>1) temp_partial_eta(basis_id) = 0.0;
-                    if(elem_dims>2) temp_partial_mu(basis_id)  = 0.0;
+                    temp_partial_xi(basis_id)  = real_t(0.0);
+                    if(elem_dims>1) temp_partial_eta(basis_id) = real_t(0.0);
+                    if(elem_dims>2) temp_partial_mu(basis_id)  = real_t(0.0);
                 } // end loop over basis functions
 
                 
@@ -1202,7 +1202,7 @@ namespace elements
 
                     const size_t rid=get_qpt_rid(j, k, num_qpts_1d);
 
-                    qpt_positions(face, rid, 0) = -1.;
+                    qpt_positions(face, rid, 0) = -real_t(1.);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
@@ -1217,7 +1217,7 @@ namespace elements
 
                     const size_t rid=get_qpt_rid(j, k, num_qpts_1d);
 
-                    qpt_positions(face, rid, 0) = 1.;
+                    qpt_positions(face, rid, 0) = real_t(1.);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
@@ -1233,7 +1233,7 @@ namespace elements
                     const size_t rid=get_qpt_rid(i, k, num_qpts_1d);
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(face, rid, 1) = -1.;
+                    qpt_positions(face, rid, 1) = -real_t(1.);
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(k);
@@ -1248,7 +1248,7 @@ namespace elements
                     const size_t rid=get_qpt_rid(i, k, num_qpts_1d);
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(face, rid, 1) = 1.;
+                    qpt_positions(face, rid, 1) = real_t(1.);
                     qpt_positions(face, rid, 2) = qpt_positions_1d(k);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(k);
@@ -1265,7 +1265,7 @@ namespace elements
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
-                    qpt_positions(face, rid, 2) = -1.;
+                    qpt_positions(face, rid, 2) = -real_t(1.);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(j);
 
@@ -1280,7 +1280,7 @@ namespace elements
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
-                    qpt_positions(face, rid, 2) = 1.;
+                    qpt_positions(face, rid, 2) = real_t(1.);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i) * qpt_weights_1d(j);
 
@@ -1297,7 +1297,7 @@ namespace elements
                 FOR_ALL_CLASS(j, 0, num_qpts_1d, {
                     const size_t rid=j;
 
-                    qpt_positions(face, rid, 0) = -1.;
+                    qpt_positions(face, rid, 0) = -real_t(1.);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
 
                     qpt_weights(face,rid) = qpt_weights_1d(j);
@@ -1309,7 +1309,7 @@ namespace elements
                 FOR_ALL_CLASS(j, 0, num_qpts_1d, {
                     const size_t rid=j;
 
-                    qpt_positions(face, rid, 0) = 1.;
+                    qpt_positions(face, rid, 0) = real_t(1.);
                     qpt_positions(face, rid, 1) = qpt_positions_1d(j);
 
                     qpt_weights(face,rid) = qpt_weights_1d(j);
@@ -1322,7 +1322,7 @@ namespace elements
                     const size_t rid=i;
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(face, rid, 1) = -1.;
+                    qpt_positions(face, rid, 1) = -real_t(1.);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i);
 
@@ -1335,7 +1335,7 @@ namespace elements
                     const size_t rid=i;
 
                     qpt_positions(face, rid, 0) = qpt_positions_1d(i);
-                    qpt_positions(face, rid, 1) = 1.;
+                    qpt_positions(face, rid, 1) = real_t(1.);
 
                     qpt_weights(face,rid) = qpt_weights_1d(i);
 
@@ -1346,12 +1346,12 @@ namespace elements
             else if (elem_dims==1) {
                     size_t face = 0;
                     const size_t rid = 0;
-                    qpt_positions(face, rid, 0) = -1.;
-                    qpt_weights(face,rid) = 1.0;
+                    qpt_positions(face, rid, 0) = -real_t(1.);
+                    qpt_weights(face,rid) = real_t(1.0);
 
                     face = 1;
-                    qpt_positions(face, rid, 0) = 1.;
-                    qpt_weights(face,rid) = 1.0;
+                    qpt_positions(face, rid, 0) = real_t(1.);
+                    qpt_weights(face,rid) = real_t(1.0);
             }
             else{
                 throw std::runtime_error("ERROR: unsupported quadrature surface dims \n");
@@ -1403,59 +1403,59 @@ namespace elements
             //face 4 (mu=-1):  sign = -1
             //face 5 (mu=+1):  sign = +1
             RUN_CLASS({
-                outward_sign(0) = -1.;
-                outward_sign(1) =  1.;
+                outward_sign(0) = -real_t(1.);
+                outward_sign(1) =  real_t(1.);
 
                 if(elem_dims>1){
-                    outward_sign(2) = -1.;
-                    outward_sign(3) =  1.;
+                    outward_sign(2) = -real_t(1.);
+                    outward_sign(3) =  real_t(1.);
                 }
                 if(elem_dims>2){
-                    outward_sign(4) = -1.;
-                    outward_sign(5) =  1.;
+                    outward_sign(4) = -real_t(1.);
+                    outward_sign(5) =  real_t(1.);
                 }
                 
                 if(elem_dims==1){
-                    outward_normal(0,0) = -1.; // face 0 xi-
-                    outward_normal(1,0) =  1.; // face 1 xi+
+                    outward_normal(0,0) = -real_t(1.); // face 0 xi-
+                    outward_normal(1,0) =  real_t(1.); // face 1 xi+
                 }
                 if(elem_dims==2){
-                    outward_normal(0,0) = -1.; // face 0 xi-
-                    outward_normal(0,1) =  0.; // face 0 xi-
+                    outward_normal(0,0) = -real_t(1.); // face 0 xi-
+                    outward_normal(0,1) =  real_t(0.); // face 0 xi-
 
-                    outward_normal(1,0) =  1.; // face 1 xi+
-                    outward_normal(1,1) =  0.; // face 1 xi+
+                    outward_normal(1,0) =  real_t(1.); // face 1 xi+
+                    outward_normal(1,1) =  real_t(0.); // face 1 xi+
 
-                    outward_normal(2,0) =  0.; // face 2 eta-
-                    outward_normal(2,1) = -1.; // face 2 eta-
+                    outward_normal(2,0) =  real_t(0.); // face 2 eta-
+                    outward_normal(2,1) = -real_t(1.); // face 2 eta-
 
-                    outward_normal(3,0) =  0.; // face 3 eta+
-                    outward_normal(3,1) =  1.; // face 3 eta+
+                    outward_normal(3,0) =  real_t(0.); // face 3 eta+
+                    outward_normal(3,1) =  real_t(1.); // face 3 eta+
                 }
                 if(elem_dims==3){
-                    outward_normal(0,0) = -1.; // face 0 xi-
-                    outward_normal(0,1) =  0.; // face 0 xi-
-                    outward_normal(0,2) =  0.; // face 0 xi-
+                    outward_normal(0,0) = -real_t(1.); // face 0 xi-
+                    outward_normal(0,1) =  real_t(0.); // face 0 xi-
+                    outward_normal(0,2) =  real_t(0.); // face 0 xi-
                     
-                    outward_normal(1,0) =  1.; // face 1 xi+
-                    outward_normal(1,1) =  0.; // face 1 xi+
-                    outward_normal(1,2) =  0.; // face 1 xi+
+                    outward_normal(1,0) =  real_t(1.); // face 1 xi+
+                    outward_normal(1,1) =  real_t(0.); // face 1 xi+
+                    outward_normal(1,2) =  real_t(0.); // face 1 xi+
 
-                    outward_normal(2,0) =  0.; // face 2 eta-
-                    outward_normal(2,1) = -1.; // face 2 eta-
-                    outward_normal(2,2) =  0.; // face 2 eta-
+                    outward_normal(2,0) =  real_t(0.); // face 2 eta-
+                    outward_normal(2,1) = -real_t(1.); // face 2 eta-
+                    outward_normal(2,2) =  real_t(0.); // face 2 eta-
 
-                    outward_normal(3,0) =  0.; // face 3 eta+
-                    outward_normal(3,1) =  1.; // face 3 eta+
-                    outward_normal(3,2) =  0.; // face 3 eta+
+                    outward_normal(3,0) =  real_t(0.); // face 3 eta+
+                    outward_normal(3,1) =  real_t(1.); // face 3 eta+
+                    outward_normal(3,2) =  real_t(0.); // face 3 eta+
                     
-                    outward_normal(4,0) =  0.; // face 4 mu-
-                    outward_normal(4,1) =  0.; // face 4 mu-
-                    outward_normal(4,2) = -1.; // face 4 mu-
+                    outward_normal(4,0) =  real_t(0.); // face 4 mu-
+                    outward_normal(4,1) =  real_t(0.); // face 4 mu-
+                    outward_normal(4,2) = -real_t(1.); // face 4 mu-
 
-                    outward_normal(5,0) =  0.; // face 5 mu+
-                    outward_normal(5,1) =  0.; // face 5 mu+
-                    outward_normal(5,2) =  1.; // face 5 mu+ 
+                    outward_normal(5,0) =  real_t(0.); // face 5 mu+
+                    outward_normal(5,1) =  real_t(0.); // face 5 mu+
+                    outward_normal(5,2) =  real_t(1.); // face 5 mu+ 
                 }
 
             }); // end serial RUN on GPU

@@ -17,7 +17,7 @@ class Plane
 public:
 
     int num_dims = 0; ///< Number of dimensions of the plane
-    real_t epsilon = mtr::prec::fmax(real_t(1e-7),
+    real_t epsilon = mtr::prec::fmax(real_t(real_t(1e-7)),
                                 mtr::prec::epsilon<real_t>() * real_t(100)); ///< Epsilon for floating point comparisons
 
     ViewCArrayKokkos<real_t> position; ///< Position of the plane
@@ -35,7 +35,7 @@ public:
         normal = normal_inp;
 
         // Normalize the normal vector (just to be safe)
-        double norm = 0.0;
+        real_t norm = real_t(0.0);
         for (int i = 0; i < num_dims; ++i) {
             norm += normal_inp(i) * normal_inp(i);
         }
@@ -55,7 +55,7 @@ public:
         assert(point.order() == 1 && "is_point_on_plane requires a 1D ViewCArrayKokkos<real_t> for point");
         assert(point.extent() == num_dims && "Point must have same num_dims as the plane");
 
-        double dot_product = 0.0;
+        real_t dot_product = real_t(0.0);
         for (int i = 0; i < num_dims; ++i) {
             dot_product += (point(i) - position(i)) * normal(i);
         }
@@ -76,14 +76,14 @@ class Circle
 public:
 
     int num_dims = 0; ///< Number of dimensions of the circle
-    double radius = 0.0; ///< Radius of the circle
-    real_t epsilon = mtr::prec::fmax(real_t(1e-7),
+    real_t radius = real_t(0.0); ///< Radius of the circle
+    real_t epsilon = mtr::prec::fmax(real_t(real_t(1e-7)),
                                 mtr::prec::epsilon<real_t>() * real_t(100)); ///< Epsilon for floating point comparisons
 
     ViewCArrayKokkos<real_t> position; ///< Position of the circle
     ViewCArrayKokkos<real_t> normal; ///< Normal vector of the circle, normalize internally
 
-    Circle(const ViewCArrayKokkos<real_t>& position_inp, const ViewCArrayKokkos<real_t>& normal_inp, const double radius_inp){
+    Circle(const ViewCArrayKokkos<real_t>& position_inp, const ViewCArrayKokkos<real_t>& normal_inp, const real_t radius_inp){
 
         assert(position_inp.order() == 1 && "Circle constructor requires a 1D ViewCArrayKokkos<real_t> for position");
         assert(normal_inp.order() == 1 && "Circle constructor requires a 1D ViewCArrayKokkos<real_t> for normal");
@@ -98,7 +98,7 @@ public:
         num_dims = position_inp.extent();
 
         // Normalize the normal vector (just to be safe)
-        double norm = 0.0;
+        real_t norm = real_t(0.0);
         for (int i = 0; i < num_dims; ++i) {
             norm += normal_inp(i) * normal_inp(i);
         }
@@ -108,9 +108,9 @@ public:
                 normal(i) = normal_inp(i) / norm;
             }
         } else {
-            normal(0) = 1.0;
-            normal(1) = 0.0;
-            normal(2) = 0.0;
+            normal(0) = real_t(1.0);
+            normal(1) = real_t(0.0);
+            normal(2) = real_t(0.0);
         }
     }
 
@@ -120,12 +120,12 @@ public:
         assert(point.order() == 1 && "is_point_on_plane requires a 1D ViewCArrayKokkos<real_t> for point");
         assert(point.extent() == num_dims && "Point must have same num_dims as the plane");
 
-        double dot_product = 0.0;
+        real_t dot_product = real_t(0.0);
         for (int i = 0; i < num_dims; ++i) {
             dot_product += (point(i) - position(i)) * normal(i);
         }
 
-        double distance = 0.0;
+        real_t distance = real_t(0.0);
         for (int i = 0; i < num_dims; ++i) {
             distance += (point(i) - position(i)) * (point(i) - position(i));
         }
@@ -147,13 +147,13 @@ class Sphere
 public:
 
     int num_dims = 3; ///< Number of dimensions 
-    double radius = 0.0; ///< Radius of the sphere
-    real_t epsilon = mtr::prec::fmax(real_t(1e-7),
+    real_t radius = real_t(0.0); ///< Radius of the sphere
+    real_t epsilon = mtr::prec::fmax(real_t(real_t(1e-7)),
                                 mtr::prec::epsilon<real_t>() * real_t(100)); ///< Epsilon for floating point comparisons
 
     ViewCArrayKokkos<real_t> position; ///< Position of the sphere
 
-    Sphere(const ViewCArrayKokkos<real_t>& position_inp, const double radius_inp){
+    Sphere(const ViewCArrayKokkos<real_t>& position_inp, const real_t radius_inp){
 
         assert(position_inp.order() == 1 && "Sphere constructor requires a 1D ViewCArrayKokkos<real_t> for position");
         assert(radius_inp > 0.0 && "Sphere constructor requires a positive radius");
@@ -172,7 +172,7 @@ public:
         assert(point.extent() == num_dims && "Point must have same num_dims as the plane");
 
 
-        double distance = 0.0;
+        real_t distance = real_t(0.0);
         for (int i = 0; i < num_dims; ++i) {
             distance += (point(i) - position(i)) * (point(i) - position(i));
         }
@@ -188,7 +188,7 @@ public:
         assert(point.extent() == num_dims && "Point must have same num_dims as the plane");
 
 
-        double distance = 0.0;
+        real_t distance = real_t(0.0);
         for (int i = 0; i < num_dims; ++i) {
             distance += (point(i) - position(i)) * (point(i) - position(i));
         }
@@ -203,7 +203,7 @@ public:
         assert(point.order() == 1 && "signed_distance_to_sphere requires a 1D ViewCArrayKokkos<real_t> for point");
         assert(point.extent() == num_dims && "Point must have same num_dims as the plane");
 
-        double distance = 0.0;
+        real_t distance = real_t(0.0);
         for (int i = 0; i < num_dims; ++i) {
             distance += (point(i) - position(i)) * (point(i) - position(i));
         }

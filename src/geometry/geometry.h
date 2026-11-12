@@ -34,7 +34,7 @@ void jacobian(
     // setting jacobian matrix to all zeros
     for(size_t i = 0; i < dims; i++)  // looping over dimension
     for(size_t j = 0; j < dims; j++){ // looping over dimension
-        jacobian(i, j) = 0.0;
+        jacobian(i, j) = real_t(0.0);
     } // end for 
 
     // Calculate Jacobian: J[i,j] = partial x_i/partial \xi_j
@@ -113,10 +113,10 @@ inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
 
             ViewCArrayKokkos<real_t> a_basis(&RefSurf.qpt_basis(face_lid,qpt_lid,0), num_nodes_in_elem);
 
-            double qpt_x[3];
+            real_t qpt_x[3];
             
             for (size_t dim=0; dim<elem_dims; dim++){
-               qpt_x[dim] = 0.0;
+               qpt_x[dim] = real_t(0.0);
             }
 
             for (size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
@@ -135,10 +135,10 @@ inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
 
                 ViewCArrayKokkos<real_t> nbr_a_basis(&RefSurf.qpt_basis(nbr_face_lid,nbr_qpt_lid,0), num_nodes_in_elem);
 
-                double nbr_qpt_x[3];
+                real_t nbr_qpt_x[3];
                 
                 for(size_t dim=0; dim<elem_dims; dim++){
-                    nbr_qpt_x[dim] = 0.0;
+                    nbr_qpt_x[dim] = real_t(0.0);
                 }
 
                 for(size_t node_lid=0; node_lid<num_nodes_in_elem; node_lid++){
@@ -148,7 +148,7 @@ inline void build_quadrature_point_connectivity(const swage::Mesh_t& Mesh,
                     }
                 } 
 
-                double diff_sqrd = 0.0;
+                real_t diff_sqrd = real_t(0.0);
                 for(size_t dim=0; dim<elem_dims; dim++){
                     diff_sqrd += (nbr_qpt_x[dim]-qpt_x[dim])*(nbr_qpt_x[dim]-qpt_x[dim]);
                 }

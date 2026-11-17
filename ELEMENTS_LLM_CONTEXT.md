@@ -1109,7 +1109,7 @@ The driver only prints a greeting. The interesting code is in the headers it inc
 
 ### 0. Writing `double` instead of `real_t`
 
-All ELEMENTS floating-point data is `real_t` (MATAR `precision.h`), which is `double` or `float` depending on `-DELEMENTS_REAL`. Hard-coded `double` breaks the float build at API boundaries (e.g. passing `CArrayKokkos<double>` to a function taking `CArrayKokkos<real_t>`).
+All ELEMENTS floating-point data is `real_t` (MATAR `precision.h`), whose precision is set by `-DELEMENTS_REAL` (default `double`; CI also tests `float`). Hard-coded `double` breaks the float build at API boundaries (e.g. passing `CArrayKokkos<double>` to a function taking `CArrayKokkos<real_t>`).
 
 - Use `real_t` for data, parameters, locals and containers. Keep `double` only for wall-clock timers (`MPI_Wtime`, `std::chrono`).
 - MPI: use `mtr::mpi_type_map<real_t>::value()`, not `MPI_DOUBLE`.
@@ -1322,23 +1322,71 @@ Device kernels (`FOR_ALL`) appear sparingly — mostly to copy node coordinates 
 |--------|---------|---------|
 | `ELEMENTS_ENABLE_SERIAL` | `ON` | Serial Kokkos backend |
 | `ELEMENTS_ENABLE_OPENMP` | `OFF` | OpenMP backend |
-| `ELEMENTS_ENABLE_PTHREADS` | `OFF` | Threads backend (`Kokkos_ENABLE_THREADS`) |
+| `ELEMENTS_ENABLE_PTHREADS` | `OFF` | Pthreads backend (maps to `Kokkos_ENABLE_THREADS`) |
 | `ELEMENTS_ENABLE_CUDA` | `OFF` | CUDA backend |
 | `ELEMENTS_ENABLE_HIP` | `OFF` | HIP backend |
-| `ELEMENTS_REAL` | `double` | Precision of `real_t` (`double`/`float`); passed to `MATAR_REAL` |
-| `ELEMENTS_DEVICE_BACKEND` | empty | Backend for MATAR device macros (`FOR_ALL`, ...); passed to `MATAR_DEVICE_BACKEND`; overrides `ELEMENTS_ENABLE_*` |
-| `ELEMENTS_HOST_BACKEND` | `serial` | Backend for MATAR `_HOST` macros (`FOR_ALL_HOST`, ...): `serial`/`openmp`/`pthreads` only (GPU backends are a configure error); passed to `MATAR_HOST_BACKEND` |
+| `ELEMENTS_DEVICE_BACKEND` | empty | Backend for `FOR_ALL`/`DO_ALL`: `serial\|openmp\|pthreads\|cuda\|hip\|sycl` |
+| `ELEMENTS_HOST_BACKEND` | empty | Backend for the `_HOST` macros: `serial\|openmp\|pthreads` |
+| `ELEMENTS_REAL` | empty (`double`) | Precision of `real_t`: `double\|float\|half\|bfloat16\|quad`; forwarded to `MATAR_REAL` |
+| `ELEMENTS_HIGH_REAL` | empty (`double`) | Precision of `high_real_t`: `double\|float\|quad`; forwarded to `MATAR_HIGH_REAL` |
+| `ELEMENTS_LOW_REAL` | empty (`double`) | Precision of `low_real_t`: `double\|float\|half\|bfloat16`; forwarded to `MATAR_LOW_REAL` |
 | `ELEMENTS_BUILD_EXAMPLES` | `ON` if top-level, else `OFF` | Build `examples/*` |
 | `ELEMENTS_BUILD_TESTS` | `OFF` | Build `tests/` |
 | `ELEMENTS_BUILD_DOCS` | `OFF` | Doxygen + Sphinx |
 
+### Mixed host/device backends
+
+`ELEMENTS_DEVICE_BACKEND` / `ELEMENTS_HOST_BACKEND` mirror `MATAR_DEVICE_BACKEND` /
+`MATAR_HOST_BACKEND` and are forwarded to them verbatim; MATAR then validates the pair and maps it
+onto `Kokkos_ENABLE_*`. The device backend runs `FOR_ALL`, `DO_ALL`, `FOR_REDUCE_*`; the host
+backend runs the `_HOST` twins (`FOR_ALL_HOST`, ...), so CPU work can overlap in-flight GPU kernels:
+
+```
+cmake -B build -DELEMENTS_DEVICE_BACKEND=cuda -DELEMENTS_HOST_BACKEND=openmp
+```
+
+That build compiles with `HAVE_CUDA` **and** `HAVE_HOST_OPENMP`, making MATAR's
+`DefaultExecSpace` = `Kokkos::Cuda` and `DefaultHostExecSpace` = `Kokkos::OpenMP`.
+
+Setting either variable takes precedence over the `ELEMENTS_ENABLE_*` toggles, which are then
+ignored (ELEMENTS warns if any are also ON). Constraints inherited from MATAR/Kokkos: the host
+backend cannot be a GPU space; `openmp` and `pthreads` cannot be paired with each other (only one
+host-parallel space per build); the device backend must outrank the host one in Kokkos' default-space
+priority; naming the same backend on both sides is valid but yields no concurrency (MATAR warns).
+Errors about the pair are reported against the `MATAR_*` names — the ELEMENTS configure log prints
+the mapping as `ELEMENTS backends: device='...' host='...'`.
+
+### Floating-point precision tiers
+
+`ELEMENTS_REAL` / `ELEMENTS_HIGH_REAL` / `ELEMENTS_LOW_REAL` choose what MATAR's three tier types
+mean for the build: `real_t` (working precision for field data), `high_real_t` (fields that must stay
+accurate, never below `float`) and `low_real_t` (tolerant or bulk-storage fields). Only the tiers that
+are set are forwarded to `MATAR_*`, which validates them; an unset tier stays `double`. The configure
+log prints the mapping as `ELEMENTS precision: real='...' high_real='...' low_real='...'`. ELEMENTS
+code uses `real_t` throughout, and only `double` and `float` builds are tested in CI.
+
 ### Required dependencies
 
-ELEMENTS requires C++20 and CMake 3.22+. Its core deps:
-- **MATAR** is a git submodule at `matar/`, added with `add_subdirectory` (`MATAR_ENABLE_KOKKOS=ON`, `MATAR_ENABLE_MPI=ON`, which define `HAVE_KOKKOS` and `HAVE_MPI`). `matar/solvers` is on the ELEMENTS include path.
-- **Kokkos** 5.x comes from MATAR's nested submodule (`matar/src/Kokkos/kokkos`). Clone with `--recursive`. A parent-provided `matar::matar` or `Kokkos::kokkos` target is used if it already exists.
-- **PT-Scotch** (via `FetchContent`) at `v7.0.4` (with `SCOTCH_MPI=ON`, `BUILD_FORTRAN=OFF`)
+ELEMENTS requires C++20 and CMake 3.22+ (3.25.2+ for CUDA). Its core deps:
+- **MATAR** is a **git submodule** at `matar/`, added with `add_subdirectory(matar)` and configured
+  with `MATAR_ENABLE_KOKKOS=ON`, `MATAR_ENABLE_MPI=ON` (its `MPICArrayKokkos` / `CommunicationPlan`
+  are used by `examples/average`). MATAR's own CMake supplies the `matar::matar` alias, include
+  directories, `HAVE_KOKKOS`/`HAVE_MPI` and `cxx_std_20`. ELEMENTS adds `matar/solvers` to the
+  `ELEMENTS` target's include path (and installs those headers), since MATAR exports only
+  `src/include` but ELEMENTS examples include `cramers_rule.hpp` / `lu_solver.hpp`.
+- **Kokkos** 5.x comes from MATAR's bundled submodule at `matar/src/Kokkos/kokkos`. ELEMENTS does
+  not fetch Kokkos; it only maps `ELEMENTS_ENABLE_*` onto the standard `Kokkos_ENABLE_*` cache
+  variables that MATAR's bundled build consumes. A parent project that already defines
+  `Kokkos::kokkos` or `matar::matar` wins, and that mapping is skipped. Kokkos is nested one level
+  down, so `git submodule update --init` is **not** enough; `--recursive` is required, and missing
+  submodules are a configure-time `FATAL_ERROR`.
+- **PT-Scotch** at `v7.0.4` (with `SCOTCH_MPI=ON`, `BUILD_FORTRAN=OFF`) — the only remaining
+  `FetchContent` dependency.
 - **MPI** is `find_package`'d (required); MPI 3+ is preferred
+
+Kokkos 5 notes: `Kokkos_ENABLE_PTHREADS` no longer exists (the variable is `Kokkos_ENABLE_THREADS`,
+which is what `ELEMENTS_ENABLE_PTHREADS` now maps to), and code deprecated in Kokkos 4 is off by
+default — `Kokkos::atomic_increment` is gone, use `Kokkos::atomic_inc`.
 
 ### Linking from another CMake project
 

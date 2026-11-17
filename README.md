@@ -35,6 +35,10 @@ git clone --recursive https://github.com/lanl/ELEMENTS.git
 git submodule update --init --recursive
 ```
 
+Plain `--init` is not enough, because Kokkos sits one level deeper inside MATAR. Configuring without
+the submodules fails immediately with that instruction. Only Scotch/PT-Scotch is still downloaded at
+configure time. MATAR requires C++20, so ELEMENTS and anything linking it compile as C++20.
+
 To build the examples locally:
 
 1. Configure into a separate build tree:
@@ -57,11 +61,47 @@ Key CMake options (defaults in parentheses):
 - `ELEMENTS_ENABLE_PTHREADS` (`OFF`)
 - `ELEMENTS_ENABLE_CUDA` (`OFF`)
 - `ELEMENTS_ENABLE_HIP` (`OFF`)
-- `ELEMENTS_REAL` (`double`): precision of `real_t`, which ELEMENTS uses for all floating-point data: `double` or `float`. Passed to MATAR as `MATAR_REAL`.
-- `ELEMENTS_DEVICE_BACKEND` (empty): backend for MATAR's `FOR_ALL` and related macros: `serial`, `openmp`, `pthreads`, `cuda`, `hip`, `sycl`
-- `ELEMENTS_HOST_BACKEND` (`serial`): backend for MATAR's `_HOST` macros (`FOR_ALL_HOST`, ...): `serial`, `openmp`, `pthreads`. GPU backends are rejected.
+- `ELEMENTS_DEVICE_BACKEND` (empty): `serial`, `openmp`, `pthreads`, `cuda`, `hip`, `sycl`
+- `ELEMENTS_HOST_BACKEND` (empty): `serial`, `openmp`, `pthreads`
+- `ELEMENTS_REAL` (empty, meaning `double`): precision of `real_t`: `double`, `float`, `half`, `bfloat16`, `quad`
+- `ELEMENTS_HIGH_REAL` (empty, meaning `double`): precision of `high_real_t`: `double`, `float`, `quad`
+- `ELEMENTS_LOW_REAL` (empty, meaning `double`): precision of `low_real_t`: `double`, `float`, `half`, `bfloat16`
 
-Setting `ELEMENTS_DEVICE_BACKEND` overrides the `ELEMENTS_ENABLE_*` toggles (Serial stays on). They are passed to MATAR as `MATAR_DEVICE_BACKEND` / `MATAR_HOST_BACKEND`. Kokkos allows only one host-parallel space, so `openmp` and `pthreads` cannot be combined. Example: `cmake .. -DELEMENTS_DEVICE_BACKEND=cuda -DELEMENTS_HOST_BACKEND=openmp`.
+## Mixed host/device backends
+
+The `ELEMENTS_ENABLE_*` options above pick **one** Kokkos backend that runs everything. The
+`ELEMENTS_*_BACKEND` pair instead selects the two sides independently, mirroring MATAR's
+`MATAR_DEVICE_BACKEND` / `MATAR_HOST_BACKEND`: the **device** backend runs MATAR's `FOR_ALL`,
+`DO_ALL` and friends, while the **host** backend runs the `_HOST` twins (`FOR_ALL_HOST`, ...). Since
+device kernels are asynchronous and host kernels only block the calling thread, CPU work then
+overlaps in-flight GPU kernels:
+
+```
+cmake -B build -DELEMENTS_DEVICE_BACKEND=cuda -DELEMENTS_HOST_BACKEND=openmp
+```
+
+The values are forwarded to MATAR, which validates the pair and maps it onto the `Kokkos_ENABLE_*`
+variables. Setting either one takes precedence over the `ELEMENTS_ENABLE_*` toggles (ELEMENTS warns
+if you turn on both). Kokkos permits only one host-parallel space per build, so `openmp` and
+`pthreads` cannot be paired with each other, and naming the same backend on both sides is valid but
+gives no concurrency — MATAR warns at configure time.
+
+## Floating-point precision
+
+All ELEMENTS floating-point data is MATAR's `real_t`. The `ELEMENTS_REAL`, `ELEMENTS_HIGH_REAL` and
+`ELEMENTS_LOW_REAL` options choose what MATAR's three precision tiers mean for the build, and are
+forwarded to `MATAR_REAL`, `MATAR_HIGH_REAL` and `MATAR_LOW_REAL`, which validate them:
+
+- `real_t`: the default working precision for field data
+- `high_real_t`: fields that must stay accurate (coordinates, conserved sums); never below `float`
+- `low_real_t`: tolerant or bulk-storage fields
+
+```
+cmake -B build -DELEMENTS_REAL=float -DELEMENTS_HIGH_REAL=double
+```
+
+A tier left empty keeps MATAR's default of `double`, so existing builds are unchanged. Only `double`
+and `float` builds of `real_t` are tested in ELEMENTS CI.
  
 ## Using ELEMENTS from another CMake project
 

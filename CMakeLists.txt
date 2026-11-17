@@ -67,46 +67,81 @@ option(ELEMENTS_ENABLE_PTHREADS "Enable PThreads support in Kokkos" OFF)
 option(ELEMENTS_ENABLE_CUDA "Enable CUDA support in Kokkos" OFF)
 option(ELEMENTS_ENABLE_HIP "Enable HIP support in Kokkos" OFF)
 
-# Host/device backends, passed through to MATAR_HOST_BACKEND / MATAR_DEVICE_BACKEND.
-# The device backend runs FOR_ALL and friends; the host backend runs the _HOST
-# twins (FOR_ALL_HOST, ...). Setting the device backend replaces the
-# ELEMENTS_ENABLE_* toggles above (Serial stays available); leaving it empty
-# keeps the ELEMENTS_ENABLE_* behavior.
-set(ELEMENTS_HOST_BACKEND   "serial" CACHE STRING "Backend for the MATAR _HOST macros: serial|openmp|pthreads")
-set(ELEMENTS_DEVICE_BACKEND ""       CACHE STRING "Backend for the MATAR device macros: serial|openmp|pthreads|cuda|hip|sycl")
-set_property(CACHE ELEMENTS_HOST_BACKEND   PROPERTY STRINGS serial openmp pthreads)
+option(ELEMENTS_BUILD_EXAMPLES "Build examples" ${ELEMENTS_IS_TOP_LEVEL})
+option(ELEMENTS_BUILD_TESTS "Build unit tests" OFF)
+
+# --- Host / device backend selection (mirrors MATAR_HOST_BACKEND / MATAR_DEVICE_BACKEND) ---
+# The device backend runs MATAR's standard macros (FOR_ALL, DO_ALL, ...); the
+# host backend runs the _HOST twins (FOR_ALL_HOST, ...). Choosing different
+# backends for the two lets CPU work overlap in-flight GPU kernels, e.g.
+#
+#   cmake -B build -DELEMENTS_DEVICE_BACKEND=cuda -DELEMENTS_HOST_BACKEND=openmp
+#
+# These are forwarded verbatim to MATAR, which validates the pair and maps it
+# onto the Kokkos_ENABLE_* variables. Leaving them empty keeps the
+# ELEMENTS_ENABLE_* behavior below.
+set(ELEMENTS_HOST_BACKEND   "" CACHE STRING "Host backend for the _HOST macros: serial|openmp|pthreads")
+set(ELEMENTS_DEVICE_BACKEND "" CACHE STRING "Device backend for FOR_ALL and friends: serial|openmp|pthreads|cuda|hip|sycl")
+set_property(CACHE ELEMENTS_HOST_BACKEND   PROPERTY STRINGS "" serial openmp pthreads)
 set_property(CACHE ELEMENTS_DEVICE_BACKEND PROPERTY STRINGS "" serial openmp pthreads cuda hip sycl)
 
-# The host backend must be a CPU backend: the _HOST macros run on host data.
-string(TOLOWER "${ELEMENTS_HOST_BACKEND}" ELEMENTS_HOST_BACKEND_LC)
-if(ELEMENTS_HOST_BACKEND_LC MATCHES "^(cuda|hip|sycl)$")
-    message(FATAL_ERROR
-        "ELEMENTS_HOST_BACKEND=${ELEMENTS_HOST_BACKEND} is a GPU backend; the host "
-        "backend must be serial, openmp, or pthreads. Use ELEMENTS_DEVICE_BACKEND "
-        "for GPU backends.")
-elseif(NOT ELEMENTS_HOST_BACKEND_LC MATCHES "^(serial|openmp|pthreads)$")
-    message(FATAL_ERROR
-        "ELEMENTS_HOST_BACKEND='${ELEMENTS_HOST_BACKEND}' is not valid; "
-        "use serial, openmp, or pthreads")
-endif()
-
-# Floating-point precision of real_t, passed through to MATAR_REAL.
-set(ELEMENTS_REAL "double" CACHE STRING "Floating-point precision of real_t: double|float")
-set_property(CACHE ELEMENTS_REAL PROPERTY STRINGS double float)
-string(TOLOWER "${ELEMENTS_REAL}" ELEMENTS_REAL_LC)
-if(NOT ELEMENTS_REAL_LC MATCHES "^(double|float)$")
-    message(FATAL_ERROR
-        "ELEMENTS_REAL='${ELEMENTS_REAL}' is not supported; use double or float")
-endif()
-
-option(ELEMENTS_BUILD_EXAMPLES "Build examples" ${ELEMENTS_IS_TOP_LEVEL}) 
-option(ELEMENTS_BUILD_TESTS "Build unit tests" OFF)
+# --- Floating-point precision selection (mirrors MATAR_REAL / HIGH_REAL / LOW_REAL) ---
+# These choose what MATAR's three tier types mean for this build:
+#   real_t       the default working precision for field data
+#   high_real_t  fields that must stay accurate (coordinates, conserved sums)
+#   low_real_t   tolerant or bulk-storage fields
+#
+#   cmake -B build -DELEMENTS_REAL=float -DELEMENTS_HIGH_REAL=double
+#
+# Forwarded verbatim to MATAR, which validates each value. Leaving one empty
+# keeps MATAR's default of double for that tier. high_real_t may not drop
+# below float. Only double and float are built and tested by ELEMENTS CI.
+set(ELEMENTS_REAL      "" CACHE STRING "Precision of real_t: double|float|half|bfloat16|quad")
+set(ELEMENTS_HIGH_REAL "" CACHE STRING "Precision of high_real_t: double|float|quad")
+set(ELEMENTS_LOW_REAL  "" CACHE STRING "Precision of low_real_t: double|float|half|bfloat16")
+set_property(CACHE ELEMENTS_REAL      PROPERTY STRINGS "" double float half bfloat16 quad)
+set_property(CACHE ELEMENTS_HIGH_REAL PROPERTY STRINGS "" double float quad)
+set_property(CACHE ELEMENTS_LOW_REAL  PROPERTY STRINGS "" double float half bfloat16)
 
 include(FetchContent)
 
+# --- Dependency: Kokkos ---
+# Kokkos is NOT fetched here: the MATAR submodule bundles it and builds it from
+# the standard Kokkos cache variables. A parent project that already provides
+# Kokkos::kokkos wins -- MATAR detects that target and reuses it.
+if(ELEMENTS_HOST_BACKEND OR ELEMENTS_DEVICE_BACKEND)
+    # MATAR owns the Kokkos_ENABLE_* mapping and the validation (a host backend
+    # cannot be a GPU space, openmp and pthreads cannot coexist, the device
+    # backend must outrank the host one, ...), so do not also set them from the
+    # ELEMENTS_ENABLE_* toggles.
+    set(MATAR_HOST_BACKEND   "${ELEMENTS_HOST_BACKEND}"   CACHE STRING "Set by ELEMENTS_HOST_BACKEND"   FORCE)
+    set(MATAR_DEVICE_BACKEND "${ELEMENTS_DEVICE_BACKEND}" CACHE STRING "Set by ELEMENTS_DEVICE_BACKEND" FORCE)
+    # MATAR reports any problem with this pair against the MATAR_* names, so
+    # record the mapping here.
+    message(STATUS
+        "ELEMENTS backends: device='${ELEMENTS_DEVICE_BACKEND}' host='${ELEMENTS_HOST_BACKEND}'"
+        " -> MATAR_DEVICE_BACKEND / MATAR_HOST_BACKEND")
+
+    foreach(_legacy OPENMP PTHREADS CUDA HIP)
+        if(ELEMENTS_ENABLE_${_legacy})
+            message(WARNING
+                "ELEMENTS_ENABLE_${_legacy}=ON is ignored because ELEMENTS_HOST_BACKEND / "
+                "ELEMENTS_DEVICE_BACKEND are set; the backend pair is taken from those. "
+                "Use one scheme or the other.")
+        endif()
+    endforeach()
+elseif(NOT TARGET Kokkos::kokkos)
+    set(Kokkos_ENABLE_SERIAL   ${ELEMENTS_ENABLE_SERIAL}   CACHE BOOL "" FORCE)
+    set(Kokkos_ENABLE_OPENMP   ${ELEMENTS_ENABLE_OPENMP}   CACHE BOOL "" FORCE)
+    # Kokkos 5 spells the std::threads backend THREADS; PTHREADS no longer exists.
+    set(Kokkos_ENABLE_THREADS  ${ELEMENTS_ENABLE_PTHREADS} CACHE BOOL "" FORCE)
+    set(Kokkos_ENABLE_CUDA     ${ELEMENTS_ENABLE_CUDA}     CACHE BOOL "" FORCE)
+    set(Kokkos_ENABLE_HIP      ${ELEMENTS_ENABLE_HIP}      CACHE BOOL "" FORCE)
+endif()
+
 # --- Dependency: MATAR (and Kokkos 5, bundled as a MATAR submodule) ---
-# A parent project (e.g. a solver) that already provides matar::matar or
-# Kokkos::kokkos is respected; otherwise both come from the matar submodule.
+# A parent project (e.g. a solver) that already provides matar::matar is
+# respected; otherwise it comes from the matar submodule.
 if(NOT TARGET matar::matar)
     if(NOT EXISTS ${PROJECT_SOURCE_DIR}/matar/CMakeLists.txt OR
        (NOT TARGET Kokkos::kokkos AND NOT EXISTS ${PROJECT_SOURCE_DIR}/matar/src/Kokkos/kokkos/CMakeLists.txt))
@@ -115,42 +150,26 @@ if(NOT TARGET matar::matar)
             "    git submodule update --init --recursive")
     endif()
 
-    if(ELEMENTS_DEVICE_BACKEND)
-        # Start from Serial only; MATAR turns on the backends requested below.
-        if(ELEMENTS_ENABLE_OPENMP OR ELEMENTS_ENABLE_PTHREADS OR ELEMENTS_ENABLE_CUDA OR ELEMENTS_ENABLE_HIP)
-            message(WARNING "ELEMENTS_DEVICE_BACKEND is set; "
-                            "ignoring ELEMENTS_ENABLE_OPENMP/PTHREADS/CUDA/HIP")
-        endif()
-        set(Kokkos_ENABLE_SERIAL  ON  CACHE BOOL "" FORCE)
-        set(Kokkos_ENABLE_OPENMP  OFF CACHE BOOL "" FORCE)
-        set(Kokkos_ENABLE_THREADS OFF CACHE BOOL "" FORCE)
-        set(Kokkos_ENABLE_CUDA    OFF CACHE BOOL "" FORCE)
-        set(Kokkos_ENABLE_HIP     OFF CACHE BOOL "" FORCE)
-        set(Kokkos_ENABLE_SYCL    OFF CACHE BOOL "" FORCE)
-    else()
-        # Kokkos allows only one host-parallel space (OpenMP or Threads)
-        if((ELEMENTS_HOST_BACKEND_LC STREQUAL "openmp" AND ELEMENTS_ENABLE_PTHREADS) OR
-           (ELEMENTS_HOST_BACKEND_LC STREQUAL "pthreads" AND ELEMENTS_ENABLE_OPENMP))
-            message(FATAL_ERROR
-                "ELEMENTS_HOST_BACKEND=${ELEMENTS_HOST_BACKEND} conflicts with the enabled "
-                "ELEMENTS_ENABLE_OPENMP/PTHREADS: Kokkos allows only one of OpenMP or "
-                "pthreads per build")
-        endif()
-        set(Kokkos_ENABLE_SERIAL  ${ELEMENTS_ENABLE_SERIAL}   CACHE BOOL "" FORCE)
-        set(Kokkos_ENABLE_OPENMP  ${ELEMENTS_ENABLE_OPENMP}   CACHE BOOL "" FORCE)
-        set(Kokkos_ENABLE_THREADS ${ELEMENTS_ENABLE_PTHREADS} CACHE BOOL "" FORCE)
-        set(Kokkos_ENABLE_CUDA    ${ELEMENTS_ENABLE_CUDA}     CACHE BOOL "" FORCE)
-        set(Kokkos_ENABLE_HIP     ${ELEMENTS_ENABLE_HIP}      CACHE BOOL "" FORCE)
-    endif()
-    set(MATAR_HOST_BACKEND   "${ELEMENTS_HOST_BACKEND_LC}" CACHE STRING "" FORCE)
-    set(MATAR_DEVICE_BACKEND "${ELEMENTS_DEVICE_BACKEND}" CACHE STRING "" FORCE)
-    set(MATAR_REAL           "${ELEMENTS_REAL_LC}" CACHE STRING "" FORCE)
-
     set(MATAR_ENABLE_KOKKOS  ON  CACHE BOOL "" FORCE)
+    # ELEMENTS requires MPI, and its examples use MATAR's MPICArrayKokkos and
+    # CommunicationPlan, which only exist in an MPI-enabled MATAR.
     set(MATAR_ENABLE_MPI     ON  CACHE BOOL "" FORCE)
     set(MATAR_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
     set(MATAR_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(MATAR_INSTALL        ON  CACHE BOOL "" FORCE)
+
+    # Forward only the tiers the caller actually set, so an unset tier keeps
+    # MATAR's own default of double rather than being pinned here.
+    foreach(_tier REAL HIGH_REAL LOW_REAL)
+        if(ELEMENTS_${_tier})
+            set(MATAR_${_tier} "${ELEMENTS_${_tier}}" CACHE STRING "Set by ELEMENTS_${_tier}" FORCE)
+        endif()
+    endforeach()
+    if(ELEMENTS_REAL OR ELEMENTS_HIGH_REAL OR ELEMENTS_LOW_REAL)
+        message(STATUS
+            "ELEMENTS precision: real='${ELEMENTS_REAL}' high_real='${ELEMENTS_HIGH_REAL}'"
+            " low_real='${ELEMENTS_LOW_REAL}' -> MATAR_REAL / MATAR_HIGH_REAL / MATAR_LOW_REAL")
+    endif()
 
     add_subdirectory(matar)
 endif()

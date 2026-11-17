@@ -1113,7 +1113,8 @@ All ELEMENTS floating-point data is `real_t` (MATAR `precision.h`), which is `do
 
 - Use `real_t` for data, parameters, locals and containers. Keep `double` only for wall-clock timers (`MPI_Wtime`, `std::chrono`).
 - MPI: use `mtr::mpi_type_map<real_t>::value()`, not `MPI_DOUBLE`.
-- Tolerances: wrap fixed thresholds in `real_tol(...)` (`src/utils/precision_utils.h`). It returns the value unchanged in double and never less than 100 machine epsilons in float. For squared-distance checks, compare against `real_tol(d) * real_tol(d)`.
+- Casts: always write `(real_t)value` (e.g. `(real_t)0.5`, `(real_t)(n - 1)`), never the functional form `real_t(value)`. Literals passed alongside `real_t` arguments to `mtr::prec::fmax`/`fmin` must be cast, since both arguments must have the same type in a float build.
+- Tolerances: wrap fixed thresholds in `real_tol(...)` (`src/utils/precision_utils.h`). It returns the value unchanged in double and never less than 100 machine epsilons in float. For tolerances on squared quantities (e.g. squared distances), apply `real_tol` to the unsquared value and square it: `const real_t tol = real_tol(d); ... < tol*tol`. For machine epsilon use `mtr::prec::epsilon<real_t>()`; for `fabs`/`sqrt`/`fmax`/`fmin` on `real_t`, use `mtr::prec::`.
 - Math: prefer `Kokkos::fmin/fmax/sqrt/fabs` so float arguments stay float on host and device.
 
 ### 1. The mesh type is `swage::Mesh`, not `mesh_t`

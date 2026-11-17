@@ -112,7 +112,7 @@ struct PointCloud_t{
     // --- point cloud parameters ---
     real_t search_radius = 0.0;     // kernel support radius
     size_t min_num_points_fit = 0;  // minimum neighbors required for basis fit
-    real_t coincident_tol = real_tol(1.e-15); // tolerance for defining coincident points
+    real_t coincident_tol = real_tol(mtr::prec::sqrt((real_t)1.e-15)) * real_tol(mtr::prec::sqrt((real_t)1.e-15)); // squared distance defining coincident points
 
     // --- bin mesh connectivity ---
     DCArrayKokkos <bin_keys_t> keys_in_bin;        // bin gid -> (i,j,k)
@@ -201,9 +201,9 @@ struct PointCloud_t{
         num_bins_z = num_bins_z_in;
         num_bins   = num_bins_x * num_bins_y * num_bins_z;
 
-        bin_dx = Kokkos::fmax(real_t(1.e-13), (xmax - xmin) / (real_t)num_bins_x);
-        bin_dy = Kokkos::fmax(real_t(1.e-13), (ymax - ymin) / (real_t)num_bins_y);
-        bin_dz = Kokkos::fmax(real_t(1.e-13), (zmax - zmin) / (real_t)num_bins_z);
+        bin_dx = mtr::prec::fmax((real_t)(1.e-13), (xmax - xmin) / (real_t)num_bins_x);
+        bin_dy = mtr::prec::fmax((real_t)(1.e-13), (ymax - ymin) / (real_t)num_bins_y);
+        bin_dz = mtr::prec::fmax((real_t)(1.e-13), (zmax - zmin) / (real_t)num_bins_z);
 
         keys_in_bin       = DCArrayKokkos <bin_keys_t> (num_bins, "keys_in_bin");
         num_points_in_bin = DCArrayKokkos <size_t>     (num_bins, "num_points_in_bin");
@@ -248,9 +248,9 @@ struct PointCloud_t{
                             const real_t z_pt) const {
 
         bin_keys_t bk;
-        bk.i = (int)Kokkos::fmin((real_t)num_bins_x-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((x_pt - xmin)/bin_dx - real_tol(1.0e-10))));
-        bk.j = (int)Kokkos::fmin((real_t)num_bins_y-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((y_pt - ymin)/bin_dy - real_tol(1.0e-10))));
-        bk.k = (int)Kokkos::fmin((real_t)num_bins_z-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((z_pt - zmin)/bin_dz - real_tol(1.0e-10))));
+        bk.i = (int)mtr::prec::fmin((real_t)num_bins_x-(real_t)1, mtr::prec::fmax((real_t)0, Kokkos::round((x_pt - xmin)/bin_dx - real_tol(1.0e-10))));
+        bk.j = (int)mtr::prec::fmin((real_t)num_bins_y-(real_t)1, mtr::prec::fmax((real_t)0, Kokkos::round((y_pt - ymin)/bin_dy - real_tol(1.0e-10))));
+        bk.k = (int)mtr::prec::fmin((real_t)num_bins_z-(real_t)1, mtr::prec::fmax((real_t)0, Kokkos::round((z_pt - zmin)/bin_dz - real_tol(1.0e-10))));
 
         return bk;
 
@@ -273,9 +273,9 @@ struct PointCloud_t{
                        const real_t y_pt, 
                        const real_t z_pt) const {
 
-        size_t i = (size_t)Kokkos::fmin((real_t)num_bins_x-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((x_pt - xmin)/bin_dx - real_tol(1.0e-10))));
-        size_t j = (size_t)Kokkos::fmin((real_t)num_bins_y-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((y_pt - ymin)/bin_dy - real_tol(1.0e-10))));
-        size_t k = (size_t)Kokkos::fmin((real_t)num_bins_z-real_t(1), Kokkos::fmax(real_t(0), Kokkos::round((z_pt - zmin)/bin_dz - real_tol(1.0e-10))));
+        size_t i = (size_t)mtr::prec::fmin((real_t)num_bins_x-(real_t)1, mtr::prec::fmax((real_t)0, Kokkos::round((x_pt - xmin)/bin_dx - real_tol(1.0e-10))));
+        size_t j = (size_t)mtr::prec::fmin((real_t)num_bins_y-(real_t)1, mtr::prec::fmax((real_t)0, Kokkos::round((y_pt - ymin)/bin_dy - real_tol(1.0e-10))));
+        size_t k = (size_t)mtr::prec::fmin((real_t)num_bins_z-(real_t)1, mtr::prec::fmax((real_t)0, Kokkos::round((z_pt - zmin)/bin_dz - real_tol(1.0e-10))));
 
         return get_id_of_ijk(i, j, k, num_bins_x, num_bins_y);
 
@@ -537,12 +537,12 @@ struct PointCloud_t{
                 const real_t y_mid   = bin_dy*(real_t)j + ymin;
                 const real_t z_mid   = bin_dz*(real_t)k + zmin;
 
-                const real_t dist_minus = Kokkos::sqrt(
+                const real_t dist_minus = mtr::prec::sqrt(
                     (bin_dx*(real_t)iminus + xmin - x_mid)*(bin_dx*(real_t)iminus + xmin - x_mid) +
                     (bin_dy*(real_t)jminus + ymin - y_mid)*(bin_dy*(real_t)jminus + ymin - y_mid) +
                     (bin_dz*(real_t)kminus + zmin - z_mid)*(bin_dz*(real_t)kminus + zmin - z_mid) );
 
-                const real_t dist_plus = Kokkos::sqrt(
+                const real_t dist_plus = mtr::prec::sqrt(
                     (bin_dx*(real_t)iplus  + xmin - x_mid)*(bin_dx*(real_t)iplus  + xmin - x_mid) +
                     (bin_dy*(real_t)jplus  + ymin - y_mid)*(bin_dy*(real_t)jplus  + ymin - y_mid) +
                     (bin_dz*(real_t)kplus  + zmin - z_mid)*(bin_dz*(real_t)kplus  + zmin - z_mid) );
@@ -582,7 +582,7 @@ struct PointCloud_t{
         //       the miss condition (!nbr_sees_me) is evaluated from i's perspective.
         //     - Therefore no two threads ever atomically increment the same
         //       (point_gid, nbr_gid) pair for the same reason, eliminating
-        //       real_t-counting.
+        //       double-counting.
         //     - atomic_inc ensures the counter update is indivisible,
         //       preventing lost updates when multiple threads increment different
         //       missed-neighbor slots of the same point concurrently.
@@ -1001,9 +1001,9 @@ struct PointCloud_t{
                         real_t& ymin_lcl,
                         real_t& zmin_lcl) 
             {
-                xmin_lcl = Kokkos::fmin(point_positions(point_gid,0), xmin_lcl);
-                ymin_lcl = Kokkos::fmin(point_positions(point_gid,1), ymin_lcl);
-                zmin_lcl = Kokkos::fmin(point_positions(point_gid,2), zmin_lcl);
+                xmin_lcl = mtr::prec::fmin(point_positions(point_gid,0), xmin_lcl);
+                ymin_lcl = mtr::prec::fmin(point_positions(point_gid,1), ymin_lcl);
+                zmin_lcl = mtr::prec::fmin(point_positions(point_gid,2), zmin_lcl);
             },
             Kokkos::Min<real_t>(xmin), 
             Kokkos::Min<real_t>(ymin), 
@@ -1024,9 +1024,9 @@ struct PointCloud_t{
                         real_t& ymax_lcl,
                         real_t& zmax_lcl) 
             {
-                xmax_lcl = Kokkos::fmax(point_positions(point_gid,0), xmax_lcl);
-                ymax_lcl = Kokkos::fmax(point_positions(point_gid,1), ymax_lcl);
-                zmax_lcl = Kokkos::fmax(point_positions(point_gid,2), zmax_lcl);
+                xmax_lcl = mtr::prec::fmax(point_positions(point_gid,0), xmax_lcl);
+                ymax_lcl = mtr::prec::fmax(point_positions(point_gid,1), ymax_lcl);
+                zmax_lcl = mtr::prec::fmax(point_positions(point_gid,2), zmax_lcl);
             },
             Kokkos::Max<real_t>(xmax), 
             Kokkos::Max<real_t>(ymax), 

@@ -39,7 +39,7 @@ public:
         for (int i = 0; i < num_dims; ++i) {
             norm += normal_inp(i) * normal_inp(i);
         }
-        norm = std::sqrt(norm);
+        norm = mtr::prec::sqrt(norm);
         if (norm > epsilon) {
             for (int i = 0; i < num_dims; ++i) {
                 normal(i) = normal_inp(i) / norm;
@@ -59,7 +59,7 @@ public:
         for (int i = 0; i < num_dims; ++i) {
             dot_product += (point(i) - position(i)) * normal(i);
         }
-        return std::abs(dot_product) < epsilon;
+        return mtr::prec::fabs(dot_product) < epsilon;
     }
 
     ~Plane() = default;
@@ -101,7 +101,7 @@ public:
         for (int i = 0; i < num_dims; ++i) {
             norm += normal_inp(i) * normal_inp(i);
         }
-        norm = std::sqrt(norm);
+        norm = mtr::prec::sqrt(norm);
         if (norm > epsilon) {
             for (int i = 0; i < num_dims; ++i) {
                 normal(i) = normal_inp(i) / norm;
@@ -128,8 +128,8 @@ public:
         for (int i = 0; i < num_dims; ++i) {
             distance += (point(i) - position(i)) * (point(i) - position(i));
         }
-        distance = std::sqrt(distance);
-        return std::abs(dot_product) < epsilon && distance < radius;
+        distance = mtr::prec::sqrt(distance);
+        return mtr::prec::fabs(dot_product) < epsilon && distance < radius;
     }
 
     ~Circle() = default;
@@ -174,9 +174,9 @@ public:
         for (int i = 0; i < num_dims; ++i) {
             distance += (point(i) - position(i)) * (point(i) - position(i));
         }
-        distance = std::sqrt(distance);
+        distance = mtr::prec::sqrt(distance);
 
-        return std::abs(distance - radius) < epsilon;
+        return mtr::prec::fabs(distance - radius) < epsilon;
     }
 
     KOKKOS_INLINE_FUNCTION
@@ -190,7 +190,7 @@ public:
         for (int i = 0; i < num_dims; ++i) {
             distance += (point(i) - position(i)) * (point(i) - position(i));
         }
-        distance = std::sqrt(distance);
+        distance = mtr::prec::sqrt(distance);
 
         return distance < radius;
     }
@@ -205,7 +205,7 @@ public:
         for (int i = 0; i < num_dims; ++i) {
             distance += (point(i) - position(i)) * (point(i) - position(i));
         }
-        distance = std::sqrt(distance);
+        distance = mtr::prec::sqrt(distance);
         return distance - radius;
     }
 

@@ -45,3 +45,10 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
     DESTINATION include
     FILES_MATCHING PATTERN "*.h"
 )
+
+# Install Rules: MATAR's header-only solvers, so installed consumers can
+# resolve "cramers_rule.hpp" etc. through the same 'include' directory
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/matar/solvers/
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.hpp"
+)

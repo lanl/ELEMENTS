@@ -337,7 +337,7 @@ MATAR_INITIALIZE(argc, argv);
             const size_t dim = 0;  // x-coord
             const size_t corner_gid = Mesh.corners_in_elem(elem_gid,corner_lid);
 
-            corner_field(corner_gid) = sin(PI*node_coords(node_gid,dim));
+            corner_field(corner_gid) = Kokkos::sin(PI*node_coords(node_gid,dim));
         }
 
     });  // end parallel for
@@ -345,8 +345,8 @@ MATAR_INITIALIZE(argc, argv);
     FOR_ALL(node_gid, 0, num_nodes,{
         // new velocity, it is Taylor-Green vortex
         // PI is defined in mesh class
-        node_velocity(node_gid, 0) =  sin(PI*node_coords(node_gid, 0))*cos(PI*node_coords(node_gid, 1));
-        node_velocity(node_gid, 1) = -cos(PI*node_coords(node_gid, 0))*sin(PI*node_coords(node_gid, 1));
+        node_velocity(node_gid, 0) =  Kokkos::sin(PI*node_coords(node_gid, 0))*Kokkos::cos(PI*node_coords(node_gid, 1));
+        node_velocity(node_gid, 1) = -Kokkos::cos(PI*node_coords(node_gid, 0))*Kokkos::sin(PI*node_coords(node_gid, 1));
         node_velocity(node_gid, 2) = 0.0;
     });
     Kokkos::fence();
@@ -460,8 +460,8 @@ MATAR_INITIALIZE(argc, argv);
             FOR_ALL(node_gid, 0, num_nodes,{
                 // new velocity, it is Taylor-Green vortex
                 // PI is defined in mesh class
-                node_velocity(node_gid, 0) =  sin(PI*node_coords(node_gid, 0))*cos(PI*node_coords(node_gid, 1));
-                node_velocity(node_gid, 1) = -cos(PI*node_coords(node_gid, 0))*sin(PI*node_coords(node_gid, 1));
+                node_velocity(node_gid, 0) =  Kokkos::sin(PI*node_coords(node_gid, 0))*Kokkos::cos(PI*node_coords(node_gid, 1));
+                node_velocity(node_gid, 1) = -Kokkos::cos(PI*node_coords(node_gid, 0))*Kokkos::sin(PI*node_coords(node_gid, 1));
                 node_velocity(node_gid, 2) = 0.0;
             });
 
@@ -474,7 +474,7 @@ MATAR_INITIALIZE(argc, argv);
                 
                 for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
                     const real_t vol_qpt= Quad.qpt_weights(qpt_lid)*elem_det_jac(elem_gid, qpt_lid);
-                    const real_t h_qpt = pow(vol_qpt,0.3333333);
+                    const real_t h_qpt = Kokkos::pow(vol_qpt,0.3333333);
                     if(h_qpt < min_h_loc) min_h_loc = h_qpt;
                 }
 
@@ -583,7 +583,7 @@ MATAR_INITIALIZE(argc, argv);
                     
                     // if normal_dot_vel<0 advection is out of first elem in the surf
                     const real_t flux_val = 0.5*(qpt_field+nbr_qpt_field)*normal_dot_vel 
-                                           -0.5*fabs(normal_dot_vel)*(qpt_field-nbr_qpt_field);
+                                           -0.5*mtr::prec::fabs(normal_dot_vel)*(qpt_field-nbr_qpt_field);
 
                     // save flux value to the quadrature points on either side of the element
                     RHS_surf_flux(elem_gid, face_lid, qpt_lid) = flux_val;
@@ -830,7 +830,7 @@ MATAR_INITIALIZE(argc, argv);
         }, domain_mass_time);
 
         printf("Domain mass error= %f \n", domain_mass_time-domain_mass_t0);
-        if(fabs(domain_mass_time-domain_mass_t0)>real_tol(1.e-12)) Kokkos::abort("ERROR: Mass is not conserved");
+        if(mtr::prec::fabs(domain_mass_time-domain_mass_t0)>real_tol(1.e-12)) Kokkos::abort("ERROR: Mass is not conserved");
 
 
         // ================================================================

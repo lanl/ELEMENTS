@@ -231,7 +231,7 @@ MATAR_INITIALIZE(argc, argv);
         real_t vol_h = 1.0;
         for(size_t dim=0; dim<elem_dims; dim++) vol_h *= h;
 
-        if( fabs(vol_q-vol_h) > real_tol(1.0e-12)){
+        if( mtr::prec::fabs(vol_q-vol_h) > real_tol(1.0e-12)){
             printf("wrong elem volume using gauss quadrature, error = %.15f \n", vol_q-vol_h );
             Kokkos::abort("ERROR: wrong volume \n");
         }
@@ -344,7 +344,7 @@ MATAR_INITIALIZE(argc, argv);
 
         // Test: check normals sum to zero over the element
         for(size_t dim=0; dim<elem_dims; dim++){
-            if(fabs(tally_normal[dim]) >= real_tol(1.e-12)){
+            if(mtr::prec::fabs(tally_normal[dim]) >= real_tol(1.e-12)){
                 printf("Tally_normal of area normals in elem (should=0) = (%f, %f, %f) \n", tally_normal[0], tally_normal[1], tally_normal[2]);
                 Kokkos::abort("ERROR: no conservation of surface normals \n");
             } // end check on tally_normal
@@ -355,7 +355,7 @@ MATAR_INITIALIZE(argc, argv);
         bool passed = true;
         for(size_t i=0; i<elem_dims; i++) 
         for(size_t j=0; j<elem_dims; j++) {
-            if(fabs((tally_flux[i][j]/elem_vol(elem_gid)) - eye[i][j]) >= real_tol(1.e-12)) passed = false;
+            if(mtr::prec::fabs((tally_flux[i][j]/elem_vol(elem_gid)) - eye[i][j]) >= real_tol(1.e-12)) passed = false;
         }
         if(!passed){
             printf("\n");
@@ -371,7 +371,7 @@ MATAR_INITIALIZE(argc, argv);
         }
 
         // Test: divergence is = 3, for some reason, tol needs to be 1e-10
-        if(fabs((tally_div/elem_vol(elem_gid)) - 3.0) >= real_tol(1.e-10)){
+        if(mtr::prec::fabs((tally_div/elem_vol(elem_gid)) - 3.0) >= real_tol(1.e-10)){
             printf("Tally_div = %.15f \n",tally_div/elem_vol(elem_gid)-3.0);
             Kokkos::abort("ERROR: divergence of Gradx should be equal to 3 \n");
         }

@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
         for(int dim = 0; dim < mesh.num_dims; dim++) {
             normal_magnitude += normal[dim] * normal[dim];
         }
-        normal_magnitude = std::sqrt(normal_magnitude);
+        normal_magnitude = mtr::prec::sqrt(normal_magnitude);
         for(int dim = 0; dim < mesh.num_dims; dim++) {
             normal[dim] /= normal_magnitude;
         }
@@ -232,9 +232,9 @@ int main(int argc, char** argv) {
             b = countB;
 
             // returns magnitude of distance between each node, 28 total options
-            dist(i) = fabs(sqrt((pow((coords(b, 0) - coords(a, 0)), 2.0)
-            + pow((coords(b, 1) - coords(a, 1)), 2.0)
-            + pow((coords(b, 2) - coords(a, 2)), 2.0))));
+            dist(i) = mtr::prec::fabs(mtr::prec::sqrt((Kokkos::pow((coords(b, 0) - coords(a, 0)), 2.0)
+            + Kokkos::pow((coords(b, 1) - coords(a, 1)), 2.0)
+            + Kokkos::pow((coords(b, 2) - coords(a, 2)), 2.0))));
 
             countB++;
             countA++;
@@ -250,7 +250,7 @@ int main(int argc, char** argv) {
         real_t dist_min = dist(0);
 
         for (int i = 0; i < 28; ++i) {
-            dist_min = fmin(dist(i), dist_min);
+            dist_min = mtr::prec::fmin(dist(i), dist_min);
         }
 
         if (dist_min < distance_lcl) {
@@ -284,7 +284,7 @@ int main(int argc, char** argv) {
         // std::cout<<"Distance: "<<dist_sq<<std::endl;
         // std::cout<<"Closest point: "<<closest[0]<<", "<<closest[1]<<", "<<closest[2]<<std::endl;
 
-        node.scalar_field(node_gid) = sqrt(dist_sq);
+        node.scalar_field(node_gid) = mtr::prec::sqrt(dist_sq);
 
         node.closest_facet_point(node_gid, 0) = closest[0] - node.coords(node_gid, 0);
         node.closest_facet_point(node_gid, 1) = closest[1] - node.coords(node_gid, 1);
@@ -362,7 +362,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < 3; i++) {
             // Pivot
             real_t pivot = temp[i][i];
-            if (fabs(pivot) < real_tol(1e-12)) {
+            if (mtr::prec::fabs(pivot) < real_tol(1e-12)) {
                 // Handle singular matrix: fill with zeros
                 for (int r = 0; r < 3; r++)
                     for (int c = 0; c < 3; c++)
@@ -513,7 +513,7 @@ int main(int argc, char** argv) {
             // std::cout<<"Distance: "<<dist_sq<<std::endl;
             // std::cout<<"Closest point: "<<closest[0]<<", "<<closest[1]<<", "<<closest[2]<<std::endl;
     
-            node.scalar_field(node_gid) = sqrt(dist_sq);
+            node.scalar_field(node_gid) = mtr::prec::sqrt(dist_sq);
     
             node.closest_facet_point(node_gid, 0) = closest[0] - node.coords(node_gid, 0);
             node.closest_facet_point(node_gid, 1) = closest[1] - node.coords(node_gid, 1);
@@ -542,11 +542,11 @@ int main(int argc, char** argv) {
                         dist_sq += (node.coords(node_gid, d) - nearest_facet_point(node_lid, d))*(node.coords(node_gid, d) - nearest_facet_point(node_lid, d));
                     }
 
-                    float dist = sqrt(dist_sq);
+                    float dist = mtr::prec::sqrt(dist_sq);
 
                     if (dist < real_tol(1e-9)) return; 
 
-                    node.scalar_field(node_gid) = sqrt(dist_sq);
+                    node.scalar_field(node_gid) = mtr::prec::sqrt(dist_sq);
 
                     // node.closest_facet_point(node_gid, 0) = closest[0] - node.coords(node_gid, 0);
                     // node.closest_facet_point(node_gid, 1) = closest[1] - node.coords(node_gid, 1);
@@ -593,7 +593,7 @@ int main(int argc, char** argv) {
                             dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
                             dist_sq += dx[d] * dx[d];
                         }
-                        real_t dist = sqrt(dist_sq);
+                        real_t dist = mtr::prec::sqrt(dist_sq);
                         
                         if (dist < real_tol(1e-12)) return; // Prevent division by zero
 
@@ -640,7 +640,7 @@ int main(int argc, char** argv) {
                     set(3,1) = 4;
 
                     real_t target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
-                    target = sqrt(target);
+                    target = mtr::prec::sqrt(target);
 
                     for(int i = 0; i < 4; i++){
 
@@ -656,7 +656,7 @@ int main(int argc, char** argv) {
                             dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
                             dist_sq += dx[d] * dx[d];
                         }
-                        real_t dist = sqrt(dist_sq);
+                        real_t dist = mtr::prec::sqrt(dist_sq);
                         
                         if (dist < real_tol(1e-12)) return; // Prevent division by zero
 
@@ -716,7 +716,7 @@ int main(int argc, char** argv) {
 
 
                     real_t target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
-                    target = sqrt(target);
+                    target = mtr::prec::sqrt(target);
 
                     for(int i = 0; i < num_sets; i++){
 
@@ -732,7 +732,7 @@ int main(int argc, char** argv) {
                             dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
                             dist_sq += dx[d] * dx[d];
                         }
-                        real_t dist = sqrt(dist_sq);
+                        real_t dist = mtr::prec::sqrt(dist_sq);
                         
                         if (dist < real_tol(1e-12)) return; // Prevent division by zero
 
@@ -929,9 +929,9 @@ int main(int argc, char** argv) {
                     b = countB;
 
                     // returns magnitude of distance between each node, 28 total options
-                    dist(i) = fabs(sqrt((pow((coords(b, 0) - coords(a, 0)), 2.0)
-                    + pow((coords(b, 1) - coords(a, 1)), 2.0)
-                    + pow((coords(b, 2) - coords(a, 2)), 2.0))));
+                    dist(i) = mtr::prec::fabs(mtr::prec::sqrt((Kokkos::pow((coords(b, 0) - coords(a, 0)), 2.0)
+                    + Kokkos::pow((coords(b, 1) - coords(a, 1)), 2.0)
+                    + Kokkos::pow((coords(b, 2) - coords(a, 2)), 2.0))));
 
                     countB++;
                     countA++;
@@ -947,7 +947,7 @@ int main(int argc, char** argv) {
                 real_t dist_min = dist(0);
 
                 for (int i = 0; i < 28; ++i) {
-                    dist_min = fmin(dist(i), dist_min);
+                    dist_min = mtr::prec::fmin(dist(i), dist_min);
                 }
 
                 if (dist_min < distance_lcl) {
@@ -1084,7 +1084,7 @@ int main(int argc, char** argv) {
                                 dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
                                 dist_sq += dx[d] * dx[d];
                             }
-                            real_t dist = sqrt(dist_sq);
+                            real_t dist = mtr::prec::sqrt(dist_sq);
                             
                             if (dist < real_tol(1e-12)) return; // Prevent division by zero
 
@@ -1131,7 +1131,7 @@ int main(int argc, char** argv) {
                         set(3,1) = 4;
 
                         real_t target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
-                        target = sqrt(target);
+                        target = mtr::prec::sqrt(target);
 
                         for(int i = 0; i < 4; i++){
 
@@ -1147,7 +1147,7 @@ int main(int argc, char** argv) {
                                 dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
                                 dist_sq += dx[d] * dx[d];
                             }
-                            real_t dist = sqrt(dist_sq);
+                            real_t dist = mtr::prec::sqrt(dist_sq);
                             
                             if (dist < real_tol(1e-12)) return; // Prevent division by zero
 
@@ -1207,7 +1207,7 @@ int main(int argc, char** argv) {
 
 
                         real_t target = min_distance_calc*min_distance_calc + min_distance_calc*min_distance_calc;
-                        target = sqrt(target);
+                        target = mtr::prec::sqrt(target);
 
                         for(int i = 0; i < num_sets; i++){
 
@@ -1223,7 +1223,7 @@ int main(int argc, char** argv) {
                                 dx[d] = node.coords(node_a, d) - node.coords(node_b, d);
                                 dist_sq += dx[d] * dx[d];
                             }
-                            real_t dist = sqrt(dist_sq);
+                            real_t dist = mtr::prec::sqrt(dist_sq);
                             
                             if (dist < real_tol(1e-12)) return; // Prevent division by zero
 
@@ -1274,10 +1274,10 @@ int main(int argc, char** argv) {
                             dist_sq += (node.coords(node_gid, d) - nearest_facet_point(node_lid, d))*(node.coords(node_gid, d) - nearest_facet_point(node_lid, d));
                         }
 
-                        real_t dist = sqrt(dist_sq);
+                        real_t dist = mtr::prec::sqrt(dist_sq);
 
 
-                        node.scalar_field(node_gid) = sqrt(dist_sq);
+                        node.scalar_field(node_gid) = mtr::prec::sqrt(dist_sq);
 
                         // node.closest_facet_point(node_gid, 0) = closest[0] - node.coords(node_gid, 0);
                         // node.closest_facet_point(node_gid, 1) = closest[1] - node.coords(node_gid, 1);

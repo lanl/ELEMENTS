@@ -101,7 +101,7 @@ MATAR_INITIALIZE(argc, argv);
     
 
     // fitting radius of the cloud
-    const real_t h_kernel = fmax(fmax(dx,dy),dz); 
+    const real_t h_kernel = mtr::prec::fmax(mtr::prec::fmax(dx,dy),dz); 
     const real_t cutoff_coeff = 1.5; // coeff*h_kernel = search radius
     const real_t min_num_points_fit = 7; 
 

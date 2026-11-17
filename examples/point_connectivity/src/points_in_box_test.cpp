@@ -94,13 +94,13 @@ MATAR_INITIALIZE(argc, argv);
 
     printf("min = (%f,%f,%f) \n", xmin,ymin,zmin);
     printf("max = (%f,%f,%f) \n", xmax,ymax,zmax);
-    if (fabs(xmin+0.00001) <= 1e-12) throw std::runtime_error("ERROR: xmin bound is wrong\n");
-    if (fabs(ymin+0.00001) <= 1e-12) throw std::runtime_error("ERROR: ymin bound is wrong\n");
-    if (fabs(ymin+0.00001) <= 1e-12) throw std::runtime_error("ERROR: ymin bound is wrong\n");
+    if (mtr::prec::fabs(xmin+0.00001) <= 1e-12) throw std::runtime_error("ERROR: xmin bound is wrong\n");
+    if (mtr::prec::fabs(ymin+0.00001) <= 1e-12) throw std::runtime_error("ERROR: ymin bound is wrong\n");
+    if (mtr::prec::fabs(ymin+0.00001) <= 1e-12) throw std::runtime_error("ERROR: ymin bound is wrong\n");
 
-    if (fabs(xmax-2.00001) <= 1e-12) throw std::runtime_error("ERROR: xmax bound is wrong\n");
-    if (fabs(ymax-2.00001) <= 1e-12) throw std::runtime_error("ERROR: ymax bound is wrong\n");
-    if (fabs(ymax-2.00001) <= 1e-12) throw std::runtime_error("ERROR: ymax bound is wrong\n");
+    if (mtr::prec::fabs(xmax-2.00001) <= 1e-12) throw std::runtime_error("ERROR: xmax bound is wrong\n");
+    if (mtr::prec::fabs(ymax-2.00001) <= 1e-12) throw std::runtime_error("ERROR: ymax bound is wrong\n");
+    if (mtr::prec::fabs(ymax-2.00001) <= 1e-12) throw std::runtime_error("ERROR: ymax bound is wrong\n");
     
 
     // declare array holding points in box, it is allocated & populated in PointCloud_t

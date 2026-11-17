@@ -384,8 +384,8 @@ void build_2d_polar(
             real_t theta_j = start_angle + (real_t)j * dy;
 
             // store the point coordinates
-            node_coords.host(node_gid, 0) = origin[0] + r_i * cos(theta_j);
-            node_coords.host(node_gid, 1) = origin[1] + r_i * sin(theta_j);
+            node_coords.host(node_gid, 0) = origin[0] + r_i * Kokkos::cos(theta_j);
+            node_coords.host(node_gid, 1) = origin[1] + r_i * Kokkos::sin(theta_j);
 
             if(node_coords.host(node_gid, 0) < 0.0){
                 throw std::runtime_error("**** NODE RADIUS FOR RZ MESH MUST BE POSITIVE ****");

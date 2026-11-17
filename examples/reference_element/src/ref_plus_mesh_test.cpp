@@ -172,7 +172,7 @@ void test_affine_transformation() {
 
     for(size_t i = 0; i < 3; i++)  // looping over dimension
     for(size_t j = 0; j < 3; j++){ // looping over dimension
-        if(fabs(jac.host(i, j)-A[i][j])>real_tol(1e-12)){
+        if(mtr::prec::fabs(jac.host(i, j)-A[i][j])>real_tol(1e-12)){
             Kokkos::abort("ERROR: Jacobian calculation in affine test failed\n");
         }
     } // end for 
@@ -319,7 +319,7 @@ void test_skewed_hexahedron() {
 
     for(size_t i = 0; i < 3; i++)  // looping over dimension
     for(size_t j = 0; j < 3; j++){ // looping over dimension
-        if(fabs(jac.host(i, j)-J_approx[i][j])>real_tol(1.e-10)){
+        if(mtr::prec::fabs(jac.host(i, j)-J_approx[i][j])>real_tol(1.e-10)){
             Kokkos::abort("ERROR: Jacobian calculation in skewed hex test failed\n");
         }
     } // end for 
@@ -345,8 +345,8 @@ void test_rotated_scaled_cube() {
     const real_t sx = 0.5, sy = 0.8, sz = 1.2;
     
     // Combined transformation matrix: R_z(phi) * R_y(theta) * Scale
-    real_t cos_t = cos(theta), sin_t = sin(theta);
-    real_t cos_p = cos(phi),   sin_p = sin(phi);
+    real_t cos_t = Kokkos::cos(theta), sin_t = Kokkos::sin(theta);
+    real_t cos_p = Kokkos::cos(phi),   sin_p = Kokkos::sin(phi);
     
     real_t T[3][3] = {
         {sx * cos_t * cos_p,  sx * (-sin_p),  sx * sin_t * cos_p},
@@ -468,7 +468,7 @@ void test_rotated_scaled_cube() {
 
     for(size_t i = 0; i < 3; i++)  // looping over dimension
     for(size_t j = 0; j < 3; j++){ // looping over dimension
-        if(fabs(jac.host(i, j)-T[i][j])>real_tol(1.e-10)){
+        if(mtr::prec::fabs(jac.host(i, j)-T[i][j])>real_tol(1.e-10)){
             Kokkos::abort("ERROR: Jacobian calculation in rotated and scaled test failed\n");
         }
     } // end for 
@@ -648,8 +648,8 @@ void test_manufactured_solution() {
         for(int i = 0; i < 3; i++) {
             printf("    ");
             for(int j = 0; j < 3; j++) {
-                real_t error = fabs(J_analytical[i][j] - jac.host(i,j));
-                max_error = fmax(max_error, error);
+                real_t error = mtr::prec::fabs(J_analytical[i][j] - jac.host(i,j));
+                max_error = mtr::prec::fmax(max_error, error);
                 printf("%10.2e ", error);
             }
             printf("\n");
@@ -669,7 +669,7 @@ void test_manufactured_solution() {
         });
         det_numerical.update_host();
 
-        real_t det_error = fabs(det_analytical - det_numerical.host(0));
+        real_t det_error = mtr::prec::fabs(det_analytical - det_numerical.host(0));
         
         printf("\n  Determinant:\n");
         printf("    Analytical: %12.8f\n", det_analytical);
@@ -789,8 +789,8 @@ void test_manufactured_solution() {
             for(int i = 0; i < 3; i++) {
                 printf("    ");
                 for(int j = 0; j < 3; j++) {
-                    real_t error = fabs(J_analytical[i][j] - jac.host(i,j));
-                    max_error = fmax(max_error, error);
+                    real_t error = mtr::prec::fabs(J_analytical[i][j] - jac.host(i,j));
+                    max_error = mtr::prec::fmax(max_error, error);
                     printf("%10.2e ", error);
                 }
                 printf("\n");
@@ -809,7 +809,7 @@ void test_manufactured_solution() {
                 det_numerical(0) = det_3x3(jac);
             });
             det_numerical.update_host();
-            real_t det_error = fabs(det_analytical - det_numerical.host(0));
+            real_t det_error = mtr::prec::fabs(det_analytical - det_numerical.host(0));
             
             printf("\n  Determinant:\n");
             printf("    Analytical: %12.8f\n", det_analytical);

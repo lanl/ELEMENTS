@@ -909,10 +909,10 @@ void write_vtu(swage::Mesh_t& mesh,
         std::vector<std::string> v = split (str, delimiter);
 
         // save the nodal coordinates
-        node.coords.host(node_gid, 0) = std::stod(v[0]); // real_t
-        node.coords.host(node_gid, 1) = std::stod(v[1]); // real_t
+        node.coords.host(node_gid, 0) = std::stod(v[0]); // parsed as double, stored as real_t
+        node.coords.host(node_gid, 1) = std::stod(v[1]); // parsed as double, stored as real_t
         if(num_dims==3){
-            node.coords.host(node_gid, 2) = std::stod(v[2]); // real_t
+            node.coords.host(node_gid, 2) = std::stod(v[2]); // parsed as double, stored as real_t
         }
 
     } // end for nodes

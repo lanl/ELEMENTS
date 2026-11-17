@@ -54,7 +54,7 @@ real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const size_
 
     real_t result = 0.0;
     for (int i = 0; i <= p_order; ++i) {
-        result += coeff(i) * pow(x, (real_t)i);
+        result += coeff(i) * Kokkos::pow(x, (real_t)i);
     }
     return result;
 } // end polynomial
@@ -65,7 +65,7 @@ real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const real_
     real_t result = 0.0;
     for (int j = 0; j <= p_order; ++j) 
     for (int i = 0; i <= p_order-j; ++i) {
-        result += coeff(i,j) * pow(x, (real_t)i) * pow(y, (real_t)j);
+        result += coeff(i,j) * Kokkos::pow(x, (real_t)i) * Kokkos::pow(y, (real_t)j);
         
     } // end for
     return result;
@@ -78,7 +78,7 @@ real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const real_
     for (int k = 0; k <= p_order; ++k) 
     for (int j = 0; j <= p_order-k; ++j) 
     for (int i = 0; i <= p_order-j-k; ++i) {
-        result += coeff(i,j,k) * pow(x, (real_t)i) * pow(y, (real_t)j) * pow(z, (real_t)k); 
+        result += coeff(i,j,k) * Kokkos::pow(x, (real_t)i) * Kokkos::pow(y, (real_t)j) * Kokkos::pow(z, (real_t)k); 
     } // end for
 
     return result;
@@ -93,7 +93,7 @@ real_t grad_polynomial_x(const CArrayKokkos<real_t> &coeff, const real_t x, cons
     if(p_order==0) return 0.0;
 
     for (int i = 1; i <= p_order; ++i) {
-        result += (real_t)i*coeff(i) * pow(x, (real_t)i-1);
+        result += (real_t)i*coeff(i) * Kokkos::pow(x, (real_t)i-1);
     }
 
     return result;
@@ -108,7 +108,7 @@ real_t grad_polynomial_x(const CArrayKokkos<real_t> &coeff, const real_t x, cons
 
     for (int j = 0; j <= p_order; ++j) 
     for (int i = 1; i <= p_order-j; ++i) {
-        result += (real_t)i*coeff(i,j) * pow(x, (real_t)i-1) * pow(y, (real_t)j);
+        result += (real_t)i*coeff(i,j) * Kokkos::pow(x, (real_t)i-1) * Kokkos::pow(y, (real_t)j);
     } // end for
 
     return result;
@@ -122,7 +122,7 @@ real_t grad_polynomial_y(const CArrayKokkos<real_t> &coeff, const real_t x, cons
 
     for (int j = 1; j <= p_order; ++j) 
     for (int i = 0; i <= p_order-j; ++i) {
-        result += (real_t)j*coeff(i,j) * pow(x, (real_t)i) * pow(y, (real_t)j-1);
+        result += (real_t)j*coeff(i,j) * Kokkos::pow(x, (real_t)i) * Kokkos::pow(y, (real_t)j-1);
     } // end for
 
     return result;
@@ -138,7 +138,7 @@ real_t grad_polynomial_x(const CArrayKokkos<real_t> &coeff, const real_t x, cons
     for (int k = 0; k <= p_order; ++k) 
     for (int j = 0; j <= p_order-k; ++j) 
     for (int i = 1; i <= p_order-j-k; ++i) {
-        result += (real_t)i*coeff(i,j,k) * pow(x, (real_t)i-1.) * pow(y, (real_t)j) * pow(z, (real_t)k); 
+        result += (real_t)i*coeff(i,j,k) * Kokkos::pow(x, (real_t)i-1.) * Kokkos::pow(y, (real_t)j) * Kokkos::pow(z, (real_t)k); 
     } // end for
 
     return result;
@@ -153,7 +153,7 @@ real_t grad_polynomial_y(const CArrayKokkos<real_t> &coeff, const real_t x, cons
     for (int k = 0; k <= p_order; ++k) 
     for (int j = 1; j <= p_order-k; ++j) 
     for (int i = 0; i <= p_order-j-k; ++i) {
-        result += (real_t)j*coeff(i,j,k) * pow(x, (real_t)i) * pow(y, (real_t)j-1.) * pow(z, (real_t)k); 
+        result += (real_t)j*coeff(i,j,k) * Kokkos::pow(x, (real_t)i) * Kokkos::pow(y, (real_t)j-1.) * Kokkos::pow(z, (real_t)k); 
     } // end for
 
     return result;
@@ -168,7 +168,7 @@ real_t grad_polynomial_z(const CArrayKokkos<real_t> &coeff, const real_t x, cons
     for (int k = 1; k <= p_order; ++k) 
     for (int j = 0; j <= p_order-k; ++j) 
     for (int i = 0; i <= p_order-j-k; ++i) {
-        result += (real_t)k*coeff(i,j,k) * pow(x, (real_t)i) * pow(y, (real_t)j) * pow(z, (real_t)k-1.); 
+        result += (real_t)k*coeff(i,j,k) * Kokkos::pow(x, (real_t)i) * Kokkos::pow(y, (real_t)j) * Kokkos::pow(z, (real_t)k-1.); 
     } // end for
 
     return result;
@@ -267,8 +267,8 @@ void test_gradient(const Quadrature_t& Quad,
         // round off get bad at high p_order's due to polynomial sensativity
         for(size_t dim=0; dim<RefElem.elem_dims; dim++){
 
-            const real_t error = fabs(sum[dim] - exact_value[dim]);
-            const real_t tolerance = fmax(real_tol(1.e-10), real_tol(1.e-10) * (real_t)p_order);
+            const real_t error = mtr::prec::fabs(sum[dim] - exact_value[dim]);
+            const real_t tolerance = mtr::prec::fmax(real_tol(1.e-10), real_tol(1.e-10) * (real_t)p_order);
             
             if (error > tolerance) {
                 printf("Error: interpolation failed at qpt id = %d with order = %zu \n", qpt, p_order);

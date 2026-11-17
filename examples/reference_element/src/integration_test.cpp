@@ -55,7 +55,7 @@ real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x, const size_
 
     real_t result = 0.0;
     for (int i = 0; i <= p_order; ++i) {
-        result += coeff(i) * pow(x, (real_t)i);
+        result += coeff(i) * Kokkos::pow(x, (real_t)i);
     }
     return result;
 } // end polynomial
@@ -83,7 +83,7 @@ real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x,
     real_t result = 0.0;
     for (int j = 0; j <= p_order; ++j)      // Full range
     for (int i = 0; i <= p_order; ++i) {    // Full range - NO "-j"
-        result += coeff(i,j) * pow(x, (real_t)i) * pow(y, (real_t)j);
+        result += coeff(i,j) * Kokkos::pow(x, (real_t)i) * Kokkos::pow(y, (real_t)j);
     }
     return result;
 }
@@ -114,9 +114,9 @@ real_t polynomial(const CArrayKokkos<real_t> &coeff, const real_t x,
     for (int k = 0; k <= p_order; ++k)      // Full range
     for (int j = 0; j <= p_order; ++j)      // Full range
     for (int i = 0; i <= p_order; ++i) {    // Full range
-        result += coeff(i,j,k) * pow(x, (real_t)i) * 
-                                 pow(y, (real_t)j) * 
-                                 pow(z, (real_t)k); 
+        result += coeff(i,j,k) * Kokkos::pow(x, (real_t)i) * 
+                                 Kokkos::pow(y, (real_t)j) * 
+                                 Kokkos::pow(z, (real_t)k); 
     }
     return result;
 }
@@ -210,8 +210,8 @@ void test_integration(const Quadrature_t& Quad,
         }
 
         // Compare results
-        const real_t error = fabs(numerical_integral - exact_integral);
-        const real_t tolerance = fmax(real_tol(1.e-10), real_tol(1.e-10) * (real_t)p_order);
+        const real_t error = mtr::prec::fabs(numerical_integral - exact_integral);
+        const real_t tolerance = mtr::prec::fmax(real_tol(1.e-10), real_tol(1.e-10) * (real_t)p_order);
 
         if (error > tolerance) {
             printf("Error: integration failed with order = %zu \n", p_order);
@@ -242,8 +242,8 @@ void check_quadrature(const Quadrature_t& Quad) {
     Kokkos::fence();
     
     
-    real_t expected = pow(2.0, (real_t)Quad.elem_dims);
-    real_t error = fabs(weight_sum - expected);
+    real_t expected = Kokkos::pow(2.0, (real_t)Quad.elem_dims);
+    real_t error = mtr::prec::fabs(weight_sum - expected);
     if (error > real_tol(1.e-12)) {
         printf("Error: quadrature weights don't correctly tally for number = %zu \n", Quad.num_qpts_in_elem);
         printf("numerical = %.15e vs exact = %.15e, error = %.15e \n", 

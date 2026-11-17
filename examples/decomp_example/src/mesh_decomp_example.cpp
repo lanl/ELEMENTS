@@ -99,9 +99,9 @@ int main(int argc, char** argv) {
         if(morph_mesh && Pn_order > 1) {
 
             FOR_ALL(i, 0, initial_mesh.num_nodes, {
-                initial_node_coords(i, 0) += 0.0; //0.02 * std::sin(10.0 * initial_node_coords(i, 0));
-                initial_node_coords(i, 1) += 0.03 * ( std::sin(10* initial_node_coords(i, 0)) + std::sin(16 * initial_node_coords(i, 0))); 
-                initial_node_coords(i, 2) += 0.05 * std::sin(12 * std::sqrt(initial_node_coords(i, 0)*initial_node_coords(i, 0) + initial_node_coords(i, 1)*initial_node_coords(i, 1)));
+                initial_node_coords(i, 0) += 0.0; //0.02 * Kokkos::sin(10.0 * initial_node_coords(i, 0));
+                initial_node_coords(i, 1) += 0.03 * ( Kokkos::sin(10* initial_node_coords(i, 0)) + Kokkos::sin(16 * initial_node_coords(i, 0))); 
+                initial_node_coords(i, 2) += 0.05 * Kokkos::sin(12 * mtr::prec::sqrt(initial_node_coords(i, 0)*initial_node_coords(i, 0) + initial_node_coords(i, 1)*initial_node_coords(i, 1)));
             });
             initial_node_coords.update_device();
         }

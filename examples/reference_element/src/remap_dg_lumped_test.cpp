@@ -468,8 +468,8 @@ MATAR_INITIALIZE(argc, argv);
     FOR_ALL(node_gid, 0, num_nodes,{
         // new velocity, it is Taylor-Green vortex
         // PI is defined in mesh class
-        node_velocity(node_gid, 0) =  sin(PI*node_coords(node_gid, 0))*cos(PI*node_coords(node_gid, 1));
-        node_velocity(node_gid, 1) = -cos(PI*node_coords(node_gid, 0))*sin(PI*node_coords(node_gid, 1));
+        node_velocity(node_gid, 0) =  Kokkos::sin(PI*node_coords(node_gid, 0))*Kokkos::cos(PI*node_coords(node_gid, 1));
+        node_velocity(node_gid, 1) = -Kokkos::cos(PI*node_coords(node_gid, 0))*Kokkos::sin(PI*node_coords(node_gid, 1));
         node_velocity(node_gid, 2) = 0.0;
     });
     Kokkos::fence();
@@ -595,7 +595,7 @@ MATAR_INITIALIZE(argc, argv);
                 real_t det = det_3x3(jac);
 
                 const real_t vol_qpt= Quad.qpt_weights(qpt_lid)*det;
-                const real_t h_qpt = pow(vol_qpt,0.3333333);
+                const real_t h_qpt = Kokkos::pow(vol_qpt,0.3333333);
                 if(h_qpt < min_h_loc) min_h_loc = h_qpt;
             }
 
@@ -618,8 +618,8 @@ MATAR_INITIALIZE(argc, argv);
             FOR_ALL(node_gid, 0, num_nodes,{
                 // new velocity, it is Taylor-Green vortex
                 // PI is defined in mesh class
-                node_velocity(node_gid, 0) =  sin(PI*node_coords(node_gid, 0))*cos(PI*node_coords(node_gid, 1));
-                node_velocity(node_gid, 1) = -cos(PI*node_coords(node_gid, 0))*sin(PI*node_coords(node_gid, 1));
+                node_velocity(node_gid, 0) =  Kokkos::sin(PI*node_coords(node_gid, 0))*Kokkos::cos(PI*node_coords(node_gid, 1));
+                node_velocity(node_gid, 1) = -Kokkos::cos(PI*node_coords(node_gid, 0))*Kokkos::sin(PI*node_coords(node_gid, 1));
                 node_velocity(node_gid, 2) = 0.0;
             });
 
@@ -725,7 +725,7 @@ MATAR_INITIALIZE(argc, argv);
                     
                     // if normal_dot_vel<0 advection is out of first elem in the surf
                     const real_t flux_val = 0.5*(qpt_field+nbr_qpt_field)*normal_dot_vel 
-                                           -0.5*fabs(normal_dot_vel)*(qpt_field-nbr_qpt_field);
+                                           -0.5*mtr::prec::fabs(normal_dot_vel)*(qpt_field-nbr_qpt_field);
 
                     // save flux value to the quadrature points on either side of the element
                     RHS_surf_flux(elem_gid, face_lid, qpt_lid) = flux_val;
@@ -941,7 +941,7 @@ MATAR_INITIALIZE(argc, argv);
         }, domain_mass_time);
 
         printf("Domain mass error= %f \n", domain_mass_time-domain_mass_t0);
-        if(fabs(domain_mass_time-domain_mass_t0)>real_tol(1.e-12)) Kokkos::abort("ERROR: Mass is not conserved");
+        if(mtr::prec::fabs(domain_mass_time-domain_mass_t0)>real_tol(1.e-12)) Kokkos::abort("ERROR: Mass is not conserved");
 
 
         // ================================================================
@@ -975,7 +975,7 @@ MATAR_INITIALIZE(argc, argv);
                                 
                         } // loop over corners of the element
 
-                        L1_lcl += fabs(val_qpt - test_function(x_qpt,y_qpt))*vol_qpt;
+                        L1_lcl += mtr::prec::fabs(val_qpt - test_function(x_qpt,y_qpt))*vol_qpt;
                         
                 } // end for dof_lid and qpt_lid
 
@@ -1011,7 +1011,7 @@ MATAR_INITIALIZE(argc, argv);
                 } // end for dof_lid and qpt_lid
 
             }, L2); // end parallel for
-            L2 = sqrt(L2);
+            L2 = mtr::prec::sqrt(L2);
 
             printf("=====\n");
             printf("L1 error = %f, L2 error = %f \n", L1, L2);
@@ -1437,7 +1437,7 @@ real_t test_function(const real_t x,
     // Check if inside circle
     const real_t dx = x - x0;
     const real_t dy = y - y0;
-    const real_t r = sqrt(dx*dx + dy*dy);
+    const real_t r = mtr::prec::sqrt(dx*dx + dy*dy);
 
 
     // Smooth circle
@@ -1448,7 +1448,7 @@ real_t test_function(const real_t x,
     //real_t notch = 0.5 * (1.0 + tanh((x - x0) / smoothing)); // right notch
 
     // Deep notch from TOP, extending PAST center
-    if(fabs(x - x0) < notch_width/2.0){  // Remove y > y0 condition!
+    if(mtr::prec::fabs(x - x0) < notch_width/2.0){  // Remove y > y0 condition!
         real_t notch = 0.5 * (1.0 + tanh((y - (y0 - notch_depth)) / smoothing));
         circle *= (1.0 - notch);
     }
@@ -1468,7 +1468,7 @@ real_t test_function(const real_t x,
 
 KOKKOS_INLINE_FUNCTION
 real_t test_function(real_t x, real_t y) {
-    return sin(PI*x);
+    return Kokkos::sin(PI*x);
 }
 
 #endif // USE_SIN_FUNCTION
@@ -1490,7 +1490,7 @@ real_t test_function(real_t x, real_t y) {
     real_t dy = y - cy;
     real_t r2 = dx*dx + dy*dy;
     
-    return exp(-r2 / (2.0 * sigma * sigma));
+    return Kokkos::exp(-r2 / (2.0 * sigma * sigma));
 }
 
 #endif // USE_GAUSSIAN
@@ -1565,8 +1565,8 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
 
             const size_t neighbor_id = Mesh.elems_in_elem(elem_gid, nbr);
 
-            u_min = fmin(u_min, field_elem_avg(neighbor_id));
-            u_max = fmax(u_max, field_elem_avg(neighbor_id));
+            u_min = mtr::prec::fmin(u_min, field_elem_avg(neighbor_id));
+            u_max = mtr::prec::fmax(u_max, field_elem_avg(neighbor_id));
         } // end for nbrs
 
         // Add small tolerance to avoid numerical issues
@@ -1583,7 +1583,7 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
         
         for (size_t node_lid = 0; node_lid < num_nodes_in_elem; node_lid++) {
             const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
-            clipped_corner_field(corner_gid) = fmin(fmax(field(corner_gid), u_min), u_max);
+            clipped_corner_field(corner_gid) = mtr::prec::fmin(mtr::prec::fmax(field(corner_gid), u_min), u_max);
         }
 
     }); // end parallel for over elems
@@ -1670,8 +1670,8 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
         
         // Check if asymmetric scaling is applicable
         bool use_asymmetric = (num_upper > 0 && num_lower > 0 && 
-                              fabs(S_plus) > epsilon && 
-                              fabs(S_minus) > epsilon);
+                              mtr::prec::fabs(S_plus) > epsilon && 
+                              mtr::prec::fabs(S_minus) > epsilon);
         
         if (use_asymmetric) {
             // Asymmetric scaling
@@ -1682,7 +1682,7 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
                 size_t i = upper_indices(elem_gid,j);
                 if (deviations(elem_gid,i) > epsilon) {
                     real_t theta_i = (u_max - u_bar_original) / deviations(elem_gid,i);
-                    theta_plus_max = fmin(theta_plus_max, theta_i);
+                    theta_plus_max = mtr::prec::fmin(theta_plus_max, theta_i);
                 }
             }
             
@@ -1692,21 +1692,21 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
                 size_t i = lower_indices(elem_gid,j);
                 if (deviations(elem_gid,i) < -epsilon) {
                     real_t theta_i = (u_bar_original - u_min) / (-deviations(elem_gid,i));
-                    theta_minus_max = fmin(theta_minus_max, theta_i);
+                    theta_minus_max = mtr::prec::fmin(theta_minus_max, theta_i);
                 }
             }
             
             // Conservation coupling: theta_plus = |S_minus|/S_plus * theta_minus
-            real_t coupling_ratio = fabs(S_minus) / S_plus;
+            real_t coupling_ratio = mtr::prec::fabs(S_minus) / S_plus;
             
             // Find optimal theta_minus
-            theta_minus = fmin(theta_minus_max, 
-                             S_plus / fabs(S_minus) * theta_plus_max);
+            theta_minus = mtr::prec::fmin(theta_minus_max, 
+                             S_plus / mtr::prec::fabs(S_minus) * theta_plus_max);
             theta_plus = coupling_ratio * theta_minus;
             
             // Clamp to [0, 1]
-            theta_plus = fmax(0.0, fmin(1.0, theta_plus));
-            theta_minus = fmax(0.0, fmin(1.0, theta_minus));
+            theta_plus = mtr::prec::fmax((real_t)0.0, mtr::prec::fmin((real_t)1.0, theta_plus));
+            theta_minus = mtr::prec::fmax((real_t)0.0, mtr::prec::fmin((real_t)1.0, theta_minus));
             
         } else {
             // Symmetric scaling (fallback)
@@ -1718,15 +1718,15 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
                 
                 if (dev > epsilon) {
                     real_t theta_i = (u_max - u_bar_original) / dev;
-                    theta_max = fmin(theta_max, theta_i);
+                    theta_max = mtr::prec::fmin(theta_max, theta_i);
                 }
                 else if (dev < -epsilon) {
                     real_t theta_i = (u_bar_original - u_min) / (-dev);
-                    theta_max = fmin(theta_max, theta_i);
+                    theta_max = mtr::prec::fmin(theta_max, theta_i);
                 } // end if
             }
             
-            theta_plus = fmax(0.0, fmin(1.0, theta_max));
+            theta_plus = mtr::prec::fmax((real_t)0.0, mtr::prec::fmin((real_t)1.0, theta_max));
             theta_minus = theta_plus;
         }
         
@@ -1750,7 +1750,7 @@ void limit_corner_field(const ReferenceElement_t& FERefElem,
             real_t u_limited = u_bar_original + theta * deviations(elem_gid,node_lid);
             
             // Safety clip (should be unnecessary if theta computed correctly)
-            u_limited = fmin(fmax(u_limited, u_min), u_max);
+            u_limited = mtr::prec::fmin(mtr::prec::fmax(u_limited, u_min), u_max);
             
             const size_t corner_gid = Mesh.corners_in_elem(elem_gid,node_lid);
 

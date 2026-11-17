@@ -291,7 +291,7 @@ MATAR_INITIALIZE(argc, argv);
         }
 
         // a spatially varing field
-        elem_field(elem_gid) = sin(PI*elem_coords[0]);
+        elem_field(elem_gid) = Kokkos::sin(PI*elem_coords[0]);
 
     });
     Kokkos::fence();
@@ -382,8 +382,8 @@ MATAR_INITIALIZE(argc, argv);
         FOR_ALL(node_gid, 0, num_nodes,{
             // new velocity, it is Taylor-Green vortex
             // PI is defined in mesh class
-            node_velocity(node_gid, 0) = sin(PI*node_coords(node_gid, 0))*cos(PI*node_coords(node_gid, 1));
-            node_velocity(node_gid, 1) = -cos(PI*node_coords(node_gid, 0))*sin(PI*node_coords(node_gid, 1));
+            node_velocity(node_gid, 0) = Kokkos::sin(PI*node_coords(node_gid, 0))*Kokkos::cos(PI*node_coords(node_gid, 1));
+            node_velocity(node_gid, 1) = -Kokkos::cos(PI*node_coords(node_gid, 0))*Kokkos::sin(PI*node_coords(node_gid, 1));
         });
 
 
@@ -394,7 +394,7 @@ MATAR_INITIALIZE(argc, argv);
             
             for(size_t qpt_lid=0; qpt_lid<num_qpts_in_elem; qpt_lid++){
                 const real_t vol_qpt= Quad.qpt_weights(qpt_lid)*elem_det_jac(elem_gid, qpt_lid);
-                const real_t h_qpt = pow(vol_qpt,0.3333333);
+                const real_t h_qpt = Kokkos::pow(vol_qpt,0.3333333);
                 if(h_qpt < min_h_loc) min_h_loc = h_qpt;
             }
 
@@ -477,7 +477,7 @@ MATAR_INITIALIZE(argc, argv);
                 // Rusanov flux with cell averages gives upwind flux
                 surf_flux(surf_gid) += 
                     -0.5*(elem_field(elem_gid)+elem_field(nbr_elem_gid))*normal_dot_vel 
-                    +0.5*fabs(normal_dot_vel)*(elem_field(elem_gid)-elem_field(nbr_elem_gid));
+                    +0.5*mtr::prec::fabs(normal_dot_vel)*(elem_field(elem_gid)-elem_field(nbr_elem_gid));
 
             } // end for qpt
             

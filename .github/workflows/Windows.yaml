@@ -15,9 +15,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with: 
-        submodules: true
+        submodules: recursive
 
     - name: Install Fortran
       # Installs Intel oneAPI Fortran (ifx) which is compatible with MSVC

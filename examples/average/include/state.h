@@ -60,11 +60,11 @@ struct node_t
 {
 
     // Replace with MPIDCArrayKokkos
-    MPICArrayKokkos<double> coords;     ///< Nodal coordinates
-    MPICArrayKokkos<double> coords_n0;  ///< Nodal coordinates at tn=0 of time integration
+    MPICArrayKokkos<real_t> coords;     ///< Nodal coordinates
+    MPICArrayKokkos<real_t> coords_n0;  ///< Nodal coordinates at tn=0 of time integration
     
-    MPICArrayKokkos<double> scalar_field; ///< Scalar field on a node
-    MPICArrayKokkos<double> vector_field; ///< Vector field on a node
+    MPICArrayKokkos<real_t> scalar_field; ///< Scalar field on a node
+    MPICArrayKokkos<real_t> vector_field; ///< Vector field on a node
 
 
     // initialization method (num_nodes, num_dims, state to allocate)
@@ -77,20 +77,20 @@ struct node_t
             switch(field){
                 case node_state::coords:
                     if (coords.size() == 0){
-                        this->coords = MPICArrayKokkos<double>(num_nodes, num_dims, "node_coordinates");
+                        this->coords = MPICArrayKokkos<real_t>(num_nodes, num_dims, "node_coordinates");
                         this->coords.initialize_comm_plan(comm_plan);
                     }
                     if (coords_n0.size() == 0){
-                        this->coords_n0 = MPICArrayKokkos<double>(num_nodes, num_dims, "node_coordinates_n0");
+                        this->coords_n0 = MPICArrayKokkos<real_t>(num_nodes, num_dims, "node_coordinates_n0");
                         this->coords_n0.initialize_comm_plan(comm_plan);
                     }
                     break;
                 case node_state::scalar_field:
-                    if (scalar_field.size() == 0) this->scalar_field = MPICArrayKokkos<double>(num_nodes, "node_scalar_field");
+                    if (scalar_field.size() == 0) this->scalar_field = MPICArrayKokkos<real_t>(num_nodes, "node_scalar_field");
                     this->scalar_field.initialize_comm_plan(comm_plan);
                     break;
                 case node_state::vector_field:
-                    if (vector_field.size() == 0) this->vector_field = MPICArrayKokkos<double>(num_nodes, num_dims, "node_vector_field");
+                    if (vector_field.size() == 0) this->vector_field = MPICArrayKokkos<real_t>(num_nodes, num_dims, "node_vector_field");
                     this->vector_field.initialize_comm_plan(comm_plan);
                     break;
                 default:
@@ -107,20 +107,20 @@ struct node_t
             switch(field){
                 case node_state::coords:
                     if (coords.size() == 0){
-                        this->coords = MPICArrayKokkos<double>(num_nodes, num_dims, "node_coordinates");
+                        this->coords = MPICArrayKokkos<real_t>(num_nodes, num_dims, "node_coordinates");
                         this->coords.initialize_comm_plan(comm_plan);
                     }
                     if (coords_n0.size() == 0){
-                        this->coords_n0 = MPICArrayKokkos<double>(num_nodes, num_dims, "node_coordinates_n0");
+                        this->coords_n0 = MPICArrayKokkos<real_t>(num_nodes, num_dims, "node_coordinates_n0");
                         this->coords_n0.initialize_comm_plan(comm_plan);
                     }
                     break;
                 case node_state::scalar_field:
-                    if (scalar_field.size() == 0) this->scalar_field = MPICArrayKokkos<double>(num_nodes, "node_scalar_field");
+                    if (scalar_field.size() == 0) this->scalar_field = MPICArrayKokkos<real_t>(num_nodes, "node_scalar_field");
                     this->scalar_field.initialize_comm_plan(comm_plan);
                     break;
                 case node_state::vector_field:
-                    if (vector_field.size() == 0) this->vector_field = MPICArrayKokkos<double>(num_nodes, num_dims, "node_vector_field");
+                    if (vector_field.size() == 0) this->vector_field = MPICArrayKokkos<real_t>(num_nodes, num_dims, "node_vector_field");
                     this->vector_field.initialize_comm_plan(comm_plan);
                     break;
                 default:
@@ -150,8 +150,8 @@ enum class gauss_pt_state
 struct GaussPoint_t
 {
 
-    MPICArrayKokkos<double> fields;
-    MPICArrayKokkos<double> fields_vec;
+    MPICArrayKokkos<real_t> fields;
+    MPICArrayKokkos<real_t> fields_vec;
 
     // initialization method (num_cells, num_dims)
     void initialize(size_t num_gauss_pnts, size_t num_dims, std::vector<gauss_pt_state> gauss_pt_states, CommunicationPlan& comm_plan)
@@ -160,15 +160,15 @@ struct GaussPoint_t
         for (auto field : gauss_pt_states){
             switch(field){
                 case gauss_pt_state::fields:
-                    //if (fields.size() == 0) this->fields = DCArrayKokkos<double>(num_gauss_pnts, "gauss_point_fields");
+                    //if (fields.size() == 0) this->fields = DCArrayKokkos<real_t>(num_gauss_pnts, "gauss_point_fields");
                     if (fields.size() == 0){
-                        this->fields = MPICArrayKokkos<double>(num_gauss_pnts, "gauss_point_fields");
+                        this->fields = MPICArrayKokkos<real_t>(num_gauss_pnts, "gauss_point_fields");
                         this->fields.initialize_comm_plan(comm_plan);
                     } 
                     break;
                 case gauss_pt_state::fields_vec:
                     if (fields_vec.size() == 0){
-                        this->fields_vec = MPICArrayKokkos<double>(num_gauss_pnts, num_dims, "gauss_point_fields_vec");
+                        this->fields_vec = MPICArrayKokkos<real_t>(num_gauss_pnts, num_dims, "gauss_point_fields_vec");
                         this->fields_vec.initialize_comm_plan(comm_plan);
                     } 
                     break;

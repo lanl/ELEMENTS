@@ -160,9 +160,9 @@ struct stl_data{
                                 float& loc_min_z) 
             {
                 for (int v = 0; v < 3; ++v){ 
-                    loc_min_x =  fmin(vertices(facet, v, 0), loc_min_x);
-                    loc_min_y =  fmin(vertices(facet, v, 1), loc_min_y);
-                    loc_min_z =  fmin(vertices(facet, v, 2), loc_min_z);
+                    loc_min_x =  mtr::prec::fmin(vertices(facet, v, 0), loc_min_x);
+                    loc_min_y =  mtr::prec::fmin(vertices(facet, v, 1), loc_min_y);
+                    loc_min_z =  mtr::prec::fmin(vertices(facet, v, 2), loc_min_z);
                 } // end for
             },
             Kokkos::Min<float>(min_x), 
@@ -181,9 +181,9 @@ struct stl_data{
                                 float& loc_max_z) 
             {
                 for (int v = 0; v < 3; ++v){ 
-                    loc_max_x =  fmax(vertices(facet, v, 0), loc_max_x);
-                    loc_max_y =  fmax(vertices(facet, v, 1), loc_max_y);
-                    loc_max_z =  fmax(vertices(facet, v, 2), loc_max_z);
+                    loc_max_x =  mtr::prec::fmax(vertices(facet, v, 0), loc_max_x);
+                    loc_max_y =  mtr::prec::fmax(vertices(facet, v, 1), loc_max_y);
+                    loc_max_z =  mtr::prec::fmax(vertices(facet, v, 2), loc_max_z);
                 } // end for
             },
             Kokkos::Max<float>(max_x), 
@@ -340,8 +340,8 @@ struct stl_data{
                 float v0 = vertices.host(facet_idx, 0, d);
                 float v1 = vertices.host(facet_idx, 1, d);
                 float v2 = vertices.host(facet_idx, 2, d);
-                tree_nodes.host(leaf_idx).min_ext[d] = std::fmin(std::fmin(v0, v1), v2);
-                tree_nodes.host(leaf_idx).max_ext[d] = std::fmax(std::fmax(v0, v1), v2);
+                tree_nodes.host(leaf_idx).min_ext[d] = mtr::prec::fmin(mtr::prec::fmin(v0, v1), v2);
+                tree_nodes.host(leaf_idx).max_ext[d] = mtr::prec::fmax(mtr::prec::fmax(v0, v1), v2);
             }
         }
 
@@ -378,7 +378,7 @@ struct stl_data{
         float root_min[3] = {tree_nodes.host(0).min_ext[0], tree_nodes.host(0).min_ext[1], tree_nodes.host(0).min_ext[2]};
         float root_max[3] = {tree_nodes.host(0).max_ext[0], tree_nodes.host(0).max_ext[1], tree_nodes.host(0).max_ext[2]};
         
-        if (std::abs(root_min[0] - min_x) > 1e-4 || std::abs(root_max[0] - max_x) > 1e-4) root_bounds_ok = false;
+        if (mtr::prec::fabs(root_min[0] - min_x) > 1e-4 || mtr::prec::fabs(root_max[0] - max_x) > 1e-4) root_bounds_ok = false;
         
         if (!root_bounds_ok) {
             std::cout << "  [!] Warning: Root AABB does not match Global BBox." << std::endl;

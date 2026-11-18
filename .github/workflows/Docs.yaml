@@ -15,9 +15,9 @@ jobs:
 
     steps:
     - name: Checkout master branch
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
       with: 
-        submodules: true
+        submodules: recursive
         
     - name: Install build dependencies
       run: |
@@ -41,7 +41,7 @@ jobs:
         mv ../.git .
 
     - name: Checkout gh-pages branch
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
       with: 
         ref: gh-pages
 

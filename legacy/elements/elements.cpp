@@ -1724,8 +1724,8 @@ void gauss_4d(
 
         real_t a, b, c;
 
-        a = pow(real_t(quad_order), real_t(dim-1.0));
-        b = pow(real_t(quad_order), real_t(dim-2.0));
+        a = pow((real_t)quad_order, (real_t)(dim-1.0));
+        b = pow((real_t)quad_order, (real_t)(dim-2.0));
 
         // sets up the i, j, k indices for the line rule implimentation
         int p12 = (quad_order * quad_order);
@@ -1872,8 +1872,8 @@ void lobatto_4d(
 
         real_t a, b, c;
 
-        a = pow(real_t(quad_order), real_t(dim-1.0)); //to simplify indexing equations
-        b = pow(real_t(quad_order), real_t(dim-2.0));
+        a = pow((real_t)quad_order, (real_t)(dim-1.0)); //to simplify indexing equations
+        b = pow((real_t)quad_order, (real_t)(dim-2.0));
 
         // sets up the i, j, k, l indices for the line rule implimentation
 

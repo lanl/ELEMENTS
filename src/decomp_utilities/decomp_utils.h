@@ -51,9 +51,9 @@ namespace elements
 
 inline void naive_partition_mesh(
     swage::Mesh_t& initial_mesh,
-    MPICArrayKokkos<double>& initial_node_coords,
+    MPICArrayKokkos<real_t>& initial_node_coords,
     swage::Mesh_t& naive_mesh,
-    MPICArrayKokkos<double>& naive_node_coords,
+    MPICArrayKokkos<real_t>& naive_node_coords,
     CArrayDual<int>& elems_in_elem_on_rank,
     CArrayDual<int>& num_elems_in_elem_per_rank,
     int world_size,
@@ -253,14 +253,14 @@ inline void naive_partition_mesh(
     //     Scatter the node positions to each rank
     // ****************************************************************************************** 
     // Create a flat 1D vector for node positions (num_dim coordinates per node)
-    std::vector<double> node_pos_on_rank_flat(num_nodes_on_rank * num_dim);
-    CArrayDual<double> node_pos_on_rank(num_nodes_on_rank, num_dim, "node_pos_on_rank_decomp");
+    std::vector<real_t> node_pos_on_rank_flat(num_nodes_on_rank * num_dim);
+    CArrayDual<real_t> node_pos_on_rank(num_nodes_on_rank, num_dim, "node_pos_on_rank_decomp");
     
     if(rank == 0){
 
         // Prepare data for MPI_Scatterv (scatter with variable counts)
         // Flatten the 2D node_pos_to_send into a 1D array
-        std::vector<double> all_node_pos;
+        std::vector<real_t> all_node_pos;
         std::vector<int> sendcounts(world_size);
         std::vector<int> displs(world_size);
         
@@ -278,13 +278,13 @@ inline void naive_partition_mesh(
         }   
 
         // Send the node positions to each rank
-        MPI_Scatterv(all_node_pos.data(), sendcounts.data(), displs.data(), MPI_DOUBLE,
-                     node_pos_on_rank.host_pointer(), num_nodes_on_rank * num_dim, MPI_DOUBLE,
+        MPI_Scatterv(all_node_pos.data(), sendcounts.data(), displs.data(), mtr::mpi_type_map<real_t>::value(),
+                     node_pos_on_rank.host_pointer(), num_nodes_on_rank * num_dim, mtr::mpi_type_map<real_t>::value(),
                      0, MPI_COMM_WORLD);
     }
     else {
-        MPI_Scatterv(nullptr, nullptr, nullptr, MPI_DOUBLE,
-                     node_pos_on_rank.host_pointer(), num_nodes_on_rank * num_dim, MPI_DOUBLE,
+        MPI_Scatterv(nullptr, nullptr, nullptr, mtr::mpi_type_map<real_t>::value(),
+                     node_pos_on_rank.host_pointer(), num_nodes_on_rank * num_dim, mtr::mpi_type_map<real_t>::value(),
                      0, MPI_COMM_WORLD);
     }
 
@@ -297,7 +297,7 @@ inline void naive_partition_mesh(
 
     // CommunicationPlan tmp_comm_plan;
 
-    naive_node_coords = MPICArrayKokkos<double>(num_nodes_on_rank, num_dim, "naive_node_coords");
+    naive_node_coords = MPICArrayKokkos<real_t>(num_nodes_on_rank, num_dim, "naive_node_coords");
     // naive_node_coords.initialize_comm_plan(tmp_comm_plan);
 
 
@@ -591,8 +591,8 @@ inline void naive_partition_mesh(
 inline void build_ghost(
     swage::Mesh_t& input_mesh,
     swage::Mesh_t& output_mesh,
-    MPICArrayKokkos<double>& input_node_coords,
-    MPICArrayKokkos<double>& output_node_coords,
+    MPICArrayKokkos<real_t>& input_node_coords,
+    MPICArrayKokkos<real_t>& output_node_coords,
     CommunicationPlan& element_communication_plan,
     CommunicationPlan& node_communication_plan,
     int world_size,
@@ -1189,7 +1189,7 @@ inline void build_ghost(
 
 
     // output_node.initialize(total_extended_nodes, num_dim, {node_state::coords}, node_communication_plan);
-    output_node_coords = MPICArrayKokkos<double>(total_extended_nodes, num_dim, "output_node_coords");
+    output_node_coords = MPICArrayKokkos<real_t>(total_extended_nodes, num_dim, "output_node_coords");
     
     
     
@@ -1253,13 +1253,13 @@ inline void build_ghost(
 
 
     // d) Global coords (size: total_owned x 3)
-    std::vector<double> owned_coords_send(num_dim*local_owned_count, 0.0);
+    std::vector<real_t> owned_coords_send(num_dim*local_owned_count, 0.0);
     for (int i = 0; i < local_owned_count; i++) {
         for(int dim = 0; dim < num_dim; dim++){
             owned_coords_send[num_dim*i+dim] = input_node_coords.host(i,dim);
         }
     }
-    std::vector<double> all_owned_coords(num_dim * total_owned, 0.0);
+    std::vector<real_t> all_owned_coords(num_dim * total_owned, 0.0);
 
     // Create coordinate-specific counts and displacements (in units of doubles, not nodes)
     MPI_Barrier(MPI_COMM_WORLD);
@@ -1272,14 +1272,14 @@ inline void build_ghost(
         coord_displs[r] = num_dim * owned_displs[r];  // Displacement in doubles
     }
 
-    MPI_Allgatherv(owned_coords_send.data(), num_dim*local_owned_count, MPI_DOUBLE,
+    MPI_Allgatherv(owned_coords_send.data(), num_dim*local_owned_count, mtr::mpi_type_map<real_t>::value(),
                 all_owned_coords.data(), coord_counts.data(), coord_displs.data(),
-                MPI_DOUBLE, MPI_COMM_WORLD);
+                mtr::mpi_type_map<real_t>::value(), MPI_COMM_WORLD);
 
     // e) Build map: gid -> coord[3]
-    std::unordered_map<size_t, std::vector<double>> gid_to_coord;
+    std::unordered_map<size_t, std::vector<real_t>> gid_to_coord;
     for (int i = 0; i < total_owned; i++) {
-        std::vector<double> xyz(num_dim);  // size is runtime-dependent
+        std::vector<real_t> xyz(num_dim);  // size is runtime-dependent
         for (int dim = 0; dim < num_dim; dim++) {
             xyz[dim] = all_owned_coords[num_dim * i + dim];
         }
@@ -1736,8 +1736,8 @@ inline void build_ghost(
 inline void partition_mesh(
     swage::Mesh_t& initial_mesh,
     swage::Mesh_t& final_mesh,
-    MPICArrayKokkos<double>& initial_node_coords,
-    MPICArrayKokkos<double>& final_node_coords,
+    MPICArrayKokkos<real_t>& initial_node_coords,
+    MPICArrayKokkos<real_t>& final_node_coords,
     CommunicationPlan& element_communication_plan,
     CommunicationPlan& node_communication_plan,
     int world_size,
@@ -1763,11 +1763,11 @@ inline void partition_mesh(
     swage::Mesh_t naive_mesh;
     naive_mesh.num_dims = initial_mesh.num_dims;
     naive_mesh.Pn = initial_mesh.Pn;
-    MPICArrayKokkos<double> naive_node_coords;
+    MPICArrayKokkos<real_t> naive_node_coords;
 
     // Mesh partitioned by pt-scotch, not including ghost
     swage::Mesh_t intermediate_mesh; 
-    MPICArrayKokkos<double> intermediate_node_coords;
+    MPICArrayKokkos<real_t> intermediate_node_coords;
 
     // Helper arrays to hold element-element connectivity for naive partitioning that include what would be ghost, without having to build the full mesh
     CArrayDual<int> elems_in_elem_on_rank;
@@ -2232,7 +2232,7 @@ inline void partition_mesh(
 
 
     // -------------- Phase 5: Request node coordinates --------------
-    std::vector<double> node_coords_sendbuf;
+    std::vector<real_t> node_coords_sendbuf;
     for (int r = 0; r < world_size; r++) {
         for (int gid : elems_to_send[r]) {
             int lid = -1;
@@ -2268,9 +2268,9 @@ inline void partition_mesh(
         coord_recv_total += coord_recvcounts[r];
     }
 
-    std::vector<double> coord_recvbuf(coord_recv_total);
-    MPI_Alltoallv(node_coords_sendbuf.data(), coord_sendcounts.data(), coord_sdispls.data(), MPI_DOUBLE,
-                coord_recvbuf.data(), coord_recvcounts.data(), coord_rdispls.data(), MPI_DOUBLE, MPI_COMM_WORLD);
+    std::vector<real_t> coord_recvbuf(coord_recv_total);
+    MPI_Alltoallv(node_coords_sendbuf.data(), coord_sendcounts.data(), coord_sdispls.data(), mtr::mpi_type_map<real_t>::value(),
+                coord_recvbuf.data(), coord_recvcounts.data(), coord_rdispls.data(), mtr::mpi_type_map<real_t>::value(), MPI_COMM_WORLD);
 
     MPI_Barrier(MPI_COMM_WORLD);
     if(rank == 0 && print_info) std::cout<<" Finished exchanging node coordinates"<<std::endl;
@@ -2334,13 +2334,13 @@ inline void partition_mesh(
     // Fill node coordinates
     // coord_recvbuf contains coords in element-node order, but we need them in node order
     // Build a map from node GID to coordinates
-    std::map<int, std::vector<double>> node_gid_to_coords;
+    std::map<int, std::vector<real_t>> node_gid_to_coords;
     int coord_idx = 0;
     for (int e = 0; e < intermediate_mesh.num_elems; e++) {
         for (int j = 0; j < intermediate_mesh.num_nodes_in_elem; j++) {
             int node_gid = conn_recvbuf[e * intermediate_mesh.num_nodes_in_elem + j];
             if (node_gid_to_coords.find(node_gid) == node_gid_to_coords.end()) {
-                std::vector<double> coords(num_dim);
+                std::vector<real_t> coords(num_dim);
                 for (int d = 0; d < num_dim; d++) {
                     coords[d] = coord_recvbuf[coord_idx * num_dim + d];
                 }
@@ -2351,7 +2351,7 @@ inline void partition_mesh(
     }
     
     // Now fill coordinates in node order
-    intermediate_node_coords = MPICArrayKokkos<double>(num_new_nodes, num_dim, "intermediate_node_coords");
+    intermediate_node_coords = MPICArrayKokkos<real_t>(num_new_nodes, num_dim, "intermediate_node_coords");
     for (int i = 0; i < num_new_nodes; i++) {
         int node_gid = new_node_gids[i];
         auto it = node_gid_to_coords.find(node_gid);

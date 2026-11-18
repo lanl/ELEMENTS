@@ -13,7 +13,7 @@ jobs:
     strategy: 
       fail-fast: false
       matrix:
-        os: [macos-latest]
+        os: [macos-26]
         build_type: [serial, openmp, debug]
         include:
           - build_type: serial
@@ -25,9 +25,9 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-    - uses: actions/checkout@v4 # Updated to v4 for latest node support
+    - uses: actions/checkout@v5
       with: 
-        submodules: true
+        submodules: recursive
 
     - name: Install Fortran
       uses: fortran-lang/setup-fortran@v1

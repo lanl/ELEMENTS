@@ -55,7 +55,7 @@ namespace elements
 ///
 /////////////////////////////////////////////////////////////////////////////
 KOKKOS_FUNCTION
-static void get_lobatto_nodes_1D(const CArrayKokkos<double>& lob_nodes_1D,
+static void get_lobatto_nodes_1D(const CArrayKokkos<real_t>& lob_nodes_1D,
     const size_t& num) 
 {
     if (num == 1) {
@@ -72,23 +72,23 @@ static void get_lobatto_nodes_1D(const CArrayKokkos<double>& lob_nodes_1D,
     }
     else if (num == 4) {
         lob_nodes_1D(0) = -1.0;
-        lob_nodes_1D(1) = -1.0 / 5.0 * sqrt(5.0);
-        lob_nodes_1D(2) =  1.0 / 5.0 * sqrt(5.0);
+        lob_nodes_1D(1) = -1.0 / 5.0 * mtr::prec::sqrt(5.0);
+        lob_nodes_1D(2) =  1.0 / 5.0 * mtr::prec::sqrt(5.0);
         lob_nodes_1D(3) =  1.0;
     }
     else if (num == 5) {
         lob_nodes_1D(0) = -1.0;
-        lob_nodes_1D(1) = -1.0 / 7.0 * sqrt(21.0);
+        lob_nodes_1D(1) = -1.0 / 7.0 * mtr::prec::sqrt(21.0);
         lob_nodes_1D(2) =  0.0;
-        lob_nodes_1D(3) =  1.0 / 7.0 * sqrt(21.0);
+        lob_nodes_1D(3) =  1.0 / 7.0 * mtr::prec::sqrt(21.0);
         lob_nodes_1D(4) =  1.0;
     }
     else if (num == 6) {
         lob_nodes_1D(0) = -1.0;
-        lob_nodes_1D(1) = -sqrt(1.0 / 21.0 * (7.0 + 2.0 * sqrt(7.0)));
-        lob_nodes_1D(2) = -sqrt(1.0 / 21.0 * (7.0 - 2.0 * sqrt(7.0)));
-        lob_nodes_1D(3) =  sqrt(1.0 / 21.0 * (7.0 - 2.0 * sqrt(7.0)));
-        lob_nodes_1D(4) =  sqrt(1.0 / 21.0 * (7.0 + 2.0 * sqrt(7.0)));
+        lob_nodes_1D(1) = -mtr::prec::sqrt(1.0 / 21.0 * (7.0 + 2.0 * mtr::prec::sqrt(7.0)));
+        lob_nodes_1D(2) = -mtr::prec::sqrt(1.0 / 21.0 * (7.0 - 2.0 * mtr::prec::sqrt(7.0)));
+        lob_nodes_1D(3) =  mtr::prec::sqrt(1.0 / 21.0 * (7.0 - 2.0 * mtr::prec::sqrt(7.0)));
+        lob_nodes_1D(4) =  mtr::prec::sqrt(1.0 / 21.0 * (7.0 + 2.0 * mtr::prec::sqrt(7.0)));
         lob_nodes_1D(5) =  1.0;
     }
     else if (num == 7) {
@@ -319,7 +319,7 @@ static void get_lobatto_nodes_1D(const CArrayKokkos<double>& lob_nodes_1D,
 
 KOKKOS_FUNCTION
 static void get_lobatto_weights_1D(
-    const CArrayKokkos<double>& lob_weights_1D,                   // Lobbatto weights
+    const CArrayKokkos<real_t>& lob_weights_1D,                   // Lobbatto weights
     const size_t& num)                                        // Interpolation order
 {
     if (num == 1) {
@@ -349,10 +349,10 @@ static void get_lobatto_weights_1D(
     }
     else if (num == 6) {
         lob_weights_1D(0) = 1.0 / 15.0;
-        lob_weights_1D(1) = 1.0 / 30.0 * (14.0 - sqrt(7.0));
-        lob_weights_1D(2) = 1.0 / 30.0 * (14.0 + sqrt(7.0));
-        lob_weights_1D(3) = 1.0 / 30.0 * (14.0 + sqrt(7.0));
-        lob_weights_1D(4) = 1.0 / 30.0 * (14.0 - sqrt(7.0));
+        lob_weights_1D(1) = 1.0 / 30.0 * (14.0 - mtr::prec::sqrt(7.0));
+        lob_weights_1D(2) = 1.0 / 30.0 * (14.0 + mtr::prec::sqrt(7.0));
+        lob_weights_1D(3) = 1.0 / 30.0 * (14.0 + mtr::prec::sqrt(7.0));
+        lob_weights_1D(4) = 1.0 / 30.0 * (14.0 - mtr::prec::sqrt(7.0));
         lob_weights_1D(5) = 1.0 / 15.0;
     }
     else if (num == 7) {
@@ -592,7 +592,7 @@ static void get_lobatto_weights_1D(
 /////////////////////////////////////////////////////////////////////////////
 KOKKOS_FUNCTION
 static void get_legendre_nodes_1D(
-    const CArrayKokkos<double>& leg_nodes_1D,
+    const CArrayKokkos<real_t>& leg_nodes_1D,
     const size_t& num) 
 {
     if (num == 1) {
@@ -843,7 +843,7 @@ static void get_legendre_nodes_1D(
 /////////////////////////////////////////////////////////////////////////////
 KOKKOS_FUNCTION
 static void get_legendre_weights_1D(
-    const CArrayKokkos<double>& leg_weights_1D,                    // Legendre weights
+    const CArrayKokkos<real_t>& leg_weights_1D,                    // Legendre weights
     const size_t& num)                                     // Interpolation order
 {
     if (num == 1) {

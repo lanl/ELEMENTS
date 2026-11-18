@@ -3,6 +3,7 @@
 
 // --- Core Dependencies ---
 #include "matar.h"
+#include "utils/precision_utils.h"
 
 // --- Swage Headers (Mesh & Core) ---
 #include "swage/unstructured_mesh.h"

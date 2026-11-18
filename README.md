@@ -27,6 +27,18 @@ git clone --recursive https://github.com/lanl/ELEMENTS.git
 
 ## Getting started
 
+Requirements: a C++20 compiler, CMake 3.22+ (3.25.2+ for CUDA builds), and MPI 3+.
+MATAR and Kokkos (5.x, bundled inside MATAR) are git submodules, so clone recursively:
+```
+git clone --recursive https://github.com/lanl/ELEMENTS.git
+# or, in an existing clone:
+git submodule update --init --recursive
+```
+
+Plain `--init` is not enough, because Kokkos sits one level deeper inside MATAR. Configuring without
+the submodules fails immediately with that instruction. Only Scotch/PT-Scotch is still downloaded at
+configure time. MATAR requires C++20, so ELEMENTS and anything linking it compile as C++20.
+
 To build the examples locally:
 
 1. Configure into a separate build tree:
@@ -45,14 +57,55 @@ Key CMake options (defaults in parentheses):
 - `ELEMENTS_BUILD_EXAMPLES` (`ON` when ELEMENTS is the top-level project, otherwise `OFF`)
 - `ELEMENTS_BUILD_TESTS` (`OFF`)
 - `ELEMENTS_ENABLE_SERIAL` (`ON`)
-- `ELEMENTS_ENABLE_OPENMP` (`ON`)
+- `ELEMENTS_ENABLE_OPENMP` (`OFF`)
 - `ELEMENTS_ENABLE_PTHREADS` (`OFF`)
 - `ELEMENTS_ENABLE_CUDA` (`OFF`)
 - `ELEMENTS_ENABLE_HIP` (`OFF`)
+- `ELEMENTS_DEVICE_BACKEND` (empty): `serial`, `openmp`, `pthreads`, `cuda`, `hip`, `sycl`
+- `ELEMENTS_HOST_BACKEND` (empty): `serial`, `openmp`, `pthreads`
+- `ELEMENTS_REAL` (empty, meaning `double`): precision of `real_t`: `double`, `float`, `half`, `bfloat16`, `quad`
+- `ELEMENTS_HIGH_REAL` (empty, meaning `double`): precision of `high_real_t`: `double`, `float`, `quad`
+- `ELEMENTS_LOW_REAL` (empty, meaning `double`): precision of `low_real_t`: `double`, `float`, `half`, `bfloat16`
+
+## Mixed host/device backends
+
+The `ELEMENTS_ENABLE_*` options above pick **one** Kokkos backend that runs everything. The
+`ELEMENTS_*_BACKEND` pair instead selects the two sides independently, mirroring MATAR's
+`MATAR_DEVICE_BACKEND` / `MATAR_HOST_BACKEND`: the **device** backend runs MATAR's `FOR_ALL`,
+`DO_ALL` and friends, while the **host** backend runs the `_HOST` twins (`FOR_ALL_HOST`, ...). Since
+device kernels are asynchronous and host kernels only block the calling thread, CPU work then
+overlaps in-flight GPU kernels:
+
+```
+cmake -B build -DELEMENTS_DEVICE_BACKEND=cuda -DELEMENTS_HOST_BACKEND=openmp
+```
+
+The values are forwarded to MATAR, which validates the pair and maps it onto the `Kokkos_ENABLE_*`
+variables. Setting either one takes precedence over the `ELEMENTS_ENABLE_*` toggles (ELEMENTS warns
+if you turn on both). Kokkos permits only one host-parallel space per build, so `openmp` and
+`pthreads` cannot be paired with each other, and naming the same backend on both sides is valid but
+gives no concurrency — MATAR warns at configure time.
+
+## Floating-point precision
+
+All ELEMENTS floating-point data is MATAR's `real_t`. The `ELEMENTS_REAL`, `ELEMENTS_HIGH_REAL` and
+`ELEMENTS_LOW_REAL` options choose what MATAR's three precision tiers mean for the build, and are
+forwarded to `MATAR_REAL`, `MATAR_HIGH_REAL` and `MATAR_LOW_REAL`, which validate them:
+
+- `real_t`: the default working precision for field data
+- `high_real_t`: fields that must stay accurate (coordinates, conserved sums); never below `float`
+- `low_real_t`: tolerant or bulk-storage fields
+
+```
+cmake -B build -DELEMENTS_REAL=float -DELEMENTS_HIGH_REAL=double
+```
+
+A tier left empty keeps MATAR's default of `double`, so existing builds are unchanged. Only `double`
+and `float` builds of `real_t` are tested in ELEMENTS CI.
  
 ## Using ELEMENTS from another CMake project
 
-You can add ELEMENTS to your own CMake build with `FetchContent`:
+ELEMENTS itself does not use FetchContent for MATAR or Kokkos; both come from the `matar` git submodule. Another project can pull in ELEMENTS (and, with it, those submodules) using `FetchContent`:
 
 ```cmake
 include(FetchContent)
@@ -62,8 +115,8 @@ set(ELEMENTS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(ELEMENTS_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
 set(ELEMENTS_BUILD_DOCS     OFF CACHE BOOL "" FORCE)
 # Choose backends as needed; defaults are listed above
-# set(ELEMENTS_ENABLE_OPENMP ON  CACHE BOOL "" FORCE)
-# set(ELEMENTS_ENABLE_CUDA   ON  CACHE BOOL "" FORCE)
+# set(ELEMENTS_DEVICE_BACKEND cuda   CACHE STRING "" FORCE)  # FOR_ALL, ...
+# set(ELEMENTS_HOST_BACKEND   openmp CACHE STRING "" FORCE)  # FOR_ALL_HOST, ...
 
 FetchContent_Declare(ELEMENTS
   GIT_REPOSITORY https://github.com/lanl/ELEMENTS.git
@@ -75,7 +128,7 @@ add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE ELEMENTS)
 ```
 
-`ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). Set the options before `FetchContent_MakeAvailable` to control which backends build.
+`ELEMENTS` is an INTERFACE target that propagates its include directories and required dependencies (Kokkos, MATAR, MPI, Scotch). FetchContent checks out ELEMENTS' submodules recursively by default, so MATAR and its bundled Kokkos come along automatically; if the parent project already defines `matar::matar` or `Kokkos::kokkos`, ELEMENTS uses those instead (they must be Kokkos 5.x / C++20). Set the options before `FetchContent_MakeAvailable` to control which backends build.
 
 To learn more about ELEMENTS and how to get started using it, please see the [ELEMENTS documentation](https://lanl.github.io/ELEMENTS/).
 
